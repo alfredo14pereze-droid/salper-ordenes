@@ -1,0 +1,9 @@
+node_modules
+dist
+.env
+.env.local
+.DS_Store
+
+# Específicos de esta máquina/sesión (no parte del proyecto):
+.claude/
+dev.sh
