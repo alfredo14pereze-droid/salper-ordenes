@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import { createOrderType } from '../../services/orderTypesService'
 
-const NEW_TYPE_VALUE = '__new__'
-
-// Select de tipo de orden que además permite crear un tipo nuevo al vuelo
+// Tabs de tipo de orden que además permiten crear un tipo nuevo al vuelo
 // (cumple "categoría seleccionable, con posibilidad de agregar más tipos
 // después" sin necesitar una pantalla de administración aparte).
 export default function OrderTypeSelect({ orderTypes, value, onChange, onTypeCreated }) {
@@ -11,15 +9,6 @@ export default function OrderTypeSelect({ orderTypes, value, onChange, onTypeCre
   const [newLabel, setNewLabel] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
-
-  function handleSelectChange(e) {
-    const v = e.target.value
-    if (v === NEW_TYPE_VALUE) {
-      setCreating(true)
-      return
-    }
-    onChange(v)
-  }
 
   async function handleCreateType() {
     if (!newLabel.trim()) return
@@ -63,16 +52,22 @@ export default function OrderTypeSelect({ orderTypes, value, onChange, onTypeCre
   }
 
   return (
-    <select className="input" value={value} onChange={handleSelectChange}>
-      <option value="" disabled>
-        Selecciona un tipo…
-      </option>
+    <div className="type-tabs" role="tablist">
       {orderTypes.map((type) => (
-        <option key={type.key} value={type.key}>
+        <button
+          key={type.key}
+          type="button"
+          role="tab"
+          aria-selected={value === type.key}
+          className={'type-tab' + (value === type.key ? ' type-tab--active' : '')}
+          onClick={() => onChange(type.key)}
+        >
           {type.label}
-        </option>
+        </button>
       ))}
-      <option value={NEW_TYPE_VALUE}>+ Agregar nuevo tipo…</option>
-    </select>
+      <button type="button" className="type-tab type-tab--add" onClick={() => setCreating(true)}>
+        + Nuevo tipo…
+      </button>
+    </div>
   )
 }

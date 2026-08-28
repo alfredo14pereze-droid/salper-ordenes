@@ -9,7 +9,15 @@ al link puede ver en qué etapa va cada orden sin tener que preguntar.
 **Stack:** React + Vite (frontend) · Supabase (Postgres + Storage + API +
 realtime). Sin backend propio: el navegador habla directo con Supabase
 usando la "anon key" pública, protegida por Row Level Security y funciones
-RPC (ver `supabase/schema.sql` y `supabase/schema_v2.sql`).
+RPC (ver `supabase/schema.sql`, `supabase/schema_v2.sql` y `supabase/schema_v3.sql`).
+
+**Identidad visual:** blanco (fondo) → negro (texto) → amarillo (dentro de
+botones negros + acentos puntuales) → naranja (pocos detalles). Rojo y
+verde quedan reservados exclusivamente como indicadores de estado (orden
+atrasada / completada) — nunca decorativos. El logo real de SALPER está
+pendiente de integrar (por ahora hay una insignia con el nombre en texto,
+ver `src/components/layout/Logo.jsx` — es el único lugar que hay que tocar
+cuando llegue el archivo).
 
 ## Funcionalidad
 
@@ -18,9 +26,12 @@ RPC (ver `supabase/schema.sql` y `supabase/schema_v2.sql`).
   banner con el anuncio más reciente.
 - **Nueva orden**: número, cliente, tipo (con opción de crear tipos nuevos
   al vuelo), descripción, fecha de entrega, tiempo estimado de producción,
-  fotos de referencia.
+  prendas (tallas/cantidades/color, con Pantone si el tipo es sublimación),
+  fotos de referencia, y la opción de prellenar todo desde una plantilla
+  (para pedidos habituales, ej. "Polo Colegio X").
 - **Detalle de orden**: toda la info + cambio de estado + historial con
-  fecha/hora de cada cambio + galería de fotos (agregar/quitar).
+  fecha/hora de cada cambio + prendas editables + galería de fotos
+  (agregar/quitar) + guardar la orden actual como plantilla reutilizable.
 - **Calendario de producción**: vista semanal tipo Gantt calculada a partir
   de fecha de entrega − tiempo estimado, coloreada según el estado actual
   de cada orden.
@@ -63,11 +74,12 @@ src/
 supabase/
   schema.sql      # esquema base: órdenes, tipos, historial, RLS, realtime
   schema_v2.sql   # fotos (Storage), anuncios, pendientes
+  schema_v3.sql   # prendas (orders.items) y plantillas de orden
 ```
 
 La idea de esta separación: para agregar roles o notificaciones más
 adelante, normalmente solo se toca `services/` + una tabla nueva en un
-`schema_v3.sql`, y se agrega un componente/página — sin tener que
+`schema_v4.sql`, y se agrega un componente/página — sin tener que
 reescribir el resto.
 
 ## Puesta en marcha local
@@ -90,7 +102,8 @@ habilita realtime.
 
 Después, corre también [`supabase/schema_v2.sql`](supabase/schema_v2.sql)
 (agrega el bucket de Storage para fotos, y las tablas de anuncios y
-pendientes).
+pendientes), y luego [`supabase/schema_v3.sql`](supabase/schema_v3.sql)
+(prendas de la orden y plantillas).
 
 Finalmente:
 

@@ -37,7 +37,9 @@ export async function fetchOrderHistory(orderId) {
 }
 
 // Crea la orden y su primer registro de historial en una sola transacción
-// (ver función SQL create_order en supabase/schema.sql).
+// (ver función SQL create_order en supabase/schema.sql). `items` es el
+// arreglo de prendas (ver OrderItemsEditor) — opcional, por si se crea la
+// orden sin especificarlas todavía.
 export async function createOrder({
   orderNumber,
   clientName,
@@ -45,6 +47,7 @@ export async function createOrder({
   description,
   requestedDeliveryDate,
   estimatedProductionDays,
+  items,
 }) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
@@ -57,8 +60,18 @@ export async function createOrder({
       p_description: description || null,
       p_requested_delivery_date: requestedDeliveryDate,
       p_estimated_production_days: estimatedProductionDays,
+      p_items: items || [],
     })
     .single()
+}
+
+// Reemplaza por completo el arreglo de prendas de una orden ya creada
+// (ver función SQL set_order_items).
+export async function setOrderItems(orderId, items) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('set_order_items', { p_order_id: orderId, p_items: items || [] }).single()
 }
 
 // Cambia el estado de una orden y agrega el registro de historial

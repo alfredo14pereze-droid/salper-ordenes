@@ -1,17 +1,33 @@
 :root {
-  --color-bg: #f4f5f7;
+  --color-bg: #f7f6f2;
   --color-surface: #ffffff;
-  --color-border: #e2e4e9;
-  --color-text: #1f2430;
-  --color-text-muted: #6b7280;
-  --color-primary: #1d4ed8;
-  --color-primary-hover: #1e40af;
-  --color-danger: #dc2626;
-  --color-warning: #d97706;
+  --color-border: #e7e3d9;
+  --color-text: #17140f;
+  --color-text-muted: #6f6a5f;
+
+  /* Identidad SALPER: blanco (fondo) → negro (texto/botones) →
+     amarillo (dentro de botones negros + acentos puntuales) →
+     naranja (pocos detalles). Rojo/verde quedan reservados para
+     indicadores de estado (atrasado / completado), nunca decorativos. */
+  --color-black: #16130f;
+  --color-black-hover: #2b241b;
+  --color-amber: #ffc93c;
+  --color-amber-strong: #e8a916;
+  --color-orange: #e8720c;
+  --color-orange-soft: #fdead4;
+  --color-orange-strong: #a24d09;
+
+  --color-primary: var(--color-black);
+  --color-danger: #c7351f;
+  --color-danger-soft: #fbe3de;
+  --color-warning: #a24d09;
+  --color-good: #2f8f4e;
+  --color-good-soft: #e2f3e6;
+
   --radius-sm: 6px;
   --radius-md: 10px;
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
-  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
+  --shadow-sm: 0 1px 2px rgba(20, 15, 5, 0.06);
+  --shadow-md: 0 4px 12px rgba(20, 15, 5, 0.08);
 }
 
 * {
@@ -26,7 +42,7 @@ body,
 
 body {
   margin: 0;
-  font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  font-family: 'Barlow', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
   background: var(--color-bg);
   color: var(--color-text);
 }
@@ -51,7 +67,7 @@ h4 {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 24px;
+  padding: 12px 24px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   flex-wrap: wrap;
@@ -59,15 +75,28 @@ h4 {
 
 .app-header__brand {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
 }
 
-.app-header__logo {
+/* Insignia: el logo vive en su propia placa negra (mientras no haya
+   logo real, es una placa con el texto "SALPER" en blanco). */
+.app-header__badge {
+  background: var(--color-black);
+  color: #ffffff;
+  font-family: 'Barlow Semi Condensed', sans-serif;
   font-weight: 800;
-  font-size: 20px;
+  font-size: 15px;
   letter-spacing: 0.5px;
-  color: var(--color-primary);
+  padding: 7px 14px;
+  border-radius: 8px;
+  line-height: 1;
+}
+
+.app-header__badge img {
+  display: block;
+  height: 22px;
+  width: auto;
 }
 
 .app-header__subtitle {
@@ -77,7 +106,8 @@ h4 {
 
 .app-nav {
   display: flex;
-  gap: 6px;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 .app-nav__link {
@@ -85,8 +115,9 @@ h4 {
   border-radius: var(--radius-sm);
   text-decoration: none;
   color: var(--color-text-muted);
+  font-family: 'Barlow Semi Condensed', sans-serif;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .app-nav__link:hover {
@@ -94,8 +125,8 @@ h4 {
 }
 
 .app-nav__link--active {
-  background: var(--color-primary);
-  color: #fff;
+  background: var(--color-amber);
+  color: var(--color-black);
 }
 
 .app-main {
@@ -121,6 +152,7 @@ h4 {
 /* ---------- Section headers ---------- */
 
 .section-title {
+  font-family: 'Barlow Semi Condensed', sans-serif;
   font-size: 18px;
   font-weight: 700;
 }
@@ -187,6 +219,17 @@ h4 {
   transform: translateY(-1px);
 }
 
+/* Rojo/verde: únicamente como indicador de "necesita atención" o "bien". */
+.order-card--overdue {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.order-card--good {
+  border-color: var(--color-good);
+  background: var(--color-good-soft);
+}
+
 .order-card__top {
   display: flex;
   align-items: center;
@@ -200,6 +243,7 @@ h4 {
 }
 
 .order-card__client {
+  font-family: 'Barlow Semi Condensed', sans-serif;
   font-size: 16px;
   font-weight: 700;
 }
@@ -227,6 +271,10 @@ h4 {
   color: var(--color-danger);
 }
 
+.order-card__due--good {
+  color: var(--color-good);
+}
+
 .order-card__footer {
   font-size: 12px;
   color: var(--color-text-muted);
@@ -241,16 +289,33 @@ h4 {
   align-items: center;
   padding: 3px 10px;
   border-radius: 999px;
+  font-family: 'Barlow Semi Condensed', sans-serif;
   font-size: 12px;
-  font-weight: 600;
-  color: #fff;
-  background: var(--badge-color, var(--color-primary));
+  font-weight: 700;
   white-space: nowrap;
 }
 
+/* Estado "en proceso": negro con texto ámbar, uniforme para las 5 etapas
+   previas a completado (no son indicadores de bien/mal, solo la etapa). */
+.badge--status {
+  background: var(--color-black);
+  color: var(--color-amber);
+}
+
+/* "Completado" sí es un indicador semántico ("bien" / terminado) → verde. */
+.badge--status-good {
+  background: var(--color-good);
+  color: #ffffff;
+}
+
 .badge--outline {
-  color: var(--badge-color, var(--color-text));
-  background: color-mix(in srgb, var(--badge-color, var(--color-text)) 12%, transparent);
+  color: var(--color-orange-strong);
+  background: var(--color-orange-soft);
+}
+
+.badge--pin {
+  background: var(--color-black);
+  color: var(--color-amber);
 }
 
 .chip {
@@ -258,15 +323,17 @@ h4 {
   background: var(--color-surface);
   border-radius: 999px;
   padding: 5px 12px;
+  font-family: 'Barlow Semi Condensed', sans-serif;
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   color: var(--color-text);
 }
 
 .chip--active {
-  background: var(--chip-color, var(--color-primary));
-  border-color: var(--chip-color, var(--color-primary));
-  color: #fff;
+  background: var(--color-amber);
+  border-color: var(--color-amber-strong);
+  color: var(--color-black);
 }
 
 /* ---------- Filters ---------- */
@@ -339,15 +406,31 @@ h4 {
   color: var(--color-text-muted);
 }
 
+.field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
 
+.form-row-3 {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: 16px;
+}
+
 .order-form__actions {
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
 }
 
 .form-error {
@@ -367,24 +450,55 @@ h4 {
   gap: 8px;
 }
 
+/* ---------- Tabs de tipo de orden ---------- */
+
+.type-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.type-tab {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.type-tab--active {
+  background: var(--color-amber);
+  border-color: var(--color-amber-strong);
+  color: var(--color-black);
+}
+
+.type-tab--add {
+  border-style: dashed;
+}
+
 /* ---------- Buttons ---------- */
 
 .btn {
   border: none;
   border-radius: var(--radius-sm);
   padding: 9px 16px;
+  font-family: 'Barlow Semi Condensed', sans-serif;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .btn--primary {
-  background: var(--color-primary);
-  color: #fff;
+  background: var(--color-black);
+  color: var(--color-amber);
 }
 
 .btn--primary:hover {
-  background: var(--color-primary-hover);
+  background: var(--color-black-hover);
 }
 
 .btn--primary:disabled {
@@ -398,10 +512,28 @@ h4 {
   border: 1px solid var(--color-border);
 }
 
+.btn--outline {
+  background: transparent;
+  color: var(--color-black);
+  border: 1.5px solid var(--color-black);
+}
+
 .btn--ghost {
   background: transparent;
   color: var(--color-text-muted);
   text-decoration: underline;
+  font-weight: 600;
+}
+
+.btn--small {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.page-subtitle {
+  margin: -20px 0 0;
+  color: var(--color-text-muted);
+  font-size: 14px;
 }
 
 /* ---------- Status stepper ---------- */
@@ -466,7 +598,7 @@ h4 {
 }
 
 .history-list__item {
-  border-left: 3px solid var(--color-primary);
+  border-left: 3px solid var(--color-black);
   padding-left: 12px;
 }
 
@@ -505,6 +637,7 @@ h4 {
 }
 
 .order-detail__number {
+  font-family: 'Barlow Semi Condensed', sans-serif;
   font-size: 22px;
 }
 
@@ -557,7 +690,7 @@ h4 {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--color-orange-strong);
   margin-bottom: 4px;
 }
 
@@ -655,7 +788,7 @@ h4 {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--dot-color);
+  background: var(--dot-color, var(--color-orange));
 }
 
 .calendar-legend__dot {
@@ -698,19 +831,6 @@ h4 {
   border-radius: 4px;
 }
 
-/* ---------- Botones pequeños ---------- */
-
-.btn--small {
-  padding: 5px 10px;
-  font-size: 12px;
-}
-
-.page-subtitle {
-  margin: -20px 0 0;
-  color: var(--color-text-muted);
-  font-size: 14px;
-}
-
 /* ---------- Fotos (picker + gallery) ---------- */
 
 .photo-picker__add,
@@ -730,8 +850,8 @@ h4 {
 }
 
 .photo-picker__add:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  border-color: var(--color-orange);
+  color: var(--color-orange-strong);
 }
 
 .photo-picker__grid,
@@ -787,6 +907,157 @@ h4 {
   font-size: 13px;
 }
 
+/* ---------- Prendas (OrderItemsEditor) ---------- */
+
+.items-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.item-block {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  background: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.item-block__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.item-block__title {
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.item-block__remove {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.item-block__remove:hover {
+  color: var(--color-danger);
+}
+
+.pantone-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.sizes-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sizes-row,
+.sizes-row-header {
+  display: grid;
+  grid-template-columns: 1fr 100px 28px;
+  gap: 8px;
+  align-items: center;
+}
+
+.sizes-row-header {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-weight: 700;
+}
+
+.sizes-row__remove {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+.sizes-row__remove:hover {
+  color: var(--color-danger);
+}
+
+.add-size-btn,
+.add-item-btn {
+  border: 1px dashed var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.add-size-btn:hover,
+.add-item-btn:hover {
+  border-color: var(--color-amber-strong);
+  color: var(--color-orange-strong);
+}
+
+.item-block__total {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+.item-block__total b {
+  color: var(--color-text);
+}
+
+.items-grand-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  background: var(--color-orange-soft);
+  border: 1px solid var(--color-orange);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+}
+
+.items-grand-total b {
+  font-size: 18px;
+  color: var(--color-orange-strong);
+  font-family: 'Barlow Semi Condensed', sans-serif;
+}
+
+/* ---------- Plantillas ---------- */
+
+.template-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.template-hint {
+  font-size: 12px;
+  color: var(--color-orange-strong);
+  margin: 0;
+}
+
 /* ---------- Anuncios ---------- */
 
 .announcement-list {
@@ -803,8 +1074,8 @@ h4 {
 }
 
 .announcement-card--pinned {
-  border-color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
+  border-color: var(--color-orange);
+  background: var(--color-orange-soft);
 }
 
 .announcement-card__top {
@@ -820,6 +1091,7 @@ h4 {
 }
 
 .announcement-card h3 {
+  font-family: 'Barlow Semi Condensed', sans-serif;
   font-size: 16px;
   margin: 0 0 4px;
 }
@@ -831,10 +1103,6 @@ h4 {
   white-space: pre-wrap;
 }
 
-.badge--pin {
-  background: var(--color-primary);
-}
-
 .announcement-form {
   margin: 14px 0;
 }
@@ -844,8 +1112,8 @@ h4 {
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
-  border: 1px solid var(--color-primary);
+  background: var(--color-orange-soft);
+  border: 1px solid var(--color-orange);
   border-radius: var(--radius-sm);
   text-decoration: none;
   color: var(--color-text);
@@ -855,7 +1123,7 @@ h4 {
 
 .announcement-banner__label {
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-orange-strong);
 }
 
 .announcement-banner__title {
@@ -916,6 +1184,7 @@ h4 {
 }
 
 .pending-card h3 {
+  font-family: 'Barlow Semi Condensed', sans-serif;
   font-size: 15px;
   margin: 0 0 4px;
 }
@@ -930,6 +1199,7 @@ h4 {
 
 @media (max-width: 720px) {
   .form-row,
+  .form-row-3,
   .order-detail__grid {
     grid-template-columns: 1fr;
   }

@@ -68,11 +68,7 @@ function RowCells({ order, orderType, window, weeks, onClick }) {
       <div className="calendar-grid__row-label" onClick={onClick} role="button" tabIndex={0}>
         <strong>#{order.order_number}</strong>
         <span>{order.client_name}</span>
-        {orderType && (
-          <span className="calendar-grid__row-type" style={{ '--dot-color': orderType.color }}>
-            {orderType.label}
-          </span>
-        )}
+        {orderType && <span className="calendar-grid__row-type">{orderType.label}</span>}
       </div>
       {weeks.map((week) => {
         const active = rangesOverlap(window.start, window.end, week.start, week.end)

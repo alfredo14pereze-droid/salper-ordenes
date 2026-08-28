@@ -46,6 +46,17 @@ export async function uploadOrderPhotos(orderId, files) {
   return { data, error }
 }
 
+// Adjunta fotos que ya existen en Storage (ej. copiadas de una plantilla,
+// ver templatesService.copyTemplatePhotosToOrder) sin volver a subir
+// ningún archivo — solo registra el arreglo en orders.reference_photos.
+export async function attachExistingPhotos(orderId, photos) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  if (!photos || photos.length === 0) return { data: null, error: null }
+
+  return supabase.rpc('add_order_photos', { p_order_id: orderId, p_photos: photos }).single()
+}
+
 export async function removeOrderPhoto(orderId, photo) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }

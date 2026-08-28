@@ -17,7 +17,6 @@ export default function OrderFilters({ orderTypes, filters, onChange }) {
               key={type.key}
               type="button"
               className={'chip' + (filters.types.includes(type.key) ? ' chip--active' : '')}
-              style={{ '--chip-color': type.color }}
               onClick={() => toggleValue('types', type.key)}
             >
               {type.label}
@@ -34,7 +33,6 @@ export default function OrderFilters({ orderTypes, filters, onChange }) {
               key={status.key}
               type="button"
               className={'chip' + (filters.statuses.includes(status.key) ? ' chip--active' : '')}
-              style={{ '--chip-color': status.color }}
               onClick={() => toggleValue('statuses', status.key)}
             >
               {status.label}

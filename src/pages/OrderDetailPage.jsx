@@ -6,6 +6,7 @@ import StatusChanger from '../components/orders/StatusChanger'
 import StatusHistoryList from '../components/orders/StatusHistoryList'
 import TypeBadge from '../components/orders/TypeBadge'
 import PhotoGallery from '../components/orders/PhotoGallery'
+import OrderItemsCard from '../components/orders/OrderItemsCard'
 import ComingSoonCard from '../components/orders/ComingSoonCard'
 import { Loading, ErrorState } from '../components/common/States'
 import { formatDate, computeProductionWindow } from '../utils/dates'
@@ -69,6 +70,10 @@ export default function OrderDetailPage() {
 
         <section className="card">
           <StatusChanger order={order} onUpdated={refresh} />
+        </section>
+
+        <section className="card card--placeholders">
+          <OrderItemsCard order={order} onUpdated={refresh} />
         </section>
 
         <section className="card">

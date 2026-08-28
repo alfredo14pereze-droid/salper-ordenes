@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import Logo from './Logo'
 
 const navItems = [
   { to: '/', label: 'Dashboard', end: true },
@@ -13,7 +14,7 @@ export default function AppLayout({ children }) {
     <div className="app-shell">
       <header className="app-header">
         <div className="app-header__brand">
-          <span className="app-header__logo">SALPER</span>
+          <Logo />
           <span className="app-header__subtitle">Órdenes de producción</span>
         </div>
         <nav className="app-nav">

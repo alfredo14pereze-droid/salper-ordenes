@@ -2,14 +2,25 @@ import { useNavigate } from 'react-router-dom'
 import StatusBadge from './StatusBadge'
 import TypeBadge from './TypeBadge'
 import { formatDate, daysUntil } from '../../utils/dates'
+import { isCompleted } from '../../utils/status'
 
 export default function OrderCard({ order, orderType }) {
   const navigate = useNavigate()
   const days = daysUntil(order.requested_delivery_date)
+  const completed = isCompleted(order.status)
 
+  let cardClass = 'order-card'
   let dueClass = 'order-card__due'
   let dueLabel = `Entrega en ${days} días`
-  if (days < 0) {
+
+  if (completed) {
+    // Ya se completó: no tiene caso alarmar con "atrasada" — es un
+    // indicador de "bien" (verde), no de urgencia.
+    cardClass += ' order-card--good'
+    dueClass += ' order-card__due--good'
+    dueLabel = '✓ Completada'
+  } else if (days < 0) {
+    cardClass += ' order-card--overdue'
     dueClass += ' order-card__due--overdue'
     dueLabel = `Atrasada ${Math.abs(days)} día${Math.abs(days) === 1 ? '' : 's'}`
   } else if (days === 0) {
@@ -20,7 +31,7 @@ export default function OrderCard({ order, orderType }) {
   }
 
   return (
-    <article className="order-card" onClick={() => navigate(`/orden/${order.id}`)} role="button" tabIndex={0}>
+    <article className={cardClass} onClick={() => navigate(`/orden/${order.id}`)} role="button" tabIndex={0}>
       <div className="order-card__top">
         <span className="order-card__number">#{order.order_number}</span>
         <StatusBadge status={order.status} />
