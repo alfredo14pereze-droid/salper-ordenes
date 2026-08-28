@@ -79,23 +79,11 @@ h4 {
   gap: 12px;
 }
 
-/* Insignia: el logo vive en su propia placa negra (mientras no haya
-   logo real, es una placa con el texto "SALPER" en blanco). */
-.app-header__badge {
-  background: var(--color-black);
-  color: #ffffff;
-  font-family: 'Barlow Semi Condensed', sans-serif;
-  font-weight: 800;
-  font-size: 15px;
-  letter-spacing: 0.5px;
-  padding: 7px 14px;
-  border-radius: 8px;
-  line-height: 1;
-}
-
-.app-header__badge img {
+/* Logo real de SALPER: negro sobre transparente, directo sobre el nav
+   blanco (sin placa de fondo — el negro del logo ya hace ese trabajo). */
+.app-header__logo-img {
   display: block;
-  height: 22px;
+  height: 32px;
   width: auto;
 }
 
