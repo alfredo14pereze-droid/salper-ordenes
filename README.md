@@ -1,32 +1,35 @@
-# SALPER · Sistema de gestión de órdenes de producción (V1)
+# SALPER · Sistema de gestión de órdenes de producción
 
 App para reemplazar el seguimiento en papel de las órdenes de producción de
 SALPER (sublimación, uniformes escolares, industrial). Cualquiera con acceso
 al link puede ver en qué etapa va cada orden sin tener que preguntar.
 
-**Stack:** React + Vite (frontend) · Supabase (Postgres + API + realtime).
-Sin backend propio: el navegador habla directo con Supabase usando la
-"anon key" pública, protegida por Row Level Security y funciones RPC (ver
-`supabase/schema.sql`).
+**En vivo:** https://salper-ordenes.vercel.app
 
-> ⚠️ Nota de esta primera entrega: se escribió en un entorno sin Node.js
-> instalado, así que el código **no se pudo correr ni compilar aquí** para
-> verificarlo en vivo. Antes de darlo por bueno, sigue los pasos de
-> "Puesta en marcha local" abajo y revisa que `npm run dev` funcione sin
-> errores en tu máquina.
+**Stack:** React + Vite (frontend) · Supabase (Postgres + Storage + API +
+realtime). Sin backend propio: el navegador habla directo con Supabase
+usando la "anon key" pública, protegida por Row Level Security y funciones
+RPC (ver `supabase/schema.sql` y `supabase/schema_v2.sql`).
 
-## Funcionalidad de esta V1
+## Funcionalidad
 
 - **Dashboard**: todas las órdenes activas, sección "Próximas a surtir"
-  (ordenadas por fecha de entrega más cercana), filtros por tipo/estado/búsqueda.
+  (ordenadas por fecha de entrega más cercana), filtros por tipo/estado/búsqueda,
+  banner con el anuncio más reciente.
 - **Nueva orden**: número, cliente, tipo (con opción de crear tipos nuevos
-  al vuelo), descripción, fecha de entrega, tiempo estimado de producción.
+  al vuelo), descripción, fecha de entrega, tiempo estimado de producción,
+  fotos de referencia.
 - **Detalle de orden**: toda la info + cambio de estado + historial con
-  fecha/hora de cada cambio.
+  fecha/hora de cada cambio + galería de fotos (agregar/quitar).
 - **Calendario de producción**: vista semanal tipo Gantt calculada a partir
   de fecha de entrega − tiempo estimado, coloreada según el estado actual
   de cada orden.
-- **Tiempo real**: si alguien más cambia una orden, las demás pantallas
+- **Anuncios internos**: comunicados de la empresa, visibles para todos,
+  con opción de fijar los más importantes arriba.
+- **Pendientes**: cosas fuera del flujo de una orden de producción (una
+  reparación mandada a un taller externo, un trámite, una compra, etc.),
+  con checklist simple de pendiente/resuelto.
+- **Tiempo real**: si alguien más cambia algo, las demás pantallas
   abiertas se actualizan solas (Supabase Realtime), sin refrescar.
 
 Estados de una orden (fijos, en este orden):
@@ -35,13 +38,12 @@ Estados de una orden (fijos, en este orden):
 ## Preparado para después (no implementado todavía)
 
 Estas cosas ya tienen un lugar pensado en el modelo de datos o la
-estructura de carpetas, pero **no tienen UI ni lógica en V1**:
+estructura de carpetas, pero **no tienen UI ni lógica todavía**:
 
 | Función | Qué ya existe | Qué falta |
 |---|---|---|
 | Roles (admin/producción/consulta) | Comentario con tabla `profiles` sugerida en `schema.sql` | Login, tabla real, políticas RLS por rol |
 | Links compartibles por orden | Columna `orders.share_token` (uuid único) ya se genera para cada orden | Vista pública de solo lectura filtrando por ese token |
-| Fotos de especificación | Columna `orders.reference_photos` (jsonb, arreglo de `{url, caption}`) | Input de subida (Supabase Storage) + galería en el detalle |
 | Notificaciones | Comentario con tabla `notifications` sugerida en `schema.sql` | Trigger/servicio que dispare avisos (email, WhatsApp, etc.) |
 
 ## Estructura del proyecto
@@ -59,13 +61,14 @@ src/
     common/       # loading/error/empty states, pantalla de config faltante
   pages/          # una página por ruta (Dashboard, Nueva orden, Detalle, Calendario)
 supabase/
-  schema.sql      # todo el esquema: tablas, funciones RPC, RLS, realtime
+  schema.sql      # esquema base: órdenes, tipos, historial, RLS, realtime
+  schema_v2.sql   # fotos (Storage), anuncios, pendientes
 ```
 
-La idea de esta separación: para agregar roles, fotos o notificaciones más
-adelante, normalmente solo se toca `services/` + una tabla nueva en
-`schema.sql`, y se agrega un componente/página — sin tener que reescribir
-el resto.
+La idea de esta separación: para agregar roles o notificaciones más
+adelante, normalmente solo se toca `services/` + una tabla nueva en un
+`schema_v3.sql`, y se agrega un componente/página — sin tener que
+reescribir el resto.
 
 ## Puesta en marcha local
 
@@ -84,6 +87,10 @@ el contenido de [`supabase/schema.sql`](supabase/schema.sql). Esto crea las
 tablas, los tipos de orden iniciales (sublimación/escolar/industrial), las
 funciones de creación/cambio de estado, las políticas de seguridad y
 habilita realtime.
+
+Después, corre también [`supabase/schema_v2.sql`](supabase/schema_v2.sql)
+(agrega el bucket de Storage para fotos, y las tablas de anuncios y
+pendientes).
 
 Finalmente:
 

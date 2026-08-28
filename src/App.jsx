@@ -5,6 +5,8 @@ import DashboardPage from './pages/DashboardPage'
 import NewOrderPage from './pages/NewOrderPage'
 import OrderDetailPage from './pages/OrderDetailPage'
 import CalendarPage from './pages/CalendarPage'
+import AnnouncementsPage from './pages/AnnouncementsPage'
+import PendingItemsPage from './pages/PendingItemsPage'
 import { isSupabaseConfigured } from './lib/supabaseClient'
 
 // HashRouter (en vez de BrowserRouter) para que las rutas funcionen igual
@@ -22,6 +24,8 @@ export default function App() {
           <Route path="/nueva" element={<NewOrderPage />} />
           <Route path="/orden/:id" element={<OrderDetailPage />} />
           <Route path="/calendario" element={<CalendarPage />} />
+          <Route path="/anuncios" element={<AnnouncementsPage />} />
+          <Route path="/pendientes" element={<PendingItemsPage />} />
         </Routes>
       </AppLayout>
     </HashRouter>

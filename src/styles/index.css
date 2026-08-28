@@ -698,6 +698,234 @@ h4 {
   border-radius: 4px;
 }
 
+/* ---------- Botones pequeños ---------- */
+
+.btn--small {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.page-subtitle {
+  margin: -20px 0 0;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+/* ---------- Fotos (picker + gallery) ---------- */
+
+.photo-picker__add,
+.photo-gallery__header label {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.photo-picker__add {
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  width: fit-content;
+}
+
+.photo-picker__add:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.photo-picker__grid,
+.photo-gallery__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.photo-picker__thumb,
+.photo-gallery__thumb {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.photo-picker__thumb img,
+.photo-gallery__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photo-picker__thumb button,
+.photo-gallery__thumb button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  cursor: pointer;
+  line-height: 1;
+  font-size: 14px;
+}
+
+.photo-gallery__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.photo-gallery__empty {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+/* ---------- Anuncios ---------- */
+
+.announcement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.announcement-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.announcement-card--pinned {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
+}
+
+.announcement-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.announcement-card__date {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.announcement-card h3 {
+  font-size: 16px;
+  margin: 0 0 4px;
+}
+
+.announcement-card p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--color-text);
+  white-space: pre-wrap;
+}
+
+.badge--pin {
+  background: var(--color-primary);
+}
+
+.announcement-form {
+  margin: 14px 0;
+}
+
+.announcement-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--color-text);
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.announcement-banner__label {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.announcement-banner__title {
+  font-weight: 600;
+  flex: 1;
+}
+
+.announcement-banner__date {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+/* ---------- Pendientes ---------- */
+
+.pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pending-card {
+  display: flex;
+  gap: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+
+.pending-card--resolved {
+  opacity: 0.55;
+}
+
+.pending-card--resolved h3 {
+  text-decoration: line-through;
+}
+
+.pending-card__checkbox input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+}
+
+.pending-card__body {
+  flex: 1;
+}
+
+.pending-card__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.pending-card__date {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.pending-card h3 {
+  font-size: 15px;
+  margin: 0 0 4px;
+}
+
+.pending-card p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 720px) {

@@ -4,6 +4,8 @@ const navItems = [
   { to: '/', label: 'Dashboard', end: true },
   { to: '/nueva', label: 'Nueva orden' },
   { to: '/calendario', label: 'Calendario' },
+  { to: '/pendientes', label: 'Pendientes' },
+  { to: '/anuncios', label: 'Anuncios' },
 ]
 
 export default function AppLayout({ children }) {

@@ -7,3 +7,5 @@ dist
 # Específicos de esta máquina/sesión (no parte del proyecto):
 .claude/
 dev.sh
+.vercel
+.env*

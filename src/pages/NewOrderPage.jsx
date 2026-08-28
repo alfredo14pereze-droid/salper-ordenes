@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOrderTypes } from '../hooks/useOrderTypes'
 import { createOrder } from '../services/ordersService'
+import { uploadOrderPhotos } from '../services/photosService'
 import OrderTypeSelect from '../components/orders/OrderTypeSelect'
+import PhotoPicker from '../components/orders/PhotoPicker'
 import { Loading, ErrorState } from '../components/common/States'
 
 const initialForm = {
@@ -17,6 +19,7 @@ const initialForm = {
 export default function NewOrderPage() {
   const { orderTypes, loading, error, refresh } = useOrderTypes()
   const [form, setForm] = useState(initialForm)
+  const [photoFiles, setPhotoFiles] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
   const navigate = useNavigate()
@@ -45,9 +48,8 @@ export default function NewOrderPage() {
       estimatedProductionDays: Number(form.estimatedProductionDays) || 1,
     })
 
-    setSubmitting(false)
-
     if (createError) {
+      setSubmitting(false)
       // 23505 = violación de unique constraint (order_number duplicado)
       if (createError.code === '23505' || /duplicate/i.test(createError.message || '')) {
         setSubmitError(new Error(`Ya existe una orden con el número "${form.orderNumber}".`))
@@ -55,6 +57,20 @@ export default function NewOrderPage() {
         setSubmitError(createError)
       }
       return
+    }
+
+    // La orden ya existe (tiene id): si el usuario eligió fotos, se suben
+    // ahora. Si esto falla, no se cancela la creación de la orden — se
+    // puede reintentar la subida desde el detalle (PhotoGallery).
+    if (photoFiles.length > 0) {
+      const { error: uploadError } = await uploadOrderPhotos(data.id, photoFiles)
+      setSubmitting(false)
+      if (uploadError) {
+        navigate(`/orden/${data.id}`, { state: { photoUploadError: uploadError.message } })
+        return
+      }
+    } else {
+      setSubmitting(false)
     }
 
     navigate(`/orden/${data.id}`)
@@ -134,12 +150,10 @@ export default function NewOrderPage() {
           />
         </label>
 
-        {/*
-          Preparado para el futuro: fotos de referencia. El campo
-          orders.reference_photos (jsonb) ya existe en la base de datos;
-          solo falta agregar aquí un input de subida de archivos y
-          guardarlas ahí cuando se implemente.
-        */}
+        <label>
+          Fotos de referencia
+          <PhotoPicker files={photoFiles} onChange={setPhotoFiles} />
+        </label>
 
         {submitError && <p className="form-error">{submitError.message}</p>}
 

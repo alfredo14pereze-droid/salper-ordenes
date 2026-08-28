@@ -5,6 +5,7 @@ import { isActiveStatus } from '../utils/status'
 import OrderCard from '../components/orders/OrderCard'
 import OrderFilters from '../components/orders/OrderFilters'
 import UpcomingOrders from '../components/orders/UpcomingOrders'
+import AnnouncementBanner from '../components/announcements/AnnouncementBanner'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 
 const emptyFilters = { types: [], statuses: [], search: '' }
@@ -40,6 +41,8 @@ export default function DashboardPage() {
 
   return (
     <div className="page">
+      <AnnouncementBanner />
+
       <UpcomingOrders orders={upcoming} typesByKey={typesByKey} />
 
       <section className="dashboard-all-orders">

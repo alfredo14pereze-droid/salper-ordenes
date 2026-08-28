@@ -1,16 +1,18 @@
-import { useParams, Link } from 'react-router-dom'
+import { useParams, useLocation, Link } from 'react-router-dom'
 import { useOrder } from '../hooks/useOrder'
 import { useOrderTypes } from '../hooks/useOrderTypes'
 import StatusStepper from '../components/orders/StatusStepper'
 import StatusChanger from '../components/orders/StatusChanger'
 import StatusHistoryList from '../components/orders/StatusHistoryList'
 import TypeBadge from '../components/orders/TypeBadge'
+import PhotoGallery from '../components/orders/PhotoGallery'
 import ComingSoonCard from '../components/orders/ComingSoonCard'
 import { Loading, ErrorState } from '../components/common/States'
 import { formatDate, computeProductionWindow } from '../utils/dates'
 
 export default function OrderDetailPage() {
   const { id } = useParams()
+  const location = useLocation()
   const { order, history, loading, error, refresh } = useOrder(id)
   const { typesByKey } = useOrderTypes()
 
@@ -74,11 +76,17 @@ export default function OrderDetailPage() {
           <StatusHistoryList history={history} />
         </section>
 
+        <section className="card">
+          {location.state?.photoUploadError && (
+            <p className="form-error">
+              La orden se creó, pero hubo un problema subiendo las fotos: {location.state.photoUploadError}.
+              Puedes intentarlo de nuevo aquí abajo.
+            </p>
+          )}
+          <PhotoGallery order={order} onUpdated={refresh} />
+        </section>
+
         <section className="card card--placeholders">
-          <ComingSoonCard
-            title="Fotos de especificación"
-            description="Aquí se podrán adjuntar fotos de referencia del producto (el campo ya existe en la base de datos)."
-          />
           <ComingSoonCard
             title="Link compartible"
             description="Cada orden ya tiene un token único listo para generar un link de solo lectura sin necesidad de iniciar sesión."
