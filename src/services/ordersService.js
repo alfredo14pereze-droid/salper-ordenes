@@ -39,9 +39,10 @@ export async function fetchOrderHistory(orderId) {
 // Crea la orden y su primer registro de historial en una sola transacción
 // (ver función SQL create_order en supabase/schema.sql). `items` es el
 // arreglo de prendas (ver OrderItemsEditor) — opcional, por si se crea la
-// orden sin especificarlas todavía.
+// orden sin especificarlas todavía. El folio (order_number) ya NO se manda
+// desde aquí: lo asigna automáticamente un trigger en la base de datos
+// (ver supabase/schema_v5_folios.sql).
 export async function createOrder({
-  orderNumber,
   clientName,
   orderTypeKey,
   description,
@@ -54,7 +55,6 @@ export async function createOrder({
 
   return supabase
     .rpc('create_order', {
-      p_order_number: orderNumber,
       p_client_name: clientName,
       p_order_type_key: orderTypeKey,
       p_description: description || null,

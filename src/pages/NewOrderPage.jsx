@@ -14,7 +14,6 @@ import { canCreateOrder } from '../utils/permissions'
 import { Loading, ErrorState } from '../components/common/States'
 
 const initialForm = {
-  orderNumber: '',
   clientName: '',
   orderTypeKey: '',
   description: '',
@@ -65,8 +64,8 @@ function NewOrderForm() {
   async function handleSubmit(e) {
     e.preventDefault()
 
-    if (!form.orderNumber.trim() || !form.clientName.trim() || !form.orderTypeKey || !form.requestedDeliveryDate) {
-      setSubmitError(new Error('Completa los campos requeridos: número de orden, cliente, tipo y fecha de entrega.'))
+    if (!form.clientName.trim() || !form.orderTypeKey || !form.requestedDeliveryDate) {
+      setSubmitError(new Error('Completa los campos requeridos: cliente, tipo y fecha de entrega.'))
       return
     }
 
@@ -83,7 +82,6 @@ function NewOrderForm() {
       }))
 
     const { data, error: createError } = await createOrder({
-      orderNumber: form.orderNumber.trim(),
       clientName: form.clientName.trim(),
       orderTypeKey: form.orderTypeKey,
       description: form.description.trim(),
@@ -94,12 +92,7 @@ function NewOrderForm() {
 
     if (createError) {
       setSubmitting(false)
-      // 23505 = violación de unique constraint (order_number duplicado)
-      if (createError.code === '23505' || /duplicate/i.test(createError.message || '')) {
-        setSubmitError(new Error(`Ya existe una orden con el número "${form.orderNumber}".`))
-      } else {
-        setSubmitError(createError)
-      }
+      setSubmitError(createError)
       return
     }
 
@@ -143,28 +136,16 @@ function NewOrderForm() {
       <form className="order-form" onSubmit={handleSubmit}>
         <TemplatePicker templates={templates} onApply={handleApplyTemplate} />
 
-        <div className="form-row">
-          <label>
-            Número de orden *
-            <input
-              type="text"
-              className="input"
-              value={form.orderNumber}
-              onChange={(e) => updateField('orderNumber', e.target.value)}
-              placeholder="Ej. 2026-0148"
-            />
-          </label>
-          <label>
-            Cliente *
-            <input
-              type="text"
-              className="input"
-              value={form.clientName}
-              onChange={(e) => updateField('clientName', e.target.value)}
-              placeholder="Nombre del cliente"
-            />
-          </label>
-        </div>
+        <label>
+          Cliente *
+          <input
+            type="text"
+            className="input"
+            value={form.clientName}
+            onChange={(e) => updateField('clientName', e.target.value)}
+            placeholder="Nombre del cliente"
+          />
+        </label>
 
         <div>
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
