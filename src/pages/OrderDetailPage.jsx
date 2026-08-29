@@ -20,22 +20,25 @@ export default function OrderDetailPage() {
   const location = useLocation()
   const { order, history, loading, error, refresh } = useOrder(id)
   const { orderTypes, typesByKey } = useOrderTypes()
-  const [generatingPdf, setGeneratingPdf] = useState(false)
+  const [generatingPdf, setGeneratingPdf] = useState(null) // null | 'interno' | 'cliente'
   const [pdfError, setPdfError] = useState(null)
 
   if (loading) return <Loading label="Cargando orden…" />
   if (error) return <ErrorState error={error} onRetry={refresh} />
   if (!order) return <ErrorState error={new Error('Esta orden no existe.')} />
 
-  async function handleDownloadPdf() {
-    setGeneratingPdf(true)
+  async function handleDownloadPdf(variant) {
+    setGeneratingPdf(variant)
     setPdfError(null)
     try {
-      await downloadOrderConfirmationPdf(order, { orderTypeLabel: typesByKey[order.order_type_key]?.label })
+      await downloadOrderConfirmationPdf(order, {
+        orderTypeLabel: typesByKey[order.order_type_key]?.label,
+        variant,
+      })
     } catch (err) {
       setPdfError(err)
     } finally {
-      setGeneratingPdf(false)
+      setGeneratingPdf(null)
     }
   }
 
@@ -53,8 +56,21 @@ export default function OrderDetailPage() {
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {order.cancelled_at && <span className="badge badge--danger">Cancelada</span>}
           <TypeBadge type={typesByKey[order.order_type_key]} />
-          <button type="button" className="btn btn--ghost" onClick={handleDownloadPdf} disabled={generatingPdf}>
-            {generatingPdf ? 'Generando…' : 'Descargar PDF'}
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => handleDownloadPdf('interno')}
+            disabled={!!generatingPdf}
+          >
+            {generatingPdf === 'interno' ? 'Generando…' : 'Descargar PDF'}
+          </button>
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => handleDownloadPdf('cliente')}
+            disabled={!!generatingPdf}
+          >
+            {generatingPdf === 'cliente' ? 'Generando…' : 'PDF para cliente'}
           </button>
         </div>
       </div>

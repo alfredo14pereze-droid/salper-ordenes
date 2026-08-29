@@ -7,6 +7,12 @@ import logo from '../../assets/salper-logo.png'
 // prendas/tallas/colores). Se genera con @react-pdf/renderer, tamaño
 // carta vertical, siguiendo la identidad visual de la app (fondo blanco,
 // texto negro, acentos en ámbar/naranja).
+//
+// Hay dos variantes del mismo documento (mismo componente, mismos datos):
+// - "interno": todo, incluyendo el tiempo estimado de producción — para
+//   uso de SALPER.
+// - "cliente": lo mismo pero sin el tiempo estimado de producción — para
+//   mandarle al cliente.
 
 const COLOR_INK = '#1a1a1a'
 const COLOR_MUTED = '#6b6558'
@@ -121,7 +127,8 @@ function InfoField({ label, value }) {
   )
 }
 
-export default function OrderConfirmationPdf({ order, orderTypeLabel }) {
+export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 'interno' }) {
+  const isInternal = variant === 'interno'
   const items = order.items || []
   const grandTotal = items.reduce(
     (sum, item) => sum + (item.sizes || []).reduce((s, sz) => s + (Number(sz.cantidad) || 0), 0),
@@ -135,7 +142,7 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel }) {
         <View style={styles.header}>
           <Image src={logo} style={styles.logo} />
           <View style={styles.headerRight}>
-            <Text style={styles.docTitle}>ORDEN DE PRODUCCIÓN</Text>
+            <Text style={styles.docTitle}>{isInternal ? 'ORDEN DE PRODUCCIÓN' : 'CONFIRMACIÓN DE PEDIDO'}</Text>
             <View style={styles.folioBox}>
               <Text style={styles.folioValue}>{order.order_number}</Text>
             </View>
@@ -149,7 +156,9 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel }) {
             <InfoField label="Cliente" value={order.client_name} />
             <InfoField label="Tipo de orden" value={orderTypeLabel || order.order_type_key} />
             <InfoField label="Fecha de entrega solicitada" value={formatDate(order.requested_delivery_date)} />
-            <InfoField label="Tiempo estimado de producción" value={`${order.estimated_production_days} día(s)`} />
+            {isInternal && (
+              <InfoField label="Tiempo estimado de producción" value={`${order.estimated_production_days} día(s)`} />
+            )}
           </View>
           {!!order.description && (
             <View style={{ marginTop: 4 }}>
