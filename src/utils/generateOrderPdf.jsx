@@ -5,8 +5,8 @@ import OrderConfirmationPdf from '../components/pdf/OrderConfirmationPdf'
 // navegador (se usa tanto al crear una orden nueva como desde el botón
 // "Descargar PDF" en el detalle). No depende de una vista renderizada: crea
 // el documento en memoria con @react-pdf/renderer y lo baja como blob.
-export async function downloadOrderConfirmationPdf(order) {
-  const blob = await pdf(<OrderConfirmationPdf order={order} />).toBlob()
+export async function downloadOrderConfirmationPdf(order, { orderTypeLabel } = {}) {
+  const blob = await pdf(<OrderConfirmationPdf order={order} orderTypeLabel={orderTypeLabel} />).toBlob()
   const url = URL.createObjectURL(blob)
 
   const link = document.createElement('a')

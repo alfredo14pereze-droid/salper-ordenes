@@ -8,7 +8,6 @@ import StatusHistoryList from '../components/orders/StatusHistoryList'
 import TypeBadge from '../components/orders/TypeBadge'
 import PhotoGallery from '../components/orders/PhotoGallery'
 import OrderItemsCard from '../components/orders/OrderItemsCard'
-import OrderSheetCard from '../components/orders/OrderSheetCard'
 import OrderDetailsCard from '../components/orders/OrderDetailsCard'
 import EstimatedDaysCard from '../components/orders/EstimatedDaysCard'
 import CancelOrderCard from '../components/orders/CancelOrderCard'
@@ -32,7 +31,7 @@ export default function OrderDetailPage() {
     setGeneratingPdf(true)
     setPdfError(null)
     try {
-      await downloadOrderConfirmationPdf(order)
+      await downloadOrderConfirmationPdf(order, { orderTypeLabel: typesByKey[order.order_type_key]?.label })
     } catch (err) {
       setPdfError(err)
     } finally {
@@ -75,10 +74,6 @@ export default function OrderDetailPage() {
 
         <section className="card card--placeholders">
           <OrderItemsCard order={order} onUpdated={refresh} />
-        </section>
-
-        <section className="card card--placeholders">
-          <OrderSheetCard order={order} onUpdated={refresh} />
         </section>
 
         <section className="card">

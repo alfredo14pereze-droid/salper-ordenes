@@ -1,285 +1,200 @@
-import { Document, Page, View, Text, Image, Svg, Path, StyleSheet } from '@react-pdf/renderer'
+import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
 import logo from '../../assets/salper-logo.png'
-import { ORDER_SHEET_SIZES, emptyOrderSheetSection } from '../../lib/constants'
 
-// PDF de confirmación de orden — réplica de la hoja física de taller de
-// SALPER. Se genera con @react-pdf/renderer, tamaño carta vertical.
-//
-// ⚠️ Domicilio / teléfonos / correo de la empresa: el usuario pidió
-// dejarlos en blanco por ahora (se llenarán aquí a mano cuando los tenga).
-const COMPANY = {
-  name: 'SALPER, S.A. DE C.V.',
-  address: '', // TODO: domicilio exacto
-  phones: '', // TODO: teléfono(s) exacto(s)
-  email: '', // TODO: correo exacto
-}
+// PDF de confirmación de orden — versión simple: logo, folio (asignado
+// automáticamente por la base de datos) y la información que ya se llenó
+// en el formulario de "Nueva orden" (cliente, tipo, fechas, descripción,
+// prendas/tallas/colores). Se genera con @react-pdf/renderer, tamaño
+// carta vertical, siguiendo la identidad visual de la app (fondo blanco,
+// texto negro, acentos en ámbar/naranja).
 
 const COLOR_INK = '#1a1a1a'
-const COLOR_BORDER = '#1a1a1a'
-const COLOR_RED = '#c1272d'
-const COLOR_BG = '#fafaf5'
-const COLOR_FILL = '#111111'
+const COLOR_MUTED = '#6b6558'
+const COLOR_BORDER = '#dcd6c8'
+const COLOR_AMBER = '#ffc93c'
+const COLOR_ORANGE = '#e8720c'
 
 const styles = StyleSheet.create({
   page: {
-    backgroundColor: COLOR_BG,
+    backgroundColor: '#ffffff',
     color: COLOR_INK,
-    fontFamily: 'Times-Roman',
-    fontSize: 8,
-    padding: 24,
+    fontFamily: 'Helvetica',
+    fontSize: 9.5,
+    padding: 32,
   },
-  // ---- Encabezado ----
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  headerLeft: {
-    flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
-    flex: 1.4,
+    marginBottom: 22,
   },
-  logo: { width: 60, height: 60, objectFit: 'contain' },
-  companyInfo: { gap: 1.5 },
-  companyName: { fontFamily: 'Times-Bold', fontSize: 11 },
-  companyLine: { fontSize: 7.5, color: COLOR_INK },
-  headerRight: { flex: 1, alignItems: 'flex-end', gap: 6 },
+  logo: { width: 70, height: 70, objectFit: 'contain' },
+  headerRight: { alignItems: 'flex-end' },
+  docTitle: { fontFamily: 'Helvetica-Bold', fontSize: 10, color: COLOR_MUTED, letterSpacing: 1 },
   folioBox: {
-    border: `1.4pt solid ${COLOR_RED}`,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    alignItems: 'center',
-    minWidth: 130,
+    backgroundColor: COLOR_AMBER,
+    paddingVertical: 5,
+    paddingHorizontal: 14,
+    marginTop: 6,
   },
-  folioLabel: { fontSize: 7, letterSpacing: 1, color: COLOR_RED },
-  folioValue: { fontFamily: 'Times-Bold', fontSize: 20, color: COLOR_RED },
-  workOrderBox: {
-    border: `1pt solid ${COLOR_BORDER}`,
-    paddingVertical: 3,
-    paddingHorizontal: 10,
-    minWidth: 130,
-    alignItems: 'center',
-  },
-  workOrderText: { fontFamily: 'Times-Bold', fontSize: 8.5, textAlign: 'center' },
-  dateLine: { fontFamily: 'Times-Italic', fontSize: 9, minWidth: 130, textAlign: 'right' },
+  folioValue: { fontFamily: 'Helvetica-Bold', fontSize: 20, color: COLOR_INK },
+  createdAt: { fontSize: 8, color: COLOR_MUTED, marginTop: 4 },
 
-  // ---- Cuerpo: dos columnas ----
-  body: { flexDirection: 'row', gap: 10 },
-  bodyLeft: { flex: 1.5, gap: 8 },
-  bodyRight: { flex: 1, alignItems: 'center', gap: 14, paddingTop: 6 },
-
-  section: { border: `1pt solid ${COLOR_BORDER}`, padding: 6 },
+  section: { marginBottom: 16 },
   sectionTitle: {
-    fontFamily: 'Times-Bold',
+    fontFamily: 'Helvetica-Bold',
     fontSize: 9,
-    textAlign: 'center',
-    marginBottom: 5,
+    color: COLOR_ORANGE,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
+    marginBottom: 8,
+    borderBottom: `1pt solid ${COLOR_BORDER}`,
+    paddingBottom: 4,
   },
-  fieldGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4 },
-  field: { width: '33.33%', flexDirection: 'row', marginBottom: 3, paddingRight: 4 },
-  fieldLabel: { fontFamily: 'Times-Bold', fontSize: 6.5 },
-  fieldValue: {
-    fontSize: 7.5,
-    flex: 1,
-    borderBottomWidth: 0.6,
-    borderBottomColor: COLOR_BORDER,
-    marginLeft: 3,
-    minHeight: 9,
+
+  infoGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  infoField: { width: '50%', marginBottom: 8, paddingRight: 10 },
+  infoLabel: { fontSize: 7.5, color: COLOR_MUTED, textTransform: 'uppercase', letterSpacing: 0.5 },
+  infoValue: { fontSize: 10, marginTop: 2 },
+
+  descriptionBox: { fontSize: 9.5, lineHeight: 1.4 },
+
+  itemCard: {
+    border: `1pt solid ${COLOR_BORDER}`,
+    borderRadius: 3,
+    padding: 10,
+    marginBottom: 8,
   },
-  sizesRow: { flexDirection: 'row', marginTop: 2 },
-  sizeCell: {
-    flex: 1,
-    border: `0.6pt solid ${COLOR_BORDER}`,
+  itemHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+  itemName: { fontFamily: 'Helvetica-Bold', fontSize: 10.5 },
+  itemMeta: { fontSize: 8.5, color: COLOR_MUTED },
+  sizesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  sizeChip: {
+    flexDirection: 'row',
+    border: `0.8pt solid ${COLOR_BORDER}`,
+    borderRadius: 2,
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    gap: 4,
+  },
+  sizeChipTalla: { fontFamily: 'Helvetica-Bold', fontSize: 8.5 },
+  sizeChipCantidad: { fontSize: 8.5, color: COLOR_MUTED },
+  itemTotal: { fontSize: 8.5, marginTop: 6, textAlign: 'right', color: COLOR_MUTED },
+  itemTotal_b: { fontFamily: 'Helvetica-Bold', color: COLOR_INK },
+
+  grandTotal: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 2,
+    backgroundColor: '#fdf2e0',
+    borderLeft: `3pt solid ${COLOR_ORANGE}`,
+    padding: 10,
+    marginTop: 4,
   },
-  sizeCellMarked: { backgroundColor: COLOR_FILL },
-  sizeNumber: { fontSize: 6.5, fontFamily: 'Times-Bold' },
-  sizeNumberMarked: { color: COLOR_BG },
-  sizeQty: { fontSize: 6, marginTop: 1 },
-  sizeQtyMarked: { color: COLOR_BG },
+  grandTotalLabel: { fontSize: 9.5 },
+  grandTotalValue: { fontFamily: 'Helvetica-Bold', fontSize: 15, color: COLOR_ORANGE },
 
-  illustrationLabel: { fontSize: 7, fontFamily: 'Times-Italic' },
-
-  // ---- Pie ----
-  footer: { marginTop: 10, borderTop: `1pt solid ${COLOR_BORDER}`, paddingTop: 8, gap: 6 },
-  footerRow: { flexDirection: 'row', gap: 16 },
-  footerField: { flexDirection: 'row', flex: 1, alignItems: 'flex-end' },
-  footerLabel: { fontFamily: 'Times-Bold', fontSize: 7.5 },
-  footerValue: {
+  footnote: {
+    marginTop: 18,
     fontSize: 8,
-    flex: 1,
-    borderBottomWidth: 0.6,
-    borderBottomColor: COLOR_BORDER,
-    marginLeft: 4,
-    minHeight: 10,
+    fontStyle: 'italic',
+    color: COLOR_MUTED,
+    textAlign: 'center',
+    borderTop: `1pt solid ${COLOR_BORDER}`,
+    paddingTop: 10,
   },
-  signatureBlock: { marginTop: 14, alignItems: 'center' },
-  signatureLine: { borderTopWidth: 0.8, borderTopColor: COLOR_BORDER, width: 220, marginBottom: 3 },
-  signatureCaption: { fontSize: 7, fontFamily: 'Times-Bold' },
-  footnote: { marginTop: 10, fontSize: 7, fontFamily: 'Times-Italic', textAlign: 'center', color: COLOR_RED },
 })
 
 function formatDate(value) {
-  if (!value) return ''
+  if (!value) return '—'
   const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })
 }
 
-function Field({ label, value }) {
+function InfoField({ label, value }) {
   return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}:</Text>
-      <Text style={styles.fieldValue}>{value || ''}</Text>
+    <View style={styles.infoField}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value || '—'}</Text>
     </View>
   )
 }
 
-function FooterField({ label, value }) {
-  return (
-    <View style={styles.footerField}>
-      <Text style={styles.footerLabel}>{label}:</Text>
-      <Text style={styles.footerValue}>{value || ''}</Text>
-    </View>
+export default function OrderConfirmationPdf({ order, orderTypeLabel }) {
+  const items = order.items || []
+  const grandTotal = items.reduce(
+    (sum, item) => sum + (item.sizes || []).reduce((s, sz) => s + (Number(sz.cantidad) || 0), 0),
+    0
   )
-}
-
-function SizesRow({ sizes }) {
-  return (
-    <View style={styles.sizesRow}>
-      {ORDER_SHEET_SIZES.map((size) => {
-        const qty = sizes?.[size]
-        const marked = qty !== undefined && qty !== null && String(qty).trim() !== ''
-        return (
-          <View key={size} style={[styles.sizeCell, marked && styles.sizeCellMarked]}>
-            <Text style={[styles.sizeNumber, marked && styles.sizeNumberMarked]}>{size}</Text>
-            <Text style={[styles.sizeQty, marked && styles.sizeQtyMarked]}>{marked ? qty : ''}</Text>
-          </View>
-        )
-      })}
-    </View>
-  )
-}
-
-function GarmentSection({ title, section }) {
-  const s = section || emptyOrderSheetSection()
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={styles.fieldGrid}>
-        <Field label="Cliente" value={s.cliente} />
-        <Field label="Color" value={s.color} />
-        <Field label="Manga" value={s.manga} />
-        <Field label="Vivos" value={s.vivos} />
-        <Field label="Cuello" value={s.cuello} />
-        <Field label="Puños" value={s.punos} />
-        <Field label="Tela" value={s.tela} />
-        <Field label="Logotipos" value={s.logotipos} />
-        <Field label="Números" value={s.numeros} />
-      </View>
-      <SizesRow sizes={s.sizes} />
-    </View>
-  )
-}
-
-// Ilustraciones de línea simples (no son un facsímil exacto de la hoja
-// física — son un dibujo esquemático de referencia para marcar detalles).
-function ShirtIllustration() {
-  return (
-    <Svg width="90" height="100" viewBox="0 0 100 110">
-      <Path
-        d="M32,8 L44,8 L50,16 L56,8 L68,8 L88,26 L76,40 L68,32 L68,102 L32,102 L32,32 L24,40 L12,26 Z"
-        stroke={COLOR_INK}
-        strokeWidth={1.4}
-        fill="none"
-      />
-    </Svg>
-  )
-}
-
-function ShortsIllustration() {
-  return (
-    <Svg width="90" height="90" viewBox="0 0 100 100">
-      <Path
-        d="M16,6 L84,6 L84,52 L62,52 L59,94 L47,94 L50,52 L50,52 L41,52 L44,94 L32,94 L29,52 L16,52 Z"
-        stroke={COLOR_INK}
-        strokeWidth={1.4}
-        fill="none"
-      />
-    </Svg>
-  )
-}
-
-export default function OrderConfirmationPdf({ order }) {
-  const sheet = order.order_sheet || {}
   const pending = order.status === 'en_confirmacion'
 
   return (
     <Document title={`Orden ${order.order_number} · SALPER`}>
       <Page size="LETTER" style={styles.page}>
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Image src={logo} style={styles.logo} />
-            <View style={styles.companyInfo}>
-              <Text style={styles.companyName}>{COMPANY.name}</Text>
-              {!!COMPANY.address && <Text style={styles.companyLine}>{COMPANY.address}</Text>}
-              {!!COMPANY.phones && <Text style={styles.companyLine}>{COMPANY.phones}</Text>}
-              {!!COMPANY.email && <Text style={styles.companyLine}>{COMPANY.email}</Text>}
-            </View>
-          </View>
-
+          <Image src={logo} style={styles.logo} />
           <View style={styles.headerRight}>
+            <Text style={styles.docTitle}>ORDEN DE PRODUCCIÓN</Text>
             <View style={styles.folioBox}>
-              <Text style={styles.folioLabel}>FOLIO</Text>
               <Text style={styles.folioValue}>{order.order_number}</Text>
             </View>
-            <View style={styles.workOrderBox}>
-              <Text style={styles.workOrderText}>ORDEN DE TALLER</Text>
-              <Text style={styles.workOrderText}>TORREÓN, COAH.</Text>
+            <Text style={styles.createdAt}>Creada el {formatDate(order.created_at)}</Text>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Datos generales</Text>
+          <View style={styles.infoGrid}>
+            <InfoField label="Cliente" value={order.client_name} />
+            <InfoField label="Tipo de orden" value={orderTypeLabel || order.order_type_key} />
+            <InfoField label="Fecha de entrega solicitada" value={formatDate(order.requested_delivery_date)} />
+            <InfoField label="Tiempo estimado de producción" value={`${order.estimated_production_days} día(s)`} />
+          </View>
+          {!!order.description && (
+            <View style={{ marginTop: 4 }}>
+              <Text style={styles.infoLabel}>Descripción / especificaciones</Text>
+              <Text style={[styles.descriptionBox, { marginTop: 3 }]}>{order.description}</Text>
             </View>
-            <Text style={styles.dateLine}>{formatDate(order.created_at)}</Text>
-          </View>
+          )}
         </View>
 
-        <View style={styles.body}>
-          <View style={styles.bodyLeft}>
-            <GarmentSection title="PLAYERA O CHAMARRA" section={sheet.sections?.playera} />
-            <GarmentSection title="SHORT / PANTALÓN" section={sheet.sections?.short} />
-          </View>
+        {items.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Prendas, tallas y colores</Text>
+            {items.map((item, i) => {
+              const itemTotal = (item.sizes || []).reduce((s, sz) => s + (Number(sz.cantidad) || 0), 0)
+              return (
+                <View key={i} style={styles.itemCard}>
+                  <View style={styles.itemHeader}>
+                    <Text style={styles.itemName}>{item.garment || `Prenda ${i + 1}`}</Text>
+                    <Text style={styles.itemMeta}>
+                      {[item.color, item.pantone].filter(Boolean).join(' · ')}
+                    </Text>
+                  </View>
+                  <View style={styles.sizesRow}>
+                    {(item.sizes || []).map((sz, j) => (
+                      <View key={j} style={styles.sizeChip}>
+                        <Text style={styles.sizeChipTalla}>{sz.talla}</Text>
+                        <Text style={styles.sizeChipCantidad}>× {sz.cantidad}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <Text style={styles.itemTotal}>
+                    Piezas en esta prenda: <Text style={styles.itemTotal_b}>{itemTotal}</Text>
+                  </Text>
+                </View>
+              )
+            })}
 
-          <View style={styles.bodyRight}>
-            <ShirtIllustration />
-            <ShortsIllustration />
+            <View style={styles.grandTotal}>
+              <Text style={styles.grandTotalLabel}>Total de piezas en la orden</Text>
+              <Text style={styles.grandTotalValue}>{grandTotal}</Text>
+            </View>
           </View>
-        </View>
+        )}
 
-        <View style={styles.footer}>
-          <View style={styles.footerRow}>
-            <FooterField label="Vendedor" value={sheet.vendedor} />
-            <FooterField label="Fecha de entrega prometida" value={formatDate(order.requested_delivery_date)} />
-          </View>
-
-          <View style={styles.signatureBlock}>
-            <View style={styles.signatureLine} />
-            <Text style={styles.signatureCaption}>FIRMA DEL CLIENTE</Text>
-          </View>
-
-          <View style={styles.footerRow}>
-            <FooterField label="Nombre" value={sheet.contact_name || order.client_name} />
-            <FooterField label="Domicilio" value={sheet.contact_address} />
-            <FooterField label="Teléfono" value={sheet.contact_phone} />
-          </View>
-
-          <View style={styles.footerRow}>
-            <FooterField label="Torneos en los que interviene" value={sheet.torneos} />
-          </View>
-
-          {pending && <Text style={styles.footnote}>Orden sujeta a confirmación de fábrica</Text>}
-        </View>
+        {pending && <Text style={styles.footnote}>Orden sujeta a confirmación de fábrica</Text>}
       </Page>
     </Document>
   )

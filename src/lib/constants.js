@@ -47,38 +47,3 @@ export const GARMENT_COLORS = [
 // Tipos de orden cuyas prendas necesitan especificar el Pantone exacto
 // (ej. sublimación). El resto de los tipos solo piden el color general.
 export const ORDER_TYPES_REQUIRING_PANTONE = ['sublimacion']
-
-// Tallas fijas (pares, 20-50) que trae impresas la hoja de orden física de
-// taller — ver OrderSheetEditor y components/pdf/OrderConfirmationPdf.
-export const ORDER_SHEET_SIZES = [20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50]
-
-// Una sección vacía de la hoja de orden (PLAYERA O CHAMARRA / SHORT-PANTALÓN
-// tienen exactamente los mismos campos en la hoja física).
-export function emptyOrderSheetSection() {
-  return {
-    cliente: '',
-    color: '',
-    manga: '',
-    vivos: '',
-    cuello: '',
-    punos: '',
-    tela: '',
-    logotipos: '',
-    numeros: '',
-    sizes: {},
-  }
-}
-
-export function emptyOrderSheet() {
-  return {
-    vendedor: '',
-    torneos: '',
-    contact_name: '',
-    contact_address: '',
-    contact_phone: '',
-    sections: {
-      playera: emptyOrderSheetSection(),
-      short: emptyOrderSheetSection(),
-    },
-  }
-}

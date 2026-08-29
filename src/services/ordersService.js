@@ -49,7 +49,6 @@ export async function createOrder({
   requestedDeliveryDate,
   estimatedProductionDays,
   items,
-  orderSheet,
 }) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
@@ -62,7 +61,6 @@ export async function createOrder({
       p_requested_delivery_date: requestedDeliveryDate,
       p_estimated_production_days: estimatedProductionDays,
       p_items: items || [],
-      p_order_sheet: orderSheet || {},
     })
     .single()
 }
@@ -74,15 +72,6 @@ export async function setOrderItems(orderId, items) {
   if (cfgError) return { data: null, error: cfgError }
 
   return supabase.rpc('set_order_items', { p_order_id: orderId, p_items: items || [] }).single()
-}
-
-// Reemplaza por completo la "hoja de orden" (los campos exactos de la hoja
-// física de taller — ver OrderSheetEditor / supabase/schema_v6_order_sheet.sql).
-export async function setOrderSheet(orderId, orderSheet) {
-  const { error: cfgError } = ensureClient()
-  if (cfgError) return { data: null, error: cfgError }
-
-  return supabase.rpc('set_order_sheet', { p_order_id: orderId, p_order_sheet: orderSheet || {} }).single()
 }
 
 // Cambia el estado de una orden y agrega el registro de historial
