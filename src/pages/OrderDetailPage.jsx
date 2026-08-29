@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, useLocation, Link } from 'react-router-dom'
 import { useOrder } from '../hooks/useOrder'
 import { useOrderTypes } from '../hooks/useOrderTypes'
@@ -7,21 +8,37 @@ import StatusHistoryList from '../components/orders/StatusHistoryList'
 import TypeBadge from '../components/orders/TypeBadge'
 import PhotoGallery from '../components/orders/PhotoGallery'
 import OrderItemsCard from '../components/orders/OrderItemsCard'
+import OrderSheetCard from '../components/orders/OrderSheetCard'
 import OrderDetailsCard from '../components/orders/OrderDetailsCard'
 import EstimatedDaysCard from '../components/orders/EstimatedDaysCard'
 import CancelOrderCard from '../components/orders/CancelOrderCard'
 import ComingSoonCard from '../components/orders/ComingSoonCard'
 import { Loading, ErrorState } from '../components/common/States'
+import { downloadOrderConfirmationPdf } from '../utils/generateOrderPdf'
 
 export default function OrderDetailPage() {
   const { id } = useParams()
   const location = useLocation()
   const { order, history, loading, error, refresh } = useOrder(id)
   const { orderTypes, typesByKey } = useOrderTypes()
+  const [generatingPdf, setGeneratingPdf] = useState(false)
+  const [pdfError, setPdfError] = useState(null)
 
   if (loading) return <Loading label="Cargando orden…" />
   if (error) return <ErrorState error={error} onRetry={refresh} />
   if (!order) return <ErrorState error={new Error('Esta orden no existe.')} />
+
+  async function handleDownloadPdf() {
+    setGeneratingPdf(true)
+    setPdfError(null)
+    try {
+      await downloadOrderConfirmationPdf(order)
+    } catch (err) {
+      setPdfError(err)
+    } finally {
+      setGeneratingPdf(false)
+    }
+  }
 
   return (
     <div className="page page--narrow">
@@ -37,8 +54,12 @@ export default function OrderDetailPage() {
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {order.cancelled_at && <span className="badge badge--danger">Cancelada</span>}
           <TypeBadge type={typesByKey[order.order_type_key]} />
+          <button type="button" className="btn btn--ghost" onClick={handleDownloadPdf} disabled={generatingPdf}>
+            {generatingPdf ? 'Generando…' : 'Descargar PDF'}
+          </button>
         </div>
       </div>
+      {pdfError && <p className="form-error">No se pudo generar el PDF: {pdfError.message}</p>}
 
       <StatusStepper status={order.status} />
 
@@ -54,6 +75,10 @@ export default function OrderDetailPage() {
 
         <section className="card card--placeholders">
           <OrderItemsCard order={order} onUpdated={refresh} />
+        </section>
+
+        <section className="card card--placeholders">
+          <OrderSheetCard order={order} onUpdated={refresh} />
         </section>
 
         <section className="card">

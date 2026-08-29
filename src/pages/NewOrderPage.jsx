@@ -8,10 +8,13 @@ import { copyTemplatePhotosToOrder } from '../services/templatesService'
 import OrderTypeSelect from '../components/orders/OrderTypeSelect'
 import PhotoPicker from '../components/orders/PhotoPicker'
 import OrderItemsEditor from '../components/orders/OrderItemsEditor'
+import OrderSheetEditor from '../components/orders/OrderSheetEditor'
 import TemplatePicker from '../components/orders/TemplatePicker'
 import RequireRole from '../components/common/RequireRole'
 import { canCreateOrder } from '../utils/permissions'
 import { Loading, ErrorState } from '../components/common/States'
+import { emptyOrderSheet } from '../lib/constants'
+import { downloadOrderConfirmationPdf } from '../utils/generateOrderPdf'
 
 const initialForm = {
   clientName: '',
@@ -36,6 +39,7 @@ function NewOrderForm() {
   const { templates } = useOrderTemplates()
   const [form, setForm] = useState(initialForm)
   const [items, setItems] = useState([emptyItem()])
+  const [orderSheet, setOrderSheet] = useState(emptyOrderSheet())
   const [photoFiles, setPhotoFiles] = useState([])
   const [templatePhotos, setTemplatePhotos] = useState([])
   const [submitting, setSubmitting] = useState(false)
@@ -88,6 +92,7 @@ function NewOrderForm() {
       requestedDeliveryDate: form.requestedDeliveryDate,
       estimatedProductionDays: Number(form.estimatedProductionDays) || 1,
       items: cleanItems,
+      orderSheet,
     })
 
     if (createError) {
@@ -117,6 +122,15 @@ function NewOrderForm() {
     }
 
     setSubmitting(false)
+
+    // El PDF de confirmación se descarga solo al crear la orden. Si por lo
+    // que sea falla generarlo, no se cancela la creación — igual queda el
+    // botón "Descargar PDF" en el detalle para reintentar.
+    try {
+      await downloadOrderConfirmationPdf(data)
+    } catch (pdfErr) {
+      console.error('No se pudo generar el PDF de confirmación:', pdfErr)
+    }
 
     if (photoError) {
       navigate(`/orden/${data.id}`, { state: { photoUploadError: photoError } })
@@ -198,6 +212,8 @@ function NewOrderForm() {
           </span>
           <OrderItemsEditor items={items} onChange={setItems} orderTypeKey={form.orderTypeKey} />
         </div>
+
+        <OrderSheetEditor sheet={orderSheet} onChange={setOrderSheet} />
 
         <label>
           Fotos de referencia

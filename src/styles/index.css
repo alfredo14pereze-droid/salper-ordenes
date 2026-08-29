@@ -1032,6 +1032,83 @@ h4 {
   font-family: 'Barlow Semi Condensed', sans-serif;
 }
 
+.order-sheet-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.order-sheet-editor__toggle {
+  border: 1px dashed var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.order-sheet-editor__toggle:hover {
+  border-color: var(--color-amber-strong);
+  color: var(--color-orange-strong);
+}
+
+.order-sheet-editor__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.order-sheet-section {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  background: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.order-sheet-section__title {
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.order-sheet-sizes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.order-sheet-sizes__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.order-sheet-sizes__cell span {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-weight: 700;
+}
+
+@media (max-width: 560px) {
+  .order-sheet-sizes {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 /* ---------- Plantillas ---------- */
 
 .template-picker {
