@@ -9,7 +9,7 @@ import { canSetEstimatedDays } from '../../utils/permissions'
 // (el dato ya aparece en la tarjeta de Detalles, de solo lectura).
 export default function EstimatedDaysCard({ order, onUpdated }) {
   const { role } = useAuth()
-  const [days, setDays] = useState(order.estimated_production_days)
+  const [days, setDays] = useState(order.estimated_production_days ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
@@ -38,10 +38,11 @@ export default function EstimatedDaysCard({ order, onUpdated }) {
           type="number"
           min={1}
           className="input"
+          placeholder="Días"
           value={days}
           onChange={(e) => setDays(e.target.value)}
         />
-        <button type="submit" className="btn btn--primary" disabled={saving}>
+        <button type="submit" className="btn btn--primary" disabled={saving || !days}>
           {saving ? 'Guardando…' : 'Guardar'}
         </button>
       </div>

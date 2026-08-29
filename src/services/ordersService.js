@@ -41,15 +41,10 @@ export async function fetchOrderHistory(orderId) {
 // arreglo de prendas (ver OrderItemsEditor) — opcional, por si se crea la
 // orden sin especificarlas todavía. El folio (order_number) ya NO se manda
 // desde aquí: lo asigna automáticamente un trigger en la base de datos
-// (ver supabase/schema_v5_folios.sql).
-export async function createOrder({
-  clientName,
-  orderTypeKey,
-  description,
-  requestedDeliveryDate,
-  estimatedProductionDays,
-  items,
-}) {
+// (ver supabase/schema_v5_folios.sql). El tiempo estimado de producción
+// tampoco se manda: nace en null y solo lo captura fábrica una vez que
+// confirma la orden (ver EstimatedDaysCard / schema_v7_no_default_days.sql).
+export async function createOrder({ clientName, orderTypeKey, description, requestedDeliveryDate, items }) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
 
@@ -59,7 +54,6 @@ export async function createOrder({
       p_order_type_key: orderTypeKey,
       p_description: description || null,
       p_requested_delivery_date: requestedDeliveryDate,
-      p_estimated_production_days: estimatedProductionDays,
       p_items: items || [],
     })
     .single()

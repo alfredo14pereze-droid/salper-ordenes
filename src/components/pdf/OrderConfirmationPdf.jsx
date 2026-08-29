@@ -157,7 +157,10 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 
             <InfoField label="Tipo de orden" value={orderTypeLabel || order.order_type_key} />
             <InfoField label="Fecha de entrega solicitada" value={formatDate(order.requested_delivery_date)} />
             {isInternal && (
-              <InfoField label="Tiempo estimado de producción" value={`${order.estimated_production_days} día(s)`} />
+              <InfoField
+                label="Tiempo estimado de producción"
+                value={order.estimated_production_days ? `${order.estimated_production_days} día(s)` : 'Pendiente'}
+              />
             )}
           </View>
           {!!order.description && (

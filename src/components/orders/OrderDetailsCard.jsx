@@ -132,15 +132,19 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
         <div>
           <dt>Tiempo estimado de producción</dt>
           <dd>
-            {order.estimated_production_days} día{order.estimated_production_days === 1 ? '' : 's'}
+            {order.estimated_production_days
+              ? `${order.estimated_production_days} día${order.estimated_production_days === 1 ? '' : 's'}`
+              : 'Pendiente — lo captura fábrica al confirmar'}
           </dd>
         </div>
-        <div>
-          <dt>Ventana de producción estimada</dt>
-          <dd>
-            {formatDate(productionWindow.start)} → {formatDate(productionWindow.end)}
-          </dd>
-        </div>
+        {!!order.estimated_production_days && (
+          <div>
+            <dt>Ventana de producción estimada</dt>
+            <dd>
+              {formatDate(productionWindow.start)} → {formatDate(productionWindow.end)}
+            </dd>
+          </div>
+        )}
         <div>
           <dt>Creada</dt>
           <dd>{formatDate(order.created_at)}</dd>

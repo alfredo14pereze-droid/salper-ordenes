@@ -19,7 +19,6 @@ const initialForm = {
   orderTypeKey: '',
   description: '',
   requestedDeliveryDate: '',
-  estimatedProductionDays: 3,
 }
 
 const emptyItem = () => ({ garment: '', color: '', pantone: '', sizes: [{ talla: '', cantidad: '' }] })
@@ -52,7 +51,6 @@ function NewOrderForm() {
       ...f,
       orderTypeKey: template.order_type_key,
       description: template.description || '',
-      estimatedProductionDays: template.estimated_production_days || 1,
     }))
     setItems(
       template.items && template.items.length > 0
@@ -87,7 +85,6 @@ function NewOrderForm() {
       orderTypeKey: form.orderTypeKey,
       description: form.description.trim(),
       requestedDeliveryDate: form.requestedDeliveryDate,
-      estimatedProductionDays: Number(form.estimatedProductionDays) || 1,
       items: cleanItems,
     })
 
@@ -170,27 +167,15 @@ function NewOrderForm() {
           />
         </div>
 
-        <div className="form-row">
-          <label>
-            Fecha de entrega solicitada *
-            <input
-              type="date"
-              className="input"
-              value={form.requestedDeliveryDate}
-              onChange={(e) => updateField('requestedDeliveryDate', e.target.value)}
-            />
-          </label>
-          <label>
-            Tiempo estimado de producción (días) *
-            <input
-              type="number"
-              min={1}
-              className="input"
-              value={form.estimatedProductionDays}
-              onChange={(e) => updateField('estimatedProductionDays', e.target.value)}
-            />
-          </label>
-        </div>
+        <label>
+          Fecha de entrega solicitada *
+          <input
+            type="date"
+            className="input"
+            value={form.requestedDeliveryDate}
+            onChange={(e) => updateField('requestedDeliveryDate', e.target.value)}
+          />
+        </label>
 
         <label>
           Descripción / especificaciones generales
