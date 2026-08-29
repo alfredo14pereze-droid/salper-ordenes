@@ -15,7 +15,10 @@ export default function DashboardPage() {
   const { typesByKey, orderTypes } = useOrderTypes()
   const [filters, setFilters] = useState(emptyFilters)
 
-  const activeOrders = useMemo(() => orders.filter((o) => isActiveStatus(o.status)), [orders])
+  const activeOrders = useMemo(
+    () => orders.filter((o) => isActiveStatus(o.status) && !o.cancelled_at),
+    [orders]
+  )
 
   const upcoming = useMemo(
     () => [...activeOrders].sort((a, b) => new Date(a.requested_delivery_date) - new Date(b.requested_delivery_date)),

@@ -89,6 +89,47 @@ export async function updateOrderStatus(orderId, newStatus, notes) {
     .single()
 }
 
+// Edita los datos generales de una orden ya creada (tienda solo mientras
+// sigue "en_confirmacion"; admin siempre — ver update_order_details).
+export async function updateOrderDetails(orderId, { clientName, orderTypeKey, description, requestedDeliveryDate }) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase
+    .rpc('update_order_details', {
+      p_order_id: orderId,
+      p_client_name: clientName,
+      p_order_type_key: orderTypeKey,
+      p_description: description || null,
+      p_requested_delivery_date: requestedDeliveryDate,
+    })
+    .single()
+}
+
+// Fábrica captura el tiempo estimado de producción (solo mientras la
+// orden sigue "en_confirmacion"; admin no tiene esa restricción).
+export async function setEstimatedProductionDays(orderId, days) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('set_estimated_production_days', { p_order_id: orderId, p_days: days }).single()
+}
+
+// Cancelar / reactivar una orden — exclusivo de admin.
+export async function cancelOrder(orderId, notes) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('cancel_order', { p_order_id: orderId, p_notes: notes || null }).single()
+}
+
+export async function uncancelOrder(orderId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('uncancel_order', { p_order_id: orderId }).single()
+}
+
 // Se suscribe a cambios en tiempo real de órdenes y su historial, para que
 // el dashboard/calendario se actualicen solos cuando alguien más mueve una
 // orden (sin tener que refrescar la página). Devuelve una función para

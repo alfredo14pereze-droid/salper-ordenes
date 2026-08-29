@@ -9,6 +9,8 @@ import OrderTypeSelect from '../components/orders/OrderTypeSelect'
 import PhotoPicker from '../components/orders/PhotoPicker'
 import OrderItemsEditor from '../components/orders/OrderItemsEditor'
 import TemplatePicker from '../components/orders/TemplatePicker'
+import RequireRole from '../components/common/RequireRole'
+import { canCreateOrder } from '../utils/permissions'
 import { Loading, ErrorState } from '../components/common/States'
 
 const initialForm = {
@@ -23,6 +25,14 @@ const initialForm = {
 const emptyItem = () => ({ garment: '', color: '', pantone: '', sizes: [{ talla: '', cantidad: '' }] })
 
 export default function NewOrderPage() {
+  return (
+    <RequireRole allow={canCreateOrder}>
+      <NewOrderForm />
+    </RequireRole>
+  )
+}
+
+function NewOrderForm() {
   const { orderTypes, loading, error, refresh } = useOrderTypes()
   const { templates } = useOrderTemplates()
   const [form, setForm] = useState(initialForm)

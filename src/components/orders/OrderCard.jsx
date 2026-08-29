@@ -13,7 +13,9 @@ export default function OrderCard({ order, orderType }) {
   let dueClass = 'order-card__due'
   let dueLabel = `Entrega en ${days} días`
 
-  if (completed) {
+  if (order.cancelled_at) {
+    cardClass += ' order-card--cancelled'
+  } else if (completed) {
     // Ya se completó: no tiene caso alarmar con "atrasada" — es un
     // indicador de "bien" (verde), no de urgencia.
     cardClass += ' order-card--good'
@@ -34,7 +36,7 @@ export default function OrderCard({ order, orderType }) {
     <article className={cardClass} onClick={() => navigate(`/orden/${order.id}`)} role="button" tabIndex={0}>
       <div className="order-card__top">
         <span className="order-card__number">#{order.order_number}</span>
-        <StatusBadge status={order.status} />
+        {order.cancelled_at ? <span className="badge badge--danger">Cancelada</span> : <StatusBadge status={order.status} />}
       </div>
       <h3 className="order-card__client">{order.client_name}</h3>
       <div className="order-card__meta">

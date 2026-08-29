@@ -7,21 +7,21 @@ import StatusHistoryList from '../components/orders/StatusHistoryList'
 import TypeBadge from '../components/orders/TypeBadge'
 import PhotoGallery from '../components/orders/PhotoGallery'
 import OrderItemsCard from '../components/orders/OrderItemsCard'
+import OrderDetailsCard from '../components/orders/OrderDetailsCard'
+import EstimatedDaysCard from '../components/orders/EstimatedDaysCard'
+import CancelOrderCard from '../components/orders/CancelOrderCard'
 import ComingSoonCard from '../components/orders/ComingSoonCard'
 import { Loading, ErrorState } from '../components/common/States'
-import { formatDate, computeProductionWindow } from '../utils/dates'
 
 export default function OrderDetailPage() {
   const { id } = useParams()
   const location = useLocation()
   const { order, history, loading, error, refresh } = useOrder(id)
-  const { typesByKey } = useOrderTypes()
+  const { orderTypes, typesByKey } = useOrderTypes()
 
   if (loading) return <Loading label="Cargando orden…" />
   if (error) return <ErrorState error={error} onRetry={refresh} />
   if (!order) return <ErrorState error={new Error('Esta orden no existe.')} />
-
-  const productionWindow = computeProductionWindow(order)
 
   return (
     <div className="page page--narrow">
@@ -34,42 +34,22 @@ export default function OrderDetailPage() {
           <h2 className="order-detail__number">Orden #{order.order_number}</h2>
           <p className="order-detail__client">{order.client_name}</p>
         </div>
-        <TypeBadge type={typesByKey[order.order_type_key]} />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {order.cancelled_at && <span className="badge badge--danger">Cancelada</span>}
+          <TypeBadge type={typesByKey[order.order_type_key]} />
+        </div>
       </div>
 
       <StatusStepper status={order.status} />
 
       <div className="order-detail__grid">
         <section className="card">
-          <h3 className="section-title section-title--small">Detalles</h3>
-          <dl className="detail-list">
-            <div>
-              <dt>Descripción / especificaciones</dt>
-              <dd>{order.description || '—'}</dd>
-            </div>
-            <div>
-              <dt>Fecha de entrega solicitada</dt>
-              <dd>{formatDate(order.requested_delivery_date)}</dd>
-            </div>
-            <div>
-              <dt>Tiempo estimado de producción</dt>
-              <dd>{order.estimated_production_days} día{order.estimated_production_days === 1 ? '' : 's'}</dd>
-            </div>
-            <div>
-              <dt>Ventana de producción estimada</dt>
-              <dd>
-                {formatDate(productionWindow.start)} → {formatDate(productionWindow.end)}
-              </dd>
-            </div>
-            <div>
-              <dt>Creada</dt>
-              <dd>{formatDate(order.created_at)}</dd>
-            </div>
-          </dl>
+          <OrderDetailsCard order={order} orderTypes={orderTypes} onUpdated={refresh} />
         </section>
 
         <section className="card">
           <StatusChanger order={order} onUpdated={refresh} />
+          <EstimatedDaysCard order={order} onUpdated={refresh} />
         </section>
 
         <section className="card card--placeholders">
@@ -96,6 +76,7 @@ export default function OrderDetailPage() {
             title="Link compartible"
             description="Cada orden ya tiene un token único listo para generar un link de solo lectura sin necesidad de iniciar sesión."
           />
+          <CancelOrderCard order={order} onUpdated={refresh} />
         </section>
       </div>
     </div>

@@ -2,13 +2,18 @@ import { useState } from 'react'
 import OrderItemsEditor from './OrderItemsEditor'
 import { setOrderItems } from '../../services/ordersService'
 import { createOrderTemplate } from '../../services/templatesService'
+import { useAuth } from '../../contexts/AuthContext'
+import { canEditOrder } from '../../utils/permissions'
 
 const emptyItem = () => ({ garment: '', color: '', pantone: '', sizes: [{ talla: '', cantidad: '' }] })
 
-// Prendas de una orden ya creada: se pueden editar (guardar cambios) y,
-// aparte, guardar la orden completa como plantilla reutilizable — así no
-// hace falta una pantalla separada para "armar" plantillas desde cero.
+// Prendas de una orden ya creada: tienda/admin pueden editarlas (mientras
+// canEditOrder lo permita) y, aparte, guardar la orden completa como
+// plantilla reutilizable. Fábrica las ve, pero no le toca cambiarlas —
+// su trabajo es el tiempo/etapa, no re-especificar qué se está pidiendo.
 export default function OrderItemsCard({ order, onUpdated }) {
+  const { role } = useAuth()
+  const readOnly = !canEditOrder(role, order)
   const [items, setItems] = useState(order.items && order.items.length > 0 ? order.items : [emptyItem()])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -71,14 +76,14 @@ export default function OrderItemsCard({ order, onUpdated }) {
         <h3 className="section-title section-title--small" style={{ marginBottom: 0 }}>
           Prendas
         </h3>
-        {!showTemplateForm && (
+        {!readOnly && !showTemplateForm && (
           <button type="button" className="btn btn--ghost" onClick={() => setShowTemplateForm(true)}>
             Guardar esta orden como plantilla
           </button>
         )}
       </div>
 
-      {showTemplateForm && (
+      {!readOnly && showTemplateForm && (
         <div className="template-picker" style={{ marginBottom: 14 }}>
           <div className="form-row">
             <input
@@ -104,15 +109,19 @@ export default function OrderItemsCard({ order, onUpdated }) {
       )}
       {templateSaved && <p className="template-hint">✓ Plantilla guardada — ya aparece en "Nueva orden".</p>}
 
-      <OrderItemsEditor items={items} onChange={setItems} orderTypeKey={order.order_type_key} />
+      <fieldset disabled={readOnly} className="items-editor-fieldset">
+        <OrderItemsEditor items={items} onChange={setItems} orderTypeKey={order.order_type_key} />
+      </fieldset>
 
       {error && <p className="form-error">{error.message}</p>}
 
-      <div className="order-form__actions" style={{ marginTop: 12 }}>
-        <button type="button" className="btn btn--primary" onClick={handleSave} disabled={saving}>
-          {saving ? 'Guardando…' : 'Guardar cambios de prendas'}
-        </button>
-      </div>
+      {!readOnly && (
+        <div className="order-form__actions" style={{ marginTop: 12 }}>
+          <button type="button" className="btn btn--primary" onClick={handleSave} disabled={saving}>
+            {saving ? 'Guardando…' : 'Guardar cambios de prendas'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

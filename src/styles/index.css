@@ -1183,6 +1183,117 @@ h4 {
   color: var(--color-text-muted);
 }
 
+/* ---------- Autenticación ---------- */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.login-card__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.login-card__hint {
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.app-header__user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-header__user-name {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: right;
+}
+
+.app-header__user-role {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* Rojo: solo como indicador de "necesita atención" (cancelada), igual
+   que en las tarjetas atrasadas — nunca decorativo. */
+.badge--danger {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.order-card--cancelled {
+  opacity: 0.6;
+  border-style: dashed;
+}
+
+.items-editor-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* ---------- Usuarios (admin) ---------- */
+
+.user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  flex-wrap: wrap;
+}
+
+.user-row__info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 140px;
+}
+
+.user-row__name {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.user-row__id {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-family: monospace;
+}
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 720px) {
@@ -1194,5 +1305,9 @@ h4 {
 
   .app-main {
     padding: 16px;
+  }
+
+  .app-header__user-name {
+    display: none;
   }
 }

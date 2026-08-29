@@ -1,12 +1,21 @@
 import { useState } from 'react'
 import { STATUSES } from '../../lib/constants'
 import { updateOrderStatus } from '../../services/ordersService'
+import { useAuth } from '../../contexts/AuthContext'
+import { canChangeStatus } from '../../utils/permissions'
 
 export default function StatusChanger({ order, onUpdated }) {
+  const { role } = useAuth()
   const [nextStatus, setNextStatus] = useState(order.status)
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+
+  // tienda no cambia estados; y aunque fábrica/admin pueden, una orden
+  // cancelada solo la puede tocar admin (el servidor ya lo valida — esto
+  // solo evita mostrar un botón que va a fallar).
+  if (!canChangeStatus(role)) return null
+  if (order.cancelled_at && role !== 'admin') return null
 
   async function handleSubmit(e) {
     e.preventDefault()
