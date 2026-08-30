@@ -9,6 +9,7 @@ export default function AppLayout({ children }) {
   const navItems = [
     { to: '/', label: 'Dashboard', end: true, show: true },
     { to: '/nueva', label: 'Nueva orden', show: canCreateOrder(role) },
+    { to: '/resumen', label: 'Resumen', show: true },
     { to: '/calendario', label: 'Calendario', show: true },
     { to: '/pendientes', label: 'Pendientes', show: true },
     { to: '/anuncios', label: 'Anuncios', show: true },
