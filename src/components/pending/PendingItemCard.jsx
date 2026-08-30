@@ -6,7 +6,12 @@ export default function PendingItemCard({ item, onToggle }) {
   return (
     <article className={'pending-card' + (isResolved ? ' pending-card--resolved' : '')}>
       <label className="pending-card__checkbox">
-        <input type="checkbox" checked={isResolved} onChange={() => onToggle(item)} />
+        <input
+          type="checkbox"
+          checked={isResolved}
+          disabled={!onToggle}
+          onChange={() => onToggle?.(item)}
+        />
       </label>
       <div className="pending-card__body">
         <div className="pending-card__top">

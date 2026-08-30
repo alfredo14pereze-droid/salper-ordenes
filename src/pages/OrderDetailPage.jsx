@@ -14,8 +14,10 @@ import CancelOrderCard from '../components/orders/CancelOrderCard'
 import ComingSoonCard from '../components/orders/ComingSoonCard'
 import { Loading, ErrorState } from '../components/common/States'
 import { downloadOrderConfirmationPdf } from '../utils/generateOrderPdf'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function OrderDetailPage() {
+  const { user } = useAuth()
   const { id } = useParams()
   const location = useLocation()
   const { order, history, loading, error, refresh } = useOrder(id)
@@ -83,10 +85,12 @@ export default function OrderDetailPage() {
           <OrderDetailsCard order={order} orderTypes={orderTypes} onUpdated={refresh} />
         </section>
 
-        <section className="card">
-          <StatusChanger order={order} onUpdated={refresh} />
-          <EstimatedDaysCard order={order} onUpdated={refresh} />
-        </section>
+        {user && (
+          <section className="card">
+            <StatusChanger order={order} onUpdated={refresh} />
+            <EstimatedDaysCard order={order} onUpdated={refresh} />
+          </section>
+        )}
 
         <section className="card card--placeholders">
           <OrderItemsCard order={order} onUpdated={refresh} />

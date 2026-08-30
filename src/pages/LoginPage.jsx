@@ -1,16 +1,26 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import Logo from '../components/layout/Logo'
 
 // Sin registro público a propósito: solo un admin puede dar de alta
 // usuarios nuevos (ver pages/UsersPage.jsx), así que aquí no hay link de
 // "crear cuenta".
+//
+// Ya no es la puerta de entrada de la app (ver App.jsx: el modo invitado
+// deja ver todo sin sesión) — es una ruta normal, /login. Por eso, en
+// cuanto hay sesión, navega sola de regreso al dashboard.
 export default function LoginPage() {
-  const { signIn } = useAuth()
+  const { user, signIn } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (user) navigate('/', { replace: true })
+  }, [user, navigate])
 
   async function handleSubmit(e) {
     e.preventDefault()

@@ -27,20 +27,25 @@ export default function App() {
   )
 }
 
-// Nadie ve nada de la app sin haber iniciado sesión — ni siquiera el
-// dashboard de solo lectura. Es la puerta única: de aquí para adentro,
-// cada página/acción puede asumir que hay un usuario con un rol.
+// Modo invitado: quien entra al link sin haber iniciado sesión ve la app
+// completa en modo lectura (Dashboard, calendario, detalle de órdenes,
+// anuncios, pendientes) — nunca la pantalla de login primero. Ningún
+// botón de crear/editar/cambiar aparece sin sesión (cada componente lo
+// decide solo, vía useAuth().role/user — ver utils/permissions.js), y el
+// servidor rechaza cualquier escritura sin sesión de todos modos (RLS +
+// RPCs "to authenticated", ver supabase/schema_v9_security_fix.sql). El
+// login vive en /login, no como puerta de entrada.
 function AuthGate() {
-  const { user, loading } = useAuth()
+  const { loading } = useAuth()
 
   if (loading) return <Loading label="Cargando…" />
-  if (!user) return <LoginPage />
 
   return (
     <HashRouter>
       <AppLayout>
         <Routes>
           <Route path="/" element={<DashboardPage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/nueva" element={<NewOrderPage />} />
           <Route path="/orden/:id" element={<OrderDetailPage />} />
           <Route path="/calendario" element={<CalendarPage />} />

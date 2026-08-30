@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { canCreateOrder, canManageUsers, ROLE_LABELS } from '../../utils/permissions'
 
 export default function AppLayout({ children }) {
-  const { profile, role, signOut } = useAuth()
+  const { user, profile, role, signOut } = useAuth()
 
   const navItems = [
     { to: '/', label: 'Dashboard', end: true, show: true },
@@ -37,13 +37,31 @@ export default function AppLayout({ children }) {
             ))}
         </nav>
         <div className="app-header__user">
-          <span className="app-header__user-name">
-            {profile?.full_name || 'Sin nombre'}
-            <span className="app-header__user-role">{ROLE_LABELS[role] || role}</span>
-          </span>
-          <button type="button" className="btn btn--ghost btn--small" onClick={signOut}>
-            Cerrar sesión
-          </button>
+          {user ? (
+            <>
+              <span className="app-header__user-name">
+                {profile?.full_name || 'Sin nombre'}
+                <span className="app-header__user-role">{ROLE_LABELS[role] || role}</span>
+              </span>
+              <button type="button" className="btn btn--ghost btn--small" onClick={signOut}>
+                Cerrar sesión
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="app-header__user-name">
+                Invitado
+                <span className="app-header__user-role">Solo lectura</span>
+              </span>
+              <NavLink
+                to="/login"
+                className="btn btn--primary btn--small"
+                style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
+              >
+                Iniciar sesión
+              </NavLink>
+            </>
+          )}
         </div>
       </header>
       <main className="app-main">{children}</main>

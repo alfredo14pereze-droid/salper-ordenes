@@ -3,8 +3,10 @@ import { deleteAnnouncement } from '../services/announcementsService'
 import AnnouncementCard from '../components/announcements/AnnouncementCard'
 import AnnouncementForm from '../components/announcements/AnnouncementForm'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function AnnouncementsPage() {
+  const { user } = useAuth()
   const { announcements, loading, error, refresh } = useAnnouncements()
 
   async function handleDelete(id) {
@@ -22,14 +24,14 @@ export default function AnnouncementsPage() {
         <h2 className="section-title">Anuncios internos</h2>
       </div>
 
-      <AnnouncementForm onCreated={refresh} />
+      {user && <AnnouncementForm onCreated={refresh} />}
 
       {announcements.length === 0 ? (
         <EmptyState>No hay anuncios todavía.</EmptyState>
       ) : (
         <div className="announcement-list">
           {announcements.map((a) => (
-            <AnnouncementCard key={a.id} announcement={a} onDelete={handleDelete} />
+            <AnnouncementCard key={a.id} announcement={a} onDelete={user ? handleDelete : undefined} />
           ))}
         </div>
       )}
