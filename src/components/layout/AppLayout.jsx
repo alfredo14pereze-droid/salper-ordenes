@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import Logo from './Logo'
+import ChatWidget from '../chat/ChatWidget'
 import { useAuth } from '../../contexts/AuthContext'
 import { canCreateOrder, canManageUsers, ROLE_LABELS } from '../../utils/permissions'
 
@@ -66,6 +67,7 @@ export default function AppLayout({ children }) {
         </div>
       </header>
       <main className="app-main">{children}</main>
+      <ChatWidget />
     </div>
   )
 }
