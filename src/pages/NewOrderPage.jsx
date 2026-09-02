@@ -1,18 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOrderTypes } from '../hooks/useOrderTypes'
-import { useOrderTemplates } from '../hooks/useOrderTemplates'
 import { useClientes } from '../hooks/useClientes'
 import { useTelas } from '../hooks/useTelas'
 import { useProductosByCliente } from '../hooks/useProductosByCliente'
 import { createOrder } from '../services/ordersService'
-import { uploadOrderPhotos, attachExistingPhotos } from '../services/photosService'
-import { copyTemplatePhotosToOrder } from '../services/templatesService'
+import { uploadOrderPhotos } from '../services/photosService'
 import OrderTypeSelect from '../components/orders/OrderTypeSelect'
 import ClienteSelect from '../components/orders/ClienteSelect'
 import PhotoPicker from '../components/orders/PhotoPicker'
 import OrderItemsEditor from '../components/orders/OrderItemsEditor'
-import TemplatePicker from '../components/orders/TemplatePicker'
 import RequireRole from '../components/common/RequireRole'
 import { canCreateOrder } from '../utils/permissions'
 import { Loading, ErrorState } from '../components/common/States'
@@ -46,34 +43,18 @@ export default function NewOrderPage() {
 
 function NewOrderForm() {
   const { orderTypes, loading, error, refresh } = useOrderTypes()
-  const { templates } = useOrderTemplates()
   const { clientes, refresh: refreshClientes } = useClientes()
   const { telas, refresh: refreshTelas } = useTelas()
   const [form, setForm] = useState(initialForm)
   const { productos, refresh: refreshProductos } = useProductosByCliente(form.clientId)
   const [items, setItems] = useState([emptyItem()])
   const [photoFiles, setPhotoFiles] = useState([])
-  const [templatePhotos, setTemplatePhotos] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
   const navigate = useNavigate()
 
   function updateField(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
-  }
-
-  function handleApplyTemplate(template) {
-    setForm((f) => ({
-      ...f,
-      orderTypeKey: template.order_type_key,
-      description: template.description || '',
-    }))
-    setItems(
-      template.items && template.items.length > 0
-        ? template.items.map((item) => ({ ...item, sizes: item.sizes.map((s) => ({ ...s, cantidad: '' })) }))
-        : [emptyItem()]
-    )
-    setTemplatePhotos(template.reference_photos || [])
   }
 
   async function handleSubmit(e) {
@@ -111,24 +92,14 @@ function NewOrderForm() {
       return
     }
 
-    // La orden ya existe (tiene id): fotos elegidas a mano + fotos heredadas
-    // de la plantilla (si se usó una). Si algo de esto falla, no se cancela
-    // la creación de la orden — se puede reintentar desde el detalle.
+    // La orden ya existe (tiene id): subimos las fotos elegidas a mano. Si
+    // esto falla, no se cancela la creación de la orden — se puede
+    // reintentar desde el detalle.
     let photoError = null
 
     if (photoFiles.length > 0) {
       const { error: uploadError } = await uploadOrderPhotos(data.id, photoFiles)
       if (uploadError) photoError = uploadError.message
-    }
-
-    if (!photoError && templatePhotos.length > 0) {
-      const { data: copied, error: copyError } = await copyTemplatePhotosToOrder(data.id, templatePhotos)
-      if (copyError) {
-        photoError = copyError.message
-      } else if (copied.length > 0) {
-        const { error: attachError } = await attachExistingPhotos(data.id, copied)
-        if (attachError) photoError = attachError.message
-      }
     }
 
     setSubmitting(false)
@@ -159,8 +130,6 @@ function NewOrderForm() {
       <h2 className="section-title">Nueva orden</h2>
 
       <form className="order-form" onSubmit={handleSubmit}>
-        <TemplatePicker templates={templates} onApply={handleApplyTemplate} />
-
         <div>
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
             Cliente *
@@ -227,11 +196,6 @@ function NewOrderForm() {
           Fotos de referencia
           <PhotoPicker files={photoFiles} onChange={setPhotoFiles} />
         </label>
-        {templatePhotos.length > 0 && (
-          <p className="pantone-hint">
-            + {templatePhotos.length} foto{templatePhotos.length === 1 ? '' : 's'} de la plantilla se copiarán a esta orden.
-          </p>
-        )}
 
         {submitError && <p className="form-error">{submitError.message}</p>}
 
