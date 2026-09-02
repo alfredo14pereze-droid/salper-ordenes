@@ -72,7 +72,7 @@ export default function TelaSelect({ telas, value, onChange, onTelaCreated }) {
         ))}
       </select>
       <button type="button" className="btn btn--secondary btn--small" onClick={() => setCreating(true)}>
-        + Guardar tela
+        + Tela nueva
       </button>
     </div>
   )
