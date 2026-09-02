@@ -145,10 +145,17 @@ grant execute on function public.create_producto(uuid, text, text, text, text, u
 
 -- ---------------------------------------------------------------------
 -- 4) orders.client_id: opcional, nullable. create_order gana un parámetro
---    nuevo AL FINAL con default (misma firma de tipos/orden que ya tenía →
---    CREATE OR REPLACE la reemplaza sin necesitar DROP FUNCTION).
+--    nuevo AL FINAL (p_client_id). OJO: esto SÍ cambia la lista de tipos
+--    de la función (aunque el parámetro nuevo tenga default), así que a
+--    diferencia de solo cambiar el default de un parámetro que ya existía
+--    (eso sí lo resuelve CREATE OR REPLACE solo), agregar un parámetro
+--    nuevo crea un OVERLOAD aparte si no se tira la versión vieja primero
+--    — mismo gotcha de siempre, documentado en SALPER_Contexto.md. Aquí sí
+--    hace falta el DROP.
 -- ---------------------------------------------------------------------
 alter table public.orders add column if not exists client_id uuid references public.clientes(id) on delete set null;
+
+drop function if exists public.create_order(text, text, text, date, integer, jsonb);
 
 create or replace function public.create_order(
   p_client_name text,

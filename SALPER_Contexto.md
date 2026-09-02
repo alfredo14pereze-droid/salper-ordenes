@@ -73,13 +73,24 @@ para no repetirlos):**
 
 - **Cambiar la firma de un RPC (agregar/quitar parámetros) crea un
   OVERLOAD nuevo, no reemplaza el viejo.** `CREATE OR REPLACE FUNCTION` solo
-  reemplaza si la firma (tipos + orden de parámetros) es idéntica. Si cambia,
-  hay que `DROP FUNCTION IF EXISTS nombre(firma_vieja);` primero — si no,
-  quedan dos versiones coexistiendo y Postgres puede resolver una llamada
-  contra la que no esperas (esto causó un bug real: "column order_sheet of
-  relation orders does not exist" porque una función vieja de 7 parámetros
-  seguía viva). Agregar un parámetro nuevo **al final con `default`** sí es
-  seguro vía `CREATE OR REPLACE` sin necesidad de `DROP`.
+  reemplaza in-place si la LISTA DE TIPOS de los parámetros es idéntica a la
+  que ya existía. Si cambia, hay que `DROP FUNCTION IF EXISTS
+  nombre(firma_vieja);` primero — si no, quedan dos versiones coexistiendo y
+  Postgres puede resolver una llamada contra la que no esperas. Pasó DOS
+  veces en este proyecto: "column order_sheet of relation orders does not
+  exist" (quedó viva una función vieja de 7 parámetros), y de nuevo en
+  Fase 2 al agregarle `p_client_id` a `create_order` (quedaron la de 6 y la
+  de 7 parámetros coexistiendo hasta que se corrigió a mano). **Distinción
+  importante:** cambiar solo el DEFAULT de un parámetro que ya existía sí lo
+  resuelve `CREATE OR REPLACE` solo (no cambia la lista de tipos) — pero
+  agregar un parámetro NUEVO al final, aunque tenga `default`, SÍ cambia la
+  lista de tipos y por lo tanto SÍ necesita el `DROP FUNCTION` antes. Regla
+  práctica: si el `create or replace function` de una función existente
+  tiene un parámetro de más (o de menos) que la última versión aplicada,
+  hay que agregar el `drop function if exists` de la firma vieja arriba,
+  sin excepción — y verificarlo después con
+  `select pg_get_function_identity_arguments(oid) from pg_proc where
+  proname = 'nombre'` (debe dar una sola fila).
 - **`GRANT`/`REVOKE` a un rol específico (`anon`, `authenticated`) NO quita lo
   que ya viene de `PUBLIC`.** Postgres otorga `EXECUTE` a `PUBLIC`
   automáticamente en cada `CREATE FUNCTION` — esto es estándar de Postgres,
@@ -150,18 +161,17 @@ implementado y las decisiones tomadas — no se borra lo anterior, se agrega.)*
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver
 `/Users/alfredoperez/.claude/plans/gleaming-purring-wirth.md` para el plan
-completo con el SQL exacto). **Código terminado y probado visualmente contra
-datos reales** (guest mode, sin necesitar login) **— pero las migraciones
-`schema_v11_documentos.sql` y `schema_v12_catalogos.sql` todavía NO se
-aplicaron a Supabase**: la sesión del SQL Editor se cerró a media sesión y,
-por regla propia, nunca escribo credenciales — quedó pendiente de que el
-usuario inicie sesión ahí para poder pegarlas y correrlas. Hasta que eso
-pase, `telas`/`clientes`/`productos` no existen como tablas y
-`orders.client_id`/`cotizacion_pdf_path`/`orden_compra_pdf_path` no existen
-como columnas — el frontend ya está preparado para eso (los selectores de
-cliente/tela llegan vacíos con un 404 silencioso en vez de tronar, ver
-`fetchClientes`/`fetchTelas`), pero nadie puede usar las funciones nuevas de
-verdad todavía.
+completo con el SQL exacto). **Código terminado, migraciones aplicadas y
+todo verificado** — tanto en la base de datos (SQL directo) como en el
+frontend contra datos reales (modo invitado, consola limpia, sin 404).
+
+Al aplicar `schema_v12_catalogos.sql` se repitió el gotcha de firmas de RPC
+(ver más abajo): `create_order` quedó con dos versiones coexistiendo (6 y 7
+parámetros) porque agregar `p_client_id` cambia la lista de tipos aunque
+tenga default. Se corrigió al momento con
+`drop function if exists public.create_order(text, text, text, date,
+integer, jsonb);` y se dejó ya corregido en el archivo del repo para que
+nadie más caiga en lo mismo.
 
 **Fase 1 (visual):**
 - Documentos por orden: `OrderDocumentsCard.jsx` + `documentsService.js`,
@@ -196,17 +206,25 @@ verdad todavía.
   aparece con un cliente EXISTENTE seleccionado; autocompleta
   garment/color/pantone/tela/foto de la prenda y se puede seguir editando.
 
-**Pendiente para la próxima sesión (o en cuanto el usuario inicie sesión en
-Supabase):**
-1. Aplicar `schema_v11_documentos.sql` y `schema_v12_catalogos.sql` en el
-   SQL Editor.
-2. Verificar con `has_function_privilege('anon', ..., 'EXECUTE') = false`
-   en las 4 funciones nuevas (`set_order_document`, `create_tela`,
-   `create_cliente`, `create_producto`) y en la nueva firma de
-   `create_order` — mismo checklist de seguridad de siempre.
-3. Probar de punta a punta con sesión real: subir/ver/reemplazar ambos
-   PDFs, crear cliente/tela nuevos desde el formulario, guardar y reusar un
-   producto, confirmar que una orden vieja (sin cliente/tela catalogado)
-   se sigue viendo y editando sin error.
-4. `git push origin fase-2` (con el código ya committeado localmente) y
-   revisar el preview deploy de Vercel antes de fusionar a `main`.
+**Verificado en esta sesión (SQL directo en Supabase, ya limpio de datos de
+prueba):**
+1. Ambas migraciones aplicadas sin errores.
+2. `has_function_privilege('anon', ..., 'EXECUTE') = false` en las 5
+   funciones nuevas/modificadas (`set_order_document`, `create_tela`,
+   `create_cliente`, `create_producto`, `create_order`) — solo
+   `authenticated` puede ejecutarlas.
+3. `create_tela('Popelina Prueba')` llamada dos veces (con espacios/
+   mayúsculas distintas) regresó el mismo `id` las dos veces — confirma la
+   normalización.
+4. `create_cliente` y `create_producto` probados directo — funcionan.
+5. `orders.client_id` / `cotizacion_pdf_path` / `orden_compra_pdf_path`
+   confirmadas `is_nullable = YES`.
+6. Frontend (modo invitado, detalle de una orden real): consola sin
+   errores, ni un solo 404 — antes de aplicar las migraciones sí los había.
+
+**Pendiente:**
+1. Probar de punta a punta con sesión real (yo no puedo: nunca manejo
+   credenciales) — subir/ver/reemplazar ambos PDFs, crear cliente/tela
+   nuevos desde el formulario, guardar y reusar un producto.
+2. Decidir cuándo fusionar `fase-2` a `main` (ya tiene su propio preview
+   deploy de Vercel, funcionando, sin tocar producción).
