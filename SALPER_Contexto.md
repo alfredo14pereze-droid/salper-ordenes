@@ -222,9 +222,15 @@ prueba):**
 6. Frontend (modo invitado, detalle de una orden real): consola sin
    errores, ni un solo 404 — antes de aplicar las migraciones sí los había.
 
-**Pendiente:**
-1. Probar de punta a punta con sesión real (yo no puedo: nunca manejo
-   credenciales) — subir/ver/reemplazar ambos PDFs, crear cliente/tela
-   nuevos desde el formulario, guardar y reusar un producto.
-2. Decidir cuándo fusionar `fase-2` a `main` (ya tiene su propio preview
-   deploy de Vercel, funcionando, sin tocar producción).
+**Cierre:** el usuario probó todo con su sesión real en el preview de
+`fase-2` y le gustó — el único ajuste pedido fue que el campo de tela
+(dentro de cada prenda) siguiera exactamente el mismo patrón que el de
+cliente: botón cerrado dice "+ Tela nueva" (no "+ Guardar tela", que sonaba
+a que guardaba algo sin haber escrito nada), y solo al abrirlo aparece
+"Guardar tela". Corregido en `TelaSelect.jsx`.
+
+`fase-2` ya se fusionó a `main` y está en producción
+(https://salper-ordenes.vercel.app) — confirmado con un deploy Ready y un
+200 real al sitio. Las 7 mejoras del módulo de Órdenes quedan completas y
+en vivo. Pendiente real: ninguno — cualquier ajuste de aquí en adelante es
+una mejora nueva, no algo inconcluso de esta fase.
