@@ -4,8 +4,18 @@ import { setOrderItems } from '../../services/ordersService'
 import { createOrderTemplate } from '../../services/templatesService'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditOrder } from '../../utils/permissions'
+import { useTelas } from '../../hooks/useTelas'
+import { useProductosByCliente } from '../../hooks/useProductosByCliente'
 
-const emptyItem = () => ({ garment: '', color: '', pantone: '', sizes: [{ talla: '', cantidad: '' }] })
+const emptyItem = () => ({
+  garment: '',
+  color: '',
+  pantone: '',
+  tela_id: '',
+  tela_nombre: '',
+  foto_url: '',
+  sizes: [{ talla: '', cantidad: '' }],
+})
 
 // Prendas de una orden ya creada: tienda/admin pueden editarlas (mientras
 // canEditOrder lo permita) y, aparte, guardar la orden completa como
@@ -15,6 +25,8 @@ export default function OrderItemsCard({ order, onUpdated }) {
   const { role } = useAuth()
   const readOnly = !canEditOrder(role, order)
   const [items, setItems] = useState(order.items && order.items.length > 0 ? order.items : [emptyItem()])
+  const { telas, refresh: refreshTelas } = useTelas()
+  const { productos, refresh: refreshProductos } = useProductosByCliente(order.client_id)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
@@ -110,7 +122,17 @@ export default function OrderItemsCard({ order, onUpdated }) {
       {templateSaved && <p className="template-hint">✓ Plantilla guardada — ya aparece en "Nueva orden".</p>}
 
       <fieldset disabled={readOnly} className="items-editor-fieldset">
-        <OrderItemsEditor items={items} onChange={setItems} orderTypeKey={order.order_type_key} />
+        <OrderItemsEditor
+          items={items}
+          onChange={setItems}
+          orderTypeKey={order.order_type_key}
+          telas={telas}
+          onTelaCreated={refreshTelas}
+          clienteId={order.client_id}
+          clienteNombre={order.client_name}
+          productos={productos}
+          onProductoCreated={refreshProductos}
+        />
       </fieldset>
 
       {error && <p className="form-error">{error.message}</p>}

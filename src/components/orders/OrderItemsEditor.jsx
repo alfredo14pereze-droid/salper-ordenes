@@ -1,14 +1,29 @@
 import { GARMENT_COLORS, ORDER_TYPES_REQUIRING_PANTONE } from '../../lib/constants'
+import TelaSelect from './TelaSelect'
+import ProductoAutocomplete from './ProductoAutocomplete'
 
 // Editor de las prendas de una orden: cada prenda tiene nombre, color,
-// Pantone (solo si el tipo de orden lo requiere — ver constants.js) y una
-// tabla de tallas+cantidades con filas que se agregan de una en una.
+// Pantone (solo si el tipo de orden lo requiere — ver constants.js), tela
+// (catálogo opcional — ver telas/tela_id/tela_nombre) y una tabla de
+// tallas+cantidades con filas que se agregan solas al llenar la última.
 //
 // Es "controlado": recibe `items` y `onChange`, no tiene estado propio de
-// los datos (sí de UI, como cuál prenda está expandida no aplica aquí).
-// Así el mismo componente sirve tanto para armar una orden nueva (estado
-// en memoria) como para editar una ya creada (se guarda con un botón).
-export default function OrderItemsEditor({ items, onChange, orderTypeKey }) {
+// los datos. Así el mismo componente sirve tanto para armar una orden nueva
+// (estado en memoria) como para editar una ya creada (se guarda con un
+// botón). `telas`/`clienteId` son opcionales: si no se pasan, el selector de
+// tela y el autocompletado de producto simplemente no aparecen (una orden
+// vieja sin cliente catalogado se sigue viendo y editando sin error).
+export default function OrderItemsEditor({
+  items,
+  onChange,
+  orderTypeKey,
+  telas = [],
+  onTelaCreated,
+  clienteId = null,
+  clienteNombre = '',
+  productos = [],
+  onProductoCreated,
+}) {
   const needsPantone = ORDER_TYPES_REQUIRING_PANTONE.includes(orderTypeKey)
 
   function updateItem(index, patch) {
@@ -20,13 +35,27 @@ export default function OrderItemsEditor({ items, onChange, orderTypeKey }) {
   }
 
   function addItem() {
-    onChange([...items, { garment: '', color: '', pantone: '', sizes: [{ talla: '', cantidad: '' }] }])
+    onChange([
+      ...items,
+      { garment: '', color: '', pantone: '', tela_id: '', tela_nombre: '', foto_url: '', sizes: [{ talla: '', cantidad: '' }] },
+    ])
   }
 
   function updateSize(itemIndex, sizeIndex, patch) {
     const item = items[itemIndex]
     const sizes = item.sizes.map((s, i) => (i === sizeIndex ? { ...s, ...patch } : s))
     updateItem(itemIndex, { sizes })
+
+    // Auto-agregar fila: si la que se acaba de editar es la última y ya
+    // quedó completa (talla + cantidad), se agrega una fila vacía nueva
+    // sola, sin que haga falta darle "+ Agregar talla". No duplica: una vez
+    // que la fila nueva vacía existe, editarla no vuelve a disparar esto
+    // hasta que ELLA quede completa (en ese punto ya es la última de nuevo).
+    const isLastRow = sizeIndex === sizes.length - 1
+    const rowFilled = sizes[sizeIndex].talla.trim() !== '' && Number(sizes[sizeIndex].cantidad) > 0
+    if (isLastRow && rowFilled) {
+      updateItem(itemIndex, { sizes: [...sizes, { talla: '', cantidad: '' }] })
+    }
   }
 
   function addSize(itemIndex) {
@@ -108,6 +137,30 @@ export default function OrderItemsEditor({ items, onChange, orderTypeKey }) {
               <p className="pantone-hint">
                 Solo en sublimación: aquí se especifica el tono exacto. En otros tipos de orden basta con el color de arriba.
               </p>
+            )}
+
+            <div>
+              <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+                Tela
+              </span>
+              <TelaSelect
+                telas={telas}
+                value={item.tela_id}
+                onChange={(telaId, telaNombre) => updateItem(itemIndex, { tela_id: telaId, tela_nombre: telaNombre })}
+                onTelaCreated={onTelaCreated}
+              />
+            </div>
+
+            {clienteId && (
+              <ProductoAutocomplete
+                clienteId={clienteId}
+                clienteNombre={clienteNombre}
+                productos={productos}
+                telas={telas}
+                item={item}
+                onApply={(patch) => updateItem(itemIndex, patch)}
+                onProductoCreated={onProductoCreated}
+              />
             )}
 
             <div>

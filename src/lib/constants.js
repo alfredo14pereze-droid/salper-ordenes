@@ -4,20 +4,20 @@
 // columna orders.status con CHECK constraint) — si algún día se necesita
 // agregar o quitar un estado, hay que actualizar AMBOS lugares.
 //
-// El "color" de cada estado se usa solo en el calendario y el stepper (para
-// distinguir de un vistazo en qué etapa va cada semana) — es una progresión
-// ámbar → naranja, terminando en verde para "completado" (el único estado
-// que cuenta como "bien" en el sentido semántico de la marca). Las etiquetas
-// (badges) de estado en las tarjetas NO usan este color: son negro+ámbar de
-// forma uniforme, salvo "completado" que sí se pinta de verde — ver
-// utils/status.js → isGoodStatus().
+// El "color" de cada estado es una progresión ámbar → naranja, terminando en
+// verde para "completado" (el único estado que cuenta como "bien" en el
+// sentido semántico de la marca — el resto son solo etapas, no juicios de
+// bien/mal, por eso nunca usan rojo). Se usa en el calendario/stepper y
+// también en el badge de estado de cada tarjeta (StatusBadge) — cada etapa
+// se pinta distinto para reconocerla de un vistazo. `textColor` es el color
+// de texto que da buen contraste sobre `color`.
 export const STATUSES = [
-  { key: 'en_confirmacion', label: 'En confirmación', color: '#f5d38a' },
-  { key: 'confirmado', label: 'Confirmado', color: '#ffc93c' },
-  { key: 'cortado', label: 'Cortado', color: '#e8a916' },
-  { key: 'sublimado', label: 'Sublimado', color: '#e8720c' },
-  { key: 'en_produccion', label: 'En producción', color: '#a24d09' },
-  { key: 'completado', label: 'Completado', color: '#2f8f4e' },
+  { key: 'en_confirmacion', label: 'En confirmación', color: '#f5d38a', textColor: '#16130f' },
+  { key: 'confirmado', label: 'Confirmado', color: '#ffc93c', textColor: '#16130f' },
+  { key: 'cortado', label: 'Cortado', color: '#e8a916', textColor: '#16130f' },
+  { key: 'sublimado', label: 'Sublimado', color: '#e8720c', textColor: '#ffffff' },
+  { key: 'en_produccion', label: 'En producción', color: '#a24d09', textColor: '#ffffff' },
+  { key: 'completado', label: 'Completado', color: '#2f8f4e', textColor: '#ffffff' },
 ]
 
 export const STATUS_KEYS = STATUSES.map((s) => s.key)

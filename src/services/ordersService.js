@@ -44,7 +44,7 @@ export async function fetchOrderHistory(orderId) {
 // (ver supabase/schema_v5_folios.sql). El tiempo estimado de producción
 // tampoco se manda: nace en null y solo lo captura fábrica una vez que
 // confirma la orden (ver EstimatedDaysCard / schema_v7_no_default_days.sql).
-export async function createOrder({ clientName, orderTypeKey, description, requestedDeliveryDate, items }) {
+export async function createOrder({ clientName, clientId, orderTypeKey, description, requestedDeliveryDate, items }) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
 
@@ -55,6 +55,7 @@ export async function createOrder({ clientName, orderTypeKey, description, reque
       p_description: description || null,
       p_requested_delivery_date: requestedDeliveryDate,
       p_items: items || [],
+      p_client_id: clientId || null,
     })
     .single()
 }

@@ -2,10 +2,14 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOrderTypes } from '../hooks/useOrderTypes'
 import { useOrderTemplates } from '../hooks/useOrderTemplates'
+import { useClientes } from '../hooks/useClientes'
+import { useTelas } from '../hooks/useTelas'
+import { useProductosByCliente } from '../hooks/useProductosByCliente'
 import { createOrder } from '../services/ordersService'
 import { uploadOrderPhotos, attachExistingPhotos } from '../services/photosService'
 import { copyTemplatePhotosToOrder } from '../services/templatesService'
 import OrderTypeSelect from '../components/orders/OrderTypeSelect'
+import ClienteSelect from '../components/orders/ClienteSelect'
 import PhotoPicker from '../components/orders/PhotoPicker'
 import OrderItemsEditor from '../components/orders/OrderItemsEditor'
 import TemplatePicker from '../components/orders/TemplatePicker'
@@ -15,13 +19,22 @@ import { Loading, ErrorState } from '../components/common/States'
 import { downloadOrderConfirmationPdf } from '../utils/generateOrderPdf'
 
 const initialForm = {
+  clientId: '',
   clientName: '',
   orderTypeKey: '',
   description: '',
   requestedDeliveryDate: '',
 }
 
-const emptyItem = () => ({ garment: '', color: '', pantone: '', sizes: [{ talla: '', cantidad: '' }] })
+const emptyItem = () => ({
+  garment: '',
+  color: '',
+  pantone: '',
+  tela_id: '',
+  tela_nombre: '',
+  foto_url: '',
+  sizes: [{ talla: '', cantidad: '' }],
+})
 
 export default function NewOrderPage() {
   return (
@@ -34,7 +47,10 @@ export default function NewOrderPage() {
 function NewOrderForm() {
   const { orderTypes, loading, error, refresh } = useOrderTypes()
   const { templates } = useOrderTemplates()
+  const { clientes, refresh: refreshClientes } = useClientes()
+  const { telas, refresh: refreshTelas } = useTelas()
   const [form, setForm] = useState(initialForm)
+  const { productos, refresh: refreshProductos } = useProductosByCliente(form.clientId)
   const [items, setItems] = useState([emptyItem()])
   const [photoFiles, setPhotoFiles] = useState([])
   const [templatePhotos, setTemplatePhotos] = useState([])
@@ -82,6 +98,7 @@ function NewOrderForm() {
 
     const { data, error: createError } = await createOrder({
       clientName: form.clientName.trim(),
+      clientId: form.clientId || null,
       orderTypeKey: form.orderTypeKey,
       description: form.description.trim(),
       requestedDeliveryDate: form.requestedDeliveryDate,
@@ -144,16 +161,17 @@ function NewOrderForm() {
       <form className="order-form" onSubmit={handleSubmit}>
         <TemplatePicker templates={templates} onApply={handleApplyTemplate} />
 
-        <label>
-          Cliente *
-          <input
-            type="text"
-            className="input"
-            value={form.clientName}
-            onChange={(e) => updateField('clientName', e.target.value)}
-            placeholder="Nombre del cliente"
+        <div>
+          <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+            Cliente *
+          </span>
+          <ClienteSelect
+            clientes={clientes}
+            value={form.clientId}
+            onChange={(clientId, clientName) => setForm((f) => ({ ...f, clientId, clientName }))}
+            onClienteCreated={refreshClientes}
           />
-        </label>
+        </div>
 
         <div>
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
@@ -192,7 +210,17 @@ function NewOrderForm() {
           <span className="field-label" style={{ marginBottom: 8, display: 'block' }}>
             Prendas, tallas y colores
           </span>
-          <OrderItemsEditor items={items} onChange={setItems} orderTypeKey={form.orderTypeKey} />
+          <OrderItemsEditor
+            items={items}
+            onChange={setItems}
+            orderTypeKey={form.orderTypeKey}
+            telas={telas}
+            onTelaCreated={refreshTelas}
+            clienteId={form.clientId}
+            clienteNombre={form.clientName}
+            productos={productos}
+            onProductoCreated={refreshProductos}
+          />
         </div>
 
         <label>

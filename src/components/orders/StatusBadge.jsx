@@ -1,12 +1,17 @@
-import { getStatus, isCompleted } from '../../utils/status'
+import { getStatus } from '../../utils/status'
 
-// Negro con texto ámbar para las 5 etapas en proceso (son solo una
-// etiqueta de "en qué va", no un juicio de bien/mal). "Completado" es la
-// única excepción: cuenta como indicador semántico ("bien" / terminado),
-// así que se pinta de verde — ver la regla de colores en styles/index.css.
+// Cada etapa de producción tiene su propio color (progresión ámbar→naranja,
+// definida una sola vez en lib/constants.js → STATUSES) para reconocerla de
+// un vistazo — "completado" sigue siendo la única en verde, el único
+// indicador semántico real de "bien" entre las 6. Rojo queda fuera de esta
+// paleta a propósito: se reserva para urgencia de fecha de entrega (ver
+// OrderCard), nunca para una etapa.
 export default function StatusBadge({ status }) {
   const s = getStatus(status)
-  const good = isCompleted(status)
 
-  return <span className={'badge ' + (good ? 'badge--status-good' : 'badge--status')}>{s.label}</span>
+  return (
+    <span className="badge badge--status" style={{ background: s.color, color: s.textColor }}>
+      {s.label}
+    </span>
+  )
 }

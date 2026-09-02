@@ -213,6 +213,12 @@ h4 {
   background: var(--color-danger-soft);
 }
 
+/* Ámbar: "en la mira" (4-7 días) — un paso antes de --overdue, nunca rojo. */
+.order-card--warning {
+  border-color: var(--color-warning);
+  background: var(--color-orange-soft);
+}
+
 .order-card--good {
   border-color: var(--color-good);
   background: var(--color-good-soft);
@@ -257,6 +263,10 @@ h4 {
 .order-card__due--today,
 .order-card__due--overdue {
   color: var(--color-danger);
+}
+
+.order-card__due--warning {
+  color: var(--color-warning);
 }
 
 .order-card__due--good {
@@ -895,6 +905,41 @@ h4 {
   font-size: 13px;
 }
 
+/* ---------- Documentos (OrderDocumentsCard) ---------- */
+
+.document-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.document-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  gap: 12px;
+}
+
+.document-row__label {
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.document-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.document-row__empty {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
 /* ---------- Prendas (OrderItemsEditor) ---------- */
 
 .items-editor {
@@ -946,6 +991,24 @@ h4 {
   margin: 0;
   font-size: 12px;
   color: var(--color-text-muted);
+}
+
+.producto-autocomplete {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+.producto-autocomplete label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .sizes-table {
