@@ -7,8 +7,8 @@
 //
 // Controlado: recibe `articulos`/`onChange`, sin estado propio — así el
 // mismo editor sirve tanto para llenarlo a mano como para prellenarlo con
-// lo que reconoce la foto (ver recognizePedidoPhoto en
-// services/pedidoOcrService.js).
+// lo que reconoce la foto o PDF (ver recognizeDocument en
+// services/documentOcrService.js).
 export default function PedidoArticulosEditor({ articulos, onChange }) {
   function updateArticulo(index, patch) {
     const next = articulos.map((a, i) => (i === index ? { ...a, ...patch } : a))

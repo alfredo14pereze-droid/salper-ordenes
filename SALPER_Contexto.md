@@ -701,3 +701,85 @@ el nombre nuevo del export sí llegó al navegador (un error de consola
 que apareció durante la edición resultó ser un log viejo en caché de la
 herramienta de este panel, no un problema real del código — confirmado
 comparando contra el archivo tal como lo sirve Vite).
+
+### Reconocimiento por foto/PDF extendido a "Nueva orden" + endpoint generalizado
+
+El endpoint de reconocimiento ya no es exclusivo de Pedidos a Proveedor —
+se generalizó para servir dos flujos:
+
+- **Renombrado:** `api/pedido-ocr.js` → `api/document-ocr.js`,
+  `src/services/pedidoOcrService.js` → `documentOcrService.js`,
+  `recognizePedidoPhoto(file)` → `recognizeDocument(file, context)`. El
+  `context` (`'pedido_proveedor'` | `'orden'`) decide qué *tool*/prompt
+  usa el endpoint y qué trae la respuesta — cada contexto tiene su propia
+  tool de Anthropic (`registrar_articulos` vs `registrar_orden`), ambas
+  con el mismo criterio de "nunca inventar, omitir si no se lee con
+  certeza". `NewPedidoTiendaPage.jsx` sigue funcionando idéntico, solo
+  cambiaron los nombres.
+- **`registrar_orden`** (nueva tool, solo para `context: 'orden'`):
+  además de `articulos` (nombre/cantidad/talla, igual que pedidos a
+  proveedor), intenta leer `cliente` y `fecha_entrega` — **solo si
+  aparecen explícitos y sin ambigüedad** en el documento; si no, regresan
+  `null` (nunca inventados). `fecha_entrega` se valida server-side como
+  `YYYY-MM-DD` real (`isValidIsoDate`) antes de mandarla al frontend.
+- **`NewOrderPage.jsx`**: nuevo bloque de carga (foto o PDF, mismo
+  patrón visual que Pedidos a Proveedor) arriba del todo, antes de
+  "Cliente". Al reconocer:
+  - **Prendas**: se mapean a `OrderItemsEditor`'s `items` (cada
+    artículo reconocido = una prenda con una talla/cantidad) — mismo
+    criterio de "nunca pisar lo ya tecleado a mano" que en Pedidos a
+    Proveedor (conserva filas con contenido, agrega las reconocidas,
+    deja una fila vacía al final).
+  - **Fecha de entrega**: se prellena solo si el campo sigue vacío.
+  - **Cliente**: es el caso más delicado — el formulario usa
+    `ClienteSelect` (dropdown atado a `clientId`+`clientName` del
+    catálogo), así que no se puede simplemente meter un `clientName`
+    suelto sin `clientId` (dejaría la UI en un estado a medias, el
+    dropdown seguiría diciendo "Selecciona un cliente…"). Se resolvió
+    así: si el nombre reconocido coincide EXACTO (vía
+    `utils/similarity.js`, `similarity() === 1`) con un cliente ya en el
+    catálogo, se selecciona solo (clientId + clientName); si no hay
+    match exacto, se muestra un aviso informativo ("Se reconoció el
+    cliente 'X' — no está en el catálogo. Usa '+ Cliente nuevo'…") sin
+    tocar el estado del formulario, y el usuario decide si lo agrega.
+    Nunca se sobreescribe un cliente ya elegido a mano.
+- **Nunca autoguarda**: igual que en Pedidos a Proveedor, todo esto solo
+  prellena — la orden se sigue creando con el botón normal de "Crear
+  orden", después de que el usuario revisa/corrige.
+
+Verificado: build limpio, `node --check` del endpoint renombrado sin
+errores, `grep` confirmó cero referencias a los nombres viejos
+(`pedidoOcrService`, `recognizePedidoPhoto`, `pedido-ocr.js`) en
+`src/`/`api/`, y se confirmó leyendo el archivo servido por Vite que
+`NewOrderPage.jsx` sí trae `recognizeDocument(file, 'orden')`. No se pudo
+probar el reconocimiento en vivo con una sesión real (mismo límite de
+siempre) — queda pendiente que el usuario lo pruebe con una foto/PDF de
+una orden real.
+
+### Confirmación de contraseña al crear usuario
+
+`UsersPage.jsx` (`NewUserForm`): campo nuevo "Confirmar contraseña".
+Validación en dos capas, como se pidió:
+
+- **Frontend:** aviso en vivo bajo el campo (`passwordsMismatch`, se
+  calcula en cada render — no espera al submit) en cuanto hay algo
+  tecleado en la confirmación que no coincide, más un bloqueo real del
+  submit en `handleSubmit` (mismo `if` que corta la función antes de
+  llamar a `createUser`, como ya hacía la validación de "mínimo 6
+  caracteres"). El botón "Crear usuario" también se deshabilita mientras
+  `passwordsMismatch` sea `true`.
+- **Backend:** `usersService.createUser` ahora manda `password_confirm`
+  junto con `password` a la Edge Function `admin-create-user`, que
+  agrega un `if (password !== password_confirm)` → 400 "Las contraseñas
+  no coinciden." — espejo exacto de la regla del frontend, por si
+  alguien llama al endpoint directo saltándose la UI. La función se
+  desplegó desde el editor del Dashboard de Supabase (mismo patrón que
+  las migraciones SQL: se pegó el archivo completo y se le dio "Deploy
+  updates"), y el archivo de respaldo en el repo
+  (`supabase/functions/admin-create-user/index.ts`) se actualizó
+  igual — confirmado que el timestamp de la función pasó a "a few
+  seconds ago" tras el deploy.
+
+No se pudo probar el flujo completo (crear un usuario real con
+contraseñas que coinciden y que no coinciden) con una sesión de admin
+real dentro de este panel — queda pendiente que el usuario lo pruebe.

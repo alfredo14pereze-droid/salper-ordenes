@@ -6,6 +6,8 @@ import { useTelas } from '../hooks/useTelas'
 import { useProductosByCliente } from '../hooks/useProductosByCliente'
 import { createOrder } from '../services/ordersService'
 import { uploadOrderPhotos } from '../services/photosService'
+import { recognizeDocument, MAX_OCR_FILE_SIZE_MB } from '../services/documentOcrService'
+import { similarity } from '../utils/similarity'
 import OrderTypeSelect from '../components/orders/OrderTypeSelect'
 import ClienteSelect from '../components/orders/ClienteSelect'
 import PhotoPicker from '../components/orders/PhotoPicker'
@@ -33,6 +35,10 @@ const emptyItem = () => ({
   sizes: [{ talla: '', cantidad: '' }],
 })
 
+function isItemVacio(item) {
+  return !item.garment.trim() && !item.sizes.some((s) => s.talla.trim())
+}
+
 export default function NewOrderPage() {
   return (
     <RequireRole allow={canCreateOrder}>
@@ -52,6 +58,70 @@ function NewOrderForm() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
   const navigate = useNavigate()
+
+  const [ocrLoading, setOcrLoading] = useState(false)
+  const [ocrWarning, setOcrWarning] = useState(null)
+  const [ocrError, setOcrError] = useState(null)
+  const [ocrClienteHint, setOcrClienteHint] = useState(null)
+
+  async function handleOcrFileInput(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    setOcrLoading(true)
+    setOcrWarning(null)
+    setOcrError(null)
+    setOcrClienteHint(null)
+
+    const { data, error: ocrErr } = await recognizeDocument(file, 'orden')
+    setOcrLoading(false)
+
+    if (ocrErr) {
+      setOcrError(ocrErr)
+      return
+    }
+    if (data.warning) {
+      setOcrWarning(data.warning)
+    }
+
+    // Cliente: si ya hay uno elegido, no se toca. Si el nombre reconocido
+    // coincide exacto con uno del catálogo, se selecciona solo; si no,
+    // se muestra como sugerencia (el usuario decide si lo agrega con
+    // "+ Cliente nuevo") — nunca se mete un clientName suelto sin pasar
+    // por ClienteSelect, para que la UI no quede en un estado a medias.
+    if (data.cliente && !form.clientId) {
+      const exact = clientes.find((c) => similarity(c.nombre, data.cliente) === 1)
+      if (exact) {
+        setForm((f) => ({ ...f, clientId: exact.id, clientName: exact.nombre }))
+      } else {
+        setOcrClienteHint(data.cliente)
+      }
+    }
+
+    // Fecha de entrega: solo si el documento la indicó con claridad y
+    // el campo sigue vacío (no pisa una fecha ya elegida a mano).
+    if (data.fechaEntrega && !form.requestedDeliveryDate) {
+      setForm((f) => ({ ...f, requestedDeliveryDate: data.fechaEntrega }))
+    }
+
+    if (data.articulos.length > 0) {
+      // Nunca pisa lo que ya se haya tecleado a mano: conserva las
+      // prendas con contenido y agrega las reconocidas después, más una
+      // fila vacía nueva al final para seguir capturando (mismo patrón
+      // de auto-agregar). El usuario revisa/corrige todo antes de crear
+      // la orden — esto solo prellena.
+      setItems((current) => {
+        const conContenido = current.filter((it) => !isItemVacio(it))
+        const reconocidos = data.articulos.map((a) => ({
+          ...emptyItem(),
+          garment: a.nombre,
+          sizes: [{ talla: a.talla || '', cantidad: String(a.cantidad) }],
+        }))
+        return [...conContenido, ...reconocidos, emptyItem()]
+      })
+    }
+  }
 
   function updateField(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
@@ -134,6 +204,35 @@ function NewOrderForm() {
       <h2 className="section-title">Nueva orden</h2>
 
       <form className="order-form" onSubmit={handleSubmit}>
+        <div>
+          <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+            Foto o PDF de la orden (opcional)
+          </span>
+          <label className="photo-picker__add" style={{ display: 'inline-flex' }}>
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={handleOcrFileInput}
+              hidden
+              disabled={ocrLoading}
+            />
+            {ocrLoading ? 'Leyendo el archivo…' : '+ Subir foto o PDF y prellenar la orden'}
+          </label>
+          <p className="pantone-hint">
+            Foto o PDF, máximo {MAX_OCR_FILE_SIZE_MB}MB. Prellena cliente, fecha de entrega y prendas cuando se
+            alcancen a leer con claridad — el reconocimiento automático no es perfecto, revisa y corrige todo antes
+            de crear la orden.
+          </p>
+          {ocrWarning && <p className="pantone-hint">{ocrWarning}</p>}
+          {ocrClienteHint && (
+            <p className="pantone-hint">
+              Se reconoció el cliente "{ocrClienteHint}" — no está en el catálogo. Usa "+ Cliente nuevo" abajo si
+              quieres agregarlo.
+            </p>
+          )}
+          {ocrError && <p className="form-error">{ocrError.message}</p>}
+        </div>
+
         <div>
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
             Cliente *

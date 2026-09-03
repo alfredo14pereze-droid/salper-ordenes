@@ -29,7 +29,11 @@ export async function updateUserRole(userId, role, fullName) {
 // admin-create-user. La función misma verifica que quien llama sea
 // admin — aquí solo se manda la sesión actual, nunca ninguna llave
 // privilegiada (esta app no tiene ni conoce la service role key).
-export async function createUser({ email, password, fullName, role }) {
+// `confirmPassword` se manda tal cual junto con `password` — la Edge
+// Function vuelve a validar que coincidan (ver
+// supabase/functions/admin-create-user/index.ts) por si alguien llama al
+// endpoint directo, saltándose la validación de UsersPage.jsx.
+export async function createUser({ email, password, confirmPassword, fullName, role }) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
 
@@ -40,7 +44,7 @@ export async function createUser({ email, password, fullName, role }) {
   }
 
   const { data, error } = await supabase.functions.invoke('admin-create-user', {
-    body: { email, password, full_name: fullName, role },
+    body: { email, password, password_confirm: confirmPassword, full_name: fullName, role },
     headers: { Authorization: `Bearer ${token}` },
   })
 

@@ -9,7 +9,7 @@ const ROLES = ['tienda', 'fabrica', 'admin']
 
 function NewUserForm({ onCreated }) {
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({ fullName: '', email: '', password: '', role: 'tienda' })
+  const [form, setForm] = useState({ fullName: '', email: '', password: '', confirmPassword: '', role: 'tienda' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
@@ -17,14 +17,27 @@ function NewUserForm({ onCreated }) {
     setForm((f) => ({ ...f, [field]: value }))
   }
 
+  // Feedback inmediato mientras se escribe, sin esperar a que se intente
+  // guardar — solo se muestra una vez que hay algo tecleado en la
+  // confirmación (si ambos campos están vacíos, técnicamente "coinciden"
+  // pero no hay nada que avisar todavía).
+  const passwordsMismatch = form.confirmPassword.length > 0 && form.password !== form.confirmPassword
+
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!form.fullName.trim() || !form.email.trim() || !form.password) {
-      setError(new Error('Completa nombre, correo y contraseña.'))
+    if (!form.fullName.trim() || !form.email.trim() || !form.password || !form.confirmPassword) {
+      setError(new Error('Completa nombre, correo, contraseña y confirmación.'))
       return
     }
     if (form.password.length < 6) {
       setError(new Error('La contraseña debe tener al menos 6 caracteres.'))
+      return
+    }
+    // Bloquea el submit — no deja crear el usuario si no coinciden.
+    // El backend (Edge Function admin-create-user) vuelve a validar esto
+    // por si alguien se salta el frontend.
+    if (form.password !== form.confirmPassword) {
+      setError(new Error('Las contraseñas no coinciden.'))
       return
     }
 
@@ -33,6 +46,7 @@ function NewUserForm({ onCreated }) {
     const { error: createError } = await createUser({
       email: form.email.trim(),
       password: form.password,
+      confirmPassword: form.confirmPassword,
       fullName: form.fullName.trim(),
       role: form.role,
     })
@@ -43,7 +57,7 @@ function NewUserForm({ onCreated }) {
       return
     }
 
-    setForm({ fullName: '', email: '', password: '', role: 'tienda' })
+    setForm({ fullName: '', email: '', password: '', confirmPassword: '', role: 'tienda' })
     setOpen(false)
     onCreated?.()
   }
@@ -92,16 +106,32 @@ function NewUserForm({ onCreated }) {
           />
         </label>
         <label>
-          Rol
-          <select className="input" value={form.role} onChange={(e) => updateField('role', e.target.value)}>
-            {ROLES.map((r) => (
-              <option key={r} value={r}>
-                {ROLE_LABELS[r]}
-              </option>
-            ))}
-          </select>
+          Confirmar contraseña
+          <input
+            type="password"
+            className="input"
+            value={form.confirmPassword}
+            onChange={(e) => updateField('confirmPassword', e.target.value)}
+            placeholder="Repite la contraseña"
+          />
+          {passwordsMismatch && (
+            <span className="form-error" style={{ marginTop: 4, display: 'block' }}>
+              Las contraseñas no coinciden.
+            </span>
+          )}
         </label>
       </div>
+
+      <label>
+        Rol
+        <select className="input" value={form.role} onChange={(e) => updateField('role', e.target.value)}>
+          {ROLES.map((r) => (
+            <option key={r} value={r}>
+              {ROLE_LABELS[r]}
+            </option>
+          ))}
+        </select>
+      </label>
 
       {error && <p className="form-error">{error.message}</p>}
 
@@ -109,7 +139,7 @@ function NewUserForm({ onCreated }) {
         <button type="button" className="btn btn--ghost" onClick={() => setOpen(false)}>
           Cancelar
         </button>
-        <button type="submit" className="btn btn--primary" disabled={saving}>
+        <button type="submit" className="btn btn--primary" disabled={saving || passwordsMismatch}>
           {saving ? 'Creando…' : 'Crear usuario'}
         </button>
       </div>

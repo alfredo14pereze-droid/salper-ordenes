@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createPedidoTienda } from '../services/pedidosTiendaService'
-import { recognizePedidoPhoto, MAX_OCR_FILE_SIZE_MB } from '../services/pedidoOcrService'
+import { recognizeDocument, MAX_OCR_FILE_SIZE_MB } from '../services/documentOcrService'
 import { useProveedores } from '../hooks/useProveedores'
 import PedidoArticulosEditor from '../components/pedidos/PedidoArticulosEditor'
 import ProveedorSelect from '../components/pedidos/ProveedorSelect'
@@ -54,7 +54,7 @@ function NewPedidoTiendaForm() {
     setOcrWarning(null)
     setOcrError(null)
 
-    const { data, error: ocrErr } = await recognizePedidoPhoto(file)
+    const { data, error: ocrErr } = await recognizeDocument(file, 'pedido_proveedor')
     setOcrLoading(false)
 
     if (ocrErr) {

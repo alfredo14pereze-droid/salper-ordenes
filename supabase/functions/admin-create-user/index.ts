@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Solo un administrador puede crear usuarios.' }, 403)
     }
 
-    const { email, password, full_name, role } = await req.json()
+    const { email, password, password_confirm, full_name, role } = await req.json()
 
     if (!email || !password || !full_name || !role) {
       return jsonResponse({ error: 'Faltan datos: email, password, full_name, role.' }, 400)
@@ -74,6 +74,11 @@ Deno.serve(async (req) => {
     }
     if (String(password).length < 6) {
       return jsonResponse({ error: 'La contraseña debe tener al menos 6 caracteres.' }, 400)
+    }
+    // Espejo de la validación de UsersPage.jsx — por si alguien llama a
+    // este endpoint directo, saltándose el frontend.
+    if (password !== password_confirm) {
+      return jsonResponse({ error: 'Las contraseñas no coinciden.' }, 400)
     }
 
     const { data: created, error: createError } = await adminClient.auth.admin.createUser({

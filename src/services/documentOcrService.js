@@ -1,10 +1,11 @@
 import { supabase } from '../lib/supabaseClient'
 
-// Habla con /api/pedido-ocr (ver ese archivo) — le manda la foto o el PDF
-// de la nota/remisión del proveedor y regresa artículos/cantidades/tallas
-// para PRELLENAR el formulario, nunca para guardar directo. Mismo patrón
-// que chatService.js: token de la sesión actual, la API key de Anthropic
-// nunca sale del servidor.
+// Habla con /api/document-ocr (ver ese archivo) — le manda una foto o un
+// PDF y regresa datos para PRELLENAR un formulario, nunca para guardar
+// directo. Endpoint genérico compartido por dos flujos (`context`):
+// 'pedido_proveedor' (NewPedidoTiendaPage) y 'orden' (NewOrderPage).
+// Mismo patrón que chatService.js: token de la sesión actual, la API key
+// de Anthropic nunca sale del servidor.
 export const MAX_OCR_FILE_SIZE_MB = 3
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
 
@@ -21,11 +22,16 @@ function fileToBase64(file) {
   })
 }
 
-// Regresa { data: { articulos: [{nombre, cantidad, talla}], warning? }, error }.
+// `context`: 'pedido_proveedor' | 'orden' — decide qué tool/prompt usa
+// el endpoint y qué trae la respuesta:
+//   - 'pedido_proveedor' -> { articulos: [{nombre, cantidad, talla}], warning? }
+//   - 'orden'            -> { articulos: [...], cliente, fechaEntrega, warning? }
+//     (`cliente`/`fechaEntrega` vienen en null si el documento no los
+//     indica con claridad — nunca inventados).
 // `warning` (sin `error`) significa "la llamada funcionó pero no se pudo
 // leer nada útil del archivo" — no bloquea el flujo, el formulario se
 // sigue llenando a mano.
-export async function recognizePedidoPhoto(file) {
+export async function recognizeDocument(file, context) {
   if (!supabase) {
     return { data: null, error: new Error('Supabase no está configurado.') }
   }
@@ -47,13 +53,13 @@ export async function recognizePedidoPhoto(file) {
 
   let res
   try {
-    res = await fetch('/api/pedido-ocr', {
+    res = await fetch('/api/document-ocr', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ fileBase64, mediaType: file.type }),
+      body: JSON.stringify({ fileBase64, mediaType: file.type, context }),
     })
   } catch (err) {
     return { data: null, error: new Error('No se pudo conectar para leer el archivo. Revisa tu conexión.') }
