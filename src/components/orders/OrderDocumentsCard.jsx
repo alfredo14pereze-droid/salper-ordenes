@@ -1,20 +1,24 @@
 import { useState } from 'react'
 import { uploadOrderDocument, getSignedDocumentUrl } from '../../services/documentsService'
 import { useAuth } from '../../contexts/AuthContext'
-import { canEditOrder } from '../../utils/permissions'
+import { canEditOrderDocument } from '../../utils/permissions'
 
 const DOC_TYPES = [
   { kind: 'cotizacion', label: 'Cotización', field: 'cotizacion_pdf_path' },
   { kind: 'orden_compra', label: 'Orden de compra', field: 'orden_compra_pdf_path' },
+  { kind: 'factura', label: 'Factura', field: 'factura_pdf_path' },
 ]
 
-// Cotización y orden de compra son independientes entre sí — puede haber
-// una, la otra, ambas o ninguna. El archivo vive en un bucket privado (ver
-// documentsService.js): "Ver" pide una URL firmada al momento del clic, no
-// hay URL fija guardada.
+// Cotización, orden de compra y factura son independientes entre sí —
+// puede haber cualquier combinación. El archivo vive en un bucket privado
+// (ver documentsService.js): "Ver" pide una URL firmada al momento del
+// clic, no hay URL fija guardada. Quién puede subir/reemplazar CADA
+// documento se decide por fila (canEditOrderDocument), no para la tarjeta
+// completa: la factura se puede subir en cualquier estado de la orden,
+// cotización/orden de compra solo mientras sigue en_confirmacion (para
+// tienda; admin siempre puede con los tres).
 export default function OrderDocumentsCard({ order, onUpdated }) {
   const { role } = useAuth()
-  const editable = canEditOrder(role, order)
   const [busyKind, setBusyKind] = useState(null)
   const [error, setError] = useState(null)
 
@@ -51,6 +55,7 @@ export default function OrderDocumentsCard({ order, onUpdated }) {
         {DOC_TYPES.map(({ kind, label, field }) => {
           const path = order[field]
           const busy = busyKind === kind
+          const editable = canEditOrderDocument(role, order, kind)
 
           return (
             <div key={kind} className="document-row">

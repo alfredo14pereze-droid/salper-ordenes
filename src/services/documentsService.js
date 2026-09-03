@@ -1,10 +1,11 @@
 import { supabase } from '../lib/supabaseClient'
 
-// Documentos por orden (cotización / orden de compra) — bucket PRIVADO a
-// propósito (a diferencia de order-photos), porque estos PDFs pueden traer
-// precios. Por eso no hay getPublicUrl: la URL se pide al vuelo con una
-// signed URL cada vez que alguien quiere ver/descargar el archivo, y solo
-// funciona con sesión (ver supabase/schema_v11_documentos.sql).
+// Documentos por orden (cotización / orden de compra / factura) — bucket
+// PRIVADO a propósito (a diferencia de order-photos), porque estos PDFs
+// pueden traer precios. Por eso no hay getPublicUrl: la URL se pide al
+// vuelo con una signed URL cada vez que alguien quiere ver/descargar el
+// archivo, y solo funciona con sesión (ver supabase/schema_v11_documentos.sql
+// y schema_v15_factura.sql).
 const BUCKET = 'orden-documentos'
 const SIGNED_URL_TTL_SECONDS = 60
 
@@ -16,7 +17,8 @@ function ensureClient() {
 }
 
 // Sube un PDF nuevo (o de reemplazo) para una orden y lo registra en la
-// columna correspondiente. `kind` es 'cotizacion' u 'orden_compra'.
+// columna correspondiente. `kind` es 'cotizacion', 'orden_compra' o
+// 'factura'.
 export async function uploadOrderDocument(orderId, kind, file) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }

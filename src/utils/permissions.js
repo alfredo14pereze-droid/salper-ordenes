@@ -16,6 +16,18 @@ export function canEditOrder(role, order) {
   return false
 }
 
+// Documentos de la orden (cotización/orden de compra/factura): mismo
+// espejo que set_order_document en schema_v15_factura.sql. La factura es
+// la excepción a propósito — casi siempre se sube DESPUÉS de que fábrica
+// ya confirmó (cuando se entrega o se está por entregar), así que para
+// 'factura' tienda no queda limitado a "en_confirmacion" como sí pasa con
+// cotización/orden de compra.
+export function canEditOrderDocument(role, order, kind) {
+  if (role === 'admin') return true
+  if (role === 'tienda') return kind === 'factura' || order?.status === 'en_confirmacion'
+  return false
+}
+
 // fabrica/admin cambian el estado (incluye "confirmar"); tienda nunca.
 export function canChangeStatus(role) {
   return role === 'fabrica' || role === 'admin'

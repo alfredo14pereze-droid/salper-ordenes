@@ -419,3 +419,45 @@ de que se revocara, decodificándolo a archivo y leyéndolo): el badge y
 cada renglón del historial salen con el color correcto por etapa
 (incluye rojo/verde de "Por Confirmar"/"Confirmada"), notas en cursiva,
 orden cronológico correcto.
+
+El usuario confirmó que le gustó, pero notó que el PDF de prueba que le
+mandé no traía el resumen de "Prendas, tallas y colores" — esa sección
+nunca se tocó (sigue igual, gated a `items.length > 0`); lo que pasó es
+que esa orden de prueba en particular no tenía prendas capturadas como
+tal, solo texto libre en la descripción. Se volvió a probar con una orden
+que sí tiene items reales (SUB-003) y la sección sale exactamente igual
+que antes, junto con el historial nuevo — sin regresión.
+
+### Documento de Factura (mismo patrón que cotización/orden de compra)
+
+`schema_v15_factura.sql`: columna `factura_pdf_path` (nullable) +
+`set_order_document` gana un tercer `p_kind` = `'factura'`, mismo bucket
+privado `orden-documentos` que ya existía (sin cambios de Storage
+policies). Misma firma de función que antes → `CREATE OR REPLACE` sin
+`DROP`, y aun así se repitió el `revoke`/`grant` explícito por costumbre
+del proyecto (no hacía falta, pero no cuesta nada).
+
+Diferencia deliberada frente a cotización/orden de compra: esos dos solo
+los puede editar tienda mientras la orden sigue "en_confirmacion" (son
+documentos de ANTES de producción); la factura casi siempre se sube
+DESPUÉS (cuando ya se entregó o está por entregarse), así que para
+`'factura'` esa restricción de estado no aplica — tienda puede
+subir/reemplazar la factura sin importar en qué estado esté la orden.
+Admin sigue sin restricción en los tres casos. Esto obligó a cambiar
+también el lado del frontend: `OrderDocumentsCard.jsx` antes calculaba un
+solo `editable` para toda la tarjeta con `canEditOrder(role, order)`; con
+la excepción de factura, ese único flag ya no alcanza — ahora hay
+`canEditOrderDocument(role, order, kind)` en `permissions.js` (espejo
+exacto de la regla del RPC) y `editable` se calcula por renglón, no por
+tarjeta completa.
+
+Verificado: columna existe, la función tiene una sola firma con
+`anon_exec = false`/`auth_exec = true`, y se probó la función real desde
+el SQL Editor (sin sesión, rechaza con el mensaje correcto — confirma que
+parsea y corre bien) más una tabla de verdad de la condición
+`tienda_blocked` para las 5 combinaciones kind/estado relevantes,
+confirmando que factura nunca se bloquea y cotización/orden de compra sí
+se bloquean fuera de en_confirmacion, igual que antes. No se pudo probar
+el flujo de subida end-to-end con una sesión real de tienda/admin dentro
+de este panel (sin sesión activa, no tecleo credenciales) — queda
+pendiente que el usuario lo pruebe con su login.
