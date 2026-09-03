@@ -1,9 +1,13 @@
+import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { usePedidoTienda } from '../hooks/usePedidoTienda'
+import { marcarPedidoRecibido } from '../services/pedidosTiendaService'
 import PedidoEstadoBadge from '../components/pedidos/PedidoEstadoBadge'
+import VerificarPedidoForm from '../components/pedidos/VerificarPedidoForm'
 import { Loading, ErrorState } from '../components/common/States'
 import RequireRole from '../components/common/RequireRole'
-import { canViewPedidosTienda } from '../utils/permissions'
+import { canViewPedidosTienda, canManagePedidosTienda } from '../utils/permissions'
+import { useAuth } from '../contexts/AuthContext'
 import { formatDate } from '../utils/dates'
 
 function formatMonto(monto) {
@@ -21,7 +25,11 @@ export default function PedidoTiendaDetailPage() {
 
 function PedidoTiendaDetail() {
   const { id } = useParams()
+  const { role } = useAuth()
   const { pedido, articulos, loading, error, refresh } = usePedidoTienda(id)
+  const [verifying, setVerifying] = useState(false)
+  const [marcandoRecibido, setMarcandoRecibido] = useState(false)
+  const [actionError, setActionError] = useState(null)
 
   if (loading) return <Loading label="Cargando pedido…" />
   if (error) return <ErrorState error={error} onRetry={refresh} />
@@ -32,6 +40,21 @@ function PedidoTiendaDetail() {
     0
   )
   const mostrarCostoTotal = pedido.estado === 'verificado' || pedido.estado === 'con_problema'
+  const puedeGestionar = canManagePedidosTienda(role)
+  const puedeMarcarRecibido = puedeGestionar && pedido.estado === 'pedido'
+  const puedeVerificar = puedeGestionar && (pedido.estado === 'pedido' || pedido.estado === 'recibido')
+
+  async function handleMarcarRecibido() {
+    setMarcandoRecibido(true)
+    setActionError(null)
+    const { error: marcarError } = await marcarPedidoRecibido(pedido.id)
+    setMarcandoRecibido(false)
+    if (marcarError) {
+      setActionError(marcarError)
+      return
+    }
+    refresh()
+  }
 
   return (
     <div className="page page--narrow">
@@ -46,6 +69,22 @@ function PedidoTiendaDetail() {
         </div>
         <PedidoEstadoBadge estado={pedido.estado} />
       </div>
+
+      {(puedeMarcarRecibido || puedeVerificar) && !verifying && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          {puedeMarcarRecibido && (
+            <button type="button" className="btn btn--secondary" onClick={handleMarcarRecibido} disabled={marcandoRecibido}>
+              {marcandoRecibido ? 'Guardando…' : 'Marcar como recibido'}
+            </button>
+          )}
+          {puedeVerificar && (
+            <button type="button" className="btn btn--primary" onClick={() => setVerifying(true)}>
+              Verificar pedido
+            </button>
+          )}
+        </div>
+      )}
+      {actionError && <p className="form-error">{actionError.message}</p>}
 
       <section className="card">
         <h3 className="section-title section-title--small">Detalles</h3>
@@ -74,28 +113,42 @@ function PedidoTiendaDetail() {
       </section>
 
       <section className="card">
-        <h3 className="section-title section-title--small">Artículos</h3>
-        <div className="document-list">
-          {articulos.map((a) => (
-            <div key={a.id} className="document-row">
-              <div>
-                <span className="document-row__label">{a.nombre_articulo}</span>
-                <p className="document-row__empty" style={{ marginTop: 2 }}>
-                  Pedido: {a.cantidad_pedida}
-                  {a.cantidad_recibida !== null && ` · Recibido: ${a.cantidad_recibida}`}
-                  {formatMonto(a.precio_unitario) && ` · ${formatMonto(a.precio_unitario)} c/u`}
-                </p>
-                {a.nota_problema && <p className="form-error" style={{ marginTop: 2 }}>{a.nota_problema}</p>}
-              </div>
+        {verifying ? (
+          <VerificarPedidoForm
+            pedidoId={pedido.id}
+            articulos={articulos}
+            onCancel={() => setVerifying(false)}
+            onDone={() => {
+              setVerifying(false)
+              refresh()
+            }}
+          />
+        ) : (
+          <>
+            <h3 className="section-title section-title--small">Artículos</h3>
+            <div className="document-list">
+              {articulos.map((a) => (
+                <div key={a.id} className="document-row">
+                  <div>
+                    <span className="document-row__label">{a.nombre_articulo}</span>
+                    <p className="document-row__empty" style={{ marginTop: 2 }}>
+                      Pedido: {a.cantidad_pedida}
+                      {a.cantidad_recibida !== null && ` · Recibido: ${a.cantidad_recibida}`}
+                      {formatMonto(a.precio_unitario) && ` · ${formatMonto(a.precio_unitario)} c/u`}
+                    </p>
+                    {a.nota_problema && <p className="form-error" style={{ marginTop: 2 }}>{a.nota_problema}</p>}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {mostrarCostoTotal && (
-          <div className="items-grand-total" style={{ marginTop: 12 }}>
-            <span>Costo total del pedido</span>
-            <b>{formatMonto(costoTotal)}</b>
-          </div>
+            {mostrarCostoTotal && (
+              <div className="items-grand-total" style={{ marginTop: 12 }}>
+                <span>Costo total del pedido</span>
+                <b>{formatMonto(costoTotal)}</b>
+              </div>
+            )}
+          </>
         )}
       </section>
     </div>

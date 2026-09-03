@@ -534,3 +534,67 @@ invitado (sin sesión) sigue mostrando bien los pendientes existentes, sin
 errores de consola — el formulario en sí (con el toggle nuevo) no se pudo
 probar interactivamente por la misma razón de siempre (sin sesión activa
 en este panel).
+
+### Módulo "Pedidos a Proveedor" (schema_v18, 3 fases)
+
+Módulo nuevo e **independiente** del flujo de órdenes de producción —
+para la tienda de artículos deportivos, no para uniformes/sublimación.
+Resuelve que a veces una sola persona le pide mercancía a un proveedor
+sin avisarle a nadie más: ahora queda un registro centralizado de qué se
+pidió, quién lo pidió, qué llegó realmente y a qué costo. Se construyó en
+3 fases, cada una validada con el usuario antes de la siguiente (a
+petición explícita de su prompt inicial).
+
+**Tablas** (`schema_v18_pedidos_tienda.sql`): `pedidos_tienda`
+(proveedor, pedido_por, fecha_pedido, estado, fecha_recepcion,
+verificado_por, notas) y `pedidos_tienda_articulos` (pedido_id FK
+cascade, nombre_articulo, cantidad_pedida, cantidad_recibida,
+precio_unitario, nota_problema). Ninguna toca `orders`/nada del módulo
+de producción.
+
+**Decisión de privacidad, distinta al resto de la app:** desde V10 un
+invitado ve todo en modo lectura sin sesión — este módulo es la
+excepción. Trae costos reales de proveedor, así que **no tiene modo
+invitado en absoluto**: ni la tabla se abre a `anon` (RLS + GRANT solo
+`authenticated`), ni el link de nav aparece, ni la ruta responde sin
+sesión (`RequireRole allow={canViewPedidosTienda}` en las 3 páginas).
+Cualquier rol con sesión puede VER (`canViewPedidosTienda`); solo
+tienda/admin pueden crear/recibir/verificar (`canManagePedidosTienda`) —
+fábrica no participa, es compra para la tienda deportiva.
+
+**Flujo de estados:** `pedido` (recién creado) → `recibido` (opcional,
+solo cambia fecha de recepción) → `verificado` **o** `con_problema`,
+decidido automáticamente por `verificar_pedido_tienda` según lo
+capturado: si algún artículo quedó sin `cantidad_recibida`, con cantidad
+distinta a la pedida, o con `nota_problema`, el pedido cierra en
+"con_problema"; si todo cuadra, en "verificado". No se puede volver a
+verificar un pedido ya cerrado (protege contra pisar datos por
+accidente). Colores de estado (`PEDIDO_TIENDA_ESTADOS` en
+`constants.js`): pedido=ámbar claro, recibido=azul, verificado=verde
+(`--color-good`, mismo significado que "Completado"), con_problema=rojo
+(`--color-danger`, mismo significado que "Atrasada") — reusa la paleta ya
+aprobada, no inventa hex nuevos.
+
+**UI:** `PedidosTiendaPage` (lista), `NewPedidoTiendaPage` (formulario,
+con `PedidoArticulosEditor` — mismo patrón exacto de auto-agregar fila
+que tallas/cantidades en `OrderItemsEditor`, mismas clases CSS
+`sizes-table`/`sizes-row`), `PedidoTiendaDetailPage` (detalle + botones
+de acción). Desde el detalle: "Marcar como recibido" (solo si
+`estado='pedido'`) y "Verificar pedido" (si `estado` es `pedido` o
+`recibido`) abre `VerificarPedidoForm` — por cada artículo compara en
+vivo `cantidad_recibida` contra `cantidad_pedida` y resalta la fila:
+rojo si falta (`--color-danger`/`--color-danger-soft`), ámbar si sobra
+(`--color-warning`/`--color-orange-soft`), neutro si coincide. El costo
+total del pedido (suma `cantidad_recibida × precio_unitario`) se muestra
+en el detalle solo una vez verificado.
+
+**Verificado:** las 3 fases con build limpio y sin errores de consola;
+schema aplicado y confirmado en Supabase (tablas con 17 columnas, 3
+RPCs con `anon=false`/`auth=true`); guest bloqueado del nav y de la URL
+directa; la lógica de decisión `verificado`/`con_problema` se probó
+insertando y borrando datos de prueba reales en la base (dos pedidos,
+uno sin discrepancias y otro con un artículo corto, confirmando
+`hay_problema = false`/`true` respectivamente) — no se pudo probar el
+flujo completo con una sesión real de tienda/admin dentro de este panel
+(sin sesión activa, no tecleo credenciales); queda pendiente que el
+usuario cree y verifique un pedido real con su login.
