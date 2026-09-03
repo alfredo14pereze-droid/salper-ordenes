@@ -1,25 +1,27 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { verifyUser } from './_chat/auth.js'
 
-// POST /api/pedido-ocr — lee la foto de una nota/remisión de proveedor y
-// regresa artículos/cantidades/tallas sugeridos para PRELLENAR el
-// formulario de "Nuevo pedido a proveedor" (nunca guarda nada en la base
-// — eso lo sigue haciendo create_pedido_tienda cuando el usuario confirma
-// el pedido, después de revisar/corregir lo que se leyó). Igual que
-// /api/chat: requiere sesión de Supabase (cuesta dinero real por
-// llamada), la API key de Anthropic vive solo aquí (variable de entorno
-// del servidor), nunca en el frontend.
+// POST /api/pedido-ocr — lee la foto O el PDF de una nota/remisión de
+// proveedor y regresa artículos/cantidades/tallas sugeridos para
+// PRELLENAR el formulario de "Nuevo pedido a proveedor" (nunca guarda
+// nada en la base — eso lo sigue haciendo create_pedido_tienda cuando el
+// usuario confirma el pedido, después de revisar/corregir lo que se
+// leyó). Igual que /api/chat: requiere sesión de Supabase (cuesta dinero
+// real por llamada), la API key de Anthropic vive solo aquí (variable de
+// entorno del servidor), nunca en el frontend.
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 const MODEL = 'claude-sonnet-5'
 const MAX_TOKENS = 1024
-const ALLOWED_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const IMAGE_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const PDF_MEDIA_TYPE = 'application/pdf'
+const ALLOWED_MEDIA_TYPES = [...IMAGE_MEDIA_TYPES, PDF_MEDIA_TYPE]
 // Límite generoso pero por debajo del tope de payload de las funciones
 // serverless de Vercel (~4.5MB) — el frontend ya limita el archivo
 // original a 3MB antes de codificarlo en base64 (ver
-// pedidoOcrService.js, MAX_OCR_PHOTO_SIZE_MB), esto es un segundo
+// pedidoOcrService.js, MAX_OCR_FILE_SIZE_MB), esto es un segundo
 // resguardo del lado del servidor.
-const MAX_IMAGE_BASE64_CHARS = 4_500_000
+const MAX_FILE_BASE64_CHARS = 4_500_000
 
 // Se fuerza una sola tool (en vez de pedirle a Claude que "conteste solo
 // con JSON" en texto libre) para que la respuesta salga siempre
@@ -28,7 +30,7 @@ const MAX_IMAGE_BASE64_CHARS = 4_500_000
 const EXTRACT_TOOL = {
   name: 'registrar_articulos',
   description:
-    'Registra los artículos, cantidades y tallas que se alcanzan a leer con certeza en la foto de la nota o remisión de un proveedor.',
+    'Registra los artículos, cantidades y tallas que se alcanzan a leer con certeza en la nota o remisión de un proveedor.',
   input_schema: {
     type: 'object',
     properties: {
@@ -61,30 +63,38 @@ export default async function handler(req, res) {
 
   const user = await verifyUser(req.headers.authorization)
   if (!user) {
-    res.status(401).json({ error: 'Inicia sesión para usar el reconocimiento de fotos.' })
+    res.status(401).json({ error: 'Inicia sesión para usar el reconocimiento automático.' })
     return
   }
 
-  const { imageBase64, mediaType } = req.body || {}
+  const { fileBase64, mediaType } = req.body || {}
 
-  if (typeof imageBase64 !== 'string' || !imageBase64) {
-    res.status(400).json({ error: 'Falta la imagen.' })
+  if (typeof fileBase64 !== 'string' || !fileBase64) {
+    res.status(400).json({ error: 'Falta el archivo.' })
     return
   }
   if (!ALLOWED_MEDIA_TYPES.includes(mediaType)) {
-    res.status(400).json({ error: 'Formato de imagen no soportado. Usa JPG, PNG, WEBP o GIF.' })
+    res.status(400).json({ error: 'Formato no soportado. Usa JPG, PNG, WEBP, GIF o PDF.' })
     return
   }
-  if (imageBase64.length > MAX_IMAGE_BASE64_CHARS) {
-    res.status(400).json({ error: 'La foto pesa demasiado. Intenta con una más ligera.' })
+  if (fileBase64.length > MAX_FILE_BASE64_CHARS) {
+    res.status(400).json({ error: 'El archivo pesa demasiado. Intenta con uno más ligero.' })
     return
   }
 
-  // La extracción de una foto manuscrita o de mala calidad nunca va a
-  // ser perfecta — cualquier tropiezo aquí (API caída, respuesta sin la
-  // tool, etc.) regresa 200 con articulos:[] + warning en vez de un
-  // error duro, para que el formulario de creación NUNCA se bloquee: el
-  // usuario simplemente llena los campos a mano.
+  // Un PDF se manda como bloque "document"; una foto, como bloque
+  // "image" — es la única diferencia real entre los dos casos, el resto
+  // del prompt/tool es idéntico.
+  const fileContentBlock =
+    mediaType === PDF_MEDIA_TYPE
+      ? { type: 'document', source: { type: 'base64', media_type: mediaType, data: fileBase64 } }
+      : { type: 'image', source: { type: 'base64', media_type: mediaType, data: fileBase64 } }
+
+  // La extracción de una nota manuscrita, un PDF escaneado o de mala
+  // calidad nunca va a ser perfecta — cualquier tropiezo aquí (API
+  // caída, respuesta sin la tool, etc.) regresa 200 con articulos:[] +
+  // warning en vez de un error duro, para que el formulario de creación
+  // NUNCA se bloquee: el usuario simplemente llena los campos a mano.
   try {
     const response = await anthropic.messages.create({
       model: MODEL,
@@ -95,10 +105,10 @@ export default async function handler(req, res) {
         {
           role: 'user',
           content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
+            fileContentBlock,
             {
               type: 'text',
-              text: 'Esta es la foto de una nota o remisión de un pedido a un proveedor. Usa la herramienta disponible para registrar los artículos, cantidades y tallas que se alcancen a leer con certeza. No inventes ni adivines datos que no se vean con claridad — omite ese artículo en vez de inventarlo.',
+              text: 'Este es un pedido a un proveedor (foto o PDF de la nota/remisión). Usa la herramienta disponible para registrar los artículos, cantidades y tallas que se alcancen a leer con certeza. No inventes ni adivines datos que no se vean con claridad — omite ese artículo en vez de inventarlo.',
             },
           ],
         },
@@ -119,7 +129,7 @@ export default async function handler(req, res) {
     if (articulos.length === 0) {
       res.status(200).json({
         articulos: [],
-        warning: 'No se reconoció ningún artículo en la foto — llena los campos a mano.',
+        warning: 'No se reconoció ningún artículo en el archivo — llena los campos a mano.',
       })
       return
     }
@@ -129,7 +139,7 @@ export default async function handler(req, res) {
     console.error('[api/pedido-ocr] error:', err)
     res.status(200).json({
       articulos: [],
-      warning: 'No se pudo leer la foto automáticamente — llena los campos a mano.',
+      warning: 'No se pudo leer el archivo automáticamente — llena los campos a mano.',
     })
   }
 }

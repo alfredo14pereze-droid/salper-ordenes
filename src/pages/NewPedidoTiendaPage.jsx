@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createPedidoTienda } from '../services/pedidosTiendaService'
-import { recognizePedidoPhoto, MAX_OCR_PHOTO_SIZE_MB } from '../services/pedidoOcrService'
+import { recognizePedidoPhoto, MAX_OCR_FILE_SIZE_MB } from '../services/pedidoOcrService'
 import { useProveedores } from '../hooks/useProveedores'
 import PedidoArticulosEditor from '../components/pedidos/PedidoArticulosEditor'
 import ProveedorSelect from '../components/pedidos/ProveedorSelect'
@@ -45,7 +45,7 @@ function NewPedidoTiendaForm() {
   const [ocrWarning, setOcrWarning] = useState(null)
   const [ocrError, setOcrError] = useState(null)
 
-  async function handlePhotoInput(e) {
+  async function handleOcrFileInput(e) {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
@@ -167,15 +167,21 @@ function NewPedidoTiendaForm() {
 
         <div>
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
-            Foto de la nota o remisión del proveedor
+            Foto o PDF de la nota o remisión del proveedor
           </span>
           <label className="photo-picker__add" style={{ display: 'inline-flex' }}>
-            <input type="file" accept="image/*" onChange={handlePhotoInput} hidden disabled={ocrLoading} />
-            {ocrLoading ? 'Leyendo la foto…' : '+ Subir foto y prellenar artículos'}
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={handleOcrFileInput}
+              hidden
+              disabled={ocrLoading}
+            />
+            {ocrLoading ? 'Leyendo el archivo…' : '+ Subir foto o PDF y prellenar artículos'}
           </label>
           <p className="pantone-hint">
-            Máximo {MAX_OCR_PHOTO_SIZE_MB}MB. El reconocimiento automático no es perfecto — revisa y corrige los
-            artículos antes de crear el pedido.
+            Foto o PDF, máximo {MAX_OCR_FILE_SIZE_MB}MB. El reconocimiento automático no es perfecto — revisa y
+            corrige los artículos antes de crear el pedido.
           </p>
           {ocrWarning && <p className="pantone-hint">{ocrWarning}</p>}
           {ocrError && <p className="form-error">{ocrError.message}</p>}

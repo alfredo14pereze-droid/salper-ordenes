@@ -683,3 +683,21 @@ subir una foto real y confirmar el prellenado) con una sesión real
 dentro de este panel — sin sesión activa, no tecleo credenciales; queda
 pendiente que el usuario lo pruebe con su login de tienda o admin y una
 foto real de una remisión.
+
+**Ampliado después: también acepta PDF, no solo foto.** El campo de
+"Foto de la nota o remisión" ahora es "Foto o PDF" — `accept="image/*,
+application/pdf"` en el input, y `api/pedido-ocr.js` arma el bloque de
+contenido para Claude como `type: 'document'` (en vez de `type: 'image'`)
+cuando `mediaType === 'application/pdf'`, mismo prompt y misma tool para
+ambos casos. Al agregar un segundo tipo de archivo, se renombraron los
+nombres genéricos que ya no tenía sentido dejar como "photo/image"
+(`MAX_OCR_PHOTO_SIZE_MB` → `MAX_OCR_FILE_SIZE_MB` en
+`pedidoOcrService.js`, `imageBase64` → `fileBase64` en el cuerpo de la
+petición y en el endpoint) — verificado que no quedó ninguna referencia
+vieja (`grep` en `src/`/`api/`). Mismo límite de 3MB para ambos tipos de
+archivo. Verificado: build limpio, `node --check` del endpoint sin
+errores, y se confirmó leyendo el archivo servido por el dev server que
+el nombre nuevo del export sí llegó al navegador (un error de consola
+que apareció durante la edición resultó ser un log viejo en caché de la
+herramienta de este panel, no un problema real del código — confirmado
+comparando contra el archivo tal como lo sirve Vite).
