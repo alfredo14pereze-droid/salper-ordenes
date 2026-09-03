@@ -1158,32 +1158,43 @@ h4 {
   margin: 14px 0;
 }
 
+/* Negro + ámbar (la combinación de los botones principales de la marca) a
+   propósito — nada más en el dashboard usa esta combinación, así que un
+   anuncio siempre resalta y nunca se confunde con las tarjetas de entrega
+   próxima (que son ámbar/naranja suave o rojo). */
 .announcement-banner {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: var(--color-orange-soft);
-  border: 1px solid var(--color-orange);
+  background: var(--color-black);
+  border: none;
   border-radius: var(--radius-sm);
   text-decoration: none;
-  color: var(--color-text);
+  color: var(--color-amber);
   font-size: 13px;
   flex-wrap: wrap;
+  transition: background 0.15s ease;
+}
+
+.announcement-banner:hover {
+  background: var(--color-black-hover);
 }
 
 .announcement-banner__label {
   font-weight: 700;
-  color: var(--color-orange-strong);
+  color: var(--color-amber);
 }
 
 .announcement-banner__title {
   font-weight: 600;
   flex: 1;
+  color: #ffffff;
 }
 
 .announcement-banner__date {
-  color: var(--color-text-muted);
+  color: #ffffff;
+  opacity: 0.65;
   font-size: 12px;
 }
 
@@ -1244,6 +1255,25 @@ h4 {
   margin: 0;
   font-size: 13px;
   color: var(--color-text-muted);
+}
+
+.pending-card__garment {
+  font-weight: 600;
+  color: var(--color-text) !important;
+  margin-bottom: 4px !important;
+}
+
+.pending-card__photo {
+  display: inline-block;
+  margin-top: 8px;
+}
+
+.pending-card__photo img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
 }
 
 /* ---------- Autenticación ---------- */

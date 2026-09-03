@@ -1,7 +1,7 @@
 // Estados posibles de una orden, en el orden en que normalmente ocurren.
 // Este orden se usa para el stepper visual y para saber qué tan "avanzada"
 // va una orden. El estado en sí se guarda como texto (ver
-// supabase/schema_v13_estados_produccion.sql, columna orders.status con
+// supabase/schema_v14_bordado_y_reparaciones.sql, columna orders.status con
 // CHECK constraint) — si algún día se necesita agregar o quitar un estado,
 // hay que actualizar AMBOS lugares (y la lista de p_new_status válidos
 // dentro de la función update_order_status).
@@ -23,12 +23,29 @@ export const STATUSES = [
   { key: 'cortado', label: 'Cortado', color: '#1f7dc4', textColor: '#ffffff' },
   { key: 'en_sublimado', label: 'En sublimado', color: '#f8cfe3', textColor: '#16130f' },
   { key: 'sublimado', label: 'Sublimado', color: '#d6488a', textColor: '#ffffff' },
+  { key: 'en_bordado', label: 'En bordado', color: '#bdeae2', textColor: '#16130f' },
+  { key: 'bordado', label: 'Bordado', color: '#158a76', textColor: '#ffffff' },
   { key: 'en_terminado', label: 'En terminado', color: '#ddd0f5', textColor: '#16130f' },
   { key: 'terminado', label: 'Terminado', color: '#7c4dc4', textColor: '#ffffff' },
   { key: 'completado', label: 'Completado', color: '#2f8f4e', textColor: '#ffffff' },
 ]
 
 export const STATUS_KEYS = STATUSES.map((s) => s.key)
+
+// Para el filtro de estado del Dashboard: en vez de 11 chips (una por cada
+// "entrando"/"terminada"), se agrupan por actividad — un chip "Cortado"
+// filtra órdenes en "en_corte" O "cortado", así no hay que adivinar en cuál
+// de las dos anda una orden para encontrarla. El badge de cada tarjeta
+// sigue mostrando el estado exacto (STATUSES arriba) — esto es solo para
+// filtrar, no cambia lo que se guarda ni lo que se muestra por orden.
+export const STATUS_GROUPS = [
+  { key: 'confirmado', label: 'Confirmado', keys: ['en_confirmacion', 'confirmado'] },
+  { key: 'cortado', label: 'Cortado', keys: ['en_corte', 'cortado'] },
+  { key: 'sublimado', label: 'Sublimado', keys: ['en_sublimado', 'sublimado'] },
+  { key: 'bordado', label: 'Bordado', keys: ['en_bordado', 'bordado'] },
+  { key: 'terminado', label: 'Terminado', keys: ['en_terminado', 'terminado'] },
+  { key: 'completado', label: 'Completado', keys: ['completado'] },
+]
 
 export const DEFAULT_ORDER_TYPE_COLOR = '#e8720c'
 

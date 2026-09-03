@@ -1,4 +1,4 @@
-import { STATUSES } from '../lib/constants'
+import { STATUSES, STATUS_GROUPS } from '../lib/constants'
 
 export function getStatus(key) {
   return STATUSES.find((s) => s.key === key) || STATUSES[0]
@@ -25,4 +25,15 @@ export function isCompleted(key) {
 // (vista general de órdenes activas) y para "próximas a surtir".
 export function isActiveStatus(key) {
   return key !== 'completado'
+}
+
+// ¿El estado exacto de una orden (ej. "en_corte") cae dentro de alguno de
+// estos grupos de filtro (ej. "cortado" = en_corte + cortado)? Ver
+// STATUS_GROUPS en lib/constants.js.
+export function matchesStatusGroups(orderStatus, groupKeys) {
+  if (!groupKeys || groupKeys.length === 0) return true
+  return groupKeys.some((groupKey) => {
+    const group = STATUS_GROUPS.find((g) => g.key === groupKey)
+    return group ? group.keys.includes(orderStatus) : groupKey === orderStatus
+  })
 }

@@ -3,6 +3,7 @@ import AppLayout from './components/layout/AppLayout'
 import ConfigMissing from './components/common/ConfigMissing'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
+import PastOrdersPage from './pages/PastOrdersPage'
 import ResumenPage from './pages/ResumenPage'
 import NewOrderPage from './pages/NewOrderPage'
 import OrderDetailPage from './pages/OrderDetailPage'
@@ -46,6 +47,7 @@ function AuthGate() {
       <AppLayout>
         <Routes>
           <Route path="/" element={<DashboardPage />} />
+          <Route path="/pasadas" element={<PastOrdersPage />} />
           <Route path="/resumen" element={<ResumenPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/nueva" element={<NewOrderPage />} />

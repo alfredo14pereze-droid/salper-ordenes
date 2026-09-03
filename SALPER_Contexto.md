@@ -291,3 +291,64 @@ Aplicado y verificado en la base real (las 2 órdenes migraron bien, el
 constraint final tiene los 9 valores, `update_order_status` sigue con
 `anon_can_execute = false`) y en producción
 (https://salper-ordenes.vercel.app).
+
+### Bordado, Órdenes pasadas, filtros agrupados, banner (V14)
+
+Cuatro pedidos que llegaron juntos en la misma sesión, aplicados juntos:
+
+1. **Estado "bordado"**: nueva pareja `en_bordado` → `bordado` (verde
+   azulado/teal), entre sublimado y terminado — mismo patrón claro/sólido
+   que las demás etapas. `orders_status_check` y `update_order_status` se
+   ampliaron (`schema_v14_bordado_y_reparaciones.sql`); como no había datos
+   que migrar (estado nuevo, no reemplazo), no hizo falta el cuidado de
+   orden que sí hizo falta en V13.
+
+2. **Órdenes pasadas**: las órdenes en `completado` ya no viven mezcladas
+   en el Dashboard — se filtran ahí (`currentOrders = status !== 'completado'`)
+   y aparecen en una pestaña nueva `/pasadas` (`PastOrdersPage.jsx`, mismos
+   filtros de tipo/búsqueda que el Dashboard). Nunca se borran, solo se
+   archivan — es una vista distinta de la misma tabla `orders`.
+
+3. **"Orden de reparación" en Pendientes**: `pending_items` ganó 5 columnas
+   nullable (`garment`, `talla`, `cantidad`, `foto_url`, `foto_path`) — un
+   pendiente "general" las manda todas en null y no cambia en nada.
+   `create_pending_item` pasó de 3 a 8 parámetros (requirió `DROP FUNCTION`
+   de la firma vieja antes del `CREATE OR REPLACE`, y el `revoke ... from
+   public` de siempre en la firma nueva — ver gotchas). El formulario
+   (`PendingItemForm.jsx`) tiene un selector Tipo (General / Orden de
+   reparación); al elegir reparación aparecen prenda*/talla/cantidad,
+   comentarios (reusa `description`, solo cambia el placeholder) y una
+   foto. La foto se sube al bucket `order-photos` ya existente, bajo
+   `pending/` (confirmado por grep que sus policies son authenticated-only,
+   sin hueco público — no hizo falta bucket nuevo).
+
+4. **Filtro de estado agrupado**: el Dashboard tenía 8 chips de estado (uno
+   por cada "entrando"/"terminada"). Ahora hay un `STATUS_GROUPS` en
+   `constants.js` que junta cada par bajo un solo chip (ej. "Cortado" =
+   `en_corte` + `cortado`) — 5 chips en vez de 8 (6 con "Completado", pero
+   ese grupo no se ofrece en el Dashboard porque esas órdenes ya no están
+   ahí). `STATUSES` (la lista granular) no cambió — el badge de cada
+   tarjeta sigue mostrando el estado exacto; solo el filtro se agrupó.
+   Nuevo helper `matchesStatusGroups()` en `utils/status.js`.
+
+5. **Color del banner de Anuncio**: antes usaba el mismo tono ámbar suave
+   que las tarjetas de "Próximas a surtir", y se confundían a simple vista.
+   Ahora es fondo negro con texto ámbar/blanco (mismo patrón que los
+   botones primarios de la marca) — llamativo y ya no se mezcla visualmente
+   con las órdenes urgentes.
+
+Todo aplicado y verificado: migración corrida en Supabase (constraint con
+`en_bordado`/`bordado`, columnas nuevas en `pending_items`,
+`create_pending_item` con una sola firma de 8 parámetros y
+`anon_can_execute = false`), y verificado visualmente en `npm run dev`
+(banner negro/ámbar bien diferenciado, chips agrupados filtrando
+correctamente, Órdenes pasadas mostrando la única orden completada, sin
+errores de consola). El formulario de "Orden de reparación" se armó
+siguiendo el mismo patrón de `photosService.js`/`ClienteSelect.jsx`, pero
+no se pudo probar en vivo con sesión real dentro de este panel (no hay
+sesión activa y no tecleo credenciales, ver regla de este proyecto) — queda
+pendiente que el usuario lo pruebe con su sesión.
+
+**Pendiente sin resolver, sigue en pie:** el botón "Guardar esta orden como
+plantilla" (detalle de orden) sigue huérfano desde que se quitó el picker
+de plantillas — el usuario no ha dicho si también lo quiere quitar.

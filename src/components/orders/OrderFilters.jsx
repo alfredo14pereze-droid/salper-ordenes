@@ -1,6 +1,13 @@
-import { STATUSES } from '../../lib/constants'
+import { STATUS_GROUPS } from '../../lib/constants'
 
-export default function OrderFilters({ orderTypes, filters, onChange }) {
+// `statuses` es opcional — el Dashboard manda los grupos sin "completado"
+// (esas órdenes viven en Órdenes pasadas, filtrar por ese grupo ahí
+// siempre daría cero resultados). Cada chip es un GRUPO (ej. "Cortado" =
+// en_corte + cortado, ver STATUS_GROUPS) — así no hay que elegir entre
+// "entrando" y "ya terminada" para encontrar una orden, con un chip
+// alcanza. `filters.statuses` guarda las keys de grupo (order.status se
+// compara con matchesStatusGroups, ver utils/status.js).
+export default function OrderFilters({ orderTypes, filters, onChange, statuses = STATUS_GROUPS }) {
   function toggleValue(field, value) {
     const current = filters[field]
     const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value]
@@ -28,7 +35,7 @@ export default function OrderFilters({ orderTypes, filters, onChange }) {
       <div className="order-filters__group">
         <span className="order-filters__label">Estado</span>
         <div className="order-filters__chips">
-          {STATUSES.map((status) => (
+          {statuses.map((status) => (
             <button
               key={status.key}
               type="button"

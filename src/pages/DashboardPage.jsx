@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useOrders } from '../hooks/useOrders'
 import { useOrderTypes } from '../hooks/useOrderTypes'
-import { isActiveStatus } from '../utils/status'
+import { isActiveStatus, matchesStatusGroups } from '../utils/status'
+import { STATUS_GROUPS } from '../lib/constants'
 import OrderCard from '../components/orders/OrderCard'
 import OrderFilters from '../components/orders/OrderFilters'
 import UpcomingOrders from '../components/orders/UpcomingOrders'
@@ -9,6 +11,12 @@ import AnnouncementBanner from '../components/announcements/AnnouncementBanner'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 
 const emptyFilters = { types: [], statuses: [], search: '' }
+
+// Grupos de filtro para el Dashboard: sin "Completado" — esas órdenes ya
+// no viven aquí, viven en /pasadas (ver PastOrdersPage.jsx). Filtrar por
+// "Completado" en este tablero siempre daría cero resultados, así que ni
+// se ofrece como chip.
+const DASHBOARD_STATUS_GROUPS = STATUS_GROUPS.filter((g) => g.key !== 'completado')
 
 export default function DashboardPage() {
   const { orders, loading, error, refresh } = useOrders()
@@ -25,10 +33,15 @@ export default function DashboardPage() {
     [activeOrders]
   )
 
+  // Las completadas se van a "Órdenes pasadas" (no se borran, solo dejan
+  // de mezclarse aquí con lo que sigue en proceso).
+  const currentOrders = useMemo(() => orders.filter((o) => o.status !== 'completado'), [orders])
+  const completedCount = orders.length - currentOrders.length
+
   const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
+    return currentOrders.filter((order) => {
       if (filters.types.length > 0 && !filters.types.includes(order.order_type_key)) return false
-      if (filters.statuses.length > 0 && !filters.statuses.includes(order.status)) return false
+      if (!matchesStatusGroups(order.status, filters.statuses)) return false
       if (filters.search.trim()) {
         const q = filters.search.trim().toLowerCase()
         const matches =
@@ -37,7 +50,7 @@ export default function DashboardPage() {
       }
       return true
     })
-  }, [orders, filters])
+  }, [currentOrders, filters])
 
   if (loading) return <Loading label="Cargando órdenes…" />
   if (error) return <ErrorState error={error} onRetry={refresh} />
@@ -51,10 +64,17 @@ export default function DashboardPage() {
       <section className="dashboard-all-orders">
         <div className="section-header">
           <h2 className="section-title">Todas las órdenes</h2>
-          <span className="section-count">{filteredOrders.length} de {orders.length}</span>
+          <span className="section-count">{filteredOrders.length} de {currentOrders.length}</span>
         </div>
 
-        <OrderFilters orderTypes={orderTypes} filters={filters} onChange={setFilters} />
+        <OrderFilters orderTypes={orderTypes} filters={filters} onChange={setFilters} statuses={DASHBOARD_STATUS_GROUPS} />
+
+        {completedCount > 0 && (
+          <p className="page-subtitle" style={{ marginTop: -8 }}>
+            {completedCount} orden{completedCount === 1 ? '' : 'es'} completada{completedCount === 1 ? '' : 's'} — están
+            en <Link to="/pasadas">Órdenes pasadas</Link>.
+          </p>
+        )}
 
         {filteredOrders.length === 0 ? (
           <EmptyState>No hay órdenes que coincidan con estos filtros.</EmptyState>
