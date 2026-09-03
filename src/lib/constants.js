@@ -1,22 +1,30 @@
 // Estados posibles de una orden, en el orden en que normalmente ocurren.
 // Este orden se usa para el stepper visual y para saber qué tan "avanzada"
-// va una orden. El estado en sí se guarda como texto (ver supabase/schema.sql,
-// columna orders.status con CHECK constraint) — si algún día se necesita
-// agregar o quitar un estado, hay que actualizar AMBOS lugares.
+// va una orden. El estado en sí se guarda como texto (ver
+// supabase/schema_v13_estados_produccion.sql, columna orders.status con
+// CHECK constraint) — si algún día se necesita agregar o quitar un estado,
+// hay que actualizar AMBOS lugares (y la lista de p_new_status válidos
+// dentro de la función update_order_status).
 //
-// El "color" de cada estado es una progresión ámbar → naranja, terminando en
-// verde para "completado" (el único estado que cuenta como "bien" en el
-// sentido semántico de la marca — el resto son solo etapas, no juicios de
-// bien/mal, por eso nunca usan rojo). Se usa en el calendario/stepper y
-// también en el badge de estado de cada tarjeta (StatusBadge) — cada etapa
-// se pinta distinto para reconocerla de un vistazo. `textColor` es el color
-// de texto que da buen contraste sobre `color`.
+// Cada etapa de producción (confirmación, corte, sublimado, terminado)
+// tiene su PROPIA familia de color, y dentro de cada una hay dos tonos: uno
+// claro para "entrando a esa etapa" y uno sólido/completo para "esa etapa
+// ya terminada" — así se ve de un vistazo no solo EN QUÉ etapa va una orden,
+// sino si esa etapa específica ya se cerró o sigue en proceso. "Completado"
+// sigue siendo la única etapa en verde (el único juicio real de "bien" en
+// el sentido semántico de la marca) — el resto usa ámbar/azul/rosa/morado a
+// propósito, nunca rojo (reservado para urgencia de fecha de entrega, ver
+// OrderCard). `textColor` es el color de texto que da buen contraste sobre
+// `color`.
 export const STATUSES = [
   { key: 'en_confirmacion', label: 'En confirmación', color: '#f5d38a', textColor: '#16130f' },
   { key: 'confirmado', label: 'Confirmado', color: '#ffc93c', textColor: '#16130f' },
-  { key: 'cortado', label: 'Cortado', color: '#e8a916', textColor: '#16130f' },
-  { key: 'sublimado', label: 'Sublimado', color: '#e8720c', textColor: '#ffffff' },
-  { key: 'en_produccion', label: 'En producción', color: '#a24d09', textColor: '#ffffff' },
+  { key: 'en_corte', label: 'En corte', color: '#bfe3fa', textColor: '#16130f' },
+  { key: 'cortado', label: 'Cortado', color: '#1f7dc4', textColor: '#ffffff' },
+  { key: 'en_sublimado', label: 'En sublimado', color: '#f8cfe3', textColor: '#16130f' },
+  { key: 'sublimado', label: 'Sublimado', color: '#d6488a', textColor: '#ffffff' },
+  { key: 'en_terminado', label: 'En terminado', color: '#ddd0f5', textColor: '#16130f' },
+  { key: 'terminado', label: 'Terminado', color: '#7c4dc4', textColor: '#ffffff' },
   { key: 'completado', label: 'Completado', color: '#2f8f4e', textColor: '#ffffff' },
 ]
 
