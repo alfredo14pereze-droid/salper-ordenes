@@ -49,9 +49,13 @@ export async function uploadPendingItemPhoto(file) {
   return { data: { path, url: publicUrlData.publicUrl }, error: null }
 }
 
-// `garment`/`talla`/`cantidad`/`fotoUrl`/`fotoPath` son solo para el tipo
-// "Orden de reparación" (ver schema_v14_bordado_y_reparaciones.sql) — un
-// pendiente "general" los manda como null y el formulario ni los muestra.
+// `garment`/`talla`/`cantidad`/`fotoUrl`/`fotoPath`/`inventariado` son
+// solo para el tipo "Orden de reparación" (ver
+// schema_v14_bordado_y_reparaciones.sql y schema_v17_inventariado.sql) —
+// un pendiente "general" los manda como null y el formulario ni los
+// muestra. `inventariado` es boolean explícito (true/false), no solo
+// "truthy" — un pendiente de reparación SIEMPRE debe traer uno de los
+// dos, nunca null (el formulario ya no deja enviar sin elegir).
 export async function createPendingItem({
   title,
   description,
@@ -61,6 +65,7 @@ export async function createPendingItem({
   cantidad,
   fotoUrl,
   fotoPath,
+  inventariado,
 }) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
@@ -75,6 +80,7 @@ export async function createPendingItem({
       p_cantidad: cantidad || null,
       p_foto_url: fotoUrl || null,
       p_foto_path: fotoPath || null,
+      p_inventariado: inventariado ?? null,
     })
     .single()
 }

@@ -18,6 +18,9 @@ export default function PendingItemForm({ onCreated }) {
   const [garment, setGarment] = useState('')
   const [talla, setTalla] = useState('')
   const [cantidad, setCantidad] = useState('')
+  // null = todavía no se elige ninguno de los dos — se exige elegir uno
+  // antes de poder crear el pendiente (ver handleSubmit).
+  const [inventariado, setInventariado] = useState(null)
   const [photo, setPhoto] = useState(null)
   const [photoPreview, setPhotoPreview] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -34,6 +37,7 @@ export default function PendingItemForm({ onCreated }) {
     setGarment('')
     setTalla('')
     setCantidad('')
+    setInventariado(null)
     setPhoto(null)
     setPhotoPreview(null)
   }
@@ -62,6 +66,10 @@ export default function PendingItemForm({ onCreated }) {
       setError(new Error('Indica qué prenda se va a reparar.'))
       return
     }
+    if (isReparacion && inventariado === null) {
+      setError(new Error('Selecciona "Inventariado" o "No inventariado".'))
+      return
+    }
 
     setSaving(true)
     setError(null)
@@ -88,6 +96,7 @@ export default function PendingItemForm({ onCreated }) {
       cantidad: isReparacion && cantidad ? Number(cantidad) : null,
       fotoUrl,
       fotoPath,
+      inventariado: isReparacion ? inventariado : null,
     })
     setSaving(false)
 
@@ -185,6 +194,28 @@ export default function PendingItemForm({ onCreated }) {
               placeholder="1"
             />
           </label>
+        </div>
+      )}
+
+      {isReparacion && (
+        <div className="order-filters__group">
+          <span className="order-filters__label">Inventariado *</span>
+          <div className="order-filters__chips">
+            <button
+              type="button"
+              className={'chip' + (inventariado === true ? ' chip--active' : '')}
+              onClick={() => setInventariado(true)}
+            >
+              Inventariado
+            </button>
+            <button
+              type="button"
+              className={'chip' + (inventariado === false ? ' chip--active' : '')}
+              onClick={() => setInventariado(false)}
+            >
+              No inventariado
+            </button>
+          </div>
         </div>
       )}
 

@@ -509,3 +509,28 @@ funciones con una sola firma y `anon_exec=false`/`auth_exec=true`. No se
 pudo probar el flujo de captura end-to-end con sesión real (sin sesión
 activa en este panel, no tecleo credenciales) — queda pendiente que el
 usuario lo pruebe con su login de tienda o admin.
+
+### "Inventariado" / "No inventariado" obligatorio en Orden de reparación
+
+`schema_v17_inventariado.sql`: columna nueva `pending_items.inventariado`
+(boolean, nullable — un pendiente "general" nunca la usa). Mismo gotcha
+de siempre: `create_pending_item` ganó un parámetro más → cambia la lista
+de tipos → hubo que tirar la firma vieja (8 args) antes de crear la de 9.
+
+La obligatoriedad NO vive en la base (la columna es nullable a propósito,
+para no romper pendientes ya creados con `inventariado = null`) — vive en
+`PendingItemForm.jsx`: dos botones tipo chip ("Inventariado" /
+"No inventariado"), ninguno activo por default, y `handleSubmit` no deja
+enviar el formulario si `tipo === 'reparacion'` y no se eligió ninguno
+(mismo patrón que la validación ya existente de "prenda"). `PendingItemCard.jsx`
+muestra el badge correspondiente solo cuando el valor no es null (para
+que los pendientes de reparación creados ANTES de este cambio, que se
+quedaron en null, no muestren "No inventariado" por error).
+
+Verificado en Supabase: columna `inventariado boolean` existe, la función
+tiene una sola firma (9 argumentos, `p_inventariado boolean` al final) con
+`anon=false`/`auth=true`. Verificado en el navegador que la vista de
+invitado (sin sesión) sigue mostrando bien los pendientes existentes, sin
+errores de consola — el formulario en sí (con el toggle nuevo) no se pudo
+probar interactivamente por la misma razón de siempre (sin sesión activa
+en este panel).

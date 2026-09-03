@@ -17,6 +17,9 @@ export default function PendingItemCard({ item, onToggle }) {
       <div className="pending-card__body">
         <div className="pending-card__top">
           {item.category && <span className="badge badge--outline">{item.category}</span>}
+          {isReparacion && item.inventariado !== null && (
+            <span className="badge badge--outline">{item.inventariado ? 'Inventariado' : 'No inventariado'}</span>
+          )}
           <span className="pending-card__date">{formatDate(item.created_at)}</span>
         </div>
         <h3>{item.title}</h3>
