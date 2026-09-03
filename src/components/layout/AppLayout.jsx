@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import Logo from './Logo'
 import ChatWidget from '../chat/ChatWidget'
 import { useAuth } from '../../contexts/AuthContext'
-import { canCreateOrder, canManageUsers, ROLE_LABELS } from '../../utils/permissions'
+import { canCreateOrder, canManageUsers, canViewPedidosTienda, ROLE_LABELS } from '../../utils/permissions'
 
 export default function AppLayout({ children }) {
   const { user, profile, role, signOut } = useAuth()
@@ -15,6 +15,9 @@ export default function AppLayout({ children }) {
     { to: '/calendario', label: 'Calendario', show: true },
     { to: '/pendientes', label: 'Pendientes', show: true },
     { to: '/anuncios', label: 'Anuncios', show: true },
+    // Módulo independiente de órdenes, sin modo invitado — solo aparece
+    // con sesión (ver canViewPedidosTienda).
+    { to: '/pedidos-proveedor', label: 'Pedidos a Proveedor', show: canViewPedidosTienda(role) },
     { to: '/usuarios', label: 'Usuarios', show: canManageUsers(role) },
   ]
 

@@ -49,6 +49,22 @@ export function canManageUsers(role) {
   return role === 'admin'
 }
 
+// Pedidos a Proveedor: mismo criterio que crear órdenes (tienda o admin)
+// — módulo independiente, pero mismo espíritu de "quién compra". Fábrica
+// no participa (ver create_pedido_tienda en schema_v18_pedidos_tienda.sql).
+export function canManagePedidosTienda(role) {
+  return role === 'tienda' || role === 'admin'
+}
+
+// A diferencia del resto de la app (que un invitado sí ve en modo
+// lectura desde V10), este módulo trae costos reales de proveedor —
+// solo visible con sesión, cualquier rol (la tabla ya está cerrada a
+// `anon` del lado de la base, esto es el espejo en el frontend). Ver
+// schema_v18_pedidos_tienda.sql.
+export function canViewPedidosTienda(role) {
+  return role === 'admin' || role === 'tienda' || role === 'fabrica'
+}
+
 export const ROLE_LABELS = {
   admin: 'Administrador',
   tienda: 'Tienda',

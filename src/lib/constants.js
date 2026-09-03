@@ -53,6 +53,21 @@ export const STATUS_GROUPS = [
   { key: 'completado', label: 'Completado', keys: ['completado'] },
 ]
 
+// Estados del módulo "Pedidos a Proveedor" (ver
+// schema_v18_pedidos_tienda.sql) — módulo independiente del flujo de
+// órdenes de producción, pero reusa la misma paleta ya aprobada en vez
+// de inventar colores nuevos: "pedido" en el mismo ámbar claro de
+// "recién creado", "recibido" en el mismo azul de una etapa intermedia
+// ya alcanzada, "verificado" en verde (mismo significado que
+// "Completado" — cerró bien) y "con_problema" en rojo (mismo
+// significado que "Atrasada" — necesita atención).
+export const PEDIDO_TIENDA_ESTADOS = [
+  { key: 'pedido', label: 'Pedido', color: '#f5d38a', textColor: '#16130f' },
+  { key: 'recibido', label: 'Recibido', color: '#1f7dc4', textColor: '#ffffff' },
+  { key: 'verificado', label: 'Verificado', color: '#2f8f4e', textColor: '#ffffff' },
+  { key: 'con_problema', label: 'Con problema', color: '#c7351f', textColor: '#ffffff' },
+]
+
 export const DEFAULT_ORDER_TYPE_COLOR = '#e8720c'
 
 // Cuántas semanas hacia adelante se muestran en el calendario de producción.

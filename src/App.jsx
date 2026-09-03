@@ -11,6 +11,9 @@ import CalendarPage from './pages/CalendarPage'
 import AnnouncementsPage from './pages/AnnouncementsPage'
 import PendingItemsPage from './pages/PendingItemsPage'
 import UsersPage from './pages/UsersPage'
+import PedidosTiendaPage from './pages/PedidosTiendaPage'
+import NewPedidoTiendaPage from './pages/NewPedidoTiendaPage'
+import PedidoTiendaDetailPage from './pages/PedidoTiendaDetailPage'
 import { isSupabaseConfigured } from './lib/supabaseClient'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { Loading } from './components/common/States'
@@ -56,6 +59,9 @@ function AuthGate() {
           <Route path="/anuncios" element={<AnnouncementsPage />} />
           <Route path="/pendientes" element={<PendingItemsPage />} />
           <Route path="/usuarios" element={<UsersPage />} />
+          <Route path="/pedidos-proveedor" element={<PedidosTiendaPage />} />
+          <Route path="/pedidos-proveedor/nuevo" element={<NewPedidoTiendaPage />} />
+          <Route path="/pedidos-proveedor/:id" element={<PedidoTiendaDetailPage />} />
         </Routes>
       </AppLayout>
     </HashRouter>

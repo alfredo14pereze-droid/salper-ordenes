@@ -1,0 +1,68 @@
+// Lista de artículos de un pedido a proveedor: nombre + cantidad, con
+// fila que se agrega sola al llenar la última — mismo patrón exacto que
+// las tallas/cantidades de OrderItemsEditor.jsx (mismas clases CSS:
+// sizes-table/sizes-row/add-size-btn), solo que aquí cada fila es un
+// artículo distinto en vez de una talla de la misma prenda.
+//
+// Controlado: recibe `articulos`/`onChange`, sin estado propio.
+export default function PedidoArticulosEditor({ articulos, onChange }) {
+  function updateArticulo(index, patch) {
+    const next = articulos.map((a, i) => (i === index ? { ...a, ...patch } : a))
+    onChange(next)
+
+    // Auto-agregar fila: si la que se acaba de editar es la última y ya
+    // quedó completa (nombre + cantidad), se agrega una fila vacía nueva
+    // sola.
+    const isLastRow = index === next.length - 1
+    const rowFilled = next[index].nombreArticulo.trim() !== '' && Number(next[index].cantidadPedida) > 0
+    if (isLastRow && rowFilled) {
+      onChange([...next, { nombreArticulo: '', cantidadPedida: '' }])
+    }
+  }
+
+  function removeArticulo(index) {
+    onChange(articulos.filter((_, i) => i !== index))
+  }
+
+  return (
+    <div>
+      <span className="field-label">Artículos</span>
+      <div className="sizes-table" style={{ marginTop: 8 }}>
+        <div className="sizes-row-header">
+          <span>Artículo</span>
+          <span>Cantidad</span>
+          <span />
+        </div>
+        {articulos.map((articulo, index) => (
+          <div key={index} className="sizes-row">
+            <input
+              type="text"
+              className="input"
+              placeholder="Ej. Balones de básquetbol #7"
+              value={articulo.nombreArticulo}
+              onChange={(e) => updateArticulo(index, { nombreArticulo: e.target.value })}
+            />
+            <input
+              type="number"
+              min="1"
+              className="input"
+              placeholder="0"
+              value={articulo.cantidadPedida}
+              onChange={(e) => updateArticulo(index, { cantidadPedida: e.target.value })}
+            />
+            {articulos.length > 1 && (
+              <button
+                type="button"
+                className="sizes-row__remove"
+                onClick={() => removeArticulo(index)}
+                aria-label="Quitar artículo"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
