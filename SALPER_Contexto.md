@@ -598,3 +598,88 @@ uno sin discrepancias y otro con un artículo corto, confirmando
 flujo completo con una sesión real de tienda/admin dentro de este panel
 (sin sesión activa, no tecleo credenciales); queda pendiente que el
 usuario cree y verifique un pedido real con su login.
+
+### Catálogo de proveedores + reconocimiento de pedidos por foto (schema_v19)
+
+Dos extensiones al módulo "Pedidos a Proveedor", ambas dentro de "Nuevo
+pedido".
+
+**Catálogo de proveedores** (`schema_v19_proveedores.sql`): tabla
+`proveedores` (nombre, contacto, tipo_material, notas, created_at),
+mismo patrón "crear o reusar" idempotente que telas/clientes
+(`nombre_normalizado` generado + índice único), pero de lectura **solo
+autenticada** — a diferencia de telas/clientes (públicas, para el módulo
+de órdenes que sí tiene invitado), `proveedores` vive dentro de Pedidos a
+Proveedor, que no tiene modo invitado en absoluto. `pedidos_tienda` gana
+`proveedor_id` (uuid, nullable) — la columna `proveedor` (texto) se
+queda como snapshot del nombre al momento del pedido, mismo criterio que
+`orders.client_name`/`client_id`: si el proveedor se renombra o se borra
+después, el pedido viejo no se rompe.
+
+`ProveedorSelect.jsx` sigue el mismo patrón de `ClienteSelect.jsx`
+(dropdown + "+ Nuevo proveedor" inline, sin salir del formulario,
+detección de duplicado exacto/parecido reusando `utils/similarity.js`
+directamente — no se reimplementó esa lógica). No se reusó el
+*componente* `ClienteSelect` tal cual porque el alta rápida de proveedor
+también captura contacto y tipo de material (campos que un cliente no
+tiene) — si esos dos quedaran fuera del formulario inline, nunca se
+llenarían, porque no existe todavía una página de administración de
+proveedores aparte. `notas` sí se dejó fuera del alta rápida (para no
+sobrecargar el formulario) — solo editable por ahora entrando directo a
+la base; si se quiere una página completa de "Proveedores" más adelante,
+es un CRUD nuevo, no un cambio a este flujo.
+
+**Reconocimiento automático por foto** (`api/pedido-ocr.js`, nuevo
+endpoint serverless): al elegir una foto de la nota/remisión en "Nuevo
+pedido", se manda al backend (nunca al cliente — la `ANTHROPIC_API_KEY`
+vive solo en la función serverless, confirmado que ya está configurada
+en Vercel para Production/Preview/Development) junto con el token de
+sesión de Supabase (mismo patrón que `/api/chat`: requiere sesión,
+cualquier rol, porque cuesta dinero real por llamada). El endpoint fuerza
+una sola *tool* (`registrar_articulos`, `tool_choice` fijo) en vez de
+pedirle a Claude que conteste con JSON en texto libre — así la respuesta
+sale siempre estructurada, sin parsear texto ni arriesgarse a que se
+cuele una explicación antes/después. Forma de la respuesta:
+`{ articulos: [{ nombre, cantidad, talla }] }` (`talla` puede venir
+`null`), donde cada artículo requiere `nombre` no vacío y `cantidad > 0`
+— cualquier fila que no cumpla eso se descarta en vez de mandarse a
+medias. `pedidos_tienda_articulos` ganó una columna `talla` (nullable)
+para poder guardar este dato cuando aplica (ej. playeras, tenis) — un
+pedido capturado a mano sin foto se queda con talla en null, sin romper
+nada.
+
+**Nunca bloquea el formulario:** la extracción de una foto manuscrita o
+de mala calidad nunca va a ser perfecta, así que el endpoint SIEMPRE
+regresa `200` salvo por sesión/validación (401/400) — si Claude no
+encuentra nada o la llamada falla, regresa `{ articulos: [], warning:
+'...' }` en vez de un error duro. El frontend (`pedidoOcrService.js`,
+`NewPedidoTiendaPage.jsx`) solo PRELLENA `PedidoArticulosEditor` con lo
+reconocido — nunca guarda nada en la base directamente, y nunca pisa
+filas que el usuario ya haya llenado a mano (las conserva y agrega las
+reconocidas después, más una fila vacía para seguir capturando). Límite
+de tamaño: 3MB por foto del lado del cliente
+(`MAX_OCR_PHOTO_SIZE_MB` en `pedidoOcrService.js`), con un segundo
+resguardo del lado del servidor — las funciones serverless de Vercel
+tienen un tope de payload de ~4.5MB, y una imagen en base64 pesa ~33%
+más que el archivo original, así que 3MB de foto deja margen de sobra.
+
+**No incluido a propósito** (fuera de lo que pidió el usuario, se puede
+agregar después si hace falta): la foto de la nota/remisión no se
+guarda como documento adjunto del pedido — se usa una sola vez para la
+llamada a Claude y se descarta. Si más adelante se quiere conservarla
+como evidencia (como cotización/orden de compra/factura en el módulo de
+órdenes), sería un bucket privado nuevo + una columna de path, mismo
+patrón que `schema_v11_documentos.sql`.
+
+**Verificado:** build limpio, `node --check api/pedido-ocr.js` sin
+errores de sintaxis, `ANTHROPIC_API_KEY` confirmada presente en las 3
+environments de Vercel (`vercel env ls`), migración aplicada y
+verificada en Supabase (tabla `proveedores` con sus 7 columnas,
+`pedidos_tienda.proveedor_id` y `pedidos_tienda_articulos.talla`
+existen, ambas funciones con una sola firma y
+`anon=false`/`auth=true`), guest sigue bloqueado del formulario de nuevo
+pedido. No se pudo probar el flujo completo (elegir/crear proveedor,
+subir una foto real y confirmar el prellenado) con una sesión real
+dentro de este panel — sin sesión activa, no tecleo credenciales; queda
+pendiente que el usuario lo pruebe con su login de tienda o admin y una
+foto real de una remisión.

@@ -26,6 +26,7 @@ export default function VerificarPedidoForm({ pedidoId, articulos, onDone, onCan
     articulos.map((a) => ({
       id: a.id,
       nombreArticulo: a.nombre_articulo,
+      talla: a.talla,
       cantidadPedida: a.cantidad_pedida,
       cantidadRecibida: a.cantidad_recibida ?? '',
       precioUnitario: a.precio_unitario ?? '',
@@ -93,7 +94,9 @@ export default function VerificarPedidoForm({ pedidoId, articulos, onDone, onCan
           return (
             <div key={fila.id} className="document-row" style={{ ...rowStyle, flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
               <span className="document-row__label">
-                {fila.nombreArticulo} <span className="document-row__empty">(pedido: {fila.cantidadPedida})</span>
+                {fila.nombreArticulo}
+                {fila.talla && ` (talla ${fila.talla})`}{' '}
+                <span className="document-row__empty">(pedido: {fila.cantidadPedida})</span>
               </span>
 
               <div className="form-row-3">

@@ -1037,6 +1037,12 @@ h4 {
   font-weight: 700;
 }
 
+/* Variante de 4 columnas para PedidoArticulosEditor (artículo/talla/
+   cantidad/quitar) — no toca .sizes-row (OrderItemsEditor sigue con 3). */
+.pedido-articulos-row {
+  grid-template-columns: 1fr 90px 100px 28px;
+}
+
 .sizes-row__remove {
   border: none;
   background: transparent;

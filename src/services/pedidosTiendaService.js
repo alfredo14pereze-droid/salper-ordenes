@@ -37,8 +37,11 @@ export async function fetchPedidoTiendaArticulos(pedidoId) {
     .order('nombre_articulo', { ascending: true })
 }
 
-// `articulos`: [{ nombreArticulo, cantidadPedida }, ...]
-export async function createPedidoTienda({ proveedor, pedidoPor, fechaPedido, notas, articulos }) {
+// `articulos`: [{ nombreArticulo, cantidadPedida, talla }, ...].
+// `proveedorId` es opcional — un pedido puede seguir capturando el
+// proveedor como texto libre si no se eligió del catálogo (ver
+// ProveedorSelect.jsx).
+export async function createPedidoTienda({ proveedor, proveedorId, pedidoPor, fechaPedido, notas, articulos }) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
 
@@ -51,7 +54,9 @@ export async function createPedidoTienda({ proveedor, pedidoPor, fechaPedido, no
       p_articulos: articulos.map((a) => ({
         nombre_articulo: a.nombreArticulo,
         cantidad_pedida: a.cantidadPedida,
+        talla: a.talla || null,
       })),
+      p_proveedor_id: proveedorId || null,
     })
     .single()
 }

@@ -130,7 +130,10 @@ function PedidoTiendaDetail() {
               {articulos.map((a) => (
                 <div key={a.id} className="document-row">
                   <div>
-                    <span className="document-row__label">{a.nombre_articulo}</span>
+                    <span className="document-row__label">
+                      {a.nombre_articulo}
+                      {a.talla && ` (talla ${a.talla})`}
+                    </span>
                     <p className="document-row__empty" style={{ marginTop: 2 }}>
                       Pedido: {a.cantidad_pedida}
                       {a.cantidad_recibida !== null && ` · Recibido: ${a.cantidad_recibida}`}
