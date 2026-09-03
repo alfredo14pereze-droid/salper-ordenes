@@ -9,6 +9,7 @@ import TypeBadge from '../components/orders/TypeBadge'
 import PhotoGallery from '../components/orders/PhotoGallery'
 import OrderItemsCard from '../components/orders/OrderItemsCard'
 import OrderDocumentsCard from '../components/orders/OrderDocumentsCard'
+import OrderPaymentsCard from '../components/orders/OrderPaymentsCard'
 import OrderDetailsCard from '../components/orders/OrderDetailsCard'
 import EstimatedDaysCard from '../components/orders/EstimatedDaysCard'
 import CancelOrderCard from '../components/orders/CancelOrderCard'
@@ -97,6 +98,12 @@ export default function OrderDetailPage() {
         {user && (
           <section className="card">
             <OrderDocumentsCard order={order} onUpdated={refresh} />
+          </section>
+        )}
+
+        {user && (
+          <section className="card">
+            <OrderPaymentsCard orderId={order.id} />
           </section>
         )}
 

@@ -469,3 +469,43 @@ en el pie de la tarjeta, mismo renglón separadas por "·". Cambio de una
 sola línea (`order.created_at`, ya venía en la orden, `formatDate` ya
 existía) — sin cambios de schema ni de servicio. Verificado visualmente:
 cabe en una línea sin romper el layout de la tarjeta.
+
+### Anticipos por orden (control de pagos adelantados)
+
+`schema_v16_anticipos.sql`: tabla nueva `anticipos` (no columnas en
+`orders`) — `order_id`, `monto`, `metodo_pago` (CHECK en
+efectivo/tarjeta/transferencia), `recibido_por`, `notas`, `created_at`,
+`created_by`. Tabla separada, no columnas sueltas, porque una orden puede
+recibir más de un anticipo (uno inicial, luego un abono) — mismo espíritu
+que `order_status_history` siendo la bitácora de estados.
+
+**Decisión de privacidad importante:** a diferencia de `orders`/
+`order_status_history`/etc (de lectura pública para invitados desde
+schema_v10), `anticipos` NO se abre a `anon` — es información financiera
+(montos, quién manejó el dinero), mismo criterio que cotización/orden de
+compra/factura (que viven en un bucket privado). Un invitado con el link
+sigue viendo todo lo demás de la orden, pero nunca los anticipos.
+
+RPCs: `create_anticipo` (tienda o admin, sin restricción por estado de la
+orden — un anticipo puede llegar en cualquier momento) y
+`delete_anticipo` (solo admin — corregir un error de captura, mismo
+criterio que cancelar una orden: mover dinero es decisión de
+administrador). `src/services/anticiposService.js` +
+`src/components/orders/OrderPaymentsCard.jsx` (nuevo, mismo patrón visual
+que `OrderDocumentsCard`: lista + formulario, `recibido_por` se
+autocompleta con `profile.full_name` de quien tiene la sesión abierta
+pero queda editable) — montado en `OrderDetailPage.jsx` dentro del mismo
+bloque `{user && (...)}` que Documentos/StatusChanger, invisible para
+invitados.
+
+Alcance de esta vez: el anticipo vive en el detalle de cada orden (no hay
+indicador en la tarjeta del Dashboard) — el pedido del usuario fue "un
+campo en cada orden", no un badge en el tablero; si más adelante lo
+quiere ahí también, es un hook nuevo que sume anticipos por orden en el
+Dashboard, agregable después sin tocar lo de hoy.
+
+Verificado en Supabase: tabla con las 8 columnas esperadas, ambas
+funciones con una sola firma y `anon_exec=false`/`auth_exec=true`. No se
+pudo probar el flujo de captura end-to-end con sesión real (sin sesión
+activa en este panel, no tecleo credenciales) — queda pendiente que el
+usuario lo pruebe con su login de tienda o admin.
