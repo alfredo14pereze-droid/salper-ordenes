@@ -352,3 +352,36 @@ pendiente que el usuario lo pruebe con su sesión.
 **Pendiente sin resolver, sigue en pie:** el botón "Guardar esta orden como
 plantilla" (detalle de orden) sigue huérfano desde que se quitó el picker
 de plantillas — el usuario no ha dicho si también lo quiere quitar.
+
+### "Por Confirmar" en rojo, "Confirmada" en verde + favicon
+
+Dos cambios cosméticos independientes, pedidos en la misma sesión:
+
+**Colores de "Por Confirmar"/"Confirmada":** a petición explícita del
+usuario, los dos primeros estados de `STATUSES` (`en_confirmacion` →
+"Por Confirmar", `confirmado` → "Confirmada") ahora usan el mismo rojo de
+urgencia (`--color-danger`, `#c7351f`) y el mismo verde de completado
+(`--color-good`, `#2f8f4e`) — para que salte a la vista qué orden todavía
+necesita revisión de fábrica. Se le presentó al usuario el conflicto con
+la regla de "rojo/verde exclusivos para atrasado/completado" antes de
+tocar nada (`AskUserQuestion`); eligió explícitamente romper la regla para
+este par de estados. Documentado como excepción deliberada tanto en el
+comentario de `STATUSES` (`constants.js`) como en el comentario de
+identidad visual de `index.css`, para que no se "corrija" por error más
+adelante. Las demás etapas (corte/sublimado/bordado/terminado) siguen
+fuera de rojo/verde. El chip de filtro agrupado que antes decía
+"Confirmado" se renombró a "Confirmación" (cubre ambos sub-estados, ya
+no tiene sentido llamarlo igual que la etiqueta granular nueva).
+
+**Favicon personalizado:** se agregó el ícono de SALPER (la letra S con
+una estrella, sobre fondo negro) como favicon del sitio. Los 6 archivos
+(`favicon.ico`, `favicon-16x16.png`, `favicon-32x32.png`,
+`apple-touch-icon.png`, `android-chrome-192x192.png`,
+`android-chrome-512x512.png`) los generó el usuario y se copiaron a
+`public/` (carpeta que no existía todavía — Vite la sirve automáticamente
+en la raíz del sitio). `index.html` ganó los `<link>` correspondientes en
+el `<head>`. No hay `manifest.json`/`site.webmanifest` en el proyecto, así
+que no aplicó ese paso. Verificado: los 6 archivos responden 200 con el
+tamaño/tipo correcto (`fetch` desde la app), los `<link>` aparecen en el
+DOM con las rutas esperadas, y `npm run build` los copia a `dist/`
+correctamente.

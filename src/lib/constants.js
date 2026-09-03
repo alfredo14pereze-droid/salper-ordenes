@@ -16,9 +16,15 @@
 // propósito, nunca rojo (reservado para urgencia de fecha de entrega, ver
 // OrderCard). `textColor` es el color de texto que da buen contraste sobre
 // `color`.
+// Excepción deliberada a la regla de rojo/verde exclusivos (ver arriba):
+// a petición explícita del usuario, "Por Confirmar" (recién creada, aún
+// sin revisar por fábrica) usa el mismo rojo de urgencia y "Confirmada"
+// el mismo verde de completado — para que salte a la vista qué orden
+// todavía necesita que fábrica la revise. El resto de las etapas se queda
+// fuera de rojo/verde, como antes.
 export const STATUSES = [
-  { key: 'en_confirmacion', label: 'En confirmación', color: '#f5d38a', textColor: '#16130f' },
-  { key: 'confirmado', label: 'Confirmado', color: '#ffc93c', textColor: '#16130f' },
+  { key: 'en_confirmacion', label: 'Por Confirmar', color: '#c7351f', textColor: '#ffffff' },
+  { key: 'confirmado', label: 'Confirmada', color: '#2f8f4e', textColor: '#ffffff' },
   { key: 'en_corte', label: 'En corte', color: '#bfe3fa', textColor: '#16130f' },
   { key: 'cortado', label: 'Cortado', color: '#1f7dc4', textColor: '#ffffff' },
   { key: 'en_sublimado', label: 'En sublimado', color: '#f8cfe3', textColor: '#16130f' },
@@ -39,7 +45,7 @@ export const STATUS_KEYS = STATUSES.map((s) => s.key)
 // sigue mostrando el estado exacto (STATUSES arriba) — esto es solo para
 // filtrar, no cambia lo que se guarda ni lo que se muestra por orden.
 export const STATUS_GROUPS = [
-  { key: 'confirmado', label: 'Confirmado', keys: ['en_confirmacion', 'confirmado'] },
+  { key: 'confirmado', label: 'Confirmación', keys: ['en_confirmacion', 'confirmado'] },
   { key: 'cortado', label: 'Cortado', keys: ['en_corte', 'cortado'] },
   { key: 'sublimado', label: 'Sublimado', keys: ['en_sublimado', 'sublimado'] },
   { key: 'bordado', label: 'Bordado', keys: ['en_bordado', 'bordado'] },

@@ -8,7 +8,10 @@
   /* Identidad SALPER: blanco (fondo) → negro (texto/botones) →
      amarillo (dentro de botones negros + acentos puntuales) →
      naranja (pocos detalles). Rojo/verde quedan reservados para
-     indicadores de estado (atrasado / completado), nunca decorativos. */
+     indicadores de estado (atrasado / completado), nunca decorativos.
+     Única excepción, pedida explícitamente por el usuario: los estados
+     "Por Confirmar"/"Confirmada" (STATUSES en constants.js) también usan
+     este rojo/verde — no inventes un rojo/verde nuevo para otra etapa. */
   --color-black: #16130f;
   --color-black-hover: #2b241b;
   --color-amber: #ffc93c;
