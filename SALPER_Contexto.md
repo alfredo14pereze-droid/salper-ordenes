@@ -461,3 +461,11 @@ se bloquean fuera de en_confirmacion, igual que antes. No se pudo probar
 el flujo de subida end-to-end con una sesión real de tienda/admin dentro
 de este panel (sin sesión activa, no tecleo credenciales) — queda
 pendiente que el usuario lo pruebe con su login.
+
+### Fecha de creación en el cuadrito de orden (Dashboard)
+
+`OrderCard.jsx` ahora muestra "Creada: {fecha}" junto a "Entrega: {fecha}"
+en el pie de la tarjeta, mismo renglón separadas por "·". Cambio de una
+sola línea (`order.created_at`, ya venía en la orden, `formatDate` ya
+existía) — sin cambios de schema ni de servicio. Verificado visualmente:
+cabe en una línea sin romper el layout de la tarjeta.

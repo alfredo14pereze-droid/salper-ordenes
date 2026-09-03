@@ -54,6 +54,7 @@ export default function OrderCard({ order, orderType }) {
       </div>
       <div className="order-card__footer">
         <span>Entrega: {formatDate(order.requested_delivery_date)}</span>
+        <span> · Creada: {formatDate(order.created_at)}</span>
       </div>
     </article>
   )
