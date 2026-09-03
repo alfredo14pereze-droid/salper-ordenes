@@ -115,6 +115,15 @@ para no repetirlos):**
   automáticos que sí trae crear algo desde el Table Editor de Supabase** —
   hay que dar `grant select/execute` explícito a los roles que correspondan
   (`anon`, `authenticated`, y a veces `service_role` para Edge Functions).
+- **Migrar datos existentes a un valor nuevo de un CHECK constraint: el
+  `DROP CONSTRAINT` va ANTES del `UPDATE`, no después.** Si el `UPDATE` se
+  intenta con el constraint viejo todavía puesto (porque el nuevo valor
+  aún no está permitido), truena — aunque el `ADD CONSTRAINT` con la lista
+  ampliada venga más abajo en el mismo script. Pasó en
+  `schema_v13_estados_produccion.sql` al migrar órdenes de "en_produccion"
+  a "en_terminado". Orden correcto: `drop constraint` → `update` (con la
+  columna ya sin restricción) → `add constraint` (con la lista final,
+  ahora que todas las filas ya tienen valores válidos).
 
 ## Identidad visual
 
@@ -234,3 +243,51 @@ a que guardaba algo sin haber escrito nada), y solo al abrirlo aparece
 200 real al sitio. Las 7 mejoras del módulo de Órdenes quedan completas y
 en vivo. Pendiente real: ninguno — cualquier ajuste de aquí en adelante es
 una mejora nueva, no algo inconcluso de esta fase.
+
+### Quita el picker de plantillas de Nueva orden
+
+A petición del usuario, se quitó el selector "Usar plantilla" (y toda su
+lógica: aplicar campos/prendas/fotos de una plantilla) del formulario de
+nueva orden. `order_templates`, `TemplatePicker.jsx` y el botón "Guardar
+esta orden como plantilla" (en el detalle de la orden) se dejaron sin
+tocar — quedan un poco huérfanos (ya no hay dónde aplicar una plantilla
+guardada), pendiente de que el usuario decida si también los quiere quitar.
+
+### Más etapas de producción, con colores por familia (V13)
+
+Se amplió el flujo de 6 a 9 estados — cada actividad (confirmación, corte,
+sublimado, terminado) ahora tiene un par "entrando" / "esa etapa ya se
+cerró", igual que ya pasaba con confirmación:
+
+```
+en_confirmacion → confirmado
+en_corte        → cortado
+en_sublimado    → sublimado
+en_terminado    → terminado
+completado
+```
+
+Cada familia tiene su propio color con dos tonos (claro = entrando, sólido
+= terminada esa etapa): confirmación en ámbar (sin cambio), corte en azul,
+sublimado en rosa, terminado en morado, completado en verde (sin cambio,
+sigue siendo la única etapa con significado semántico de "bien"). Nunca se
+usa rojo para etapas — rojo sigue exclusivo para urgencia de fecha de
+entrega.
+
+Como todo el frontend (`StatusBadge`, `StatusStepper`, `StatusChanger`,
+`OrderFilters`, el calendario, el PDF) ya leía `STATUSES` de forma
+genérica, el único cambio de código fue `src/lib/constants.js` — cero
+lógica nueva, solo datos.
+
+**Gotcha nuevo, documentado arriba en la sección de RPC:** al migrar datos
+existentes a un valor que el CHECK constraint viejo todavía no permite, hay
+que tirar el constraint viejo ANTES del UPDATE, no después — si el UPDATE
+va primero (con el constraint viejo todavía puesto), truena. Pasó en esta
+migración (`schema_v13_estados_produccion.sql`): las 2 órdenes que estaban
+en "en_produccion" se migraron a "en_terminado" recién después de mover el
+`drop constraint` arriba del `update`.
+
+Aplicado y verificado en la base real (las 2 órdenes migraron bien, el
+constraint final tiene los 9 valores, `update_order_status` sigue con
+`anon_can_execute = false`) y en producción
+(https://salper-ordenes.vercel.app).
