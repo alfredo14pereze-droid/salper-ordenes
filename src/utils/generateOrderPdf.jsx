@@ -8,10 +8,13 @@ import OrderConfirmationPdf from '../components/pdf/OrderConfirmationPdf'
 //
 // `variant`: 'interno' (todo, incluyendo tiempo estimado de producción —
 // para SALPER) o 'cliente' (lo mismo sin el tiempo estimado — para
-// mandarle al cliente). Ver OrderConfirmationPdf.
-export async function downloadOrderConfirmationPdf(order, { orderTypeLabel, variant = 'interno' } = {}) {
+// mandarle al cliente). `history` es el arreglo de order_status_history
+// de la orden (ver fetchOrderHistory) — opcional: si no se manda, el PDF
+// simplemente no incluye la sección de "Historial de estado". Ver
+// OrderConfirmationPdf.
+export async function downloadOrderConfirmationPdf(order, { orderTypeLabel, variant = 'interno', history = [] } = {}) {
   const blob = await pdf(
-    <OrderConfirmationPdf order={order} orderTypeLabel={orderTypeLabel} variant={variant} />
+    <OrderConfirmationPdf order={order} orderTypeLabel={orderTypeLabel} variant={variant} history={history} />
   ).toBlob()
   const url = URL.createObjectURL(blob)
 

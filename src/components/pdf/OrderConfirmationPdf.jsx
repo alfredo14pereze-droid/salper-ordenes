@@ -1,5 +1,7 @@
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
 import logo from '../../assets/salper-logo.png'
+import { getStatus } from '../../utils/status'
+import { formatDateTime } from '../../utils/dates'
 
 // PDF de confirmación de orden — versión simple: logo, folio (asignado
 // automáticamente por la base de datos) y la información que ya se llenó
@@ -45,6 +47,8 @@ const styles = StyleSheet.create({
   },
   folioValue: { fontFamily: 'Helvetica-Bold', fontSize: 20, color: COLOR_INK },
   createdAt: { fontSize: 8, color: COLOR_MUTED, marginTop: 4 },
+  statusBox: { paddingVertical: 4, paddingHorizontal: 12, marginTop: 6 },
+  statusLabel: { fontFamily: 'Helvetica-Bold', fontSize: 9 },
 
   section: { marginBottom: 16 },
   sectionTitle: {
@@ -109,6 +113,18 @@ const styles = StyleSheet.create({
     borderTop: `1pt solid ${COLOR_BORDER}`,
     paddingTop: 10,
   },
+
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderBottom: `0.8pt solid ${COLOR_BORDER}`,
+  },
+  historyRow_last: { borderBottom: 'none' },
+  historyDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
+  historyStatus: { fontFamily: 'Helvetica-Bold', fontSize: 9.5, width: 110 },
+  historyDate: { fontSize: 8.5, color: COLOR_MUTED, width: 120 },
+  historyNotes: { fontSize: 8.5, color: COLOR_MUTED, flex: 1, fontStyle: 'italic' },
 })
 
 function formatDate(value) {
@@ -127,7 +143,7 @@ function InfoField({ label, value }) {
   )
 }
 
-export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 'interno' }) {
+export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 'interno', history = [] }) {
   const isInternal = variant === 'interno'
   const items = order.items || []
   const grandTotal = items.reduce(
@@ -135,6 +151,12 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 
     0
   )
   const pending = order.status === 'en_confirmacion'
+  const currentStatus = getStatus(order.status)
+
+  // El historial llega más reciente primero (ver fetchOrderHistory) — para
+  // el PDF se cuenta la historia en orden cronológico, de más vieja a más
+  // nueva, como una bitácora que el cliente pueda seguir de arriba a abajo.
+  const historyAsc = [...history].sort((a, b) => new Date(a.changed_at) - new Date(b.changed_at))
 
   return (
     <Document title={`Orden ${order.order_number} · SALPER`}>
@@ -145,6 +167,11 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 
             <Text style={styles.docTitle}>{isInternal ? 'ORDEN DE PRODUCCIÓN' : 'CONFIRMACIÓN DE PEDIDO'}</Text>
             <View style={styles.folioBox}>
               <Text style={styles.folioValue}>{order.order_number}</Text>
+            </View>
+            <View style={[styles.statusBox, { backgroundColor: currentStatus.color }]}>
+              <Text style={[styles.statusLabel, { color: currentStatus.textColor }]}>
+                Estado actual: {currentStatus.label}
+              </Text>
             </View>
             <Text style={styles.createdAt}>Creada el {formatDate(order.created_at)}</Text>
           </View>
@@ -203,6 +230,26 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 
               <Text style={styles.grandTotalLabel}>Total de piezas en la orden</Text>
               <Text style={styles.grandTotalValue}>{grandTotal}</Text>
             </View>
+          </View>
+        )}
+
+        {historyAsc.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Historial de estado</Text>
+            {historyAsc.map((entry, i) => {
+              const entryStatus = getStatus(entry.status)
+              return (
+                <View
+                  key={entry.id || i}
+                  style={[styles.historyRow, i === historyAsc.length - 1 && styles.historyRow_last]}
+                >
+                  <View style={[styles.historyDot, { backgroundColor: entryStatus.color }]} />
+                  <Text style={styles.historyStatus}>{entryStatus.label}</Text>
+                  <Text style={styles.historyDate}>{formatDateTime(entry.changed_at)}</Text>
+                  {!!entry.notes && <Text style={styles.historyNotes}>{entry.notes}</Text>}
+                </View>
+              )
+            })}
           </View>
         )}
 

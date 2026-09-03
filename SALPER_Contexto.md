@@ -385,3 +385,37 @@ que no aplicó ese paso. Verificado: los 6 archivos responden 200 con el
 tamaño/tipo correcto (`fetch` desde la app), los `<link>` aparecen en el
 DOM con las rutas esperadas, y `npm run build` los copia a `dist/`
 correctamente.
+
+### Historial de estado en el PDF de la orden
+
+El usuario pidió que los PDFs de orden (`OrderConfirmationPdf.jsx`, ambas
+variantes "interno"/"cliente") incluyan el historial de cambios de status —
+para poder mandarle el PDF a un cliente que pregunte en qué va su orden,
+sin tener que abrir la app. Dos agregados al documento:
+
+1. Un badge de "Estado actual" junto al folio, en el header, con el mismo
+   color/etiqueta que usa `StatusBadge` en la app (`getStatus(order.status)`
+   de `utils/status.js` — mismos datos, cero duplicación de la paleta).
+2. Una sección nueva "Historial de estado" (después de prendas, antes de la
+   nota de "sujeta a confirmación"): un renglón por cada cambio, con un
+   punto del color de esa etapa, la etiqueta, fecha/hora
+   (`formatDateTime`) y las notas si las hay. Se ordena cronológico
+   ascendente (más viejo arriba) dentro del propio componente — no importa
+   en qué orden llegue `history` desde quien lo llama.
+
+`downloadOrderConfirmationPdf` (en `utils/generateOrderPdf.jsx`) gana un
+parámetro opcional `history` que se pasa tal cual al componente. En
+`OrderDetailPage.jsx` ya se tenía el historial cargado (`useOrder` lo trae
+junto con la orden) — solo hubo que pasarlo. En `NewOrderPage.jsx` (se
+genera el PDF justo al crear la orden, antes de que exista ningún cambio
+real) se sintetiza un historial de un solo renglón con el estado inicial
+que el propio `create_order` ya insertó, en vez de pedirlo aparte a la
+base.
+
+Sin cambios de schema — `order_status_history` y `fetchOrderHistory` ya
+existían de antes, solo no se usaban en el PDF. Probado generando el PDF
+real de una orden con varios cambios de estado (capturando el blob antes
+de que se revocara, decodificándolo a archivo y leyéndolo): el badge y
+cada renglón del historial salen con el color correcto por etapa
+(incluye rojo/verde de "Por Confirmar"/"Confirmada"), notas en cursiva,
+orden cronológico correcto.

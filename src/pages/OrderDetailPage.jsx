@@ -37,6 +37,7 @@ export default function OrderDetailPage() {
       await downloadOrderConfirmationPdf(order, {
         orderTypeLabel: typesByKey[order.order_type_key]?.label,
         variant,
+        history,
       })
     } catch (err) {
       setPdfError(err)

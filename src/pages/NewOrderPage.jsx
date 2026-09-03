@@ -108,8 +108,12 @@ function NewOrderForm() {
     // que sea falla generarlo, no se cancela la creación — igual queda el
     // botón "Descargar PDF" en el detalle para reintentar.
     const orderTypeLabel = orderTypes.find((t) => t.key === data.order_type_key)?.label
+    // Recién creada, la orden solo tiene el registro de historial que el
+    // propio create_order insertó (ver ordersService.createOrder) — se
+    // sintetiza aquí en vez de pedirlo aparte a la base, ya se sabe cuál es.
+    const initialHistory = [{ status: data.status, changed_at: data.created_at, notes: 'Orden creada' }]
     try {
-      await downloadOrderConfirmationPdf(data, { orderTypeLabel })
+      await downloadOrderConfirmationPdf(data, { orderTypeLabel, history: initialHistory })
     } catch (pdfErr) {
       console.error('No se pudo generar el PDF de confirmación:', pdfErr)
     }
