@@ -5,11 +5,15 @@ import RequireRole from '../components/common/RequireRole'
 import { canManageUsers, ROLE_LABELS } from '../utils/permissions'
 import { Loading, ErrorState } from '../components/common/States'
 
-const ROLES = ['tienda', 'fabrica', 'admin']
+const ROLES = [
+  'ventas', 'contabilidad', 'admin_tienda',
+  'corte', 'bordado', 'sublimado', 'produccion', 'terminado', 'admin_fabrica',
+  'admin_general',
+]
 
 function NewUserForm({ onCreated }) {
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({ fullName: '', email: '', password: '', confirmPassword: '', role: 'tienda' })
+  const [form, setForm] = useState({ fullName: '', email: '', password: '', confirmPassword: '', role: 'ventas' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
@@ -57,7 +61,7 @@ function NewUserForm({ onCreated }) {
       return
     }
 
-    setForm({ fullName: '', email: '', password: '', confirmPassword: '', role: 'tienda' })
+    setForm({ fullName: '', email: '', password: '', confirmPassword: '', role: 'ventas' })
     setOpen(false)
     onCreated?.()
   }
@@ -194,7 +198,7 @@ function UsersPageContent() {
   return (
     <div className="page page--narrow">
       <h2 className="section-title">Usuarios</h2>
-      <p className="page-subtitle">Crear cuentas nuevas y asignar su rol (admin / tienda / fábrica).</p>
+      <p className="page-subtitle">Crear cuentas nuevas y asignar su rol (tienda: ventas / contabilidad / admin — fábrica: corte / bordado / sublimado / producción / terminado / admin — o administrador general).</p>
 
       <NewUserForm onCreated={refresh} />
 

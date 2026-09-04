@@ -42,12 +42,78 @@ Sistema de gestión de órdenes de producción para SALPER, S.A. DE C.V.
 
 ## Roles y permisos
 
-Tres roles (tabla `profiles`, vinculada a `auth.users`): **admin** (todo),
-**tienda** (crea órdenes; solo puede editarlas mientras siguen
-`en_confirmacion`), **fabrica** (confirma órdenes, avanza el estado, captura
-tiempo estimado de producción — nunca crea ni edita datos generales). Sin
-registro público: solo un admin da de alta usuarios (Edge Function
-`admin-create-user`).
+Desde **V21** (Fase 2, Parte 1) el modelo plano de 3 roles se reemplazó por
+**10 roles granulares** sobre la misma tabla `profiles` (vinculada a
+`auth.users`, columna `role text` con un `CHECK` — no un ENUM nativo de
+Postgres, siguiendo la convención que ya traía este proyecto). No se creó una
+tabla `usuarios` nueva: `profiles` ya cumplía ese papel y se migró en su
+lugar (aditivo — mismo id, mismas columnas, solo cambia el rango de valores
+válidos de `role`).
+
+**Tienda:**
+- `ventas` (antes `tienda`) — crea/edita pedidos mientras siguen
+  `en_confirmacion`; ve todas las órdenes, facturas y órdenes de compra; NO
+  sube/edita documentos.
+- `contabilidad` — sube/edita documentos de la orden (cotización, orden de
+  compra, factura) y gestiona Pedidos a Proveedor; ve todas las órdenes; NO
+  crea/edita pedidos de cliente.
+- `admin_tienda` — acceso total al dominio tienda (todo lo de `ventas` +
+  `contabilidad` sin las restricciones de estado, más cancelar/reactivar
+  órdenes y borrar anticipos); ve todo el sistema.
+
+**Fábrica:** `corte`, `bordado`, `sublimado`, `produccion`, `terminado` —
+avanzan el estado de la orden y capturan el tiempo estimado (solo mientras
+`en_confirmacion`); nunca tocan datos generales (cliente, fechas, tipo,
+prendas, documentos). `admin_fabrica` — acceso total al dominio fábrica; ve
+todo el sistema.
+
+**General:** `admin_general` — acceso total a los dos dominios + gestión de
+usuarios (`admin_update_user_role`, Edge Function `admin-create-user`). No
+estaba en el pedido original de roles (que solo describía `admin_tienda` y
+`admin_fabrica`); se agregó para que el `admin` original de V1 no perdiera
+acceso a la mitad del sistema al migrar — es la única capacidad que **no**
+se dividió entre dominios.
+
+Sin registro público: solo `admin_general` da de alta usuarios.
+
+**Migración de los 3 usuarios reales al momento de aplicar V21** (confirmada
+con el usuario antes de correr la migración):
+`admin`→`admin_general`, `tienda`→`ventas`, `fabrica`→`admin_fabrica` (no uno
+de los 5 roles de etapa individuales, porque el `fabrica` de hoy podía tocar
+TODAS las etapas — bajarlo a una sola le habría quitado acceso que ya tenía;
+el admin reasigna a cada quien su etapa específica después, desde Usuarios).
+
+**Decisiones de dominio no explícitas en el pedido original** (juicio del
+autor de la migración, documentado en el header de
+`supabase/schema_v21_roles.sql`): Pedidos a Proveedor y los tres tipos de
+documento de la orden (cotización/orden de compra/factura) se asignaron a
+`contabilidad`, no a `ventas` — el pedido original ya mencionaba "órdenes de
+compra" y "facturas" como dominio de contabilidad, y se generalizó a toda la
+familia de documentos financieros. `create_anticipo` quedó abierto a
+`ventas` y `contabilidad` (cualquiera puede recibir un anticipo); borrar un
+anticipo y cancelar/reactivar una orden quedaron restringidos a
+`admin_tienda`/`admin_general`.
+
+**LÍMITE ESTRUCTURAL, documentado a propósito:** la regla "cada rol de
+fábrica solo modifica el estado de SU etapa" **no se puede aplicar de verdad
+todavía** — el estado de una orden vive en una sola columna
+(`orders.status`, 11 valores lineales), no hay una fila por etapa. Los 5
+roles de etapa + `admin_fabrica` comparten el mismo permiso de escritura
+sobre `update_order_status`/`set_estimated_production_days` por ahora (igual
+que compartía el `fabrica` de antes). La granularidad por etapa individual
+llega en la **Parte 2** (tabla `orden_etapas`). Lo que **sí** se aplica desde
+V21: ningún rol de fábrica puede tocar datos generales de la orden (cliente,
+fechas, tipo, prendas, documentos) — eso sigue siendo exclusivo de tienda.
+
+**Enforcement:** este proyecto nunca usó políticas RLS de
+INSERT/UPDATE/DELETE del lado del cliente — toda escritura ya pasaba por RPC
+`SECURITY DEFINER` (ver "Patrón de escritura" abajo), que es funcionalmente
+equivalente a RLS por fila para estos fines: el chequeo de rol vive en el
+único punto de entrada de cada escritura, no se puede saltar desde el
+cliente. La lectura (SELECT) no cambió — sigue siendo pública para todas las
+órdenes, cumpliendo "todos los roles pueden VER todo". El frontend
+(`src/utils/permissions.js` y los componentes que lo usan) es una capa
+adicional de UX (ocultar/deshabilitar botones), no la línea de defensa real.
 
 Desde `main`/V10, la app también tiene **modo invitado**: cualquiera con el
 link ve todo en modo lectura (Dashboard, calendario, detalle de orden,
@@ -165,6 +231,61 @@ directo sobre el nav blanco — no hay insignia ni fondo detrás.
 
 *(Esta sección se va actualizando al final de cada sesión de trabajo, con lo
 implementado y las decisiones tomadas — no se borra lo anterior, se agrega.)*
+
+### Fase 2, Parte 1 — Roles y permisos (V21)
+
+Reemplazado el modelo de 3 roles (admin/tienda/fabrica) por 10 roles
+granulares — ver la sección "Roles y permisos" arriba para el detalle
+completo (enum, migración de usuarios existentes, decisiones de dominio no
+explícitas en el pedido original, y el límite estructural documentado sobre
+`update_order_status` compartido por los 5 roles de etapa hasta que llegue
+`orden_etapas` en la Parte 2). El rol antes llamado `tienda` en este código
+pasó a `ventas` (el pedido decía "personal de tienda" → "ventas"; el nombre
+real previo en la base era `tienda`, no literalmente "personal de tienda" —
+mismo cambio, terminología distinta).
+
+**Archivos tocados:**
+- `supabase/schema_v21_roles.sql` (nuevo) — migración aplicada a la base de
+  producción compartida: `profiles.role` (drop constraint → UPDATE con CASE
+  admin/tienda/fabrica→admin_general/ventas/admin_fabrica → add constraint
+  con los 10 valores → default `'ventas'`), `handle_new_user()`, y 13 RPC
+  más reescritos con los nuevos chequeos de rol (sin cambiar ninguna firma,
+  así que no hizo falta `DROP FUNCTION`).
+- `src/utils/permissions.js` — los 9 helpers + `ROLE_LABELS` reescritos para
+  los 10 roles.
+- `src/pages/UsersPage.jsx` — array `ROLES` (10 valores) y el rol por
+  defecto del formulario de alta (`'ventas'`).
+- `src/components/orders/OrderPaymentsCard.jsx` — `canRegister`/`canDelete`.
+- `src/components/orders/StatusChanger.jsx` — el override de orden cancelada
+  ahora exige `admin_general` (antes `admin`).
+- `supabase/functions/admin-create-user/index.ts` — lista de roles válidos y
+  el gate de quién puede llamar la función (`admin_general`); redesplegada
+  vía el Dashboard.
+
+**Verificado desde SQL** (no hay sesión autenticada disponible en este
+entorno para probar login real por rol): el `CHECK` de `profiles_role_check`
+quedó con los 10 valores nuevos; los 3 usuarios existentes migraron a
+`admin_general`/`ventas`/`admin_fabrica`; las 15 funciones reescritas
+conservan `anon_exec = false` / `auth_exec = true`; el código fuente
+(`prosrc`) de cada función confirma que `create_order`/
+`update_order_details`/`set_order_items` mencionan `'ventas'` pero no
+`'sublimado'`, y que `update_order_status`/`set_estimated_production_days`
+mencionan `'sublimado'` pero no `'ventas'` — es decir, un rol de fábrica
+(p. ej. `sublimado`) no puede llamar ninguna función del dominio
+ventas/contabilidad (crear/editar pedidos, documentos, proveedores), que es
+lo que sí se puede garantizar hoy dado el límite estructural ya documentado
+sobre el estado compartido.
+
+**Falta probar manualmente** (requiere login real, no disponible desde
+aquí): crear/editar un usuario de cada uno de los 10 roles y confirmar en la
+UI que los botones esperados aparecen/desaparecen; iniciar sesión como
+`ventas` y confirmar que no ve botón de cambiar estado ni subir documentos;
+iniciar sesión como `sublimado` y confirmar que sí ve el cambio de estado
+pero no puede editar cliente/fechas/tipo/prendas ni subir documentos;
+iniciar sesión como `contabilidad` y confirmar que puede subir factura fuera
+de `en_confirmacion` pero no crear pedidos nuevos; confirmar que solo
+`admin_general` ve la página de Usuarios y puede dar de alta cuentas
+(Edge Function redesplegada).
 
 ### Fase 2 (rama `fase-2`)
 

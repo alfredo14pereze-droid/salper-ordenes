@@ -26,8 +26,8 @@ export default function OrderPaymentsCard({ orderId }) {
   const [recibidoPor, setRecibidoPor] = useState('')
   const [notas, setNotas] = useState('')
 
-  const canRegister = role === 'tienda' || role === 'admin'
-  const canDelete = role === 'admin'
+  const canRegister = role === 'ventas' || role === 'contabilidad' || role === 'admin_tienda' || role === 'admin_general'
+  const canDelete = role === 'admin_tienda' || role === 'admin_general'
 
   const load = useCallback(async () => {
     const { data, error: fetchError } = await fetchAnticipos(orderId)

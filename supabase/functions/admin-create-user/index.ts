@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
       .eq('id', user.id)
       .single()
 
-    if (profileError || callerProfile?.role !== 'admin') {
+    if (profileError || callerProfile?.role !== 'admin_general') {
       return jsonResponse({ error: 'Solo un administrador puede crear usuarios.' }, 403)
     }
 
@@ -69,7 +69,15 @@ Deno.serve(async (req) => {
     if (!email || !password || !full_name || !role) {
       return jsonResponse({ error: 'Faltan datos: email, password, full_name, role.' }, 400)
     }
-    if (!['admin', 'tienda', 'fabrica'].includes(role)) {
+    // Desde V21: 10 roles granulares (ver supabase/schema_v21_roles.sql y
+    // la sección "Roles y permisos" de SALPER_Contexto.md).
+    if (
+      ![
+        'ventas', 'contabilidad', 'admin_tienda',
+        'corte', 'bordado', 'sublimado', 'produccion', 'terminado', 'admin_fabrica',
+        'admin_general',
+      ].includes(role)
+    ) {
       return jsonResponse({ error: 'Rol inválido.' }, 400)
     }
     if (String(password).length < 6) {

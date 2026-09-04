@@ -1,59 +1,78 @@
 // Reglas de permisos por rol, centralizadas en un solo lugar para que
 // los componentes no dupliquen la lógica de "quién puede qué" — cada
 // regla de aquí tiene su espejo validado del lado del servidor (ver los
-// RPC en supabase/schema_v4_auth.sql), así que estos helpers son solo
+// RPC en supabase/schema_v21_roles.sql), así que estos helpers son solo
 // para decidir qué mostrar/ocultar en la UI, no la única línea de
 // defensa: si alguien se salta la UI, el servidor igual lo rechaza.
+//
+// Desde V21 el modelo plano de 3 roles (admin/tienda/fabrica) se
+// reemplazó por 10 roles granulares:
+//   Tienda:  ventas, contabilidad, admin_tienda
+//   Fábrica: corte, bordado, sublimado, produccion, terminado, admin_fabrica
+//   General: admin_general (acceso total a los dos dominios + usuarios)
+// Ver la sección "Roles y permisos" de SALPER_Contexto.md para el
+// detalle completo de la migración y sus decisiones.
+
+const FABRICA_ETAPA_ROLES = ['corte', 'bordado', 'sublimado', 'produccion', 'terminado']
 
 export function canCreateOrder(role) {
-  return role === 'tienda' || role === 'admin'
+  return role === 'ventas' || role === 'admin_tienda' || role === 'admin_general'
 }
 
-// tienda solo mientras la orden sigue "en_confirmacion"; admin siempre.
+// ventas solo mientras la orden sigue "en_confirmacion"; admin_tienda/admin_general siempre.
 export function canEditOrder(role, order) {
-  if (role === 'admin') return true
-  if (role === 'tienda') return order?.status === 'en_confirmacion'
+  if (role === 'admin_tienda' || role === 'admin_general') return true
+  if (role === 'ventas') return order?.status === 'en_confirmacion'
   return false
 }
 
 // Documentos de la orden (cotización/orden de compra/factura): mismo
-// espejo que set_order_document en schema_v15_factura.sql. La factura es
-// la excepción a propósito — casi siempre se sube DESPUÉS de que fábrica
-// ya confirmó (cuando se entrega o se está por entregar), así que para
-// 'factura' tienda no queda limitado a "en_confirmacion" como sí pasa con
-// cotización/orden de compra.
+// espejo que set_order_document en schema_v21_roles.sql — dominio
+// contabilidad (antes era tienda a secas). La factura es la excepción a
+// propósito — casi siempre se sube DESPUÉS de que fábrica ya confirmó
+// (cuando se entrega o se está por entregar), así que para 'factura'
+// contabilidad no queda limitado a "en_confirmacion" como sí pasa con
+// cotización/orden de compra. ventas no tiene acceso a documentos.
 export function canEditOrderDocument(role, order, kind) {
-  if (role === 'admin') return true
-  if (role === 'tienda') return kind === 'factura' || order?.status === 'en_confirmacion'
+  if (role === 'admin_tienda' || role === 'admin_general') return true
+  if (role === 'contabilidad') return kind === 'factura' || order?.status === 'en_confirmacion'
   return false
 }
 
-// fabrica/admin cambian el estado (incluye "confirmar"); tienda nunca.
+// Los 5 roles de etapa de fábrica + admin_fabrica cambian el estado
+// (incluye "confirmar"); admin_general también. Tienda nunca.
+// LÍMITE ESTRUCTURAL (documentado en schema_v21_roles.sql y
+// SALPER_Contexto.md): hoy los 5 roles de etapa comparten permiso de
+// escritura sobre TODO el estado de la orden — no hay todavía una fila
+// por etapa (orden_etapas llega en la Parte 2) para restringir a cada
+// quien a "solo su etapa".
 export function canChangeStatus(role) {
-  return role === 'fabrica' || role === 'admin'
+  return FABRICA_ETAPA_ROLES.includes(role) || role === 'admin_fabrica' || role === 'admin_general'
 }
 
 // fabrica captura el tiempo estimado solo mientras sigue en_confirmacion;
-// admin siempre.
+// admin_fabrica/admin_general siempre.
 export function canSetEstimatedDays(role, order) {
-  if (role === 'admin') return true
-  if (role === 'fabrica') return order?.status === 'en_confirmacion'
+  if (role === 'admin_fabrica' || role === 'admin_general') return true
+  if (FABRICA_ETAPA_ROLES.includes(role)) return order?.status === 'en_confirmacion'
   return false
 }
 
 export function canCancelOrder(role) {
-  return role === 'admin'
+  return role === 'admin_tienda' || role === 'admin_general'
 }
 
+// Gestión de usuarios: se queda como una capacidad única sin dividir,
+// igual que el 'admin' original — solo admin_general.
 export function canManageUsers(role) {
-  return role === 'admin'
+  return role === 'admin_general'
 }
 
-// Pedidos a Proveedor: mismo criterio que crear órdenes (tienda o admin)
-// — módulo independiente, pero mismo espíritu de "quién compra". Fábrica
-// no participa (ver create_pedido_tienda en schema_v18_pedidos_tienda.sql).
+// Pedidos a Proveedor: dominio contabilidad (compra a proveedor) — ver
+// create_pedido_tienda en schema_v21_roles.sql. ventas y fábrica no
+// participan.
 export function canManagePedidosTienda(role) {
-  return role === 'tienda' || role === 'admin'
+  return role === 'contabilidad' || role === 'admin_tienda' || role === 'admin_general'
 }
 
 // A diferencia del resto de la app (que un invitado sí ve en modo
@@ -62,11 +81,18 @@ export function canManagePedidosTienda(role) {
 // `anon` del lado de la base, esto es el espejo en el frontend). Ver
 // schema_v18_pedidos_tienda.sql.
 export function canViewPedidosTienda(role) {
-  return role === 'admin' || role === 'tienda' || role === 'fabrica'
+  return !!role
 }
 
 export const ROLE_LABELS = {
-  admin: 'Administrador',
-  tienda: 'Tienda',
-  fabrica: 'Fábrica',
+  ventas: 'Ventas',
+  contabilidad: 'Contabilidad',
+  admin_tienda: 'Admin (Tienda)',
+  corte: 'Corte',
+  bordado: 'Bordado',
+  sublimado: 'Sublimado',
+  produccion: 'Producción',
+  terminado: 'Terminado',
+  admin_fabrica: 'Admin (Fábrica)',
+  admin_general: 'Administrador general',
 }
