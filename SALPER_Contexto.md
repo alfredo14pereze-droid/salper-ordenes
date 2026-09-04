@@ -783,3 +783,39 @@ Validación en dos capas, como se pidió:
 No se pudo probar el flujo completo (crear un usuario real con
 contraseñas que coinciden y que no coinciden) con una sesión de admin
 real dentro de este panel — queda pendiente que el usuario lo pruebe.
+
+### Fix: el reconocimiento de "Nueva orden" creaba una prenda por talla
+
+El usuario probó el reconocimiento de "Nueva orden" y reportó que una
+prenda con varias tallas (ej. "Playera M x10, Playera L x5" en el mismo
+documento) salía como PRENDAS SEPARADAS en vez de una sola prenda con
+varias filas de talla/cantidad. Causa: el merge en `NewOrderPage.jsx`
+convertía cada artículo reconocido en un `item` de
+`OrderItemsEditor` 1 a 1, sin agrupar — correcto para Pedidos a Proveedor
+(ahí cada renglón SÍ es su propio artículo en la base, no hay concepto de
+"prenda con varias tallas"), pero equivocado para una orden, donde
+`items` agrupa tallas dentro de una misma prenda (`sizes[]`).
+
+**Fix, en dos partes:**
+
+1. `NewOrderPage.jsx`: nueva función `agruparArticulosPorPrenda()` — agrupa
+   los artículos reconocidos por nombre (comparación sin distinguir
+   mayúsculas/espacios) ANTES de convertirlos en `items`, así que ahora
+   una sola prenda con 3 tallas del documento se vuelve un solo `item` con
+   3 renglones en `sizes[]`, no 3 prendas. Probado con un script suelto
+   (no en el flujo real, ver limitación de siempre) confirmando que
+   agrupa correctamente y no mezcla prendas distintas.
+2. `api/document-ocr.js`: la tool `registrar_orden` ahora tiene su propio
+   schema de artículos (`ARTICULOS_SCHEMA_ORDEN`, antes compartía el mismo
+   que Pedidos a Proveedor) con una instrucción explícita: si la misma
+   prenda aparece en varias tallas, usar el nombre IDÉNTICO en cada
+   renglón (sin meterle la talla al nombre) — para que el agrupado del
+   punto 1 realmente los reconozca como la misma prenda y no se le escape
+   por una variación de texto entre renglones.
+
+Verificado: build limpio, `node --check` del endpoint, y un script de
+Node aparte confirmando la lógica de agrupado con datos de prueba
+(3 renglones de "Playera polo" con distinta capitalización/espacios →
+1 sola prenda con 3 tallas; "Short" aparte). No se pudo volver a probar
+con una foto/PDF real y una sesión real — queda pendiente que el usuario
+lo confirme con el mismo documento que le falló antes.

@@ -39,6 +39,27 @@ function isItemVacio(item) {
   return !item.garment.trim() && !item.sizes.some((s) => s.talla.trim())
 }
 
+// Un documento real casi siempre trae varias tallas de la MISMA prenda en
+// renglones separados (ej. "Playera M x10" y "Playera L x5") — el
+// reconocimiento las regresa como artículos sueltos (una fila por
+// talla/cantidad, igual que en Pedidos a Proveedor, donde sí es correcto
+// así porque cada renglón es su propio artículo). Para una orden hay que
+// agruparlas por nombre de prenda ANTES de crear los `items`, si no cada
+// talla termina siendo una prenda distinta. Agrupa sin distinguir
+// mayúsculas/espacios sobrantes, pero conserva el texto tal como lo trajo
+// el reconocimiento la primera vez que aparece ese nombre.
+function agruparArticulosPorPrenda(articulos) {
+  const grupos = new Map()
+  for (const a of articulos) {
+    const key = a.nombre.trim().toLowerCase()
+    if (!grupos.has(key)) {
+      grupos.set(key, { garment: a.nombre.trim(), sizes: [] })
+    }
+    grupos.get(key).sizes.push({ talla: a.talla || '', cantidad: String(a.cantidad) })
+  }
+  return Array.from(grupos.values())
+}
+
 export default function NewOrderPage() {
   return (
     <RequireRole allow={canCreateOrder}>
@@ -110,13 +131,15 @@ function NewOrderForm() {
       // prendas con contenido y agrega las reconocidas después, más una
       // fila vacía nueva al final para seguir capturando (mismo patrón
       // de auto-agregar). El usuario revisa/corrige todo antes de crear
-      // la orden — esto solo prellena.
+      // la orden — esto solo prellena. Las tallas de una misma prenda se
+      // agrupan en un solo item (ver agruparArticulosPorPrenda) — si no,
+      // cada talla del documento terminaba siendo una prenda distinta.
       setItems((current) => {
         const conContenido = current.filter((it) => !isItemVacio(it))
-        const reconocidos = data.articulos.map((a) => ({
+        const reconocidos = agruparArticulosPorPrenda(data.articulos).map((grupo) => ({
           ...emptyItem(),
-          garment: a.nombre,
-          sizes: [{ talla: a.talla || '', cantidad: String(a.cantidad) }],
+          garment: grupo.garment,
+          sizes: grupo.sizes,
         }))
         return [...conContenido, ...reconocidos, emptyItem()]
       })

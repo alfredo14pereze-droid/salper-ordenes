@@ -61,6 +61,29 @@ const PEDIDO_TOOL = {
   },
 }
 
+// Para una orden, un documento real casi siempre trae la MISMA prenda en
+// varios renglones — uno por talla (ej. "Playera M x10" y "Playera L
+// x5") — y el frontend agrupa esos renglones en una sola prenda por
+// nombre exacto (ver agruparArticulosPorPrenda en NewOrderPage.jsx). Para
+// que ese agrupado funcione, el nombre tiene que salir IDÉNTICO entre
+// renglones de la misma prenda — por eso esta variante de la tool trae
+// una instrucción explícita que ARTICULOS_SCHEMA (pedido a proveedor) no
+// necesita.
+const ARTICULOS_SCHEMA_ORDEN = {
+  ...ARTICULOS_SCHEMA,
+  items: {
+    ...ARTICULOS_SCHEMA.items,
+    properties: {
+      ...ARTICULOS_SCHEMA.items.properties,
+      nombre: {
+        type: 'string',
+        description:
+          'Nombre de la prenda tal como aparece en el documento (ej. "Playera polo"). IMPORTANTE: si la misma prenda aparece varias veces con distinta talla (ej. "Playera polo" en M y en L), usa EXACTAMENTE el mismo texto de nombre en cada renglón — no le agregues la talla ni ningún otro dato variable al nombre, para que se puedan agrupar como una sola prenda con varias tallas.',
+      },
+    },
+  },
+}
+
 const ORDEN_TOOL = {
   name: 'registrar_orden',
   description:
@@ -77,7 +100,7 @@ const ORDEN_TOOL = {
         description:
           'Fecha de entrega solicitada, en formato YYYY-MM-DD, SOLO si aparece explícita y sin ambigüedad en el documento. Cadena vacía si no se indica o no es clara — nunca calcules ni asumas una fecha.',
       },
-      articulos: ARTICULOS_SCHEMA,
+      articulos: ARTICULOS_SCHEMA_ORDEN,
     },
     required: ['articulos'],
   },
@@ -87,7 +110,7 @@ const PROMPTS = {
   pedido_proveedor:
     'Este es un pedido a un proveedor (foto o PDF de la nota/remisión). Usa la herramienta disponible para registrar los artículos, cantidades y tallas que se alcancen a leer con certeza. No inventes ni adivines datos que no se vean con claridad — omite ese artículo en vez de inventarlo.',
   orden:
-    'Este es un documento (foto o PDF) con información de una orden de producción para un taller de uniformes/sublimación. Usa la herramienta disponible para registrar el cliente y la fecha de entrega SOLO si aparecen explícitos y sin ambigüedad, más las prendas con cantidad y talla que se alcancen a leer con certeza. No inventes ni adivines nada que no se vea con claridad — deja cliente/fecha_entrega vacíos y omite cualquier prenda que no puedas leer bien.',
+    'Este es un documento (foto o PDF) con información de una orden de producción para un taller de uniformes/sublimación. Usa la herramienta disponible para registrar el cliente y la fecha de entrega SOLO si aparecen explícitos y sin ambigüedad, más las prendas con cantidad y talla que se alcancen a leer con certeza. Si la misma prenda aparece en varias tallas (renglones separados para M, L, etc.), regístrala como un artículo por cada talla pero con el nombre IDÉNTICO en todos — no repitas la talla dentro del nombre, va en su propio campo. No inventes ni adivines nada que no se vea con claridad — deja cliente/fecha_entrega vacíos y omite cualquier prenda que no puedas leer bien.',
 }
 
 function isValidIsoDate(value) {
