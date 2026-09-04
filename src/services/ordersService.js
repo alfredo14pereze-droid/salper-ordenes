@@ -84,6 +84,37 @@ export async function updateOrderStatus(orderId, newStatus, notes) {
     .single()
 }
 
+// Etapas paralelas (V23, ver supabase/schema_v23_etapas_paralelas.sql):
+// cada orden tiene una fila por etapa aplicable a su tipo (corte,
+// sublimado, producción, bordado, terminado), cada una con su propio
+// estado — así que producción y terminado (por ejemplo) pueden estar
+// activas al mismo tiempo. orders.status sigue existiendo como un
+// resumen de un vistazo, recalculado automáticamente por el servidor
+// cada vez que se llama updateOrdenEtapa.
+export async function fetchOrdenEtapas(orderId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.from('orden_etapas').select('*').eq('order_id', orderId).order('orden_secuencia', { ascending: true })
+}
+
+// Avanza UNA etapa de UNA orden (pendiente -> en_proceso -> completado, o
+// para corregir, cualquier valor directo). El servidor valida que el rol
+// coincida con el nombre de la etapa (o sea admin_fabrica/admin_general)
+// — ver update_orden_etapa en schema_v23_etapas_paralelas.sql.
+export async function updateOrdenEtapa(orderId, etapa, nuevoEstado) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase
+    .rpc('update_orden_etapa', {
+      p_order_id: orderId,
+      p_etapa: etapa,
+      p_nuevo_estado: nuevoEstado,
+    })
+    .single()
+}
+
 // Edita los datos generales de una orden ya creada (tienda solo mientras
 // sigue "en_confirmacion"; admin siempre — ver update_order_details).
 export async function updateOrderDetails(orderId, { clientName, orderTypeKey, description, requestedDeliveryDate }) {
@@ -136,6 +167,7 @@ export function subscribeToOrderChanges(onChange) {
     .channel('orders-realtime')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'order_status_history' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'orden_etapas' }, onChange)
     .subscribe()
 
   return () => {

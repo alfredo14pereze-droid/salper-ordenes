@@ -39,15 +39,39 @@ export function canEditOrderDocument(role, order, kind) {
   return false
 }
 
-// Los 5 roles de etapa de fábrica + admin_fabrica cambian el estado
-// (incluye "confirmar"); admin_general también. Tienda nunca.
-// LÍMITE ESTRUCTURAL (documentado en schema_v21_roles.sql y
-// SALPER_Contexto.md): hoy los 5 roles de etapa comparten permiso de
-// escritura sobre TODO el estado de la orden — no hay todavía una fila
-// por etapa (orden_etapas llega en la Parte 2) para restringir a cada
-// quien a "solo su etapa".
-export function canChangeStatus(role) {
+// Desde V23 (etapas paralelas, ver schema_v23_etapas_paralelas.sql) el
+// límite estructural documentado en V21 quedó resuelto: cada rol de etapa
+// ya NO comparte permiso sobre todo orders.status — solo puede tocar su
+// propia fila en orden_etapas (ver canChangeEtapa abajo). Lo que queda en
+// update_order_status son los dos "bookends" de todo el pedido:
+
+// Confirmar un pedido nuevo (en_confirmacion -> confirmado): cualquier rol
+// de etapa + admin_fabrica/admin_general, igual que antes.
+export function canConfirmOrder(role) {
   return FABRICA_ETAPA_ROLES.includes(role) || role === 'admin_fabrica' || role === 'admin_general'
+}
+
+// Marcar una orden como completada: exclusivo de admin_fabrica/admin_general
+// (antes cualquier rol de etapa podía — era justo el límite estructural
+// que resolvió V23, ya que cerrar una orden es una decisión de todo el
+// pedido, no de una sola etapa).
+export function canCompleteOrder(role) {
+  return role === 'admin_fabrica' || role === 'admin_general'
+}
+
+// true si el rol tiene AL MENOS uno de los dos permisos de arriba — para
+// decidir si mostrar la sección de "cambiar estado" en el detalle de la
+// orden.
+export function canChangeStatus(role) {
+  return canConfirmOrder(role) || canCompleteOrder(role)
+}
+
+// Avanzar UNA etapa individual (pendiente/en_proceso/completado) en
+// orden_etapas — el nombre del rol dueño coincide 1:1 con el nombre de la
+// etapa (rol 'corte' -> etapa 'corte', etc.); admin_fabrica/admin_general
+// pueden todas. Ver update_orden_etapa en schema_v23_etapas_paralelas.sql.
+export function canChangeEtapa(role, etapa) {
+  return role === etapa || role === 'admin_fabrica' || role === 'admin_general'
 }
 
 // fabrica captura el tiempo estimado solo mientras sigue en_confirmacion;

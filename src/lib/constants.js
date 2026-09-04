@@ -29,6 +29,13 @@ export const STATUSES = [
   { key: 'cortado', label: 'Cortado', color: '#1f7dc4', textColor: '#ffffff' },
   { key: 'en_sublimado', label: 'En sublimado', color: '#f8cfe3', textColor: '#16130f' },
   { key: 'sublimado', label: 'Sublimado', color: '#d6488a', textColor: '#ffffff' },
+  // Agregados en V23 (etapas paralelas) — "producción" no tenía pareja
+  // propia en el flujo lineal viejo; ahora sí, como resumen de un vistazo
+  // de la etapa 'produccion' en orden_etapas (ver recompute_order_status
+  // en schema_v23_etapas_paralelas.sql). Familia ámbar, sin usar antes en
+  // esta lista.
+  { key: 'en_produccion', label: 'En producción', color: '#fde6b8', textColor: '#16130f' },
+  { key: 'produccion', label: 'Producción', color: '#d98c0a', textColor: '#ffffff' },
   { key: 'en_bordado', label: 'En bordado', color: '#bdeae2', textColor: '#16130f' },
   { key: 'bordado', label: 'Bordado', color: '#158a76', textColor: '#ffffff' },
   { key: 'en_terminado', label: 'En terminado', color: '#ddd0f5', textColor: '#16130f' },
@@ -48,10 +55,40 @@ export const STATUS_GROUPS = [
   { key: 'confirmado', label: 'Confirmación', keys: ['en_confirmacion', 'confirmado'] },
   { key: 'cortado', label: 'Cortado', keys: ['en_corte', 'cortado'] },
   { key: 'sublimado', label: 'Sublimado', keys: ['en_sublimado', 'sublimado'] },
+  { key: 'produccion', label: 'Producción', keys: ['en_produccion', 'produccion'] },
   { key: 'bordado', label: 'Bordado', keys: ['en_bordado', 'bordado'] },
   { key: 'terminado', label: 'Terminado', keys: ['en_terminado', 'terminado'] },
   { key: 'completado', label: 'Completado', keys: ['completado'] },
 ]
+
+// Etapas paralelas (V23, ver supabase/schema_v23_etapas_paralelas.sql) —
+// cada orden tiene una fila por etapa aplicable a su tipo en la tabla
+// orden_etapas, independiente de orders.status. El nombre de cada etapa
+// coincide 1:1 con el rol de fábrica dueño (rol 'corte' -> etapa 'corte',
+// etc.), así que no hace falta un mapeo aparte para permisos — ver
+// canChangeEtapa en utils/permissions.js.
+export const ETAPA_LABELS = {
+  corte: 'Corte',
+  sublimado: 'Sublimado',
+  produccion: 'Producción',
+  bordado: 'Bordado',
+  terminado: 'Terminado',
+}
+
+export const ETAPA_ESTADO_LABELS = {
+  pendiente: 'Pendiente',
+  en_proceso: 'En proceso',
+  completado: 'Completado',
+}
+
+// Colores del estado de una etapa individual (para el badge en
+// OrderEtapasCard) — neutral/ámbar/verde, mismo criterio de "rojo/verde
+// solo para urgencia/completado" que el resto de la app.
+export const ETAPA_ESTADO_COLORS = {
+  pendiente: { color: '#e5e1d8', textColor: '#16130f' },
+  en_proceso: { color: '#fde6b8', textColor: '#16130f' },
+  completado: { color: '#2f8f4e', textColor: '#ffffff' },
+}
 
 // Estados del módulo "Pedidos a Proveedor" (ver
 // schema_v18_pedidos_tienda.sql) — módulo independiente del flujo de

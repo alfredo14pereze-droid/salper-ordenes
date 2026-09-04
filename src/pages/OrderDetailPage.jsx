@@ -13,6 +13,7 @@ import OrderPaymentsCard from '../components/orders/OrderPaymentsCard'
 import OrderDetailsCard from '../components/orders/OrderDetailsCard'
 import EstimatedDaysCard from '../components/orders/EstimatedDaysCard'
 import CancelOrderCard from '../components/orders/CancelOrderCard'
+import OrderEtapasCard from '../components/orders/OrderEtapasCard'
 import ComingSoonCard from '../components/orders/ComingSoonCard'
 import { Loading, ErrorState } from '../components/common/States'
 import { downloadOrderConfirmationPdf } from '../utils/generateOrderPdf'
@@ -92,6 +93,12 @@ export default function OrderDetailPage() {
           <section className="card">
             <StatusChanger order={order} onUpdated={refresh} />
             <EstimatedDaysCard order={order} onUpdated={refresh} />
+          </section>
+        )}
+
+        {user && (
+          <section className="card">
+            <OrderEtapasCard orderId={order.id} onUpdated={refresh} />
           </section>
         )}
 

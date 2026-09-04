@@ -132,6 +132,104 @@ anuncios, pendientes) **sin iniciar sesión**. Ningún botón de
 crear/editar/cambiar aparece para invitados, y el servidor lo exige de todos
 modos — ver la sección de seguridad abajo.
 
+## Modelo de etapas paralelas (V23)
+
+Desde **V23** (Fase 2, Parte 2) el flujo de producción dejó de ser "una orden
+solo puede estar en un estado a la vez". Cada orden tiene una fila por etapa
+en la tabla **`orden_etapas`** (`order_id`, `etapa`, `estado`, `responsable_id`,
+`iniciado_en`, `completado_en`, `orden_secuencia`) — `estado` es
+`pendiente`/`en_proceso`/`completado`, y al ser filas independientes, **dos o
+más etapas pueden estar `en_proceso` al mismo tiempo** en la misma orden
+(ej. producción y terminado corriendo juntos — confirmado con el usuario:
+"muchas veces van a estar activas en producción y en terminado a la vez desde
+que empieza a salir la producción hasta la última parte").
+
+**Etapas posibles:** `corte`, `sublimado`, `produccion`, `bordado`,
+`terminado`. El nombre de cada etapa coincide 1:1 con el rol de fábrica dueño
+(rol `corte` → etapa `corte`, etc.), así que el permiso es una comparación
+directa — ver `update_orden_etapa`. `admin_fabrica`/`admin_general` pueden
+tocar cualquier etapa.
+
+**Plantillas por tipo de orden** (tabla `plantillas_etapas`, confirmadas con
+el usuario — solo 3 tipos llevan flujo de producción propio, `basquetbol`
+comparte el de escolar/industrial por inferencia, ajustable después con un
+simple INSERT/DELETE en esa tabla):
+- `sublimacion`: sublimado → corte → producción → terminado (única con
+  etapa de sublimado, y va **antes** de corte).
+- `escolar` / `industrial` / `basquetbol`: corte → producción → bordado →
+  terminado (sin sublimado). `bordado` es válido en el enum pero para
+  `sublimacion` **no se genera** — llega opcional por orden individual en la
+  Parte 3 (toggle "¿Incluye bordado?").
+
+Al crear una orden (`create_order`), se auto-generan sus filas de
+`orden_etapas` según la plantilla de su tipo, todas en `pendiente`.
+
+**`orders.status` no desapareció** — el Dashboard, calendario, tarjetas y PDF
+lo siguen usando sin cambios. Ahora es un **resumen calculado**
+(`recompute_order_status`, llamado automáticamente por `update_orden_etapa`):
+toma la etapa de mayor `orden_secuencia` que ya esté `en_proceso` o
+`completado` y la traduce al vocabulario de siempre (`en_corte`/`cortado`,
+etc.) — incluye 2 valores nuevos, `en_produccion`/`produccion`, agregados al
+`CHECK` de `orders.status` porque "producción" no tenía pareja propia en el
+flujo lineal viejo. Cuando dos etapas están activas a la vez, `orders.status`
+solo puede mostrar una (gana la de secuencia más alta) — es un resumen de un
+vistazo, no la verdad completa; la verdad completa vive en `orden_etapas` y
+se muestra en el detalle de la orden (`OrderEtapasCard`). `recompute_order_status`
+nunca toca órdenes canceladas, en `en_confirmacion`, ni ya `completado` —
+esos 3 siguen siendo decisiones de todo el pedido, no derivadas de las
+etapas.
+
+**`update_order_status` se angostó a los dos "bookends"** de todo el
+pedido — esto es lo que **resuelve** el límite estructural documentado en
+V21/Parte 1:
+- Confirmar (`en_confirmacion` → `confirmado`): igual que antes, cualquiera
+  de los 5 roles de etapa + `admin_fabrica`/`admin_general`.
+- Completar (→ `completado`): ahora **exclusivo** de
+  `admin_fabrica`/`admin_general` (antes cualquier rol de etapa podía —
+  cerrar una orden es una decisión de todo el pedido, no de una sola etapa).
+- Cualquier otro valor (los estados por-etapa, para corrección manual) solo
+  `admin_fabrica`/`admin_general` — el avance normal por etapa individual ya
+  vive en `update_orden_etapa`, no aquí.
+
+**Migración de las órdenes existentes** (11 al momento de aplicar V23): cada
+una recibió sus filas de `orden_etapas` infiriendo el estado de cada etapa
+desde la **posición** de su `status` actual dentro de la secuencia lineal
+vieja de 11 valores — nunca se tocó `orders.status` de ninguna orden
+existente, solo se generaron las filas nuevas. Verificado con una consulta
+cruzando `orders.status` contra las `orden_etapas` resultantes para varios
+casos (`en_confirmacion`, `cortado`, `en_terminado`) — la inferencia fue
+correcta en los 3.
+
+**Plan de rollback** (mostrado al usuario antes de aplicar, por ser la parte
+de mayor riesgo — toca el core del modelo de órdenes): `drop table`
+`orden_etapas`/`plantillas_etapas`; `drop function`
+`update_orden_etapa`/`recompute_order_status`; revertir `create_order` y
+`update_order_status` a la versión de V22 (archivos
+`schema_v22_fixes_roles.sql`/`schema_v21_roles.sql` ya tienen esas
+versiones completas); revertir el `CHECK` de `orders.status` a los 11
+valores de antes — solo seguro si ninguna orden quedó con status
+`en_produccion`/`produccion` entre que se aplica y se revierte. Nada de esto
+toca `profiles`, anticipos, ni Pedidos a Proveedor — el radio es `orders` +
+las 2 tablas nuevas. Texto completo del plan en el header de
+`supabase/schema_v23_etapas_paralelas.sql`.
+
+**Verificado en vivo** (simulación directa vía SQL, ya que este entorno no
+tiene sesión autenticada para probar login real por rol): se puso una orden
+de prueba con `corte`, `producción` y `terminado` los 3 `en_proceso` al
+mismo tiempo — sin conflicto (el `UNIQUE (order_id, etapa)` no lo impide, son
+filas distintas) — y `orders.status` se recalculó a `en_terminado` (la etapa
+de mayor secuencia activa), confirmando exactamente el caso que pidió el
+usuario. La orden de prueba se revirtió a su estado original después.
+
+**Frontend:** `OrderEtapasCard.jsx` (nuevo) — lista cada etapa de la orden
+con su estado y un botón "Iniciar"/"Marcar completado" si el rol coincide
+(`canChangeEtapa`); `StatusChanger.jsx` se angostó a los dos bookends
+(confirmar/completar) + un selector de corrección manual solo para
+`admin_fabrica`/`admin_general`. `STATUSES`/`STATUS_GROUPS` en
+`lib/constants.js` ganaron `en_produccion`/`produccion` (familia ámbar, sin
+usar antes) — `StatusStepper`/`StatusBadge`/filtros del Dashboard lo
+heredan automáticamente por ser aditivo.
+
 ## Patrón de escritura: todo vía RPC, nunca INSERT/UPDATE directo
 
 Ninguna tabla tiene policies de INSERT/UPDATE/DELETE para el cliente. **Toda
@@ -339,18 +437,51 @@ columna de correo (vive solo en `auth.users`), así que la UI no muestra ni
 edita el correo actual — el backend sí lo soporta (`action: 'update'` con
 `email`) por si se necesita exponerlo más adelante.
 
-**Pendiente, en diseño con el usuario**: el rol `produccion` no tenía una
-pareja de estados propia en el flujo lineal (`en_corte`/`cortado`,
-`en_sublimado`/`sublimado`, etc. sí la tienen). El usuario aclaró que
-necesita `en_produccion`/`termino_produccion`, y que producción y terminado
-van a estar **activos al mismo tiempo** en una misma orden (piezas saliendo
-de producción mientras terminado ya trabaja las primeras) — algo que la
-columna única `orders.status` no puede representar. Se acordó con el usuario
-adelantar la arquitectura de etapas paralelas de la **Parte 2**
-(`orden_etapas`) en vez de parchar el modelo lineal. Ver el resto del plan
-de Fase 2 (Roles, Permisos, Etapas Paralelas, Bordado y Terminado) más abajo
-en esta sección — la Parte 2 todavía no se ha aplicado a la base compartida,
-pendiente de presentar el plan de rollback al usuario.
+El rol `produccion` no tenía una pareja de estados propia en el flujo lineal
+(`en_corte`/`cortado`, `en_sublimado`/`sublimado`, etc. sí la tienen). El
+usuario aclaró que necesita `en_produccion`/`termino_produccion`, y que
+producción y terminado van a estar **activos al mismo tiempo** en una misma
+orden (piezas saliendo de producción mientras terminado ya trabaja las
+primeras) — algo que la columna única `orders.status` no puede representar.
+Se acordó con el usuario adelantar la arquitectura de etapas paralelas de la
+**Parte 2** en vez de parchar el modelo lineal — ver la sección "Modelo de
+etapas paralelas (V23)" arriba para el detalle completo.
+
+### Fase 2, Parte 2 — etapas paralelas (V23)
+
+Aplicado a la base de producción compartida — ver "Modelo de etapas
+paralelas (V23)" arriba para el diseño, la migración de datos, el plan de
+rollback y la verificación completa. Resumen de archivos tocados:
+
+- `supabase/schema_v23_etapas_paralelas.sql` (nuevo) — tablas
+  `plantillas_etapas`/`orden_etapas`, funciones `recompute_order_status`/
+  `update_orden_etapa`, reescritura de `create_order` (auto-genera etapas) y
+  `update_order_status` (angostado a confirmar/completar), migración de las
+  11 órdenes existentes.
+- `src/lib/constants.js` — `en_produccion`/`produccion` en `STATUSES` y
+  `STATUS_GROUPS`; nuevos `ETAPA_LABELS`/`ETAPA_ESTADO_LABELS`/
+  `ETAPA_ESTADO_COLORS`.
+- `src/utils/permissions.js` — `canConfirmOrder`/`canCompleteOrder`
+  (reemplazan la lógica interna de `canChangeStatus`) + `canChangeEtapa`
+  nueva.
+- `src/services/ordersService.js` — `fetchOrdenEtapas`/`updateOrdenEtapa` +
+  `orden_etapas` agregada a la suscripción realtime.
+- `src/components/orders/OrderEtapasCard.jsx` (nuevo) — lista las etapas de
+  la orden con botón de avance por etapa, gated por `canChangeEtapa`.
+- `src/components/orders/StatusChanger.jsx` — angostado a "Confirmar
+  pedido"/"Marcar como completada" + selector de corrección manual (solo
+  `admin_fabrica`/`admin_general`).
+- `src/pages/OrderDetailPage.jsx` — monta `OrderEtapasCard`.
+
+**Falta probar manualmente** (requiere login real, no disponible desde
+aquí): iniciar sesión como `corte`, `sublimado`, `produccion`, `bordado` o
+`terminado` y confirmar que en el detalle de una orden real solo puede
+avanzar SU etapa (el botón no aparece para las demás); confirmar que
+`admin_fabrica`/`admin_general` sí pueden avanzar cualquier etapa y también
+"Marcar como completada"; confirmar que un rol de etapa YA NO puede marcar
+una orden como completada (antes sí podía); revisar visualmente el Dashboard
+con una orden en `en_produccion`/`produccion` para confirmar que el color
+ámbar nuevo se ve bien.
 
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
