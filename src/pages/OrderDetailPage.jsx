@@ -14,6 +14,7 @@ import OrderDetailsCard from '../components/orders/OrderDetailsCard'
 import EstimatedDaysCard from '../components/orders/EstimatedDaysCard'
 import CancelOrderCard from '../components/orders/CancelOrderCard'
 import OrderEtapasCard from '../components/orders/OrderEtapasCard'
+import OrderBordadosCard from '../components/orders/OrderBordadosCard'
 import ComingSoonCard from '../components/orders/ComingSoonCard'
 import { Loading, ErrorState } from '../components/common/States'
 import { downloadOrderConfirmationPdf } from '../utils/generateOrderPdf'
@@ -121,6 +122,12 @@ export default function OrderDetailPage() {
         <section className="card card--placeholders">
           <OrderItemsCard order={order} onUpdated={refresh} />
         </section>
+
+        {order.items?.some((it) => it.lleva_bordado) && (
+          <section className="card">
+            <OrderBordadosCard order={order} onUpdated={refresh} />
+          </section>
+        )}
 
         <section className="card">
           <h3 className="section-title section-title--small">Historial de estados</h3>

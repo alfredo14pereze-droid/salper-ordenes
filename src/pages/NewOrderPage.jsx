@@ -26,12 +26,14 @@ const initialForm = {
 }
 
 const emptyItem = () => ({
+  id: crypto.randomUUID(),
   garment: '',
   color: '',
   pantone: '',
   tela_id: '',
   tela_nombre: '',
   foto_url: '',
+  lleva_bordado: false,
   sizes: [{ talla: '', cantidad: '' }],
 })
 

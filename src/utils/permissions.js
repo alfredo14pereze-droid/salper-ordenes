@@ -98,6 +98,14 @@ export function canManageCatalogs(role) {
   return role === 'admin_general'
 }
 
+// Bordado condicional por prenda (V25): subir/borrar fotos en
+// orden_bordados es exclusivo de bordado + admin_fabrica/admin_general —
+// no de ventas/admin_tienda, que sí deciden CUÁLES prendas llevan bordado
+// (ver canEditOrder, mismo gate que el resto de las prendas).
+export function canManageBordado(role) {
+  return role === 'bordado' || role === 'admin_fabrica' || role === 'admin_general'
+}
+
 export function canDeleteOrder(role) {
   return role === 'admin_general'
 }

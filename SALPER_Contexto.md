@@ -578,6 +578,79 @@ productos asociados y confirmar el aviso de cascada; confirmar que
 `/control-rapido` carga para un invitado sin sesión; confirmar que
 `/catalogos` da 403 a cualquier rol que no sea `admin_general`.
 
+### Fase 2, Parte 3 — Bordado condicional POR PRENDA (V25)
+
+El pedido original de la Parte 3 planteaba bordado como un toggle a nivel
+de ORDEN completa ("¿Incluye bordado?"), con N ubicaciones+fotos sueltas
+sin ligar a una prenda en particular. El usuario corrigió esto
+explícitamente después de ver cómo había quedado bordado en la Parte 2
+(fijo en la plantilla de escolar/industrial): **"el bordado va a ser un
+botón en cada prenda para indicar si lleva bordado o no cada prenda, y si
+no lleva, que no tenga que pasar por ese paso de la producción"**. Esto
+reemplaza el diseño de bordado de V23 — ya no es "todo escolar/industrial
+lleva bordado siempre", es condicional por prenda, para **cualquier** tipo
+de orden (incluida sublimación, que en V23 no tenía bordado en su
+plantilla en absoluto).
+
+**`items` (JSONB en `orders.items`) gana una clave por prenda:
+`lleva_bordado` (boolean)** — sin migración de datos, los items existentes
+simplemente no la traen (se lee con `coalesce(..., false)`). Cada prenda
+también gana un `id` (UUID generado en el cliente, `crypto.randomUUID()`)
+para poder ligarle registros de bordado; las prendas de órdenes creadas
+antes de V25 no traen `id` — se les asigna uno al cargar el editor
+(`OrderItemsCard.jsx`), sin tocar la base.
+
+**La fila `orden_etapas` con `etapa='bordado'` ya no viene de
+`plantillas_etapas` — se genera/retira según si AL MENOS UNA prenda de la
+orden pide bordado**, resuelto en dos puntos:
+- `create_order`: al crear, si algún item trae `lleva_bordado: true`.
+- `set_order_items`: si tienda edita las prendas después (mientras la
+  orden sigue en `en_confirmacion`), reconcilia la fila — la agrega si
+  ahora hace falta y no existía, la quita si ya no hace falta y sigue
+  `pendiente` (si ya está `en_proceso`/`completado`, se deja intacta para
+  no perder trabajo ya hecho).
+
+Las 11 órdenes de prueba que ya tenían una fila de bordado por venir de la
+plantilla vieja de escolar/industrial (V23) se quedaron como están — no
+hay forma de saber retroactivamente qué prenda "debía" llevarlo, y son
+datos de prueba de todos modos.
+
+**`orden_bordados`**: un registro por ubicación+foto, ligado a la orden Y
+a la prenda específica (`item_id`, comparado como texto contra el `id` de
+la prenda en el JSONB — no es una FK real, `items` vive en JSONB no en una
+tabla). `create_orden_bordado`/`delete_orden_bordado` — exclusivo
+`bordado`/`admin_fabrica`/`admin_general`, y solo si la orden realmente
+tiene la etapa `bordado` en su flujo. Lectura pública (todos ven todo,
+igual que el resto del sistema). Fotos en el mismo bucket público
+`order-photos` que las fotos de referencia, bajo
+`<orderId>/bordado/<itemId>/<uuid>.<ext>`.
+
+**Frontend**: `OrderItemsEditor.jsx` — botón "¿Lleva bordado?" por prenda
+(mismo gate que el resto de sus campos: ventas/admin_tienda/admin_general,
+vía el `fieldset disabled` de `OrderItemsCard.jsx`). `OrderBordadosCard.jsx`
+(nuevo) — solo aparece si al menos una prenda de la orden tiene
+`lleva_bordado`, lista cada prenda con sus registros existentes
+(ubicación + foto) y, si el rol califica (`canManageBordado`), un
+formulario inline para agregar uno más. `bordadosService.js` (nuevo).
+
+**Verificado en vivo**: los 4 RPCs nuevos/tocados conservan
+`anon_exec=false`/`auth_exec=true`. Simulación directa sobre una orden de
+prueba de sublimación (que nunca había tenido bordado en su flujo): se
+marcó su única prenda con `lleva_bordado=true` y se corrió la misma lógica
+de reconciliación de `set_order_items` — apareció la fila `bordado`
+`pendiente` en `orden_etapas` (secuencia 3, el valor por default ya que
+sublimación no tiene bordado en `plantillas_etapas`); se desmarcó la
+prenda y se confirmó que la fila se quitó sola. La orden se revirtió a su
+estado original.
+
+**Falta probar manualmente**: iniciar sesión como `ventas`/`admin_tienda`,
+marcar una prenda con "¿Lleva bordado?" en una orden nueva o existente, y
+confirmar que aparece la tarjeta "Bordado" en el detalle; iniciar sesión
+como `bordado` (o `admin_fabrica`/`admin_general`) y subir una foto con
+ubicación para esa prenda, confirmar que se ve en la tarjeta y que se
+puede quitar; confirmar que un rol sin `canManageBordado` (ej. `ventas`)
+ve los registros pero no el botón de agregar.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

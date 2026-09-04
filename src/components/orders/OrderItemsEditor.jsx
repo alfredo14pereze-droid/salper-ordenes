@@ -37,7 +37,17 @@ export default function OrderItemsEditor({
   function addItem() {
     onChange([
       ...items,
-      { garment: '', color: '', pantone: '', tela_id: '', tela_nombre: '', foto_url: '', sizes: [{ talla: '', cantidad: '' }] },
+      {
+        id: crypto.randomUUID(),
+        garment: '',
+        color: '',
+        pantone: '',
+        tela_id: '',
+        tela_nombre: '',
+        foto_url: '',
+        lleva_bordado: false,
+        sizes: [{ talla: '', cantidad: '' }],
+      },
     ])
   }
 
@@ -150,6 +160,15 @@ export default function OrderItemsEditor({
                 onTelaCreated={onTelaCreated}
               />
             </div>
+
+            <button
+              type="button"
+              className={item.lleva_bordado ? 'btn btn--secondary btn--small' : 'btn btn--ghost btn--small'}
+              style={{ marginTop: 8 }}
+              onClick={() => updateItem(itemIndex, { lleva_bordado: !item.lleva_bordado })}
+            >
+              {item.lleva_bordado ? '✓ Lleva bordado' : '¿Lleva bordado?'}
+            </button>
 
             {clienteId && (
               <ProductoAutocomplete

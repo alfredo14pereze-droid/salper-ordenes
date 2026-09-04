@@ -8,12 +8,14 @@ import { useTelas } from '../../hooks/useTelas'
 import { useProductosByCliente } from '../../hooks/useProductosByCliente'
 
 const emptyItem = () => ({
+  id: crypto.randomUUID(),
   garment: '',
   color: '',
   pantone: '',
   tela_id: '',
   tela_nombre: '',
   foto_url: '',
+  lleva_bordado: false,
   sizes: [{ talla: '', cantidad: '' }],
 })
 
@@ -24,7 +26,14 @@ const emptyItem = () => ({
 export default function OrderItemsCard({ order, onUpdated }) {
   const { role } = useAuth()
   const readOnly = !canEditOrder(role, order)
-  const [items, setItems] = useState(order.items && order.items.length > 0 ? order.items : [emptyItem()])
+  // Prendas de órdenes creadas antes de V25 no traen `id` — se le asigna
+  // uno aquí al cargar, para que orden_bordados (item_id) tenga con qué
+  // ligarse desde ahora en adelante (ver OrderBordadosCard.jsx).
+  const [items, setItems] = useState(
+    order.items && order.items.length > 0
+      ? order.items.map((item) => ({ id: item.id || crypto.randomUUID(), ...item }))
+      : [emptyItem()]
+  )
   const { telas, refresh: refreshTelas } = useTelas()
   const { productos, refresh: refreshProductos } = useProductosByCliente(order.client_id)
   const [saving, setSaving] = useState(false)
