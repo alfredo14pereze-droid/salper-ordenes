@@ -1562,3 +1562,29 @@ h4 {
     height: calc(100vh - 140px);
   }
 }
+
+/* Tabla simple de solo lectura (Control rápido de órdenes). */
+.simple-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.simple-table th {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 2px solid var(--color-black);
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 12px;
+}
+
+.simple-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border, #e5e1d8);
+}
+
+.simple-table tbody tr:hover {
+  background: var(--color-orange-soft, #fdf3e7);
+}

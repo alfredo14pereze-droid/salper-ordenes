@@ -36,3 +36,20 @@ export async function createProveedor({ nombre, contacto, tipoMaterial, notas })
     })
     .single()
 }
+
+// Hard-delete (V24) — exclusivo admin_general. pedidos_tienda.proveedor_id
+// tiene ON DELETE SET NULL, así que borrar un proveedor no borra pedidos,
+// solo les quita la referencia — el impact-check avisa cuántos hay.
+export async function getProveedorDeleteImpact(id) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('get_proveedor_delete_impact', { p_id: id }).single()
+}
+
+export async function deleteProveedor(id) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('delete_proveedor', { p_id: id })
+}

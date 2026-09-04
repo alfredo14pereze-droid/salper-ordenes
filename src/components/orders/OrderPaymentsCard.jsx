@@ -12,7 +12,7 @@ function formatMonto(monto) {
 // primero, con el total sumado arriba. Solo visible con sesión (ver
 // OrderDetailPage): es información financiera, la tabla ni siquiera se
 // abre a lectura de invitado (ver schema_v16_anticipos.sql).
-export default function OrderPaymentsCard({ orderId }) {
+export default function OrderPaymentsCard({ orderId, disabled }) {
   const { role, profile } = useAuth()
   const [anticipos, setAnticipos] = useState([])
   const [loading, setLoading] = useState(true)
@@ -26,8 +26,10 @@ export default function OrderPaymentsCard({ orderId }) {
   const [recibidoPor, setRecibidoPor] = useState('')
   const [notas, setNotas] = useState('')
 
-  const canRegister = role === 'ventas' || role === 'contabilidad' || role === 'admin_tienda' || role === 'admin_general'
-  const canDelete = role === 'admin_tienda' || role === 'admin_general'
+  // disabled: la orden fue eliminada (soft-delete) — ya no admite más
+  // anticipos de ningún rol (ver schema_v24_soft_delete.sql).
+  const canRegister = !disabled && (role === 'ventas' || role === 'contabilidad' || role === 'admin_tienda' || role === 'admin_general')
+  const canDelete = !disabled && (role === 'admin_tienda' || role === 'admin_general')
 
   const load = useCallback(async () => {
     const { data, error: fetchError } = await fetchAnticipos(orderId)

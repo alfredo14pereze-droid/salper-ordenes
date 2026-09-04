@@ -92,6 +92,16 @@ export function canManageUsers(role) {
   return role === 'admin_general'
 }
 
+// Hard-delete de catálogos (proveedores, clientes, telas, productos) y
+// soft-delete de órdenes (V24) — exclusivo admin_general, sin excepción.
+export function canManageCatalogs(role) {
+  return role === 'admin_general'
+}
+
+export function canDeleteOrder(role) {
+  return role === 'admin_general'
+}
+
 // Pedidos a Proveedor: dominio contabilidad (compra a proveedor) — ver
 // create_pedido_tienda en schema_v21_roles.sql. ventas y fábrica no
 // participan.

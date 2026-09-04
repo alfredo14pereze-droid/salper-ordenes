@@ -11,11 +11,29 @@ function ensureClient() {
   return { error: null }
 }
 
+// Dashboard/Resumen/Calendario/Órdenes pasadas viven todos de este hook
+// (useOrders) — desde V24 excluye por default las órdenes con
+// eliminada_en no nulo (soft-delete de admin_general). Para la pantalla
+// "Control rápido de órdenes" (que sí necesita verlas, marcadas como
+// "Eliminada") usa fetchAllOrdersForControl en vez de esta.
 export async function fetchOrders() {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
 
-  return supabase.from('orders').select('*').order('requested_delivery_date', { ascending: true })
+  return supabase
+    .from('orders')
+    .select('*')
+    .is('eliminada_en', null)
+    .order('requested_delivery_date', { ascending: true })
+}
+
+// "Control rápido de órdenes" (V24): folio/cliente/estado para TODAS las
+// órdenes, incluidas las eliminadas (el frontend las marca "Eliminada").
+export async function fetchAllOrdersForControl() {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.from('orders').select('*').order('order_number', { ascending: true })
 }
 
 export async function fetchOrderById(id) {
@@ -98,6 +116,16 @@ export async function fetchOrdenEtapas(orderId) {
   return supabase.from('orden_etapas').select('*').eq('order_id', orderId).order('orden_secuencia', { ascending: true })
 }
 
+// Todas las filas de orden_etapas de TODAS las órdenes — para "Control
+// rápido de órdenes" (V24), que necesita mostrar qué etapas están activas
+// por orden sin pedirlas una por una.
+export async function fetchAllOrdenEtapas() {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.from('orden_etapas').select('*')
+}
+
 // Avanza UNA etapa de UNA orden (pendiente -> en_proceso -> completado, o
 // para corregir, cualquier valor directo). El servidor valida que el rol
 // coincida con el nombre de la etapa (o sea admin_fabrica/admin_general)
@@ -154,6 +182,31 @@ export async function uncancelOrder(orderId) {
   if (cfgError) return { data: null, error: cfgError }
 
   return supabase.rpc('uncancel_order', { p_order_id: orderId }).single()
+}
+
+// Soft-delete de órdenes (V24) — exclusivo admin_general. Antes de
+// eliminar, el frontend debe consultar getOrderDeleteImpact para avisar
+// cuántos registros relacionados existen (la orden en sí no se borra
+// nunca, solo se marca con eliminada_en).
+export async function getOrderDeleteImpact(orderId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('get_order_delete_impact', { p_order_id: orderId }).single()
+}
+
+export async function softDeleteOrder(orderId, notes) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('soft_delete_order', { p_order_id: orderId, p_notes: notes || null }).single()
+}
+
+export async function restoreOrder(orderId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('restore_order', { p_order_id: orderId }).single()
 }
 
 // Se suscribe a cambios en tiempo real de órdenes y su historial, para que

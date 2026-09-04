@@ -55,7 +55,7 @@ export default function OrderDocumentsCard({ order, onUpdated }) {
         {DOC_TYPES.map(({ kind, label, field }) => {
           const path = order[field]
           const busy = busyKind === kind
-          const editable = canEditOrderDocument(role, order, kind)
+          const editable = canEditOrderDocument(role, order, kind) && !order.eliminada_en
 
           return (
             <div key={kind} className="document-row">

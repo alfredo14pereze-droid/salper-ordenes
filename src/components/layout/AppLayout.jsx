@@ -4,6 +4,7 @@ import ChatWidget from '../chat/ChatWidget'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   canCreateOrder,
+  canManageCatalogs,
   canManageUsers,
   canViewPedidosTienda,
   hasRestrictedNav,
@@ -29,6 +30,10 @@ export default function AppLayout({ children }) {
     // Módulo independiente de órdenes, sin modo invitado — solo aparece
     // con sesión (ver canViewPedidosTienda).
     { to: '/pedidos-proveedor', label: 'Pedidos a Proveedor', show: !restricted && canViewPedidosTienda(role) },
+    // Control rápido: visibilidad total, incluso para invitados (ver
+    // schema_v24_soft_delete.sql, tarea 9 del pedido de roles).
+    { to: '/control-rapido', label: 'Control rápido', show: true },
+    { to: '/catalogos', label: 'Catálogos', show: canManageCatalogs(role) },
     { to: '/usuarios', label: 'Usuarios', show: canManageUsers(role) },
   ]
 

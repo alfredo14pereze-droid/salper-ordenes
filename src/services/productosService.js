@@ -32,3 +32,12 @@ export async function createProducto({ clienteId, nombre, garment, color, panton
     })
     .single()
 }
+
+// Hard-delete (V24) — exclusivo admin_general. Sin impact-check: un
+// producto no tiene filas dependientes en el schema actual.
+export async function deleteProducto(id) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('delete_producto', { p_id: id })
+}

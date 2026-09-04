@@ -483,6 +483,101 @@ una orden como completada (antes sí podía); revisar visualmente el Dashboard
 con una orden en `en_produccion`/`produccion` para confirmar que el color
 ámbar nuevo se ve bien.
 
+### Fase 2, Parte 1 extendida — soft-delete, hard-delete de catálogos, folios, Control rápido (V24)
+
+Después de la Parte 2, el usuario volvió a pegar el pedido original de
+"Roles y permisos" con tareas nuevas que no estaban en la primera versión
+que se implementó (V21/V22). Todo lo nuevo quedó en
+`supabase/schema_v24_soft_delete.sql` + los archivos de frontend listados
+abajo.
+
+**Folios (tarea 10/11 del pedido) — investigado antes de tocar nada,
+sin necesidad de cambiar el mecanismo**: desde V5
+(`schema_v5_folios.sql`), cada tipo de orden tiene su propia secuencia
+nativa de Postgres (`folio_seq_<key>`, `CREATE SEQUENCE ... START 1`) y un
+trigger `BEFORE INSERT` (`assign_order_folio`) que llama `nextval()` y arma
+`<PREFIJO>-<3 dígitos>`. Una secuencia de Postgres nunca reutiliza un
+número así se borre la fila (soft o hard delete) — ya cumplía exactamente
+lo pedido, cero cambios de código. Para resetear a 1 antes de cargar
+órdenes reales (después de limpiar las de prueba): `ALTER SEQUENCE
+public.folio_seq_<key> RESTART WITH 1;` por tipo — acción operativa, no
+una migración.
+
+**Soft-delete de órdenes**: `orders.eliminada_en` (timestamptz nullable).
+`get_order_delete_impact(p_order_id)` cuenta anticipos/historial/etapas y
+si hay documentos subidos, para que el frontend avise antes de confirmar
+(`CancelOrderCard.jsx`, botón "Eliminar orden" → impact-check →
+confirmación con las cifras → `soft_delete_order`). Una orden eliminada:
+desaparece de Dashboard/Resumen/Calendario/Órdenes pasadas
+(`fetchOrders()` ahora filtra `eliminada_en is null`); sigue visible en
+Control rápido con estado "Eliminada"; y **ningún rol, incluido
+admin_general**, puede volver a editarla — se agregó el guard
+correspondiente a las 10 funciones que mutan una orden existente
+(`update_order_status`, `update_orden_etapa`, `update_order_details`,
+`set_order_items`, `set_order_document`, `set_estimated_production_days`,
+`create_anticipo`, `delete_anticipo`, `cancel_order`, `uncancel_order`) —
+mismo cuerpo de V21/V22/V23, solo se insertó el chequeo, sin cambiar
+ninguna firma. `restore_order()` quedó lista del lado del servidor pero
+sin botón en el frontend (el pedido lo deja como decisión para después).
+`fetchOrderById` (detalle de una orden) NO filtra `eliminada_en` — sigue
+abriendo la orden eliminada, solo que ya sin las tarjetas de edición.
+
+**Hard-delete de catálogos** (`proveedores`, `clientes`, `telas`,
+`productos`) — exclusivo `admin_general`. Como estos catálogos solo
+existían como `<select>` embebidos dentro de formularios (`TelaSelect`,
+`ClienteSelect`, `ProveedorSelect`, `ProductoAutocomplete` — un `<select>`
+nativo no puede tener un botón de borrar por opción), se construyó una
+página nueva **`/catalogos`** (`CatalogosPage.jsx`, solo `admin_general`)
+con las 4 secciones en modo lista + botón Eliminar. FKs verificadas antes
+de escribir esto: `productos.cliente_id → clientes(id)` es **`ON DELETE
+CASCADE`** de verdad (borrar un cliente borra sus productos guardados —
+el impact-check lo avisa), mientras que `productos.tela_id`,
+`orders.client_id` y `pedidos_tienda.proveedor_id` son `ON DELETE SET
+NULL` (no rompen nada, solo pierden la referencia).
+
+**"Control rápido de órdenes"** (tarea 9): página nueva **`/control-rapido`**
+(`ControlRapidoPage.jsx`), visible para **todos los roles e invitados**
+(mismo criterio de visibilidad total del resto de la app) — tabla de solo
+lectura folio/cliente/estado. El estado combina `orden_etapas` (muestra
+las etapas `en_proceso` unidas con "+", ej. "Producción + Terminado") con
+`orders.status` como respaldo, y "Eliminada" para las que tienen
+`eliminada_en`. Única pantalla donde una orden eliminada sigue siendo
+visible.
+
+**Archivos tocados**: `supabase/schema_v24_soft_delete.sql` (nuevo);
+`src/services/ordersService.js` (`fetchOrders` filtra eliminadas,
+`fetchAllOrdersForControl`, `fetchAllOrdenEtapas`,
+`getOrderDeleteImpact`/`softDeleteOrder`/`restoreOrder`);
+`src/services/clientesService.js`, `telasService.js`,
+`proveedoresService.js`, `productosService.js` (cada uno gana
+`delete*`/`get*DeleteImpact`); `src/utils/permissions.js`
+(`canManageCatalogs`, `canDeleteOrder`); `src/pages/CatalogosPage.jsx`
+(nuevo), `src/pages/ControlRapidoPage.jsx` (nuevo);
+`src/components/orders/CancelOrderCard.jsx` (botón Eliminar orden +
+impact-check), `OrderDocumentsCard.jsx`/`OrderPaymentsCard.jsx` (ocultan
+sus controles de edición cuando `eliminada_en` está presente);
+`src/pages/OrderDetailPage.jsx` (banner "Eliminada", oculta
+StatusChanger/EstimatedDaysCard/OrderEtapasCard en una orden eliminada);
+`src/App.jsx`/`AppLayout.jsx` (rutas y nav de `/catalogos` y
+`/control-rapido`); `src/styles/index.css` (`.simple-table`).
+
+**Verificado en vivo vía simulación SQL** (sin sesión autenticada
+disponible): las 20 funciones nuevas/tocadas conservan
+`anon_exec=false`/`auth_exec=true`; las 10 funciones de mutación de
+órdenes confirman tener el guard de `eliminada_en` en su `prosrc`; se
+marcó una orden de prueba como eliminada, se confirmó que desaparece de
+una query estilo `fetchOrders` (`eliminada_en is null` → 0 filas) y que
+`bloquearia_el_guard` da `true`, y se revirtió al estado original.
+
+**Falta probar manualmente**: iniciar sesión como `admin_general` y
+recorrer el flujo completo de eliminar una orden de prueba (ver el
+impact-check con números reales, confirmar que desaparece del Dashboard
+pero sigue en Control rápido, confirmar que ningún botón de edición
+aparece ya en su detalle); probar borrar un cliente de prueba con
+productos asociados y confirmar el aviso de cascada; confirmar que
+`/control-rapido` carga para un invitado sin sesión; confirmar que
+`/catalogos` da 403 a cualquier rol que no sea `admin_general`.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

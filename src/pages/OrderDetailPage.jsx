@@ -60,6 +60,7 @@ export default function OrderDetailPage() {
           <p className="order-detail__client">{order.client_name}</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {order.eliminada_en && <span className="badge badge--danger">Eliminada</span>}
           {order.cancelled_at && <span className="badge badge--danger">Cancelada</span>}
           <TypeBadge type={typesByKey[order.order_type_key]} />
           <button
@@ -81,6 +82,9 @@ export default function OrderDetailPage() {
         </div>
       </div>
       {pdfError && <p className="form-error">No se pudo generar el PDF: {pdfError.message}</p>}
+      {order.eliminada_en && (
+        <p className="form-error">Esta orden fue eliminada — ya no admite cambios de ningún rol.</p>
+      )}
 
       <StatusStepper status={order.status} />
 
@@ -89,14 +93,14 @@ export default function OrderDetailPage() {
           <OrderDetailsCard order={order} orderTypes={orderTypes} onUpdated={refresh} />
         </section>
 
-        {user && (
+        {user && !order.eliminada_en && (
           <section className="card">
             <StatusChanger order={order} onUpdated={refresh} />
             <EstimatedDaysCard order={order} onUpdated={refresh} />
           </section>
         )}
 
-        {user && (
+        {user && !order.eliminada_en && (
           <section className="card">
             <OrderEtapasCard orderId={order.id} onUpdated={refresh} />
           </section>
@@ -110,7 +114,7 @@ export default function OrderDetailPage() {
 
         {user && (
           <section className="card">
-            <OrderPaymentsCard orderId={order.id} />
+            <OrderPaymentsCard orderId={order.id} disabled={!!order.eliminada_en} />
           </section>
         )}
 

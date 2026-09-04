@@ -24,3 +24,20 @@ export async function createCliente(nombre) {
 
   return supabase.rpc('create_cliente', { p_nombre: nombre }).single()
 }
+
+// Hard-delete (V24) — exclusivo admin_general. productos.cliente_id tiene
+// ON DELETE CASCADE, así que borrar un cliente borra también sus
+// productos guardados — por eso el impact-check antes de confirmar.
+export async function getClienteDeleteImpact(id) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('get_cliente_delete_impact', { p_id: id }).single()
+}
+
+export async function deleteCliente(id) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('delete_cliente', { p_id: id })
+}
