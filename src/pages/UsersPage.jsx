@@ -1,9 +1,17 @@
 import { useState } from 'react'
 import { useProfiles } from '../hooks/useProfiles'
-import { createUser, updateUserRole } from '../services/usersService'
+import {
+  createUser,
+  deleteUser,
+  suspendUser,
+  unsuspendUser,
+  updateUserProfile,
+  updateUserRole,
+} from '../services/usersService'
 import RequireRole from '../components/common/RequireRole'
 import { canManageUsers, ROLE_LABELS } from '../utils/permissions'
 import { Loading, ErrorState } from '../components/common/States'
+import { useAuth } from '../contexts/AuthContext'
 
 const ROLES = [
   'ventas', 'contabilidad', 'admin_tienda',
@@ -151,10 +159,21 @@ function NewUserForm({ onCreated }) {
   )
 }
 
-function UserRow({ profile, onUpdated }) {
+// admin_general puede editar el nombre, cambiar el rol, suspender
+// (bloquea el login en Supabase Auth sin borrar nada) o eliminar
+// definitivamente a cualquier usuario — ver supabase/functions/admin-create-user/index.ts.
+// Nunca se muestra suspender/eliminar sobre el propio usuario en sesión
+// (mismo resguardo que ya aplica el backend, para no bloquearse solo).
+function UserRow({ profile, currentUserId, onUpdated }) {
   const [role, setRole] = useState(profile.role)
+  const [editingName, setEditingName] = useState(false)
+  const [name, setName] = useState(profile.full_name || '')
   const [saving, setSaving] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [error, setError] = useState(null)
+
+  const isSelf = profile.id === currentUserId
+  const isSuspended = !!profile.suspended_at
 
   async function handleRoleChange(newRole) {
     setRole(newRole)
@@ -171,12 +190,101 @@ function UserRow({ profile, onUpdated }) {
     onUpdated?.()
   }
 
+  async function handleSaveName() {
+    if (!name.trim() || name.trim() === profile.full_name) {
+      setEditingName(false)
+      return
+    }
+    setSaving(true)
+    setError(null)
+    const { error: updateError } = await updateUserProfile(profile.id, { fullName: name.trim() })
+    setSaving(false)
+    if (updateError) {
+      setError(updateError)
+      return
+    }
+    setEditingName(false)
+    onUpdated?.()
+  }
+
+  async function handleToggleSuspend() {
+    setSaving(true)
+    setError(null)
+    const { error: toggleError } = isSuspended ? await unsuspendUser(profile.id) : await suspendUser(profile.id)
+    setSaving(false)
+    if (toggleError) {
+      setError(toggleError)
+      return
+    }
+    onUpdated?.()
+  }
+
+  async function handleDelete() {
+    if (!confirmingDelete) {
+      setConfirmingDelete(true)
+      return
+    }
+    setSaving(true)
+    setError(null)
+    const { error: deleteError } = await deleteUser(profile.id)
+    setSaving(false)
+    if (deleteError) {
+      setError(deleteError)
+      setConfirmingDelete(false)
+      return
+    }
+    onUpdated?.()
+  }
+
   return (
     <div className="user-row">
       <div className="user-row__info">
-        <span className="user-row__name">{profile.full_name || 'Sin nombre'}</span>
+        {editingName ? (
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <input
+              type="text"
+              className="input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={saving}
+              style={{ maxWidth: 220 }}
+            />
+            <button type="button" className="btn btn--small btn--primary" onClick={handleSaveName} disabled={saving}>
+              Guardar
+            </button>
+            <button
+              type="button"
+              className="btn btn--small btn--ghost"
+              onClick={() => {
+                setName(profile.full_name || '')
+                setEditingName(false)
+              }}
+              disabled={saving}
+            >
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <span className="user-row__name">
+            {profile.full_name || 'Sin nombre'}{' '}
+            <button
+              type="button"
+              className="btn btn--ghost btn--small"
+              onClick={() => setEditingName(true)}
+              style={{ marginLeft: 4 }}
+            >
+              editar
+            </button>
+            {isSuspended && (
+              <span className="form-error" style={{ marginLeft: 8 }}>
+                Suspendido
+              </span>
+            )}
+          </span>
+        )}
         <span className="user-row__id">{profile.id}</span>
       </div>
+
       <select className="input" value={role} onChange={(e) => handleRoleChange(e.target.value)} disabled={saving}>
         {ROLES.map((r) => (
           <option key={r} value={r}>
@@ -184,6 +292,29 @@ function UserRow({ profile, onUpdated }) {
           </option>
         ))}
       </select>
+
+      {!isSelf && (
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button type="button" className="btn btn--small btn--ghost" onClick={handleToggleSuspend} disabled={saving}>
+            {isSuspended ? 'Reactivar' : 'Suspender'}
+          </button>
+          <button
+            type="button"
+            className="btn btn--small btn--ghost"
+            onClick={handleDelete}
+            disabled={saving}
+            style={confirmingDelete ? { borderColor: 'var(--color-danger)', color: 'var(--color-danger)' } : undefined}
+          >
+            {confirmingDelete ? '¿Seguro? Confirmar' : 'Eliminar'}
+          </button>
+          {confirmingDelete && (
+            <button type="button" className="btn btn--small btn--ghost" onClick={() => setConfirmingDelete(false)} disabled={saving}>
+              Cancelar
+            </button>
+          )}
+        </div>
+      )}
+
       {error && <p className="form-error">{error.message}</p>}
     </div>
   )
@@ -191,6 +322,7 @@ function UserRow({ profile, onUpdated }) {
 
 function UsersPageContent() {
   const { profiles, loading, error, refresh } = useProfiles()
+  const { user } = useAuth()
 
   if (loading) return <Loading label="Cargando usuarios…" />
   if (error) return <ErrorState error={error} onRetry={refresh} />
@@ -198,13 +330,16 @@ function UsersPageContent() {
   return (
     <div className="page page--narrow">
       <h2 className="section-title">Usuarios</h2>
-      <p className="page-subtitle">Crear cuentas nuevas y asignar su rol (tienda: ventas / contabilidad / admin — fábrica: corte / bordado / sublimado / producción / terminado / admin — o administrador general).</p>
+      <p className="page-subtitle">
+        Crear cuentas nuevas, editar nombre/rol, suspender o eliminar (tienda: ventas / contabilidad / admin — fábrica:
+        corte / bordado / sublimado / producción / terminado / admin — o administrador general).
+      </p>
 
       <NewUserForm onCreated={refresh} />
 
       <div className="user-list">
         {profiles.map((p) => (
-          <UserRow key={p.id} profile={p} onUpdated={refresh} />
+          <UserRow key={p.id} profile={p} currentUserId={user?.id} onUpdated={refresh} />
         ))}
       </div>
     </div>

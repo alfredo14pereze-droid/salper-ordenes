@@ -73,3 +73,12 @@ begin
   return v_order;
 end;
 $function$;
+
+-- --------------------------------------------------------------------------
+-- 3) Gestión completa de usuarios para admin_general: columna espejo
+--    suspended_at (la suspensión real vive en Supabase Auth vía
+--    ban_duration, aplicada desde la Edge Function admin-create-user con
+--    la service role — esta columna es solo para mostrar "Suspendido" en
+--    /usuarios sin tener que consultar auth.users desde el cliente).
+-- --------------------------------------------------------------------------
+alter table public.profiles add column if not exists suspended_at timestamptz;

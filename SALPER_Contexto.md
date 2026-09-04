@@ -321,6 +321,24 @@ cambio; los tres ya están aplicados:
 Verificado desde SQL: la policy quedó con `admin_general`; `set_order_document`
 conserva `anon_exec=false`/`auth_exec=true` y su `prosrc` menciona `'ventas'`.
 
+**Gestión completa de usuarios para `admin_general`** (pedido explícito del
+usuario — nota: el pedido original de Fase 2 nombra este rol `super_admin`;
+se mantuvo `admin_general`, ya usado en 15 funciones y en producción, en vez
+de renombrar — son el mismo concepto, sin distinción funcional):
+`admin_general` ahora puede, desde `/usuarios`, editar el nombre de
+cualquier usuario, **suspenderlo** (bloquea su login en Supabase Auth vía
+`ban_duration`, sin borrar nada — columna espejo `profiles.suspended_at`
+para mostrar "Suspendido" en la UI) o **eliminarlo** por completo
+(`auth.admin.deleteUser`; `profiles.id` tiene `ON DELETE CASCADE` hacia
+`auth.users(id)`, así que el perfil se borra solo). Nadie puede
+suspenderse/eliminarse a sí mismo (resguardo en el backend). La Edge
+Function `admin-create-user` pasó de soportar solo "crear" a un campo
+`action` (`create`/`update`/`suspend`/`unsuspend`/`delete`), todas
+verificando `admin_general` del lado del servidor. `profiles` no tiene
+columna de correo (vive solo en `auth.users`), así que la UI no muestra ni
+edita el correo actual — el backend sí lo soporta (`action: 'update'` con
+`email`) por si se necesita exponerlo más adelante.
+
 **Pendiente, en diseño con el usuario**: el rol `produccion` no tenía una
 pareja de estados propia en el flujo lineal (`en_corte`/`cortado`,
 `en_sublimado`/`sublimado`, etc. sí la tienen). El usuario aclaró que
