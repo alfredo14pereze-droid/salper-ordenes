@@ -27,15 +27,15 @@ export function canEditOrder(role, order) {
 }
 
 // Documentos de la orden (cotización/orden de compra/factura): mismo
-// espejo que set_order_document en schema_v21_roles.sql — dominio
-// contabilidad (antes era tienda a secas). La factura es la excepción a
-// propósito — casi siempre se sube DESPUÉS de que fábrica ya confirmó
-// (cuando se entrega o se está por entregar), así que para 'factura'
-// contabilidad no queda limitado a "en_confirmacion" como sí pasa con
-// cotización/orden de compra. ventas no tiene acceso a documentos.
+// espejo que set_order_document en Supabase. ventas y contabilidad pueden
+// subir cotización/orden de compra (mientras la orden siga
+// "en_confirmacion"); la factura es exclusiva de contabilidad, y sin tope
+// de estado — casi siempre se sube DESPUÉS de que fábrica ya confirmó
+// (cuando se entrega o se está por entregar).
 export function canEditOrderDocument(role, order, kind) {
   if (role === 'admin_tienda' || role === 'admin_general') return true
   if (role === 'contabilidad') return kind === 'factura' || order?.status === 'en_confirmacion'
+  if (role === 'ventas') return kind !== 'factura' && order?.status === 'en_confirmacion'
   return false
 }
 
@@ -82,6 +82,16 @@ export function canManagePedidosTienda(role) {
 // schema_v18_pedidos_tienda.sql.
 export function canViewPedidosTienda(role) {
   return !!role
+}
+
+// Los 5 roles de etapa de fábrica solo necesitan ver Dashboard y Resumen
+// (y el detalle de la orden a la que entran desde ahí) para hacer su
+// trabajo — el resto de la navegación (Calendario, Pendientes, Anuncios,
+// Órdenes pasadas, Pedidos a Proveedor) no les aplica. admin_fabrica NO
+// entra aquí a propósito: sigue viendo todo el sistema, como el resto de
+// los roles "admin_*".
+export function hasRestrictedNav(role) {
+  return FABRICA_ETAPA_ROLES.includes(role)
 }
 
 export const ROLE_LABELS = {

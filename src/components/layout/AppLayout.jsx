@@ -2,22 +2,33 @@ import { NavLink } from 'react-router-dom'
 import Logo from './Logo'
 import ChatWidget from '../chat/ChatWidget'
 import { useAuth } from '../../contexts/AuthContext'
-import { canCreateOrder, canManageUsers, canViewPedidosTienda, ROLE_LABELS } from '../../utils/permissions'
+import {
+  canCreateOrder,
+  canManageUsers,
+  canViewPedidosTienda,
+  hasRestrictedNav,
+  ROLE_LABELS,
+} from '../../utils/permissions'
 
 export default function AppLayout({ children }) {
   const { user, profile, role, signOut } = useAuth()
+  // Los 5 roles de etapa de fábrica (corte/bordado/sublimado/producción/
+  // terminado) solo necesitan Dashboard + Resumen para hacer su trabajo —
+  // ver hasRestrictedNav en utils/permissions.js. admin_fabrica sigue
+  // viendo todo.
+  const restricted = hasRestrictedNav(role)
 
   const navItems = [
     { to: '/', label: 'Dashboard', end: true, show: true },
     { to: '/nueva', label: 'Nueva orden', show: canCreateOrder(role) },
-    { to: '/pasadas', label: 'Órdenes pasadas', show: true },
+    { to: '/pasadas', label: 'Órdenes pasadas', show: !restricted },
     { to: '/resumen', label: 'Resumen', show: true },
-    { to: '/calendario', label: 'Calendario', show: true },
-    { to: '/pendientes', label: 'Pendientes', show: true },
-    { to: '/anuncios', label: 'Anuncios', show: true },
+    { to: '/calendario', label: 'Calendario', show: !restricted },
+    { to: '/pendientes', label: 'Pendientes', show: !restricted },
+    { to: '/anuncios', label: 'Anuncios', show: !restricted },
     // Módulo independiente de órdenes, sin modo invitado — solo aparece
     // con sesión (ver canViewPedidosTienda).
-    { to: '/pedidos-proveedor', label: 'Pedidos a Proveedor', show: canViewPedidosTienda(role) },
+    { to: '/pedidos-proveedor', label: 'Pedidos a Proveedor', show: !restricted && canViewPedidosTienda(role) },
     { to: '/usuarios', label: 'Usuarios', show: canManageUsers(role) },
   ]
 

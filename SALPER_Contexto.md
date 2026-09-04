@@ -64,8 +64,13 @@ válidos de `role`).
 **Fábrica:** `corte`, `bordado`, `sublimado`, `produccion`, `terminado` —
 avanzan el estado de la orden y capturan el tiempo estimado (solo mientras
 `en_confirmacion`); nunca tocan datos generales (cliente, fechas, tipo,
-prendas, documentos). `admin_fabrica` — acceso total al dominio fábrica; ve
-todo el sistema.
+prendas, documentos). Desde **V22**, estos 5 roles también tienen la
+navegación restringida en el frontend a solo Dashboard y Resumen
+(`hasRestrictedNav` en `src/utils/permissions.js`) — Calendario, Pendientes,
+Anuncios, Órdenes pasadas y Pedidos a Proveedor quedan ocultos para ellos
+(capa de UX, no de seguridad — el acceso real ya estaba cerrado por rol en
+cada RPC). `admin_fabrica` — acceso total al dominio fábrica; ve todo el
+sistema, **sin** esta restricción de navegación.
 
 **General:** `admin_general` — acceso total a los dos dominios + gestión de
 usuarios (`admin_update_user_role`, Edge Function `admin-create-user`). No
@@ -85,14 +90,20 @@ el admin reasigna a cada quien su etapa específica después, desde Usuarios).
 
 **Decisiones de dominio no explícitas en el pedido original** (juicio del
 autor de la migración, documentado en el header de
-`supabase/schema_v21_roles.sql`): Pedidos a Proveedor y los tres tipos de
-documento de la orden (cotización/orden de compra/factura) se asignaron a
-`contabilidad`, no a `ventas` — el pedido original ya mencionaba "órdenes de
-compra" y "facturas" como dominio de contabilidad, y se generalizó a toda la
-familia de documentos financieros. `create_anticipo` quedó abierto a
-`ventas` y `contabilidad` (cualquiera puede recibir un anticipo); borrar un
-anticipo y cancelar/reactivar una orden quedaron restringidos a
+`supabase/schema_v21_roles.sql`): Pedidos a Proveedor se asignó a
+`contabilidad`, no a `ventas`. `create_anticipo` quedó abierto a `ventas` y
+`contabilidad` (cualquiera puede recibir un anticipo); borrar un anticipo y
+cancelar/reactivar una orden quedaron restringidos a
 `admin_tienda`/`admin_general`.
+
+**Documentos de la orden** (cotización, orden de compra, factura —
+`set_order_document`): desde **V22**, `ventas` puede subir/reemplazar
+cotización y orden de compra (mientras la orden siga `en_confirmacion`,
+mismo tope que ya tenía `contabilidad` para esos dos); la **factura** se
+queda exclusiva de `contabilidad`/`admin_tienda`/`admin_general` — `ventas`
+nunca puede tocarla. (V21 había dejado los tres tipos de documento cerrados
+solo a `contabilidad`; se corrigió tras confirmar con el usuario que ventas
+sí necesita subir cotización/orden de compra.)
 
 **LÍMITE ESTRUCTURAL, documentado a propósito:** la regla "cada rol de
 fábrica solo modifica el estado de SU etapa" **no se puede aplicar de verdad
@@ -287,7 +298,43 @@ de `en_confirmacion` pero no crear pedidos nuevos; confirmar que solo
 `admin_general` ve la página de Usuarios y puede dar de alta cuentas
 (Edge Function redesplegada).
 
-### Fase 2 (rama `fase-2`)
+### Fase 2, Parte 1 — ajustes V22 (después de revisar en producción)
+
+Tras revisar V21 en vivo, el usuario reportó dos cosas y pidió un tercer
+cambio; los tres ya están aplicados:
+
+- **Bug**: `admin_general` no podía ver la lista completa en Usuarios —
+  causa: la policy RLS `Admin ve todos los perfiles` sobre `profiles` seguía
+  comparando contra el rol viejo `'admin'` (se me pasó en V21 porque solo
+  revisé cuerpos de funciones RPC, no policies de tabla). Corregido:
+  `supabase/schema_v22_fixes_roles.sql`, sección 1.
+- **Permiso ampliado**: `ventas` ahora puede subir/reemplazar cotización y
+  orden de compra (antes solo `contabilidad`); factura se queda exclusiva de
+  `contabilidad`/`admin_tienda`/`admin_general`. `set_order_document`
+  reescrito (`schema_v22_fixes_roles.sql`, sección 2) + espejo en
+  `src/utils/permissions.js` (`canEditOrderDocument`).
+- **Navegación restringida**: los 5 roles de etapa de fábrica ahora solo ven
+  Dashboard y Resumen en el nav (`hasRestrictedNav` en `permissions.js`,
+  aplicado en `src/components/layout/AppLayout.jsx`). `admin_fabrica` sigue
+  viendo todo.
+
+Verificado desde SQL: la policy quedó con `admin_general`; `set_order_document`
+conserva `anon_exec=false`/`auth_exec=true` y su `prosrc` menciona `'ventas'`.
+
+**Pendiente, en diseño con el usuario**: el rol `produccion` no tenía una
+pareja de estados propia en el flujo lineal (`en_corte`/`cortado`,
+`en_sublimado`/`sublimado`, etc. sí la tienen). El usuario aclaró que
+necesita `en_produccion`/`termino_produccion`, y que producción y terminado
+van a estar **activos al mismo tiempo** en una misma orden (piezas saliendo
+de producción mientras terminado ya trabaja las primeras) — algo que la
+columna única `orders.status` no puede representar. Se acordó con el usuario
+adelantar la arquitectura de etapas paralelas de la **Parte 2**
+(`orden_etapas`) en vez de parchar el modelo lineal. Ver el resto del plan
+de Fase 2 (Roles, Permisos, Etapas Paralelas, Bordado y Terminado) más abajo
+en esta sección — la Parte 2 todavía no se ha aplicado a la base compartida,
+pendiente de presentar el plan de rollback al usuario.
+
+### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver
 `/Users/alfredoperez/.claude/plans/gleaming-purring-wirth.md` para el plan
