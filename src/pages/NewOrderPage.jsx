@@ -15,7 +15,7 @@ import OrderItemsEditor from '../components/orders/OrderItemsEditor'
 import RequireRole from '../components/common/RequireRole'
 import { canCreateOrder } from '../utils/permissions'
 import { Loading, ErrorState } from '../components/common/States'
-import { downloadOrderConfirmationPdf } from '../utils/generateOrderPdf'
+import { buildOrderConfirmationPdfBlob, orderConfirmationPdfFileName, downloadBlob } from '../utils/generateOrderPdf'
 
 const initialForm = {
   clientId: '',
@@ -208,7 +208,8 @@ function NewOrderForm() {
     // sintetiza aquí en vez de pedirlo aparte a la base, ya se sabe cuál es.
     const initialHistory = [{ status: data.status, changed_at: data.created_at, notes: 'Orden creada' }]
     try {
-      await downloadOrderConfirmationPdf(data, { orderTypeLabel, history: initialHistory })
+      const blob = await buildOrderConfirmationPdfBlob(data, { orderTypeLabel, history: initialHistory })
+      downloadBlob(blob, orderConfirmationPdfFileName(data, 'interno'))
     } catch (pdfErr) {
       console.error('No se pudo generar el PDF de confirmación:', pdfErr)
     }

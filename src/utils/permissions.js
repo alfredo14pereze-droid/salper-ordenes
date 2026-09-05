@@ -106,6 +106,24 @@ export function canManageBordado(role) {
   return role === 'bordado' || role === 'admin_fabrica' || role === 'admin_general'
 }
 
+// Terminado (V26): capturar cantidad_surtida/comentario_surtido por línea
+// es exclusivo de terminado + admin_fabrica/admin_general — el resto de
+// la orden se queda de solo lectura para terminado (no puede tocar
+// cliente, fechas, tipo, cantidades pedidas, ni otras etapas).
+export function canManageSurtido(role) {
+  return role === 'terminado' || role === 'admin_fabrica' || role === 'admin_general'
+}
+
+// Remisión (V26): visible/descargable por ambos dominios — tienda
+// (ventas/admin_tienda) y fábrica (admin_fabrica/terminado), ninguno
+// restringido a un solo lado ya que ambos necesitan confirmar qué se
+// surtió realmente. No se limita a esos roles: mismo criterio de
+// visibilidad total que el resto de la app (invitado incluido) — no hay
+// nada aquí que no esté ya visible en el detalle de la orden.
+export function canViewRemision() {
+  return true
+}
+
 export function canDeleteOrder(role) {
   return role === 'admin_general'
 }

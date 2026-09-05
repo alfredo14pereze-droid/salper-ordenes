@@ -651,6 +651,100 @@ ubicación para esa prenda, confirmar que se ve en la tarjeta y que se
 puede quitar; confirmar que un rol sin `canManageBordado` (ej. `ventas`)
 ve los registros pero no el botón de agregar.
 
+### Fase 2, Parte 4 — Terminado y remisión (V26)
+
+**Cantidad surtida por talla.** No existe una tabla de líneas de pedido —
+las tallas viven dentro de `items[].sizes[]` (JSONB de `orders.items`), así
+que cada talla gana dos claves opcionales: `cantidad_surtida` (numeric) y
+`comentario_surtido` (text) — sin migración, las tallas existentes
+simplemente no las traen (se leen como "sin capturar todavía", se muestran
+en negro con "—", no como 0).
+
+**`set_item_surtido(p_order_id, p_item_index, p_talla, p_cantidad_surtida,
+p_comentario_surtido)`** — exclusivo `terminado`/`admin_fabrica`/
+`admin_general`, bloqueado si la orden está `eliminada_en`. **Diseño por
+índice, no por `id` de prenda** — decisión tomada ANTES de tocar el
+frontend, no un bug reportado: el `id` de cada prenda (agregado en la
+Parte 3) solo se persiste en la base si tienda vuelve a guardar
+explícitamente vía `set_order_items`; cualquier orden que no haya pasado
+por ahí desde V25 — es decir, casi todas las órdenes reales que se van a
+cargar el lunes — no tiene `id` en sus prendas guardadas. Matchear por `id`
+habría dejado a `terminado` sin poder capturar nada en esas órdenes. La
+función usa `jsonb_array_elements(items) with ordinality` para ubicar la
+prenda por posición y reescribe solo esa talla dentro de `sizes[]`. Este
+cambio de tipo de parámetro (`p_item_id text` → `p_item_index integer`)
+requirió `drop function if exists` antes del `create or replace` (un
+`CREATE OR REPLACE` no permite cambiar tipos de parámetro). Verificado en
+vivo simulando la lógica exacta sobre la orden real `SUB-003` (sin `id` en
+ninguna de sus prendas) y sobre un `id` fabricado — ambos casos
+resolvieron la prenda correcta.
+
+**`terminado` de solo lectura en el resto de la orden**: `canManageSurtido`
+es la única puerta nueva de UI para este rol; el resto de sus permisos ya
+quedaban cerrados desde `canEditOrder`/`canConfirmOrder`/`canCompleteOrder`
+en V21/V23 (nunca tuvo acceso de escritura a cliente, fechas, tipo,
+cantidades pedidas, ni otras etapas) — Parte 4 no tuvo que tocar esos
+helpers, solo confirmar que seguían cerrados.
+
+**`OrderSurtidoCard.jsx`** (nuevo) — se muestra si la orden tiene al menos
+una prenda (no depende del status ni del rol: cualquiera ve pedida vs.
+surtida, igual que el resto del sistema es de visibilidad total). Cada
+talla es una fila con pedida de solo lectura y surtida/comentario
+editables solo si `canManageSurtido(role)`, con un botón "Guardar" por
+fila que solo se activa si hay cambios sin guardar.
+
+**Remisión de entrega (`RemisionPdf.jsx` + `buildRemisionPdfBlob`)** —
+disponible solo cuando `order.status === 'completado'`, compara pedida vs.
+surtida por talla con código de color: negro si son iguales o si no hay
+dato capturado, rojo si faltó, verde si sobró; muestra el comentario de
+las líneas con diferencia y una leyenda (solo si hay al menos una
+diferencia). Visible/descargable por **ambos dominios** (tienda y
+fábrica) — `canViewRemision()` no restringe por rol, mismo criterio de
+visibilidad total que el resto de la app, ya que ambos lados necesitan
+confirmar qué se surtió realmente.
+
+**Vista previa antes de descargar (`PdfPreviewModal.jsx`)** — retrofit
+aplicado a los dos botones de PDF que ya existían ("Descargar PDF"/"PDF
+para cliente" en `OrderDetailPage.jsx`) además del nuevo botón de
+remisión: ahora los tres generan el blob y lo muestran en un modal con
+`<iframe>` antes de que el usuario decida descargar. La única excepción
+deliberada es la descarga automática al crear una orden nueva
+(`NewOrderPage.jsx`) — ahí el PDF es un efecto de fondo mientras la página
+ya está navegando al detalle, y meter un modal bloqueante en medio de esa
+transición sería peor experiencia, no mejor.
+
+**Bug encontrado y corregido en vivo**: la primera versión de
+`RemisionPdf.jsx` combinaba `fontStyle: 'italic'` (en el estilo base de la
+celda de comentario) con `fontFamily: 'Helvetica-Bold'` (del estilo de
+encabezado) en la fila de headers de la tabla — `@react-pdf/renderer` no
+resuelve esa combinación y truena en tiempo de render con "Could not
+resolve font for Helvetica-Bold, fontWeight 400, fontStyle italic". Se
+encontró generando la remisión real en el navegador (no en revisión de
+código) — el botón mostraba el error en rojo bajo la fila de botones. Se
+corrigió sacando el itálico del estilo base y aplicándolo en un estilo
+aparte (`commentText`) solo a las celdas de datos, nunca a las del
+encabezado. Reconfirmado en vivo tras el fix: la remisión de la orden real
+`2026-0200` renderiza con talla 8 en negro (15 pedida / 15 surtida) y
+talla 10 en verde (20 pedida / 23 surtida, con el comentario "Sobraron 3,
+cliente pidió de más por error" visible) — sin banner de error.
+
+**Dato de prueba usado y ya revertido**: se cargó temporalmente
+`cantidad_surtida`/`comentario_surtido` en la orden real `2026-0200`
+(Colegio Vanguard) para poder generar una remisión con diferencias reales
+y probar el color-coding en vivo. Se revirtió a su `items` original (sin
+esas claves) antes de seguir — no queda dato de prueba en órdenes reales.
+
+**Falta probar manualmente**: iniciar sesión como `terminado` (o
+`admin_fabrica`/`admin_general`), abrir una orden con status
+`completado`, capturar cantidad surtida/comentario en al menos una talla
+con diferencia contra lo pedido, confirmar que se guarda y que la
+remisión refleja el color correcto; confirmar que `terminado` no puede
+editar ningún otro campo de la orden; confirmar que un rol de tienda
+(`ventas`/`admin_tienda`) también puede descargar la remisión de una
+orden completada; probar los tres botones de PDF (interno/cliente/
+remisión) y confirmar que los tres abren la vista previa antes de
+descargar, y que "Descargar" dentro del modal sí dispara la descarga real.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

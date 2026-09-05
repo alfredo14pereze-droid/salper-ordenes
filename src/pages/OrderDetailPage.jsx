@@ -15,33 +15,60 @@ import EstimatedDaysCard from '../components/orders/EstimatedDaysCard'
 import CancelOrderCard from '../components/orders/CancelOrderCard'
 import OrderEtapasCard from '../components/orders/OrderEtapasCard'
 import OrderBordadosCard from '../components/orders/OrderBordadosCard'
+import OrderSurtidoCard from '../components/orders/OrderSurtidoCard'
 import ComingSoonCard from '../components/orders/ComingSoonCard'
+import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import { Loading, ErrorState } from '../components/common/States'
-import { downloadOrderConfirmationPdf } from '../utils/generateOrderPdf'
+import {
+  buildOrderConfirmationPdfBlob,
+  buildRemisionPdfBlob,
+  orderConfirmationPdfFileName,
+  remisionPdfFileName,
+} from '../utils/generateOrderPdf'
 import { useAuth } from '../contexts/AuthContext'
+import { canViewRemision } from '../utils/permissions'
 
 export default function OrderDetailPage() {
-  const { user } = useAuth()
+  const { user, role } = useAuth()
   const { id } = useParams()
   const location = useLocation()
   const { order, history, loading, error, refresh } = useOrder(id)
   const { orderTypes, typesByKey } = useOrderTypes()
-  const [generatingPdf, setGeneratingPdf] = useState(null) // null | 'interno' | 'cliente'
+  const [generatingPdf, setGeneratingPdf] = useState(null) // null | 'interno' | 'cliente' | 'remision'
   const [pdfError, setPdfError] = useState(null)
+  const [preview, setPreview] = useState(null) // { blob, fileName } | null
 
   if (loading) return <Loading label="Cargando orden…" />
   if (error) return <ErrorState error={error} onRetry={refresh} />
   if (!order) return <ErrorState error={new Error('Esta orden no existe.')} />
 
-  async function handleDownloadPdf(variant) {
+  // Vista previa antes de descargar (V26, Parte 4) — aplica tanto a la
+  // confirmación de orden como a la remisión: se genera el blob y se abre
+  // PdfPreviewModal; la descarga real solo pasa si el usuario le da al
+  // botón de adentro del modal.
+  async function handlePreviewPdf(variant) {
     setGeneratingPdf(variant)
     setPdfError(null)
     try {
-      await downloadOrderConfirmationPdf(order, {
+      const blob = await buildOrderConfirmationPdfBlob(order, {
         orderTypeLabel: typesByKey[order.order_type_key]?.label,
         variant,
         history,
       })
+      setPreview({ blob, fileName: orderConfirmationPdfFileName(order, variant) })
+    } catch (err) {
+      setPdfError(err)
+    } finally {
+      setGeneratingPdf(null)
+    }
+  }
+
+  async function handlePreviewRemision() {
+    setGeneratingPdf('remision')
+    setPdfError(null)
+    try {
+      const blob = await buildRemisionPdfBlob(order, { orderTypeLabel: typesByKey[order.order_type_key]?.label })
+      setPreview({ blob, fileName: remisionPdfFileName(order) })
     } catch (err) {
       setPdfError(err)
     } finally {
@@ -67,7 +94,7 @@ export default function OrderDetailPage() {
           <button
             type="button"
             className="btn btn--ghost"
-            onClick={() => handleDownloadPdf('interno')}
+            onClick={() => handlePreviewPdf('interno')}
             disabled={!!generatingPdf}
           >
             {generatingPdf === 'interno' ? 'Generando…' : 'Descargar PDF'}
@@ -75,17 +102,23 @@ export default function OrderDetailPage() {
           <button
             type="button"
             className="btn btn--ghost"
-            onClick={() => handleDownloadPdf('cliente')}
+            onClick={() => handlePreviewPdf('cliente')}
             disabled={!!generatingPdf}
           >
             {generatingPdf === 'cliente' ? 'Generando…' : 'PDF para cliente'}
           </button>
+          {order.status === 'completado' && canViewRemision(role) && (
+            <button type="button" className="btn btn--secondary" onClick={handlePreviewRemision} disabled={!!generatingPdf}>
+              {generatingPdf === 'remision' ? 'Generando…' : 'Descargar remisión'}
+            </button>
+          )}
         </div>
       </div>
       {pdfError && <p className="form-error">No se pudo generar el PDF: {pdfError.message}</p>}
       {order.eliminada_en && (
         <p className="form-error">Esta orden fue eliminada — ya no admite cambios de ningún rol.</p>
       )}
+      {preview && <PdfPreviewModal blob={preview.blob} fileName={preview.fileName} onClose={() => setPreview(null)} />}
 
       <StatusStepper status={order.status} />
 
@@ -126,6 +159,12 @@ export default function OrderDetailPage() {
         {order.items?.some((it) => it.lleva_bordado) && (
           <section className="card">
             <OrderBordadosCard order={order} onUpdated={refresh} />
+          </section>
+        )}
+
+        {order.items?.length > 0 && (
+          <section className="card">
+            <OrderSurtidoCard order={order} onUpdated={refresh} />
           </section>
         )}
 

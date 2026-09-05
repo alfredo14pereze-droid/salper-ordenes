@@ -209,6 +209,27 @@ export async function restoreOrder(orderId) {
   return supabase.rpc('restore_order', { p_order_id: orderId }).single()
 }
 
+// Terminado (V26, ver supabase/schema_v26_terminado_remision.sql): único
+// punto de escritura para el rol `terminado` — SOLO toca cantidad_surtida/
+// comentario_surtido de UNA talla de UNA prenda (localizada por su ÍNDICE
+// dentro de items[], no por `id` — una orden vieja no re-guardada desde
+// Parte 3 no trae `id` en la base), nunca el resto de la orden. Exclusivo
+// terminado/admin_fabrica/admin_general.
+export async function setItemSurtido(orderId, itemIndex, talla, cantidadSurtida, comentarioSurtido) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase
+    .rpc('set_item_surtido', {
+      p_order_id: orderId,
+      p_item_index: itemIndex,
+      p_talla: talla,
+      p_cantidad_surtida: cantidadSurtida,
+      p_comentario_surtido: comentarioSurtido || null,
+    })
+    .single()
+}
+
 // Se suscribe a cambios en tiempo real de órdenes y su historial, para que
 // el dashboard/calendario se actualicen solos cuando alguien más mueve una
 // orden (sin tener que refrescar la página). Devuelve una función para
