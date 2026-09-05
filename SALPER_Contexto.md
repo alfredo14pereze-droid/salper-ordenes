@@ -745,6 +745,60 @@ orden completada; probar los tres botones de PDF (interno/cliente/
 remisión) y confirmar que los tres abren la vista previa antes de
 descargar, y que "Descargar" dentro del modal sí dispara la descarga real.
 
+### V27 — fix "Database error deleting user" + vista previa también al crear una orden
+
+Dos correcciones reportadas después de probar Parte 4 en producción, sin
+relación entre sí:
+
+**1) No se podía eliminar ningún usuario real desde el panel de
+Usuarios.** Causa confirmada en vivo (se consultó `pg_constraint`
+filtrando por `confrelid = 'auth.users'::regclass` antes de asumir nada):
+de las 5 columnas de `public` que le apuntan a `auth.users(id)` para
+"quién hizo esto", solo 2 (`orden_bordados.creado_por`,
+`orden_etapas.responsable_id`, ambas de V23/V25) se crearon con `ON
+DELETE SET NULL`. Las otras 3 —`orders.created_by`,
+`order_status_history.changed_by`, `anticipos.created_by`— se crearon
+sin especificar acción de borrado (V4/V16), lo que en Postgres es `NO
+ACTION`: en cuanto el usuario a borrar hubiera creado una orden, cambiado
+un estado, o registrado un anticipo —es decir, cualquier usuario real que
+haya usado el sistema— `auth.admin.deleteUser()` truena con una
+violación de foreign key, que Supabase Auth reporta genérico como
+"Database error deleting user" sin decir cuál tabla la causó.
+`schema_v27_fix_user_delete.sql` les puso `ON DELETE SET NULL` a las 3,
+mismo criterio que las otras dos — la orden/el historial/el anticipo NO
+se borran ni se rompen al borrar a quien los creó, solo pierden la
+referencia a "quién". Verificado en vivo con `pg_get_constraintdef`: las 3
+salen ahora con `ON DELETE SET NULL`.
+
+**2) Vista previa también en el PDF que se genera al crear una orden.**
+La única excepción que quedó documentada en V26 (auto-descarga sin vista
+previa al crear una orden nueva, para no bloquear la transición a la
+página de detalle) se eliminó a pedido explícito del usuario: **"quiero
+que todos los pdf que se generan primero se vean en vista previa, y ya si
+lo quieren descargar que lo descarguen"**. `NewOrderPage.jsx` ya no llama
+`downloadBlob` — genera el blob igual que antes y lo manda como
+`location.state.pdfPreview` al navegar a `/orden/:id`;
+`OrderDetailPage.jsx` lo recoge con un `useState(() =>
+location.state?.pdfPreview || null)` (lazy init: se lee una sola vez al
+montar, así que cerrar el modal no lo vuelve a abrir) y abre
+`PdfPreviewModal` automáticamente, igual que los otros tres botones de
+PDF del detalle. Verificado que un `Blob` sobrevive el paso por
+`navigate(path, { state })` bajo `HashRouter` (usa `history.pushState`
+por debajo, que clona el estado con structured clone — Blob incluido);
+además, el mismo mecanismo de pasar `location.state` entre estas dos
+páginas ya estaba probado en producción para `photoUploadError`, así que
+no es una ruta nueva sin probar. **Ahora los 4 PDFs del sistema
+(confirmación al crear, "Descargar PDF", "PDF para cliente", remisión)
+pasan todos por vista previa antes de poder descargarse — ya no queda
+ninguna excepción.**
+
+**Falta probar manualmente**: crear una orden nueva y confirmar que, en
+vez de descargarse sola, se abre el modal de vista previa ya parado en la
+página de detalle de la orden recién creada; confirmar que "Descargar"
+adentro de ese modal sí baja el archivo; después de las pruebas de
+arriba, eliminar un usuario de prueba real (no el propio) que ya haya
+creado una orden o cambiado un estado, y confirmar que ahora sí se borra.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

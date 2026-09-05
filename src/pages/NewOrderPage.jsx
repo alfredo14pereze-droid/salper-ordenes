@@ -15,7 +15,7 @@ import OrderItemsEditor from '../components/orders/OrderItemsEditor'
 import RequireRole from '../components/common/RequireRole'
 import { canCreateOrder } from '../utils/permissions'
 import { Loading, ErrorState } from '../components/common/States'
-import { buildOrderConfirmationPdfBlob, orderConfirmationPdfFileName, downloadBlob } from '../utils/generateOrderPdf'
+import { buildOrderConfirmationPdfBlob, orderConfirmationPdfFileName } from '../utils/generateOrderPdf'
 
 const initialForm = {
   clientId: '',
@@ -199,27 +199,26 @@ function NewOrderForm() {
 
     setSubmitting(false)
 
-    // El PDF de confirmación se descarga solo al crear la orden. Si por lo
-    // que sea falla generarlo, no se cancela la creación — igual queda el
-    // botón "Descargar PDF" en el detalle para reintentar.
+    // El PDF de confirmación se genera solo al crear la orden, pero ya no
+    // se descarga automático — se manda en vista previa al detalle (mismo
+    // criterio que cualquier otro PDF del sistema: primero se ve, y solo
+    // se descarga si el usuario le da al botón de adentro del modal). Si
+    // por lo que sea falla generarlo, no se cancela la creación — igual
+    // queda el botón "Descargar PDF" en el detalle para reintentar.
     const orderTypeLabel = orderTypes.find((t) => t.key === data.order_type_key)?.label
     // Recién creada, la orden solo tiene el registro de historial que el
     // propio create_order insertó (ver ordersService.createOrder) — se
     // sintetiza aquí en vez de pedirlo aparte a la base, ya se sabe cuál es.
     const initialHistory = [{ status: data.status, changed_at: data.created_at, notes: 'Orden creada' }]
+    let pdfPreview = null
     try {
       const blob = await buildOrderConfirmationPdfBlob(data, { orderTypeLabel, history: initialHistory })
-      downloadBlob(blob, orderConfirmationPdfFileName(data, 'interno'))
+      pdfPreview = { blob, fileName: orderConfirmationPdfFileName(data, 'interno') }
     } catch (pdfErr) {
       console.error('No se pudo generar el PDF de confirmación:', pdfErr)
     }
 
-    if (photoError) {
-      navigate(`/orden/${data.id}`, { state: { photoUploadError: photoError } })
-      return
-    }
-
-    navigate(`/orden/${data.id}`)
+    navigate(`/orden/${data.id}`, { state: { photoUploadError: photoError, pdfPreview } })
   }
 
   if (loading) return <Loading label="Cargando tipos de orden…" />

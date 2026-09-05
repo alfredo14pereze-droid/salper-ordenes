@@ -36,7 +36,12 @@ export default function OrderDetailPage() {
   const { orderTypes, typesByKey } = useOrderTypes()
   const [generatingPdf, setGeneratingPdf] = useState(null) // null | 'interno' | 'cliente' | 'remision'
   const [pdfError, setPdfError] = useState(null)
-  const [preview, setPreview] = useState(null) // { blob, fileName } | null
+  // Si venimos de crear la orden (NewOrderPage.jsx), el PDF de confirmación
+  // ya se generó allá y viaja en location.state — se abre en vista previa
+  // aquí en vez de descargarse solo, igual que cualquier otro PDF del
+  // sistema. Lazy init: solo se lee una vez al montar, así que cerrarlo
+  // (setPreview(null)) no lo vuelve a abrir aunque location.state persista.
+  const [preview, setPreview] = useState(() => location.state?.pdfPreview || null) // { blob, fileName } | null
 
   if (loading) return <Loading label="Cargando orden…" />
   if (error) return <ErrorState error={error} onRetry={refresh} />
