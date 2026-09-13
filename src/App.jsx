@@ -34,18 +34,28 @@ export default function App() {
   )
 }
 
-// Modo invitado: quien entra al link sin haber iniciado sesión ve la app
-// completa en modo lectura (Dashboard, calendario, detalle de órdenes,
-// anuncios, pendientes) — nunca la pantalla de login primero. Ningún
-// botón de crear/editar/cambiar aparece sin sesión (cada componente lo
-// decide solo, vía useAuth().role/user — ver utils/permissions.js), y el
-// servidor rechaza cualquier escritura sin sesión de todos modos (RLS +
-// RPCs "to authenticated", ver supabase/schema_v9_security_fix.sql). El
-// login vive en /login, no como puerta de entrada.
+// V29 — se quitó el "modo invitado": SALPER es un sistema interno y no
+// debe verlo nadie externo a la empresa. Antes de V29, quien entraba al
+// link sin sesión veía la app completa en modo lectura (Dashboard,
+// calendario, órdenes, etc.) — eso era a propósito en su momento, pero
+// el usuario pidió expresamente cerrarlo. Ahora, sin sesión, lo único que
+// se monta es LoginPage — ninguna ruta, ningún dato, ni el nav de
+// AppLayout. El servidor refuerza esto mismo del lado de la base
+// (schema_v29_no_acceso_externo.sql revoca el acceso de `anon` al schema
+// `public` por completo), así que aunque alguien se saltara este
+// chequeo del cliente, la base ya no le regresa nada de todos modos.
 function AuthGate() {
-  const { loading } = useAuth()
+  const { loading, user } = useAuth()
 
   if (loading) return <Loading label="Cargando…" />
+
+  if (!user) {
+    return (
+      <HashRouter>
+        <LoginPage />
+      </HashRouter>
+    )
+  }
 
   return (
     <HashRouter>

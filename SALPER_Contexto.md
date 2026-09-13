@@ -927,6 +927,81 @@ directo al usuario en vez de prometerlo y ya.
   en la rama `dev`, ya que ahí sí puede romper algo sin afectar
   producción).
 
+### V29 — se quita el "modo invitado": nadie externo a SALPER puede entrar
+
+El usuario preguntó cómo asegurarse de que nadie externo a SALPER pudiera
+entrar al sistema. Respuesta honesta que hubo que darle primero: **hoy
+sí podían** — desde V10, cualquiera con el link veía todo en modo
+lectura sin necesidad de cuenta, a propósito (incluso se pidió
+expresamente que "Control rápido" fuera visible para invitados en la
+Parte 1 extendida de Fase 2, V24). El usuario confirmó explícitamente
+que quería cerrar esto por completo ("Solo con cuenta") en vez de las
+otras dos opciones que se le ofrecieron (contraseña compartida de
+equipo, o dejarlo como está).
+
+**Candado del lado del servidor** (`schema_v29_no_acceso_externo.sql`):
+antes de escribir nada se confirmó en vivo, consultando `pg_policies` e
+`information_schema.role_table_grants` filtrando por `grantee = 'anon'`,
+exactamente qué tenía SELECT expuesto a invitados — 11 tablas
+(`announcements`, `clientes`, `orden_bordados`, `orden_etapas`,
+`order_status_history`, `order_types`, `orders`, `pending_items`,
+`plantillas_etapas`, `productos`, `telas`). El fix real es una sola
+línea: `revoke usage on schema public from anon;` — sin `USAGE` en el
+schema, `anon` no puede resolver NINGÚN objeto de `public` sin importar
+qué GRANT/policy tenga, así que esto es el candado maestro (deja
+inservibles de paso los GRANT de `execute` a `anon` que quedaban
+colgados desde V1-V3 sobre RPCs de escritura — ya no hacía falta cazar
+cada firma una por una). Además, por defensa en profundidad, cada policy
+"Lectura pública ..." se recreó como `to authenticated` solamente, y se
+revocó el `select` explícito a `anon` en esas 11 tablas — así que aunque
+alguien reactive el `USAGE` por error algún día, cada tabla sigue cerrada
+por su cuenta. **Verificado en vivo con una llamada real a la REST API**
+(no solo revisando políticas): pedir `orders` con la `anon key` regresaba
+`200` con datos antes del cambio, y `401` después.
+
+**Candado del lado del cliente** (`App.jsx`): `AuthGate` ya no monta
+`<Routes>`/`<AppLayout>` si no hay `user` — sin sesión, lo único que se
+renderiza es `<LoginPage />`, sin importar qué ruta se pida. Antes, el
+comentario del propio código decía explícitamente "modo invitado... ve
+la app completa en modo lectura... nunca la pantalla de login primero"
+— ahora es lo opuesto: login primero, siempre, para cualquiera sin
+sesión.
+
+**Lo que NO se tocó, a propósito, y por qué**: el bucket de Storage
+`order-photos` (fotos de referencia y de bordado) sigue siendo `public:
+true` — quien ya tenga la URL directa de una foto (no la app, el archivo
+en sí) todavía podría abrirla sin sesión, porque los buckets de Storage
+son un espacio de permisos aparte del schema `public` que se cerró aquí.
+Es un residual de riesgo bajo (las URLs llevan UUIDs no adivinables, y
+ahora nadie externo puede llegar a verlas desde la app para empezar, ya
+que ni siquiera pasa de la pantalla de login), pero no es cero. Si se
+quiere cerrar también, implica pasar ese bucket a privado y que el
+frontend pida URLs firmadas (mismo patrón que ya usa
+`orden-documentos`/cotización-factura) — se dejó pendiente como mejora
+futura, no se metió en este mismo cambio para no combinar dos cambios de
+riesgo distinto en una sola pasada.
+
+**Sobre el Aviso de Privacidad** (pregunta del mismo turno): que SALPER
+sea interno NO exime la obligación de la LFPDPPP — esa ley se activa por
+procesar datos personales de personas físicas, no por ser un sitio
+público. Se revisó el esquema real antes de contestar: `clientes` solo
+guarda el nombre de la institución/empresa (nunca teléfono/correo/nombre
+de una persona de contacto), así que si eso se mantiene así en la
+práctica, la LFPDPPP no aplica a esos datos (una razón social no es dato
+personal). Donde sí aplica es al personal (`profiles` guarda nombre
+completo + correo de cada cuenta) — ahí sí corresponde un aviso de
+privacidad para colaboradores, pero es un documento de RH, no una página
+pública del sitio. Pendiente de que el usuario confirme si en algún
+campo libre del sistema llegan a anotar datos de una persona de contacto
+específica de un cliente.
+
+**Falta probar manualmente**: abrir la URL de producción en una ventana
+de incógnito (sin sesión) y confirmar que solo se ve la pantalla de
+login, ningún dato de ninguna orden; iniciar sesión con una cuenta real
+y confirmar que todo el sistema se ve y funciona exactamente igual que
+antes; confirmar que "Control rápido" y el resto de rutas que antes
+funcionaban sin cuenta ahora exigen login.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver
