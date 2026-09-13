@@ -20,6 +20,8 @@ import { buildOrderConfirmationPdfBlob, orderConfirmationPdfFileName } from '../
 const initialForm = {
   clientId: '',
   clientName: '',
+  clientTelefono: '',
+  clientCorreo: '',
   orderTypeKey: '',
   description: '',
   requestedDeliveryDate: '',
@@ -175,6 +177,8 @@ function NewOrderForm() {
     const { data, error: createError } = await createOrder({
       clientName: form.clientName.trim(),
       clientId: form.clientId || null,
+      clientTelefono: form.clientTelefono.trim(),
+      clientCorreo: form.clientCorreo.trim(),
       orderTypeKey: form.orderTypeKey,
       description: form.description.trim(),
       requestedDeliveryDate: form.requestedDeliveryDate,
@@ -265,10 +269,49 @@ function NewOrderForm() {
           <ClienteSelect
             clientes={clientes}
             value={form.clientId}
-            onChange={(clientId, clientName) => setForm((f) => ({ ...f, clientId, clientName }))}
+            onChange={(clientId, clientName) => {
+              // Si el cliente elegido ya tiene teléfono/correo guardados de
+              // un pedido anterior, se prellenan solos (sin pisar lo que ya
+              // se haya tecleado a mano en estos campos).
+              const cliente = clientes.find((c) => c.id === clientId)
+              setForm((f) => ({
+                ...f,
+                clientId,
+                clientName,
+                clientTelefono: cliente?.telefono || f.clientTelefono,
+                clientCorreo: cliente?.correo || f.clientCorreo,
+              }))
+            }}
             onClienteCreated={refreshClientes}
           />
         </div>
+
+        <div className="form-row">
+          <label>
+            Teléfono del cliente
+            <input
+              type="tel"
+              className="input"
+              value={form.clientTelefono}
+              onChange={(e) => updateField('clientTelefono', e.target.value)}
+              placeholder="Opcional"
+            />
+          </label>
+          <label>
+            Correo del cliente
+            <input
+              type="email"
+              className="input"
+              value={form.clientCorreo}
+              onChange={(e) => updateField('clientCorreo', e.target.value)}
+              placeholder="Opcional"
+            />
+          </label>
+        </div>
+        <p className="pantone-hint">
+          Si el cliente ya está en el catálogo, esto se guarda para prellenarse solo la próxima vez que le hagan un
+          pedido.
+        </p>
 
         <div>
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>

@@ -5,9 +5,10 @@ import PendingItemCard from '../components/pending/PendingItemCard'
 import PendingItemForm from '../components/pending/PendingItemForm'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
+import { canCreatePendingItems, canResolvePendingItems } from '../utils/permissions'
 
 export default function PendingItemsPage() {
-  const { user } = useAuth()
+  const { role } = useAuth()
   const { items, loading, error, refresh } = usePendingItems()
   const [showResolved, setShowResolved] = useState(false)
 
@@ -38,14 +39,18 @@ export default function PendingItemsPage() {
         Cosas fuera del flujo de órdenes: reparaciones externas, trámites, compras, etc.
       </p>
 
-      {user && <PendingItemForm onCreated={refresh} />}
+      {canCreatePendingItems(role) && <PendingItemForm onCreated={refresh} />}
 
       {visibleItems.length === 0 ? (
         <EmptyState>No hay pendientes {showResolved ? '' : 'abiertos'}.</EmptyState>
       ) : (
         <div className="pending-list">
           {visibleItems.map((item) => (
-            <PendingItemCard key={item.id} item={item} onToggle={user ? handleToggle : undefined} />
+            <PendingItemCard
+              key={item.id}
+              item={item}
+              onToggle={canResolvePendingItems(role) ? handleToggle : undefined}
+            />
           ))}
         </div>
       )}

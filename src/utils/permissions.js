@@ -6,10 +6,18 @@
 // defensa: si alguien se salta la UI, el servidor igual lo rechaza.
 //
 // Desde V21 el modelo plano de 3 roles (admin/tienda/fabrica) se
-// reemplazó por 10 roles granulares:
+// reemplazó por roles granulares:
 //   Tienda:  ventas, contabilidad, admin_tienda
 //   Fábrica: corte, bordado, sublimado, produccion, terminado, admin_fabrica
 //   General: admin_general (acceso total a los dos dominios + usuarios)
+// V30 agregó dos roles más, sin dominio propio:
+//   lectura: ve todo el sistema (como cualquier rol normal), no puede
+//     modificar NADA — ni una sola escritura pasa para este rol, ni
+//     aquí ni del lado del servidor (ver schema_v30_roles_extra.sql).
+//   tienda:  personal de tienda sin funciones de ventas/contabilidad —
+//     solo ve Dashboard (para consultar órdenes) y Pendientes, y su
+//     única escritura permitida es agregar un pendiente nuevo (no puede
+//     resolverlos, ni tocar nada más del sistema).
 // Ver la sección "Roles y permisos" de SALPER_Contexto.md para el
 // detalle completo de la migración y sus decisiones.
 
@@ -154,6 +162,43 @@ export function hasRestrictedNav(role) {
   return FABRICA_ETAPA_ROLES.includes(role)
 }
 
+// V30 — rol 'tienda': nav todavía más angosto que hasRestrictedNav (ni
+// Resumen, ni Calendario, ni Anuncios, ni Pedidos a Proveedor, ni Control
+// rápido) — solo Dashboard (para ver órdenes) y Pendientes. Deliberadamente
+// NO se junta con hasRestrictedNav porque las formas de restricción no
+// coinciden (fábrica SÍ ve Resumen y NO ve Pendientes; tienda es al revés).
+export function isTiendaBasica(role) {
+  return role === 'tienda'
+}
+
+// V30 — Anuncios, fotos de referencia y resolver pendientes: hasta V29
+// cualquier cuenta con sesión podía hacer estas 3 cosas sin importar el
+// rol (nunca se les puso un candado específico). Con los roles nuevos
+// ('lectura' no debe escribir NADA; 'tienda' solo agrega pendientes) hizo
+// falta ponerles uno — la lista de abajo son los únicos 2 roles que se
+// excluyen; todos los demás roles siguen exactamente igual que antes.
+const SIN_ESCRITURA_GENERAL = ['lectura', 'tienda']
+
+export function canManageAnnouncements(role) {
+  return !!role && !SIN_ESCRITURA_GENERAL.includes(role)
+}
+
+export function canManageOrderPhotos(role) {
+  return !!role && !SIN_ESCRITURA_GENERAL.includes(role)
+}
+
+// Crear un pendiente nuevo: todos menos 'lectura' — 'tienda' SÍ puede,
+// es la única escritura que tiene en todo el sistema.
+export function canCreatePendingItems(role) {
+  return !!role && role !== 'lectura'
+}
+
+// Marcar un pendiente como resuelto (o reabrirlo): 'tienda' no — solo
+// puede agregar, no resolver. 'lectura' tampoco, como todo lo demás.
+export function canResolvePendingItems(role) {
+  return !!role && !SIN_ESCRITURA_GENERAL.includes(role)
+}
+
 export const ROLE_LABELS = {
   ventas: 'Ventas',
   contabilidad: 'Contabilidad',
@@ -165,4 +210,6 @@ export const ROLE_LABELS = {
   terminado: 'Terminado',
   admin_fabrica: 'Admin (Fábrica)',
   admin_general: 'Administrador general',
+  lectura: 'Solo lectura',
+  tienda: 'Tienda (básico)',
 }

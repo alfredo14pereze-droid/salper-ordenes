@@ -4,10 +4,12 @@ import AnnouncementCard from '../components/announcements/AnnouncementCard'
 import AnnouncementForm from '../components/announcements/AnnouncementForm'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
+import { canManageAnnouncements } from '../utils/permissions'
 
 export default function AnnouncementsPage() {
-  const { user } = useAuth()
+  const { role } = useAuth()
   const { announcements, loading, error, refresh } = useAnnouncements()
+  const editable = canManageAnnouncements(role)
 
   async function handleDelete(id) {
     if (!confirm('¿Eliminar este anuncio?')) return
@@ -24,14 +26,14 @@ export default function AnnouncementsPage() {
         <h2 className="section-title">Anuncios internos</h2>
       </div>
 
-      {user && <AnnouncementForm onCreated={refresh} />}
+      {editable && <AnnouncementForm onCreated={refresh} />}
 
       {announcements.length === 0 ? (
         <EmptyState>No hay anuncios todavía.</EmptyState>
       ) : (
         <div className="announcement-list">
           {announcements.map((a) => (
-            <AnnouncementCard key={a.id} announcement={a} onDelete={user ? handleDelete : undefined} />
+            <AnnouncementCard key={a.id} announcement={a} onDelete={editable ? handleDelete : undefined} />
           ))}
         </div>
       )}

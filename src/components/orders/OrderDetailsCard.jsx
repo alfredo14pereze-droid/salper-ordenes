@@ -15,6 +15,8 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({
     clientName: order.client_name,
+    clientTelefono: order.client_telefono || '',
+    clientCorreo: order.client_correo || '',
     orderTypeKey: order.order_type_key,
     description: order.description || '',
     requestedDeliveryDate: order.requested_delivery_date,
@@ -32,6 +34,8 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
   function startEditing() {
     setForm({
       clientName: order.client_name,
+      clientTelefono: order.client_telefono || '',
+      clientCorreo: order.client_correo || '',
       orderTypeKey: order.order_type_key,
       description: order.description || '',
       requestedDeliveryDate: order.requested_delivery_date,
@@ -69,6 +73,28 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
             onChange={(e) => updateField('clientName', e.target.value)}
           />
         </label>
+        <div className="form-row">
+          <label>
+            Teléfono del cliente
+            <input
+              type="tel"
+              className="input"
+              value={form.clientTelefono}
+              onChange={(e) => updateField('clientTelefono', e.target.value)}
+              placeholder="Opcional"
+            />
+          </label>
+          <label>
+            Correo del cliente
+            <input
+              type="email"
+              className="input"
+              value={form.clientCorreo}
+              onChange={(e) => updateField('clientCorreo', e.target.value)}
+              placeholder="Opcional"
+            />
+          </label>
+        </div>
         <div>
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
             Tipo de orden
@@ -121,6 +147,16 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
         )}
       </div>
       <dl className="detail-list">
+        {(order.client_telefono || order.client_correo) && (
+          <div>
+            <dt>Contacto del cliente</dt>
+            <dd>
+              {order.client_telefono || '—'}
+              {order.client_telefono && order.client_correo ? ' · ' : ''}
+              {order.client_correo || ''}
+            </dd>
+          </div>
+        )}
         <div>
           <dt>Descripción / especificaciones</dt>
           <dd>{order.description || '—'}</dd>

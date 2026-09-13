@@ -28,6 +28,7 @@ const VALID_ROLES = [
   'ventas', 'contabilidad', 'admin_tienda',
   'corte', 'bordado', 'sublimado', 'produccion', 'terminado', 'admin_fabrica',
   'admin_general',
+  'lectura', 'tienda',
 ]
 
 // Orígenes permitidos: el dominio de producción, cualquier preview de

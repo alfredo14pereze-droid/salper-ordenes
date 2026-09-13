@@ -62,7 +62,16 @@ export async function fetchOrderHistory(orderId) {
 // (ver supabase/schema_v5_folios.sql). El tiempo estimado de producción
 // tampoco se manda: nace en null y solo lo captura fábrica una vez que
 // confirma la orden (ver EstimatedDaysCard / schema_v7_no_default_days.sql).
-export async function createOrder({ clientName, clientId, orderTypeKey, description, requestedDeliveryDate, items }) {
+export async function createOrder({
+  clientName,
+  clientId,
+  clientTelefono,
+  clientCorreo,
+  orderTypeKey,
+  description,
+  requestedDeliveryDate,
+  items,
+}) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
 
@@ -74,6 +83,8 @@ export async function createOrder({ clientName, clientId, orderTypeKey, descript
       p_requested_delivery_date: requestedDeliveryDate,
       p_items: items || [],
       p_client_id: clientId || null,
+      p_client_telefono: clientTelefono || null,
+      p_client_correo: clientCorreo || null,
     })
     .single()
 }
@@ -145,7 +156,10 @@ export async function updateOrdenEtapa(orderId, etapa, nuevoEstado) {
 
 // Edita los datos generales de una orden ya creada (tienda solo mientras
 // sigue "en_confirmacion"; admin siempre — ver update_order_details).
-export async function updateOrderDetails(orderId, { clientName, orderTypeKey, description, requestedDeliveryDate }) {
+export async function updateOrderDetails(
+  orderId,
+  { clientName, orderTypeKey, description, requestedDeliveryDate, clientTelefono, clientCorreo }
+) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
 
@@ -156,6 +170,8 @@ export async function updateOrderDetails(orderId, { clientName, orderTypeKey, de
       p_order_type_key: orderTypeKey,
       p_description: description || null,
       p_requested_delivery_date: requestedDeliveryDate,
+      p_client_telefono: clientTelefono || null,
+      p_client_correo: clientCorreo || null,
     })
     .single()
 }

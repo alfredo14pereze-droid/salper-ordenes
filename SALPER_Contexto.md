@@ -1002,6 +1002,71 @@ y confirmar que todo el sistema se ve y funciona exactamente igual que
 antes; confirmar que "Control rápido" y el resto de rutas que antes
 funcionaban sin cuenta ahora exigen login.
 
+### V30 — teléfono/correo de cliente + roles 'lectura' y 'tienda'
+
+**Teléfono y correo del cliente al crear una orden**: `NewOrderPage.jsx`
+gana 2 campos (opcionales) junto al selector de cliente. Si el cliente
+elegido/creado ya tenía teléfono/correo guardado de un pedido anterior,
+se prellenan solos (sin pisar lo que el usuario ya haya tecleado). Al
+guardar la orden, `create_order` hace 2 cosas en una sola función: guarda
+un snapshot en la propia orden (`orders.client_telefono`/`client_correo`
+— mismo criterio que `client_name`: el catálogo puede cambiar después sin
+romper órdenes viejas) y, si la orden viene de un cliente del catálogo
+(`client_id`), actualiza también `clientes.telefono`/`correo` para la
+próxima vez — solo si se mandó un valor no vacío, nunca borra un dato ya
+guardado por dejar el campo en blanco. `OrderDetailsCard.jsx` puede
+ver/editar estos 2 campos después de creada la orden (vía
+`update_order_details`, sin tocar el catálogo, igual que `client_name`
+ahí).
+
+**Bug encontrado y corregido en vivo, antes de dar por cerrado**: agregar
+parámetros nuevos a `create_cliente`/`create_order`/`update_order_details`
+creó un OVERLOAD aparte en vez de reemplazar la función in-place (mismo
+gotcha ya documentado en `schema_v12_catalogos.sql`: una firma con más
+parámetros es una función distinta para Postgres, aunque los nuevos
+tengan default). Esto dejó temporalmente 2 versiones de cada una — la
+vieja sin tocar, y la nueva **sin ningún GRANT explícito** (y por default
+de Supabase, una función nueva en `public` nace abierta a
+`anon`/`authenticated`, más permisiva de lo que debería). Se encontró
+consultando `has_function_privilege` en vivo (no se asumió que el primer
+intento había quedado bien) y se corrigió con `drop function` de las 3
+firmas viejas + `revoke`/`grant` explícito en las nuevas — reconfirmado
+después: 1 sola versión de cada función, `authenticated` puede
+ejecutarlas, `anon` no.
+
+**Rol 'lectura' — solo lectura total**: ve exactamente lo mismo que
+cualquier rol normal (todo el nav excepto Catálogos/Usuarios, que ya eran
+exclusivos de `admin_general`), pero no puede escribir NADA — ni un
+folio, ni un pendiente, ni una foto. No hizo falta tocar la mayoría de
+los permisos existentes (ya son allowlists explícitas por rol, y
+'lectura' simplemente nunca aparece en ninguna), solo hubo que cerrarle
+las 4 únicas funciones de escritura que hasta V29 NO tenían NINGÚN
+candado de rol (abiertas a cualquier sesión sin distinción, desde que se
+crearon): anuncios (crear/borrar), fotos de referencia (subir/borrar) y
+cambiar el estado de un pendiente. `create_pending_item` es la única
+excepción — sigue abierta para todos excepto 'lectura', porque es la
+única escritura que sí tiene 'tienda'.
+
+**Rol 'tienda' — personal de tienda sin funciones de ventas/contabilidad**:
+nav reducido a solo Dashboard (ver órdenes) + Pendientes — ni Resumen, ni
+Calendario, ni Anuncios, ni Pedidos a Proveedor, ni Control rápido, ni
+"Nueva orden" (`isTiendaBasica` en `utils/permissions.js`, deliberadamente
+NO combinado con `hasRestrictedNav` de fábrica porque las formas de
+restricción no coinciden — fábrica sí ve Resumen y no ve Pendientes,
+'tienda' es al revés). Su única escritura en todo el sistema es agregar
+un pendiente nuevo — no puede resolverlos, ni tocar nada más. Mismo
+candado de servidor que 'lectura' en anuncios/fotos, más
+`update_pending_item_status` (agregar sí, resolver no).
+
+**Falta probar manualmente**: crear un usuario con rol `lectura` desde
+Usuarios, iniciar sesión con él y confirmar que ve todo pero no aparece
+ningún botón de escritura en ningún lado (ni siquiera navegando rutas
+directo); crear uno con rol `tienda` y confirmar que su nav solo trae
+Dashboard y Pendientes, que puede agregar un pendiente pero no
+resolverlo, y que no puede subir fotos ni anuncios; crear una orden nueva
+con teléfono/correo de un cliente ya existente y confirmar que la
+próxima vez que se elija ese cliente, ambos campos se prellenan solos.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver
