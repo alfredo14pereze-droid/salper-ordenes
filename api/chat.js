@@ -1,5 +1,6 @@
 import { verifyUser } from './_chat/auth.js'
 import { runChat } from './_chat/anthropic.js'
+import { checkRateLimit } from './_chat/rateLimit.js'
 
 // POST /api/chat — único endpoint del módulo de chat. Recibe el mensaje
 // nuevo + el historial de la sesión (texto plano), valida que quien
@@ -21,6 +22,16 @@ export default async function handler(req, res) {
   const user = await verifyUser(req.headers.authorization)
   if (!user) {
     res.status(401).json({ error: 'Inicia sesión para usar el chat.' })
+    return
+  }
+
+  // Rate limiting (auditoría de seguridad V28): cada mensaje cuesta
+  // dinero real en la API de Anthropic.
+  const rateLimit = await checkRateLimit(req.headers.authorization, user.id)
+  if (!rateLimit.allowed) {
+    res.status(429).json({
+      error: `Has enviado demasiados mensajes seguidos. Espera unos minutos e intenta de nuevo.`,
+    })
     return
   }
 

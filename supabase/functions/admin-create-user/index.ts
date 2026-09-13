@@ -30,10 +30,28 @@ const VALID_ROLES = [
   'admin_general',
 ]
 
+// Orígenes permitidos: el dominio de producción, cualquier preview de
+// Vercel del mismo proyecto (*.vercel.app, dominio dinámico por rama/PR)
+// y localhost para desarrollo — nunca un comodín abierto a cualquier
+// sitio. Auditoría de seguridad V28: esta función puede suspender/
+// eliminar usuarios reales, así que aunque la autenticación real es el
+// Bearer token (no cookies, por lo que un CORS abierto no habilita CSRF
+// clásico), restringir el origen es una capa extra de defensa en
+// profundidad barata de tener.
+function isAllowedOrigin(origin) {
+  if (!origin) return false
+  if (origin === 'https://salper-ordenes.vercel.app') return true
+  if (/^https:\/\/salper-ordenes[a-z0-9-]*\.vercel\.app$/.test(origin)) return true
+  if (/^http:\/\/localhost:\d+$/.test(origin)) return true
+  return false
+}
+
 Deno.serve(async (req) => {
+  const origin = req.headers.get('Origin')
   const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': isAllowedOrigin(origin) ? origin : 'https://salper-ordenes.vercel.app',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    Vary: 'Origin',
   }
 
   if (req.method === 'OPTIONS') {

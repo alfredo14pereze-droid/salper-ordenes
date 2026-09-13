@@ -799,6 +799,134 @@ adentro de ese modal sí baja el archivo; después de las pruebas de
 arriba, eliminar un usuario de prueba real (no el propio) que ya haya
 creado una orden o cambiado un estado, y confirmar que ahora sí se borra.
 
+### V28 — auditoría de seguridad (checklist "no quiero que me hackeen / demanden")
+
+El usuario pidió una revisión general de seguridad + cumplimiento legal
+("privacy policy, terms, cookie policy, refund policy... hide my API
+keys... sanitize forms... XSS... rate limiting... CORS... security
+headers..."), pensada de forma genérica para "un sitio vibe-coded"
+(plantilla que circula para pegarle a cualquier IA). Antes de escribir
+nada, se auditó el código real para no fabricar contenido/arreglos que no
+corresponden a lo que SALPER realmente es.
+
+**Contexto que cambia todo el análisis legal**: SALPER es un sistema
+interno de seguimiento de órdenes de producción (rutas: dashboard,
+detalle de orden, calendario, usuarios, catálogos, etc. — ver
+`src/App.jsx`), NO un sitio público de marketing/e-commerce. No hay
+checkout, no hay reseñas, no hay copy de marketing con afirmaciones, no
+hay analytics/píxeles de terceros (`index.html` solo carga Google Fonts),
+no hay banner de cookies posible de necesitar porque no hay cookies de
+tracking. Por eso, de la lista original: refund policy, "remove fake
+reviews", "remove unsupported claims", cookie consent banner y "check
+third-party embeds" **no aplican tal cual** — meterlos igual habría sido
+peor que no meterlos (contenido legal que no corresponde a lo que el
+sitio hace). Sí aplica y quedó pendiente de los datos reales del negocio
+(razón social, RFC, domicilio) un Aviso de Privacidad — México se rige
+por la LFPDPPP, no por GDPR/CCPA — ya que el sistema sí guarda datos
+personales reales (nombres de clientes y del personal) y algunas órdenes
+se comparten por link de solo lectura fuera de la empresa. Esto quedó
+pendiente de que el usuario confirme esos datos; no se inventó nada.
+
+**Seguridad — ya estaba bien (verificado, no se tocó)**:
+- `.env` nunca se subió a git, ni en ningún punto del historial completo
+  (escaneado con patrones de llaves conocidas: `sk-ant-`, JWT `eyJ`,
+  claves AWS, bloques de llave privada — cero coincidencias).
+- `ANTHROPIC_API_KEY` solo vive del lado del servidor
+  (`api/_chat/anthropic.js`), nunca en el bundle del navegador.
+- Las tools de solo-lectura del chat (`api/_chat/tools.js`) usan la
+  `anon key`, no la `service_role key` — mínimo privilegio, ya que esas
+  tablas son de lectura pública de todos modos.
+- Cero `dangerouslySetInnerHTML`, cero `eval`/`new Function` en todo
+  `src/` — sin vector obvio de XSS por HTML sin escapar (React escapa
+  todo por default en el resto de la app).
+- Rutas de admin (`Usuarios`, `Catálogos`) protegidas en dos capas:
+  `RequireRole` en el cliente (UX) + RLS/chequeo de rol en cada RPC del
+  lado del servidor (la protección real, ver todas las V2x anteriores) —
+  entrar directo por URL sin el rol correcto no sirve de nada.
+- Contraseñas: las maneja Supabase Auth completo, nunca se tocan ni se
+  ven del lado de la app — ya hasheadas correctamente por su cuenta.
+- Sin archivos sensibles en `public/`, sin source maps en el build de
+  producción (Vite no los genera a menos que se pida explícito).
+
+**Seguridad — corregido en V28**:
+- **CORS abierto (`Access-Control-Allow-Origin: '*'`) en el Edge
+  Function `admin-create-user`** (puede suspender/eliminar usuarios
+  reales) — se cambió a una lista blanca (`isAllowedOrigin`): el dominio
+  de producción, cualquier preview `*.vercel.app` del mismo proyecto, y
+  localhost para desarrollo. Riesgo real era bajo de por sí (la
+  autenticación es por Bearer token, no cookies, así que un CORS abierto
+  no habilita CSRF clásico), pero es defensa en profundidad barata.
+  **Pendiente**: redesplegar esta función desde el Dashboard de Supabase
+  (Edge Functions → admin-create-user) — el código en el repo ya está
+  actualizado pero Supabase no jala del repo automático para Edge
+  Functions, hay que pegar/desplegar a mano como siempre.
+- **Sin rate limiting en `/api/chat`** — cualquier cuenta con sesión
+  podía mandar mensajes sin límite (cada uno cuesta dinero real en la
+  API de Anthropic). Se agregó `schema_v28_security_hardening.sql`
+  (tabla `chat_rate_limit`, RLS: cada quien ve/inserta solo sus propias
+  filas) + `api/_chat/rateLimit.js` (máximo 15 mensajes cada 5 minutos
+  por usuario, usando el propio token de quien llama — no la service
+  role key). Si falla el chequeo por algún motivo, deja pasar el mensaje
+  sin bloquear (mejor un chat sin límite temporal que un chat roto).
+  **Pendiente**: aplicar `schema_v28_security_hardening.sql` en el SQL
+  Editor de Supabase (no se pudo aplicar en la sesión — la sesión del
+  navegador hacia Supabase se había cerrado y no se ponen credenciales).
+- **Security headers**: no había ninguno configurado. Se agregó
+  `vercel.json` con `X-Content-Type-Options`, `X-Frame-Options`,
+  `Referrer-Policy`, `Permissions-Policy` y `Strict-Transport-Security`.
+  **No se agregó Content-Security-Policy** a propósito — mal configurado
+  puede romper la carga de Google Fonts, las llamadas a Supabase, o la
+  generación de PDFs; necesita su propia sesión de pruebas dedicada, no
+  meterlo de prisa junto a todo lo demás.
+- **Dependencia actualizada sin riesgo**: `@supabase/supabase-js`
+  2.112.4 → 2.116.0 (parche menor, sin cambios que rompan nada).
+
+**Seguridad — encontrado pero NO aplicado a propósito (alto riesgo de
+romper la app en un solo cambio, requiere su propia sesión de pruebas)**:
+- `react-router-dom` (6.30.6) tiene 2 vulnerabilidades moderadas
+  registradas (open redirect vía backslash en `<Link>`/`useNavigate`,
+  CVE-2025-68470-bypass; inyección de constructor arbitraria en
+  hidratación SSR) — el único fix disponible es saltar a la v7 (cambio
+  de versión mayor). Riesgo real de explotación en SALPER es bajo (usa
+  `HashRouter`, y no hay ningún flujo donde un parámetro de URL
+  controlado por el usuario decida a dónde redirigir), pero la
+  vulnerabilidad SÍ existe. Recomendado: planear el salto a v7 como su
+  propio trabajo, probando todas las rutas/navegaciones de la app
+  después.
+- `esbuild` (vía Vite, dependencia de desarrollo) tiene un aviso
+  moderado preexistente — solo afecta a quien corre `npm run dev` con el
+  navegador abierto a un sitio malicioso al mismo tiempo; no toca nada
+  en producción (el build estático desplegado no incluye el dev server
+  de esbuild). El fix requiere Vite 5→8 (salto mayor); no se tocó.
+- React 18→19, `@vitejs/plugin-react` 4→6: sin vulnerabilidad de
+  seguridad detrás (son actualizaciones de mantenimiento normales, no
+  fixes de seguridad) — no se tocaron en este barrido.
+
+**Aviso importante, dicho explícito al usuario**: ningún documento legal
+generado por IA es garantía de "no te van a demandar" — son borradores de
+buena fe, no asesoría legal. Para algo con peso legal real (SALPER ya es
+una empresa real en operación), vale la pena que un abogado mexicano lo
+revise antes de publicarlo. Tampoco se puede prometer "cero errores" de
+forma absoluta ni en el trabajo de seguridad ni en el legal — se avisó
+directo al usuario en vez de prometerlo y ya.
+
+**Falta probar/hacer manualmente**:
+- Iniciar sesión en el Dashboard de Supabase y aplicar
+  `schema_v28_security_hardening.sql`.
+- Redesplegar el Edge Function `admin-create-user` con el CORS nuevo.
+- Después de ambos: probar el chat desde la app y confirmar que sigue
+  funcionando normal, y que después de ~15 mensajes seguidos en 5
+  minutos, el siguiente mensaje da el error de límite en vez de
+  procesarse.
+- Confirmar que crear/editar/suspender/eliminar usuarios sigue
+  funcionando igual desde el dominio real de producción.
+- Decidir con el usuario: datos reales del negocio (razón social, RFC,
+  domicilio) para escribir el Aviso de Privacidad; si quiere Términos de
+  uso internos; y cuándo planear el salto de versión de
+  react-router-dom/Vite/React (candidato perfecto para probarse primero
+  en la rama `dev`, ya que ahí sí puede romper algo sin afectar
+  producción).
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver
