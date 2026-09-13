@@ -1053,19 +1053,88 @@ Calendario, ni Anuncios, ni Pedidos a Proveedor, ni Control rápido, ni
 "Nueva orden" (`isTiendaBasica` en `utils/permissions.js`, deliberadamente
 NO combinado con `hasRestrictedNav` de fábrica porque las formas de
 restricción no coinciden — fábrica sí ve Resumen y no ve Pendientes,
-'tienda' es al revés). Su única escritura en todo el sistema es agregar
-un pendiente nuevo — no puede resolverlos, ni tocar nada más. Mismo
-candado de servidor que 'lectura' en anuncios/fotos, más
-`update_pending_item_status` (agregar sí, resolver no).
+'tienda' es al revés). ~~Su única escritura en todo el sistema es agregar
+un pendiente nuevo — no puede resolverlos~~ **corregido en V31, ver
+abajo: sí puede resolverlos.** Mismo candado de servidor que 'lectura' en
+anuncios/fotos.
 
 **Falta probar manualmente**: crear un usuario con rol `lectura` desde
 Usuarios, iniciar sesión con él y confirmar que ve todo pero no aparece
 ningún botón de escritura en ningún lado (ni siquiera navegando rutas
-directo); crear uno con rol `tienda` y confirmar que su nav solo trae
-Dashboard y Pendientes, que puede agregar un pendiente pero no
-resolverlo, y que no puede subir fotos ni anuncios; crear una orden nueva
-con teléfono/correo de un cliente ya existente y confirmar que la
-próxima vez que se elija ese cliente, ambos campos se prellenan solos.
+directo); crear una orden nueva con teléfono/correo de un cliente ya
+existente y confirmar que la próxima vez que se elija ese cliente, ambos
+campos se prellenan solos.
+
+### V31 — 'tienda' sí resuelve pendientes + arranque en producción solo con lo esencial
+
+**Corrección de permisos**: V30 interpretó mal el alcance de 'tienda' —
+lo dejó solo agregar pendientes, no resolverlos. El usuario aclaró
+explícitamente que sí necesita poder resolverlos (marcar en verde/listo
+cuando ya terminó una orden de reparación). `canResolvePendingItems` y
+`update_pending_item_status` ya no distinguen a 'tienda' de cualquier
+otro rol — solo 'lectura' se queda sin poder tocar nada, en pendientes
+como en todo lo demás.
+
+**Arranque en producción con "la idea original"**: el usuario quiere
+empezar a usar el sistema con datos reales desde mañana, pero solo con
+el flujo esencial — crear/consultar órdenes, cambiar estados de
+producción, descargar con historial de cambios — dejando "Pedidos a
+Proveedor" para después (y sin remover nada de Inventariado, porque
+no existe como módulo aparte: es solo un checkbox dentro de Pendientes,
+ver aclaración abajo). Se implementó como **feature flag**, no borrando
+código: `src/utils/featureFlags.js` (`PEDIDOS_PROVEEDOR_HABILITADO =
+false`) apaga el link del nav (`AppLayout.jsx`) y las 3 rutas
+(`App.jsx`, que muestran `FeatureDisabledPage` en vez del módulo real si
+alguien entra directo por URL). Todo el código de Pedidos a Proveedor
+sigue completo — reactivarlo cuando esté listo es cambiar ese valor a
+`true`, nada más.
+
+**Aclaración importante que se le dio al usuario**: no existe un módulo
+de "Inventarios" en el sistema — lo único relacionado es el checkbox
+"Inventariado"/"No inventariado" dentro de una prenda de categoría
+"reparación" en Pendientes (`schema_v17_inventariado.sql`). No había un
+módulo aparte que apagar ahí.
+
+**Estrategia de ramas confirmada con el usuario**: `main` se queda como
+la versión reducida que empieza a usarse mañana (con los permisos de
+roles ya construidos hasta V31, sin tocarlos más por ahora). La rama
+`dev` (creada en la sesión anterior, todavía sin nada propio — apunta al
+mismo commit que `main` antes de este cambio) es donde se sigue
+desarrollando/probando todo lo demás — Pedidos a Proveedor reactivado,
+ajustes de permisos más finos, o cualquier otra cosa nueva — sin tocar
+lo que ya está en uso real. Cuando algo de `dev` esté listo, se mergea a
+`main` de manera puntual (no de golpe).
+
+**3 cosas señaladas antes de cargar datos reales** (pedido explícito del
+usuario — "las 3 más importantes que no estoy viendo"):
+1. **Respaldos de la base de datos**: el proyecto de Supabase está en el
+   plan Free (visible en el dashboard) — ese plan no incluye respaldos
+   automáticos ni point-in-time recovery. Con datos reales de negocio
+   entrando desde mañana, esto es el hueco más serio: si algo sale mal
+   (una migración, un borrado por accidente), no hay red de seguridad.
+   Recomendado antes de cargar datos reales: confirmar el plan actual en
+   Supabase y valorar si conviene subir a un plan con respaldos, al
+   menos mientras dure la operación real del negocio.
+2. **La limpieza de datos de prueba + reinicio de folios sigue
+   pendiente**: desde la Parte 1 extendida de Fase 2, el plan propio del
+   usuario era (a) validar todo con datos de prueba, (b) HARD-delete de
+   esas órdenes de prueba, (c) reiniciar la secuencia de folios a 1 por
+   tipo, (d) recién ahí cargar órdenes reales desde folio 1. Ese paso
+   nunca se ejecutó — las órdenes de prueba (2026-0200, SUB-003, etc.)
+   siguen en la base, y los folios reales seguirían la numeración desde
+   donde se quedaron las de prueba si no se reinician antes. Se le
+   preguntó al usuario si quiere proceder con esto ahora — es
+   irreversible (hard-delete), así que no se tocó sin confirmación
+   explícita.
+3. **Nunca se probó el sistema en una pantalla de celular real** — solo
+   existe un punto de quiebre de CSS (`@media max-width: 720px`,
+   bastante básico: apila formularios/detalle de orden, ajusta el chat).
+   Dado que varios roles de fábrica (corte, sublimado, etc.) muy
+   probablemente van a usar esto desde el piso de producción con el
+   celular, vale la pena que alguien lo abra en un teléfono real antes
+   de que el equipo empiece a depender de esto mañana — no se pudo
+   probar aquí porque no hay forma de iniciar sesión sin credenciales
+   reales.
 
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 

@@ -11,6 +11,7 @@ import {
   isTiendaBasica,
   ROLE_LABELS,
 } from '../../utils/permissions'
+import { PEDIDOS_PROVEEDOR_HABILITADO } from '../../utils/featureFlags'
 
 export default function AppLayout({ children }) {
   const { user, profile, role, signOut } = useAuth()
@@ -34,8 +35,14 @@ export default function AppLayout({ children }) {
     { to: '/pendientes', label: 'Pendientes', show: !restricted },
     { to: '/anuncios', label: 'Anuncios', show: !restricted && !tiendaBasica },
     // Módulo independiente de órdenes, sin modo invitado — solo aparece
-    // con sesión (ver canViewPedidosTienda).
-    { to: '/pedidos-proveedor', label: 'Pedidos a Proveedor', show: !restricted && !tiendaBasica && canViewPedidosTienda(role) },
+    // con sesión (ver canViewPedidosTienda). V31: apagado en producción
+    // por ahora (PEDIDOS_PROVEEDOR_HABILITADO) — sigue completo en la
+    // rama `dev`.
+    {
+      to: '/pedidos-proveedor',
+      label: 'Pedidos a Proveedor',
+      show: PEDIDOS_PROVEEDOR_HABILITADO && !restricted && !tiendaBasica && canViewPedidosTienda(role),
+    },
     // Control rápido: visible para cualquier cuenta (desde V29 ya no hay
     // modo invitado, pero sigue sin restringirse por rol) — excepto
     // 'tienda', que solo debe ver Dashboard + Pendientes.

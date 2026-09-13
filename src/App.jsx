@@ -16,9 +16,11 @@ import NewPedidoTiendaPage from './pages/NewPedidoTiendaPage'
 import PedidoTiendaDetailPage from './pages/PedidoTiendaDetailPage'
 import CatalogosPage from './pages/CatalogosPage'
 import ControlRapidoPage from './pages/ControlRapidoPage'
+import FeatureDisabledPage from './components/common/FeatureDisabledPage'
 import { isSupabaseConfigured } from './lib/supabaseClient'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { Loading } from './components/common/States'
+import { PEDIDOS_PROVEEDOR_HABILITADO } from './utils/featureFlags'
 
 // HashRouter (en vez de BrowserRouter) para que las rutas funcionen igual
 // en Vercel y en GitHub Pages sin configuración extra de reescritura de URLs.
@@ -73,9 +75,18 @@ function AuthGate() {
           <Route path="/usuarios" element={<UsersPage />} />
           <Route path="/catalogos" element={<CatalogosPage />} />
           <Route path="/control-rapido" element={<ControlRapidoPage />} />
-          <Route path="/pedidos-proveedor" element={<PedidosTiendaPage />} />
-          <Route path="/pedidos-proveedor/nuevo" element={<NewPedidoTiendaPage />} />
-          <Route path="/pedidos-proveedor/:id" element={<PedidoTiendaDetailPage />} />
+          <Route
+            path="/pedidos-proveedor"
+            element={PEDIDOS_PROVEEDOR_HABILITADO ? <PedidosTiendaPage /> : <FeatureDisabledPage />}
+          />
+          <Route
+            path="/pedidos-proveedor/nuevo"
+            element={PEDIDOS_PROVEEDOR_HABILITADO ? <NewPedidoTiendaPage /> : <FeatureDisabledPage />}
+          />
+          <Route
+            path="/pedidos-proveedor/:id"
+            element={PEDIDOS_PROVEEDOR_HABILITADO ? <PedidoTiendaDetailPage /> : <FeatureDisabledPage />}
+          />
         </Routes>
       </AppLayout>
     </HashRouter>

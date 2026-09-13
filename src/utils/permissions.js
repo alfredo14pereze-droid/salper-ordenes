@@ -171,12 +171,10 @@ export function isTiendaBasica(role) {
   return role === 'tienda'
 }
 
-// V30 — Anuncios, fotos de referencia y resolver pendientes: hasta V29
-// cualquier cuenta con sesión podía hacer estas 3 cosas sin importar el
-// rol (nunca se les puso un candado específico). Con los roles nuevos
-// ('lectura' no debe escribir NADA; 'tienda' solo agrega pendientes) hizo
-// falta ponerles uno — la lista de abajo son los únicos 2 roles que se
-// excluyen; todos los demás roles siguen exactamente igual que antes.
+// V30 — Anuncios y fotos de referencia: hasta V29 cualquier cuenta con
+// sesión podía hacer esto sin importar el rol (nunca se les puso un
+// candado específico). Con los roles nuevos ('lectura' no debe escribir
+// NADA; 'tienda' tampoco participa de esto) hizo falta ponerles uno.
 const SIN_ESCRITURA_GENERAL = ['lectura', 'tienda']
 
 export function canManageAnnouncements(role) {
@@ -187,16 +185,16 @@ export function canManageOrderPhotos(role) {
   return !!role && !SIN_ESCRITURA_GENERAL.includes(role)
 }
 
-// Crear un pendiente nuevo: todos menos 'lectura' — 'tienda' SÍ puede,
-// es la única escritura que tiene en todo el sistema.
+// Pendientes: todos menos 'lectura' pueden agregar Y resolver — 'tienda'
+// incluido a propósito (V31: puede marcar en verde/listo cuando ya
+// terminó una reparación, no solo agregar). 'lectura' sigue sin poder
+// tocar nada, como todo lo demás.
 export function canCreatePendingItems(role) {
   return !!role && role !== 'lectura'
 }
 
-// Marcar un pendiente como resuelto (o reabrirlo): 'tienda' no — solo
-// puede agregar, no resolver. 'lectura' tampoco, como todo lo demás.
 export function canResolvePendingItems(role) {
-  return !!role && !SIN_ESCRITURA_GENERAL.includes(role)
+  return !!role && role !== 'lectura'
 }
 
 export const ROLE_LABELS = {
