@@ -46,6 +46,12 @@ export default function OrderItemsEditor({
         tela_nombre: '',
         foto_url: '',
         lleva_bordado: false,
+        manga: '',
+        vivos: '',
+        cuello: '',
+        punos: '',
+        logotipos: '',
+        numeros: '',
         sizes: [{ talla: '', cantidad: '' }],
       },
     ])
@@ -161,10 +167,74 @@ export default function OrderItemsEditor({
               />
             </div>
 
+            <div>
+              <span className="field-label" style={{ marginBottom: 6, display: 'block', marginTop: 12 }}>
+                Detalles de la prenda
+              </span>
+              <div className="form-row-3">
+                <label>
+                  Manga
+                  <input
+                    type="text"
+                    className="input"
+                    value={item.manga || ''}
+                    onChange={(e) => updateItem(itemIndex, { manga: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Vivos
+                  <input
+                    type="text"
+                    className="input"
+                    value={item.vivos || ''}
+                    onChange={(e) => updateItem(itemIndex, { vivos: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Cuello
+                  <input
+                    type="text"
+                    className="input"
+                    value={item.cuello || ''}
+                    onChange={(e) => updateItem(itemIndex, { cuello: e.target.value })}
+                  />
+                </label>
+              </div>
+              <div className="form-row-3" style={{ marginTop: 12 }}>
+                <label>
+                  Puños
+                  <input
+                    type="text"
+                    className="input"
+                    value={item.punos || ''}
+                    onChange={(e) => updateItem(itemIndex, { punos: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Logotipos
+                  <input
+                    type="text"
+                    className="input"
+                    value={item.logotipos || ''}
+                    onChange={(e) => updateItem(itemIndex, { logotipos: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Números
+                  <input
+                    type="text"
+                    className="input"
+                    value={item.numeros || ''}
+                    onChange={(e) => updateItem(itemIndex, { numeros: e.target.value })}
+                  />
+                </label>
+              </div>
+            </div>
+
             <button
               type="button"
               className={item.lleva_bordado ? 'btn btn--secondary btn--small' : 'btn btn--ghost btn--small'}
-              style={{ marginTop: 8 }}
+              style={{ marginTop: 12 }}
               onClick={() => updateItem(itemIndex, { lleva_bordado: !item.lleva_bordado })}
             >
               {item.lleva_bordado ? '✓ Lleva bordado' : '¿Lleva bordado?'}

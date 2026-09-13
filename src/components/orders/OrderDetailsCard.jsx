@@ -20,6 +20,7 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
     orderTypeKey: order.order_type_key,
     description: order.description || '',
     requestedDeliveryDate: order.requested_delivery_date,
+    folioExterno: order.folio_externo || '',
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -39,6 +40,7 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
       orderTypeKey: order.order_type_key,
       description: order.description || '',
       requestedDeliveryDate: order.requested_delivery_date,
+      folioExterno: order.folio_externo || '',
     })
     setError(null)
     setEditing(true)
@@ -95,6 +97,16 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
             />
           </label>
         </div>
+        <label>
+          Folio externo (control anterior)
+          <input
+            type="text"
+            className="input"
+            value={form.folioExterno}
+            onChange={(e) => updateField('folioExterno', e.target.value)}
+            placeholder="ORD-0001"
+          />
+        </label>
         <div>
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
             Tipo de orden
@@ -147,6 +159,12 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
         )}
       </div>
       <dl className="detail-list">
+        {order.folio_externo && (
+          <div>
+            <dt>Folio externo (control anterior)</dt>
+            <dd>{order.folio_externo}</dd>
+          </div>
+        )}
         {(order.client_telefono || order.client_correo) && (
           <div>
             <dt>Contacto del cliente</dt>

@@ -25,6 +25,7 @@ const initialForm = {
   orderTypeKey: '',
   description: '',
   requestedDeliveryDate: '',
+  folioExterno: '',
 }
 
 const emptyItem = () => ({
@@ -36,6 +37,12 @@ const emptyItem = () => ({
   tela_nombre: '',
   foto_url: '',
   lleva_bordado: false,
+  manga: '',
+  vivos: '',
+  cuello: '',
+  punos: '',
+  logotipos: '',
+  numeros: '',
   sizes: [{ talla: '', cantidad: '' }],
 })
 
@@ -183,6 +190,7 @@ function NewOrderForm() {
       description: form.description.trim(),
       requestedDeliveryDate: form.requestedDeliveryDate,
       items: cleanItems,
+      folioExterno: form.folioExterno.trim(),
     })
 
     if (createError) {
@@ -311,6 +319,21 @@ function NewOrderForm() {
         <p className="pantone-hint">
           Si el cliente ya está en el catálogo, esto se guarda para prellenarse solo la próxima vez que le hagan un
           pedido.
+        </p>
+
+        <label>
+          Folio externo (control anterior)
+          <input
+            type="text"
+            className="input"
+            value={form.folioExterno}
+            onChange={(e) => updateField('folioExterno', e.target.value)}
+            placeholder="ORD-0001"
+          />
+        </label>
+        <p className="pantone-hint">
+          Si esta orden ya tenía un folio en su control anterior, ponlo aquí para no perder la referencia — es
+          independiente del folio que asigna SALPER solo (SUB-001, ESC-001, etc.).
         </p>
 
         <div>

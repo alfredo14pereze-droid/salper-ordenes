@@ -89,7 +89,14 @@ export default function OrderDetailPage() {
 
       <div className="order-detail__header">
         <div>
-          <h2 className="order-detail__number">Orden #{order.order_number}</h2>
+          <h2 className="order-detail__number">
+            Orden #{order.order_number}
+            {order.folio_externo && (
+              <span style={{ fontSize: '0.55em', color: 'var(--color-muted, #6b6558)', marginLeft: 10 }}>
+                (folio externo: {order.folio_externo})
+              </span>
+            )}
+          </h2>
           <p className="order-detail__client">{order.client_name}</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

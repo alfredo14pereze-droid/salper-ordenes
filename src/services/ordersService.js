@@ -71,6 +71,7 @@ export async function createOrder({
   description,
   requestedDeliveryDate,
   items,
+  folioExterno,
 }) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
@@ -85,6 +86,7 @@ export async function createOrder({
       p_client_id: clientId || null,
       p_client_telefono: clientTelefono || null,
       p_client_correo: clientCorreo || null,
+      p_folio_externo: folioExterno || null,
     })
     .single()
 }
@@ -158,7 +160,7 @@ export async function updateOrdenEtapa(orderId, etapa, nuevoEstado) {
 // sigue "en_confirmacion"; admin siempre — ver update_order_details).
 export async function updateOrderDetails(
   orderId,
-  { clientName, orderTypeKey, description, requestedDeliveryDate, clientTelefono, clientCorreo }
+  { clientName, orderTypeKey, description, requestedDeliveryDate, clientTelefono, clientCorreo, folioExterno }
 ) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
@@ -172,6 +174,7 @@ export async function updateOrderDetails(
       p_requested_delivery_date: requestedDeliveryDate,
       p_client_telefono: clientTelefono || null,
       p_client_correo: clientCorreo || null,
+      p_folio_externo: folioExterno || null,
     })
     .single()
 }

@@ -1162,6 +1162,59 @@ Storage, no por SQL). Resultado final, verificado:
 El sistema queda listo para que el equipo empiece a cargar órdenes
 reales desde folio 1, sin ningún dato de prueba de por medio.
 
+### Limpieza de catálogos (clientes/telas/proveedores/pendientes/anuncios)
+
+El usuario preguntó explícitamente si también se habían limpiado
+clientes/telas/etc — no se había hecho en la limpieza anterior (solo
+tocó `orders`). Al auditar, a diferencia de las órdenes (donde los
+nombres de prueba eran obvios), aquí el contenido no se veía como basura
+evidente: `clientes` tenía "Josesito"/"Luis" (sí obviamente prueba), pero
+`telas` tenía solo "W50" y `proveedores` solo "Ximo" — nombres
+perfectamente creíbles como reales — y `pending_items`/`announcements`
+tenían contenido que se leía como operación real del taller ("Plancha
+industrial mandada a reparación", "Cierre por mantenimiento"). Se le
+preguntó al usuario uno por uno en vez de asumir cuál era prueba y cuál
+no — confirmó borrar los 5: **clientes, telas, proveedores,
+pending_items y announcements quedaron en 0 filas**, verificado después
+de aplicar.
+
+### V32 — folio externo (ORD-0001) + campos abiertos de prenda
+
+**Folio externo**: muchas de las órdenes reales que se van a cargar ya
+tienen un folio de un control anterior (formato "ORD" + 4 dígitos,
+según el usuario). Se agregó `orders.folio_externo` (texto libre,
+capturado a mano — no autogenerado, a diferencia del folio propio de
+SALPER) para no perder esa referencia ni confundirse con el control
+anterior. Visible en 3 lugares: input al crear la orden
+(`NewOrderPage.jsx`, con prellenado si se elige un cliente que no
+cambia nada aquí — es un dato por orden, no por cliente), editable
+después en `OrderDetailsCard.jsx`, y mostrado junto al folio real de
+SALPER en el encabezado de `OrderDetailPage.jsx` para que sea imposible
+confundirlos al ver la orden. Mismo gotcha de siempre al agregar el
+parámetro a `create_order`/`update_order_details` (documentado y
+corregido dentro de la misma migración esta vez, no después) — DROP
+FUNCTION antes de cada redefinición, REVOKE/GRANT explícito después,
+reconfirmado en vivo con `has_function_privilege`: 1 sola versión de
+cada función, `authenticated` puede ejecutarlas, `anon` no.
+
+**Campos abiertos de prenda**: pedido explícito del usuario — agregar
+"Manga", "Vivos", "Cuello", "Puños", "Logotipos", "Números" como texto
+libre en cada prenda de `OrderItemsEditor.jsx`, iguales para cualquier
+tipo de orden/prenda por ahora. Sin migración de esquema — viven dentro
+del JSONB `items` sin schema fijo (mismo patrón que `tela_id`,
+`lleva_bordado`, etc.), así que solo fue tocar el frontend
+(`OrderItemsEditor.jsx`, y los `emptyItem()` de `NewOrderPage.jsx` y
+`OrderItemsCard.jsx` para que las prendas nuevas ya los traigan vacíos).
+El usuario avisó explícitamente que esto es temporal/genérico a
+propósito — en la rama `dev` los va a volver condicionales según prenda
+y tipo de orden; por ahora en `main` (producción) se quedan como 6
+campos abiertos siempre visibles, sin ninguna lógica condicional.
+
+**Falta probar manualmente**: crear una orden nueva con folio externo
+"ORD-0001" y confirmar que se ve junto al folio real en el detalle;
+editarlo después desde "Editar" en Detalles; llenar los 6 campos nuevos
+de una prenda y confirmar que se guardan al crear/editar la orden.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

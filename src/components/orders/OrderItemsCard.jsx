@@ -16,6 +16,12 @@ const emptyItem = () => ({
   tela_nombre: '',
   foto_url: '',
   lleva_bordado: false,
+  manga: '',
+  vivos: '',
+  cuello: '',
+  punos: '',
+  logotipos: '',
+  numeros: '',
   sizes: [{ talla: '', cantidad: '' }],
 })
 
