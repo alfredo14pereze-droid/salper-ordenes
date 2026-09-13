@@ -1136,6 +1136,32 @@ usuario — "las 3 más importantes que no estoy viendo"):
    probar aquí porque no hay forma de iniciar sesión sin credenciales
    reales.
 
+### Limpieza de datos de prueba + reinicio de folios (2026-09-13)
+
+El usuario confirmó explícitamente proceder con el punto 2 de arriba.
+Antes de tocar nada se auditó en vivo qué había realmente en la base
+(nunca se asumió) — ver `supabase/cleanup_datos_prueba_2026-09-13.sql`
+para el detalle completo y el hallazgo de en medio (Supabase bloquea el
+`DELETE` directo sobre `storage.objects` — `storage.protect_delete()` —
+así que las 5 fotos huérfanas se borraron a mano desde Dashboard →
+Storage, no por SQL). Resultado final, verificado:
+- **0 órdenes** en la base (las 11 de prueba, todas confirmadas como
+  tales antes de borrar — nombres como "asaa"/"ssss", folios sin patrón
+  real de negocio).
+- **0 archivos** en el bucket `order-photos` (las 5 carpetas huérfanas
+  correspondientes a esas órdenes, borradas por la UI de Storage).
+- **Folios reiniciados a 1** en los 4 tipos de orden que existían
+  (`folio_seq_sublimacion`, `folio_seq_escolar`, `folio_seq_industrial`,
+  `folio_seq_basquetbol`) — la próxima orden real de cada tipo sale
+  como `<PREFIJO>-001`.
+- **Tipo "Basquetbol" desactivado** (confirmado por el usuario que era
+  de prueba) — ya no aparece en el selector de "Nueva orden" en
+  `NewOrderPage.jsx` (`fetchOrderTypes()` ya filtraba por `active=true`,
+  no hizo falta tocar el frontend).
+
+El sistema queda listo para que el equipo empiece a cargar órdenes
+reales desde folio 1, sin ningún dato de prueba de por medio.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver
