@@ -1630,6 +1630,31 @@ los datos. Al terminar se restauró `main.jsx` a su versión original y se
 borró la página de depuración — no quedó nada de esto en el código.
 `npm run build` limpio.
 
+### Limpieza final de órdenes (2026-09-13) — listos para arrancar de verdad
+
+Con V37/V38/V39 ya en producción, el usuario confirmó que ya está listo
+para empezar a capturar órdenes reales de una vez por todas y pidió
+borrar la única orden que quedaba (una de prueba de sublimación, folio
+SUB-001, cliente "Octavio Lopez") y reiniciar la numeración de
+sublimación para que la primera orden real vuelva a ser SUB-001.
+
+Antes de borrar se confirmó que solo existía esa 1 orden en todo el
+sistema (`select count(*)`) y que las 4 tablas que dependen de
+`orders.id` (`order_status_history`, `orden_etapas`, `anticipos`,
+`orden_bordados`) tienen `ON DELETE CASCADE` — así que un solo
+`DELETE FROM orders` bastó para limpiar todo, sin dejar huérfanos. La
+orden no tenía fotos de referencia (0), así que tampoco hizo falta nada
+en Storage esta vez.
+
+Aplicado en Supabase: `delete from public.orders where order_number =
+'SUB-001';` + `alter sequence public.folio_seq_sublimacion restart with
+1;`. Verificado después: `orders`/`order_status_history`/`orden_etapas`/
+`anticipos`/`orden_bordados` en 0 filas, y `folio_seq_sublimacion` con
+`last_value=1, is_called=false` — la próxima orden de sublimación que se
+cree será `SUB-001`. Los folios de escolar/industrial no se tocaron (ya
+estaban en 0 desde la limpieza anterior, ninguna orden nueva se había
+creado en esos tipos).
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver
