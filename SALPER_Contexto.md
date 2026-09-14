@@ -1259,6 +1259,47 @@ con foto, confirmar que se guarda y que aparece en el autocompletado de
 producto al crear una orden para ese cliente; confirmar que Proveedores
 ya no aparece en `main` pero sí en el preview de `dev`.
 
+### V34 — menú lateral en vez de barra horizontal + "Órdenes pasadas"/"Control rápido" al Dashboard
+
+El usuario mandó una captura de otra herramienta (un CRM con menú
+lateral) preguntando mi opinión sobre cambiar a ese patrón, y pidió
+además sacar "Órdenes pasadas" y "Control rápido" de la barra de arriba
+para que fueran botones dentro del propio Dashboard. Opinión que se le
+dio (y con la que se procedió): con ~8-9 secciones en el nav, una barra
+horizontal se amontona o se parte en dos líneas — un menú lateral
+escala mucho mejor, y en celular se resuelve con el patrón estándar de
+"hamburguesa + panel deslizable", que de hecho es MEJOR que una barra
+horizontal angosta en pantallas chicas (que o hace scroll lateral o se
+ve apretada).
+
+**`AppLayout.jsx` + `index.css`**: la barra `.app-header`/`.app-nav`
+horizontal se reemplazó por `.app-sidebar` (fijo a la izquierda en
+escritorio, 240px, con el nombre/rol del usuario y "Cerrar sesión"
+abajo). En celular (`@media max-width: 720px`, mismo breakpoint que ya
+existía) el sidebar se esconde fuera de pantalla
+(`transform: translateX(-100%)`) y aparece una `.app-topbar` con un
+botón de hamburguesa que lo abre como panel deslizable
+(`.app-sidebar--open`) con un overlay oscuro detrás
+(`.app-sidebar-overlay`) que lo cierra al tocarlo — también se cierra
+solo al navegar a cualquier link. Verificado visualmente en escritorio
+y en celular (con el sidebar cerrado y abierto) inyectando el markup
+real con las clases de `index.css` en el navegador, ya que no hay forma
+de iniciar sesión real para probar el componente completo sin
+credenciales.
+
+**"Órdenes pasadas"/"Control rápido" ya no están en el nav** — son
+botones dentro de `DashboardPage.jsx` (nuevo `section-header` al inicio
+de la página), con la misma visibilidad por rol que tenían como links
+del nav (fábrica no ve "Órdenes pasadas"; 'tienda' no ve ninguno de los
+dos).
+
+**Falta probar manualmente**: iniciar sesión y confirmar que el sidebar
+se ve bien en escritorio; abrir en un celular real (o achicar la
+ventana) y confirmar que el botón de hamburguesa abre/cierra el menú
+correctamente y que se cierra solo al tocar un link; confirmar que
+"Órdenes pasadas" y "Control rápido" siguen funcionando igual, ahora
+desde el Dashboard.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

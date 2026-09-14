@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import Logo from './Logo'
 import ChatWidget from '../chat/ChatWidget'
@@ -13,8 +14,19 @@ import {
 } from '../../utils/permissions'
 import { PEDIDOS_PROVEEDOR_HABILITADO } from '../../utils/featureFlags'
 
+// V34: el nav pasó de barra horizontal arriba a menú lateral (pedido
+// explícito del usuario — con tantas secciones, la barra de arriba se
+// empezaba a amontonar). "Órdenes pasadas" y "Control rápido" ya no
+// viven aquí — se movieron a ser botones dentro del propio Dashboard
+// (ver DashboardPage.jsx) para dejar el menú más corto todavía.
+//
+// En celular el sidebar se esconde fuera de la pantalla (ver
+// .app-sidebar en index.css) y se abre con el botón de hamburguesa de
+// la barra superior — `sidebarOpen` controla eso; se cierra solo al
+// navegar (onClick en cada link) o al tocar el overlay oscuro detrás.
 export default function AppLayout({ children }) {
   const { user, profile, role, signOut } = useAuth()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   // Los 5 roles de etapa de fábrica (corte/bordado/sublimado/producción/
   // terminado) solo necesitan Dashboard + Resumen para hacer su trabajo —
   // ver hasRestrictedNav en utils/permissions.js. admin_fabrica sigue
@@ -29,7 +41,6 @@ export default function AppLayout({ children }) {
   const navItems = [
     { to: '/', label: 'Dashboard', end: true, show: true },
     { to: '/nueva', label: 'Nueva orden', show: canCreateOrder(role) },
-    { to: '/pasadas', label: 'Órdenes pasadas', show: !restricted && !tiendaBasica },
     { to: '/resumen', label: 'Resumen', show: !tiendaBasica },
     { to: '/calendario', label: 'Calendario', show: !restricted && !tiendaBasica },
     { to: '/pendientes', label: 'Pendientes', show: !restricted },
@@ -43,21 +54,38 @@ export default function AppLayout({ children }) {
       label: 'Pedidos a Proveedor',
       show: PEDIDOS_PROVEEDOR_HABILITADO && !restricted && !tiendaBasica && canViewPedidosTienda(role),
     },
-    // Control rápido: visible para cualquier cuenta (desde V29 ya no hay
-    // modo invitado, pero sigue sin restringirse por rol) — excepto
-    // 'tienda', que solo debe ver Dashboard + Pendientes.
-    { to: '/control-rapido', label: 'Control rápido', show: !tiendaBasica },
     { to: '/catalogos', label: 'Catálogos', show: canManageCatalogs(role) },
     { to: '/usuarios', label: 'Usuarios', show: canManageUsers(role) },
   ]
 
+  function closeSidebar() {
+    setSidebarOpen(false)
+  }
+
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <div className="app-header__brand">
+      {/* Barra superior — solo visible en celular (ver @media en
+          index.css); en escritorio el sidebar ya está siempre abierto. */}
+      <div className="app-topbar">
+        <button
+          type="button"
+          className="app-topbar__menu-btn"
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Abrir menú"
+        >
+          ☰
+        </button>
+        <Logo />
+      </div>
+
+      {sidebarOpen && <div className="app-sidebar-overlay" onClick={closeSidebar} />}
+
+      <aside className={'app-sidebar' + (sidebarOpen ? ' app-sidebar--open' : '')}>
+        <div className="app-sidebar__brand">
           <Logo />
           <span className="app-header__subtitle">Órdenes de producción</span>
         </div>
+
         <nav className="app-nav">
           {navItems
             .filter((item) => item.show)
@@ -66,13 +94,15 @@ export default function AppLayout({ children }) {
                 key={item.to}
                 to={item.to}
                 end={item.end}
+                onClick={closeSidebar}
                 className={({ isActive }) => 'app-nav__link' + (isActive ? ' app-nav__link--active' : '')}
               >
                 {item.label}
               </NavLink>
             ))}
         </nav>
-        <div className="app-header__user">
+
+        <div className="app-sidebar__user">
           {user ? (
             <>
               <span className="app-header__user-name">
@@ -91,6 +121,7 @@ export default function AppLayout({ children }) {
               </span>
               <NavLink
                 to="/login"
+                onClick={closeSidebar}
                 className="btn btn--primary btn--small"
                 style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
               >
@@ -99,7 +130,8 @@ export default function AppLayout({ children }) {
             </>
           )}
         </div>
-      </header>
+      </aside>
+
       <main className="app-main">{children}</main>
       <ChatWidget />
     </div>

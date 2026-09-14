@@ -9,6 +9,8 @@ import OrderFilters from '../components/orders/OrderFilters'
 import UpcomingOrders from '../components/orders/UpcomingOrders'
 import AnnouncementBanner from '../components/announcements/AnnouncementBanner'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
+import { useAuth } from '../contexts/AuthContext'
+import { hasRestrictedNav, isTiendaBasica } from '../utils/permissions'
 
 const emptyFilters = { types: [], statuses: [], search: '' }
 
@@ -19,9 +21,15 @@ const emptyFilters = { types: [], statuses: [], search: '' }
 const DASHBOARD_STATUS_GROUPS = STATUS_GROUPS.filter((g) => g.key !== 'completado')
 
 export default function DashboardPage() {
+  const { role } = useAuth()
   const { orders, loading, error, refresh } = useOrders()
   const { typesByKey, orderTypes } = useOrderTypes()
   const [filters, setFilters] = useState(emptyFilters)
+  // Mismo criterio de visibilidad que tenían estos 2 links cuando vivían
+  // en el nav principal (ver AppLayout.jsx): fábrica no ve "Órdenes
+  // pasadas", 'tienda' no ve ninguno de los dos.
+  const restricted = hasRestrictedNav(role)
+  const tiendaBasica = isTiendaBasica(role)
 
   const activeOrders = useMemo(
     () => orders.filter((o) => isActiveStatus(o.status) && !o.cancelled_at),
@@ -57,6 +65,25 @@ export default function DashboardPage() {
 
   return (
     <div className="page">
+      <div className="section-header">
+        <h2 className="section-title">Dashboard</h2>
+        {/* V34: "Órdenes pasadas" y "Control rápido" dejaron de ser links
+            del nav principal (se estaba amontonando arriba) — ahora viven
+            aquí, como botones dentro del propio Dashboard. */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          {!restricted && !tiendaBasica && (
+            <Link to="/pasadas" className="btn btn--ghost btn--small">
+              Órdenes pasadas
+            </Link>
+          )}
+          {!tiendaBasica && (
+            <Link to="/control-rapido" className="btn btn--ghost btn--small">
+              Control rápido
+            </Link>
+          )}
+        </div>
+      </div>
+
       <AnnouncementBanner />
 
       <UpcomingOrders orders={upcoming} typesByKey={typesByKey} />

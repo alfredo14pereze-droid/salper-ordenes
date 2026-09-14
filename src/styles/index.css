@@ -58,32 +58,41 @@ h4 {
 }
 
 /* ---------- Layout ---------- */
+/* V34: menú lateral en vez de barra horizontal arriba (con tantas
+   secciones, la barra de arriba se amontonaba). En escritorio el
+   sidebar está siempre fijo a la izquierda; en celular (ver @media al
+   final del archivo) se esconde fuera de la pantalla y se abre como un
+   panel encima de todo con el botón de hamburguesa de `.app-topbar`. */
 
 .app-shell {
   display: flex;
-  flex-direction: column;
   min-height: 100vh;
 }
 
-.app-header {
+.app-sidebar {
+  width: 240px;
+  flex-shrink: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 24px;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 16px;
   background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  flex-wrap: wrap;
+  border-right: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
 }
 
-.app-header__brand {
+.app-sidebar__brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
-/* Logo real de SALPER: negro sobre transparente, directo sobre el nav
-   blanco (sin placa de fondo — el negro del logo ya hace ese trabajo). */
+/* Logo real de SALPER: negro sobre transparente, directo sobre el fondo
+   blanco del sidebar (sin placa de fondo — el negro del logo ya hace
+   ese trabajo). */
 .app-header__logo-img {
   display: block;
   height: 32px;
@@ -92,17 +101,18 @@ h4 {
 
 .app-header__subtitle {
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .app-nav {
   display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
 }
 
 .app-nav__link {
-  padding: 8px 14px;
+  padding: 10px 14px;
   border-radius: var(--radius-sm);
   text-decoration: none;
   color: var(--color-text-muted);
@@ -120,8 +130,45 @@ h4 {
   color: var(--color-black);
 }
 
+.app-sidebar__user {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Barra superior: solo aparece en celular (ver @media) — en escritorio
+   se queda con display:none, el sidebar ya está siempre visible. */
+.app-topbar {
+  display: none;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.app-topbar__menu-btn {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  font-size: 18px;
+  line-height: 1;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.app-sidebar-overlay {
+  display: none;
+}
+
 .app-main {
   flex: 1;
+  min-width: 0;
   padding: 24px;
   max-width: 1200px;
   width: 100%;
@@ -1317,19 +1364,12 @@ h4 {
   margin: 0;
 }
 
-.app-header__user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .app-header__user-name {
   display: flex;
   flex-direction: column;
   font-size: 13px;
   font-weight: 600;
   line-height: 1.3;
-  text-align: right;
 }
 
 .app-header__user-role {
@@ -1544,12 +1584,42 @@ h4 {
     grid-template-columns: 1fr;
   }
 
-  .app-main {
-    padding: 16px;
+  .app-shell {
+    flex-direction: column;
   }
 
-  .app-header__user-name {
+  .app-topbar {
+    display: flex;
+  }
+
+  .app-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 30;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: var(--shadow-md);
+  }
+
+  .app-sidebar--open {
+    transform: translateX(0);
+  }
+
+  .app-sidebar__brand {
     display: none;
+  }
+
+  .app-sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(22, 19, 15, 0.4);
+    z-index: 25;
+  }
+
+  .app-main {
+    padding: 16px;
   }
 
   .chat-widget {
