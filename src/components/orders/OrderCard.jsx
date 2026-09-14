@@ -3,11 +3,21 @@ import StatusBadge from './StatusBadge'
 import TypeBadge from './TypeBadge'
 import { formatDate, daysUntil } from '../../utils/dates'
 import { isCompleted } from '../../utils/status'
+import { useAuth } from '../../contexts/AuthContext'
+import { canConfirmOrderChanges } from '../../utils/permissions'
 
 export default function OrderCard({ order, orderType }) {
   const navigate = useNavigate()
+  const { role } = useAuth()
   const days = daysUntil(order.requested_delivery_date)
   const completed = isCompleted(order.status)
+  // V38: una orden ya confirmada que se editó después queda marcada con
+  // pending_reconfirmation_at — solo fábrica ve el cuadro completo en
+  // azul (pedido explícito del usuario: "a los usuarios de la fábrica
+  // les salga en color azul todo el cuadro"). Gana sobre la urgencia de
+  // fecha (rojo/ámbar) porque es una señal más importante ahora mismo;
+  // no aplica a canceladas/completadas (ver update_order_details).
+  const needsReconfirm = !!order.pending_reconfirmation_at && !order.cancelled_at && !completed && canConfirmOrderChanges(role)
 
   let cardClass = 'order-card'
   let dueClass = 'order-card__due'
@@ -41,6 +51,14 @@ export default function OrderCard({ order, orderType }) {
     dueClass += ' order-card__due--warning'
   }
 
+  // Gana sobre cualquier color de urgencia calculado arriba (pero no
+  // sobre cancelada/completada, ya excluidas de needsReconfirm) — el
+  // texto de la fecha de entrega se queda como estaba, solo cambia el
+  // cuadro.
+  if (needsReconfirm) {
+    cardClass = 'order-card order-card--needs-reconfirm'
+  }
+
   return (
     <article className={cardClass} onClick={() => navigate(`/orden/${order.id}`)} role="button" tabIndex={0}>
       <div className="order-card__top">
@@ -48,6 +66,7 @@ export default function OrderCard({ order, orderType }) {
         {order.cancelled_at ? <span className="badge badge--danger">Cancelada</span> : <StatusBadge status={order.status} />}
       </div>
       <h3 className="order-card__client">{order.client_name}</h3>
+      {needsReconfirm && <p className="order-card__reconfirm-notice">✎ Se modificó después de confirmarse</p>}
       <div className="order-card__meta">
         <TypeBadge type={orderType} />
         <span className={dueClass}>{dueLabel}</span>

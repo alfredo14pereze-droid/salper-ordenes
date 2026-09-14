@@ -11,6 +11,7 @@ import OrderItemsCard from '../components/orders/OrderItemsCard'
 import OrderDocumentsCard from '../components/orders/OrderDocumentsCard'
 import OrderPaymentsCard from '../components/orders/OrderPaymentsCard'
 import OrderDetailsCard from '../components/orders/OrderDetailsCard'
+import OrderReconfirmBanner from '../components/orders/OrderReconfirmBanner'
 import EstimatedDaysCard from '../components/orders/EstimatedDaysCard'
 import CancelOrderCard from '../components/orders/CancelOrderCard'
 import OrderEtapasCard from '../components/orders/OrderEtapasCard'
@@ -131,6 +132,8 @@ export default function OrderDetailPage() {
         <p className="form-error">Esta orden fue eliminada — ya no admite cambios de ningún rol.</p>
       )}
       {preview && <PdfPreviewModal blob={preview.blob} fileName={preview.fileName} onClose={() => setPreview(null)} />}
+
+      <OrderReconfirmBanner order={order} onUpdated={refresh} />
 
       <StatusStepper status={order.status} />
 

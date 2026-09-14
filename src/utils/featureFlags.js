@@ -19,3 +19,14 @@ export const PEDIDOS_PROVEEDOR_HABILITADO = false
 // código/RPCs siguen completos, solo se oculta la sección en
 // CatalogosPage.jsx — reactivarlo es cambiar este valor a `true`.
 export const PROVEEDORES_HABILITADO = false
+
+// V38 — TEMPORAL: mientras se sube el historial de órdenes que ya
+// estaban activas antes de usar SALPER, "Nueva orden" deja capturar a
+// mano la fecha real de creación (si no, todas nacerían con la fecha de
+// hoy y ensuciarían Estadísticas — tiempo de producción, tendencia
+// mensual, etc.). Pedido explícito del usuario: apagar esto ("quitar
+// eso") en cuanto termine de subir las órdenes activas — basta con
+// cambiar este valor a `false`, el campo desaparece del formulario y
+// las órdenes nuevas vuelven a nacer con la fecha de hoy automática (el
+// parámetro del RPC se queda, simplemente deja de mandarse).
+export const CAPTURA_FECHA_CREACION_HABILITADA = true

@@ -74,6 +74,16 @@ export function canChangeStatus(role) {
   return canConfirmOrder(role) || canCompleteOrder(role)
 }
 
+// V38 — "Confirmar cambios": una orden ya confirmada que se editó
+// después (ver pending_reconfirmation_at) necesita que fábrica la
+// revise de nuevo. Mismos roles que pueden confirmar una orden nueva —
+// es la misma gente, solo que aquí no se mueve el status ni ninguna
+// etapa, nada más se apaga la bandera (ver confirm_order_changes en
+// schema_v38_fecha_creacion_y_reconfirmacion.sql).
+export function canConfirmOrderChanges(role) {
+  return canConfirmOrder(role)
+}
+
 // Avanzar UNA etapa individual (pendiente/en_proceso/completado) en
 // orden_etapas — el nombre del rol dueño coincide 1:1 con el nombre de la
 // etapa (rol 'corte' -> etapa 'corte', etc.); admin_fabrica/admin_general

@@ -1507,6 +1507,74 @@ mano (extracción de dígitos de un valor ya guardado, filtrado de
 no-dígitos al escribir, límite de 4). La Edge Function se probará de
 verdad la próxima vez que se abra Usuarios con sesión real.
 
+### V38 — fecha de creación manual (temporal) + "pendiente de reconfirmación"
+
+Dos pedidos del usuario en el mismo mensaje, sin relación entre sí.
+
+**1) Fecha de creación manual — TEMPORAL.** Mientras se sube el
+historial de órdenes que ya estaban activas antes de usar SALPER (con
+fecha de creación real muy anterior a hoy), "Nueva orden" gana un campo
+opcional "Fecha de creación (temporal — para subir el historial)" — si
+se llena, esa fecha se usa tanto en `orders.created_at` como en el
+primer registro de `order_status_history`, para que Estadísticas (V35)
+mida el tiempo de producción desde la fecha real, no desde hoy. Si se
+deja vacío, se comporta exactamente igual que siempre (`now()`).
+
+Gated por el flag nuevo `CAPTURA_FECHA_CREACION_HABILITADA` en
+`utils/featureFlags.js` (`true` en `main` por ahora) — el usuario pidió
+explícitamente "por un tiempo... luego ya quitamos eso": cuando termine
+de subir el historial, basta con poner el flag en `false` y el campo
+desaparece de "Nueva orden" (el parámetro del RPC se queda para
+siempre, simplemente deja de mandarse — no hace daño dejarlo).
+`create_order` ganó `p_created_at timestamptz default null` (con su
+`DROP FUNCTION` + `REVOKE`/`GRANT` de siempre, por el gotcha de
+overloads) y una validación: rechaza si la fecha es futura.
+
+**2) "Pendiente de reconfirmación" — permanente.** Si una orden YA fue
+confirmada por fábrica (o incluso ya avanzó etapas) y después alguien de
+tienda le edita algo — datos generales (`update_order_details`) o
+prendas/tallas (`set_order_items`) —, la orden queda marcada con
+`orders.pending_reconfirmation_at` (timestamp, no boolean — para poder
+ver desde cuándo). No aplica si la orden ya está `completado` o
+cancelada (ahí no tiene sentido pedirle a fábrica que "reconfirme"
+nada). Se limpia con la función nueva `confirm_order_changes`, exclusiva
+de fábrica (mismos roles que `canConfirmOrder`) — no mueve `status` ni
+ninguna etapa, solo apaga la bandera.
+
+Pedido explícito del usuario sobre cómo se ve: "que a los usuarios de
+la fábrica les salga en color azul todo el cuadro, no solo el botón del
+estado". Implementado:
+- `OrderCard.jsx` (tarjetas del Dashboard): si `pending_reconfirmation_at`
+  está activo y el rol actual puede confirmar cambios
+  (`canConfirmOrderChanges`, alias de `canConfirmOrder`), toda la
+  tarjeta se pinta de azul (`.order-card--needs-reconfirm`, mismo patrón
+  que `--overdue`/`--warning`/`--good`) y gana sobre cualquier color de
+  urgencia por fecha — pero nunca sobre cancelada/completada. Solo
+  fábrica ve el azul; ventas/admin_tienda no (aunque técnicamente puedan
+  editar la orden que lo causó).
+- `OrderReconfirmBanner.jsx` (nuevo, en el detalle de la orden): visible
+  para cualquiera con sesión si la orden está pendiente — el texto
+  cambia según el rol (fábrica ve el botón "Confirmar cambios"; el resto
+  solo ve desde cuándo lleva pendiente).
+- Color nuevo en la paleta: `--color-info`/`--color-info-soft` (azul,
+  `#1d5f99`), exclusivo de esta señal — no se reusa en ningún otro lado,
+  no sustituye el rojo/verde de urgencia ni el ámbar/naranja de etapa.
+
+**Verificación hecha**: `npm run build` limpio; smoke-test visual de la
+tarjeta azul junto a una tarjeta roja normal (para confirmar que se
+distinguen bien) y del banner con el botón, inyectando markup con las
+clases reales. Migración aplicada y verificada en Supabase: `pg_proc`
+regresó exactamente 1 fila por función (`create_order`=11 args,
+`update_order_details`=8, `set_order_items`=2,
+`confirm_order_changes`=1) y `has_function_privilege` confirmó
+`authenticated`=true/`anon`=false en `create_order` y
+`confirm_order_changes`.
+
+**Falta probar con datos reales**: crear una orden, confirmarla, editarle
+algo como admin_tienda y confirmar que la tarjeta se pone azul para un
+rol de fábrica (y sigue normal para ventas/tienda); darle "Confirmar
+cambios" desde fábrica y confirmar que se quita.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

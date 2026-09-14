@@ -26,6 +26,12 @@
   --color-warning: #a24d09;
   --color-good: #2f8f4e;
   --color-good-soft: #e2f3e6;
+  /* V38 — azul exclusivo para "esta orden se modificó después de
+     confirmarse, fábrica necesita revisarla de nuevo" (pending_reconfirmation_at).
+     No se usa en ningún otro lado de la app — nunca sustituye al
+     rojo/verde de urgencia ni al ámbar/naranja de etapa. */
+  --color-info: #1d5f99;
+  --color-info-soft: #e2eef7;
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -274,6 +280,14 @@ h4 {
   background: var(--color-good-soft);
 }
 
+/* V38 — solo visible para fábrica (ver canConfirmOrderChanges en
+   OrderCard.jsx); gana sobre --overdue/--warning porque es una señal
+   más importante ("esto que ya tenías en la cabeza pudo cambiar"). */
+.order-card--needs-reconfirm {
+  border-color: var(--color-info);
+  background: var(--color-info-soft);
+}
+
 .order-card__top {
   display: flex;
   align-items: center;
@@ -290,6 +304,13 @@ h4 {
   font-family: 'Barlow Semi Condensed', sans-serif;
   font-size: 16px;
   font-weight: 700;
+}
+
+.order-card__reconfirm-notice {
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-info);
 }
 
 .order-card__meta {
@@ -1441,6 +1462,34 @@ h4 {
   color: #ffffff;
   opacity: 0.65;
   font-size: 12px;
+}
+
+/* V38 — mismo azul que .order-card--needs-reconfirm, para que sea
+   evidente que es la misma señal vista desde el detalle de la orden. */
+.reconfirm-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: var(--color-info-soft);
+  border: 1px solid var(--color-info);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.reconfirm-banner__title {
+  margin: 0;
+  font-weight: 700;
+  color: var(--color-info);
+  font-size: 14px;
+}
+
+.reconfirm-banner__hint {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
 }
 
 /* ---------- Pendientes ---------- */

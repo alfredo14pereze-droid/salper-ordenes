@@ -17,6 +17,7 @@ import RequireRole from '../components/common/RequireRole'
 import { canCreateOrder } from '../utils/permissions'
 import { Loading, ErrorState } from '../components/common/States'
 import { buildOrderConfirmationPdfBlob, orderConfirmationPdfFileName } from '../utils/generateOrderPdf'
+import { CAPTURA_FECHA_CREACION_HABILITADA } from '../utils/featureFlags'
 
 const initialForm = {
   clientId: '',
@@ -27,6 +28,7 @@ const initialForm = {
   description: '',
   requestedDeliveryDate: '',
   folioExterno: '',
+  createdAt: '',
 }
 
 const emptyItem = () => ({
@@ -192,6 +194,7 @@ function NewOrderForm() {
       requestedDeliveryDate: form.requestedDeliveryDate,
       items: cleanItems,
       folioExterno: form.folioExterno.trim(),
+      createdAt: CAPTURA_FECHA_CREACION_HABILITADA ? form.createdAt || null : null,
     })
 
     if (createError) {
@@ -331,6 +334,25 @@ function NewOrderForm() {
           solo. Es independiente del folio que asigna SALPER (SUB-001, ESC-001, etc.), y también se puede buscar por
           él en el Dashboard.
         </p>
+
+        {CAPTURA_FECHA_CREACION_HABILITADA && (
+          <>
+            <label>
+              Fecha de creación (temporal — para subir el historial)
+              <input
+                type="date"
+                className="input"
+                value={form.createdAt}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => updateField('createdAt', e.target.value)}
+              />
+            </label>
+            <p className="pantone-hint">
+              Solo úsalo si esta orden ya existía antes de hoy y la estás subiendo al sistema — déjalo vacío en
+              cualquier orden nueva de verdad y se le pone la fecha de hoy automáticamente, como siempre.
+            </p>
+          </>
+        )}
 
         <div>
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>

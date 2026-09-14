@@ -85,6 +85,7 @@ export async function createOrder({
   requestedDeliveryDate,
   items,
   folioExterno,
+  createdAt,
 }) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
@@ -100,6 +101,11 @@ export async function createOrder({
       p_client_telefono: clientTelefono || null,
       p_client_correo: clientCorreo || null,
       p_folio_externo: folioExterno || null,
+      // V38, TEMPORAL (ver CAPTURA_FECHA_CREACION_HABILITADA en
+      // featureFlags.js): para subir el historial de órdenes ya activas
+      // con su fecha real, no la de hoy. null = se comporta como
+      // siempre (now() del lado del servidor).
+      p_created_at: createdAt || null,
     })
     .single()
 }
@@ -126,6 +132,16 @@ export async function updateOrderStatus(orderId, newStatus, notes) {
       p_notes: notes || null,
     })
     .single()
+}
+
+// V38: apaga pending_reconfirmation_at — exclusivo fábrica (mismos
+// roles que confirman una orden nueva). No toca status ni orden_etapas,
+// ver confirm_order_changes en schema_v38_fecha_creacion_y_reconfirmacion.sql.
+export async function confirmOrderChanges(orderId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('confirm_order_changes', { p_order_id: orderId }).single()
 }
 
 // Etapas paralelas (V23, ver supabase/schema_v23_etapas_paralelas.sql):
