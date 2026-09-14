@@ -54,6 +54,19 @@ export async function fetchOrderHistory(orderId) {
     .order('changed_at', { ascending: false })
 }
 
+// Estadísticas (V35): TODO el historial de estados de TODAS las órdenes en
+// un solo pedido (en vez de uno por orden como fetchOrderHistory) — se
+// agrupa por order_id del lado del cliente, ver useOrderStatusHistory.
+// Mismas políticas de lectura que el resto (autenticado, ver
+// schema_v29_no_acceso_externo.sql), así que cualquier rol con sesión
+// puede pedir esto.
+export async function fetchAllOrderStatusHistory() {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.from('order_status_history').select('*').order('changed_at', { ascending: true })
+}
+
 // Crea la orden y su primer registro de historial en una sola transacción
 // (ver función SQL create_order en supabase/schema.sql). `items` es el
 // arreglo de prendas (ver OrderItemsEditor) — opcional, por si se crea la

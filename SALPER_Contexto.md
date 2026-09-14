@@ -1300,6 +1300,88 @@ correctamente y que se cierra solo al tocar un link; confirmar que
 "Órdenes pasadas" y "Control rápido" siguen funcionando igual, ahora
 desde el Dashboard.
 
+### V34b — "Resumen" también se mueve al Dashboard
+
+Mismo criterio que "Órdenes pasadas"/"Control rápido": sale del menú
+lateral (`AppLayout.jsx`) y se vuelve un botón más junto a los otros dos
+dentro del Dashboard, con la misma visibilidad que ya tenía en el nav
+(oculto solo para `tienda` básico).
+
+### V35 — pantalla de Estadísticas (tiempos de producción, % a tiempo)
+
+Pedido del usuario: "otro dashboard diferente de estadísticas... cuánto
+nos tardamos en la producción, nuestro porcentaje de pedidos entregados
+a tiempo, etc., todo lo que se te ocurra que nos pueda servir." Es de
+solo lectura — no agrega ningún RPC ni escritura nueva, solo lee
+`orders` + `order_status_history` (mismas tablas y mismos permisos de
+lectura que ya usa el resto de la app desde V29: cualquier rol con
+sesión puede verla) y calcula todo del lado del cliente.
+
+**Qué mide** (ver `src/utils/orderStats.js`, función pura `computeOrderStats`,
+sin llamadas a la base — fácil de ajustar si se necesita otro criterio
+después):
+- **% de órdenes entregadas a tiempo**: compara, por día calendario, la
+  fecha en la que la orden llegó por primera vez a `completado` (según
+  `order_status_history`) contra `requested_delivery_date`.
+- **Tiempo promedio de producción**: días desde `created_at` hasta ese
+  mismo `completado`.
+- **Estimado (fábrica) vs. real**: promedio de la diferencia entre
+  `estimated_production_days` (lo que capturó fábrica al confirmar) y
+  los días reales — solo sobre las órdenes que sí tienen un estimado
+  capturado.
+- **Tiempo promedio por etapa**: usa la cronología real del historial de
+  cada orden (diferencia entre cambios de estado consecutivos),
+  agrupado por `STATUS_GROUPS` (igual que los filtros del Dashboard) para
+  no separar "en_corte" de "cortado", etc.
+- **Desglose por tipo de orden**: mismas tres métricas (completadas, %
+  a tiempo, promedio de días) pero por `order_type_key`.
+- **Tendencia mensual**: completadas y % a tiempo de los últimos 6 meses
+  con al menos una orden completada.
+- **Órdenes atrasadas ahora mismo**: activas (no completadas, no
+  canceladas) cuya `requested_delivery_date` ya pasó — lista con link
+  directo a cada orden.
+
+Las órdenes con `cancelled_at` se excluyen de todo, igual que en el
+resto de la app.
+
+**Archivos nuevos:**
+- `src/utils/orderStats.js` — los cálculos (puro, sin red).
+- `src/hooks/useOrderStatusHistory.js` — un solo `select *` de TODO
+  `order_status_history` (no uno por orden como ya hacía
+  `fetchOrderHistory`), agrupado por `order_id` en el cliente. Sin
+  realtime a propósito (es una pantalla de análisis, no necesita
+  refrescarse sola al segundo) — tiene su propio botón "Actualizar".
+- `src/services/ordersService.js` — nueva `fetchAllOrderStatusHistory()`.
+- `src/pages/EstadisticasPage.jsx` — la pantalla: 5 tarjetas de KPI,
+  barras de tiempo promedio por etapa, tabla por tipo de orden, barras de
+  tendencia mensual y la lista de atrasadas. Colores semánticos
+  reutilizando los tokens que ya existen (`--color-good`/`--color-danger`/
+  `--color-warning`) — verde ≥80%, rojo ≤60%, ámbar en medio; no se
+  inventó ninguna paleta nueva.
+- CSS nuevo en `src/styles/index.css` (`.stats-grid`, `.stat-card`,
+  `.stage-bar-row`, `.stats-table`, `.month-bar`, todos junto a
+  `.items-grand-total`).
+
+**Dónde vive**: ruta `/estadisticas`, sin proteger a nivel de ruta (mismo
+criterio que Resumen/Control rápido/Órdenes pasadas — la protección real
+es que la base ya solo responde a `authenticated`). Botón dentro del
+Dashboard, junto a "Resumen"/"Órdenes pasadas"/"Control rápido", oculto
+solo para `tienda` básico.
+
+**Verificación hecha** (sin poder iniciar sesión real): 1) corrida de
+`computeOrderStats` con datos de prueba inyectados en el navegador
+(`import()` del módulo real desde el dev server) confirmando a mano cada
+número (promedios, % a tiempo, agrupación por etapa, exclusión de
+canceladas) — sin errores; 2) smoke-test visual del CSS nuevo inyectando
+markup con las clases reales, en escritorio y en celular; 3)
+`npm run build` limpio; 4) la app real (login) sigue cargando sin
+errores de consola con los imports nuevos.
+
+**Falta probar con datos reales**: como los catálogos/órdenes de prueba
+ya se limpiaron a cero (ver más arriba), esta pantalla vivirá vacía
+("—" en las tarjetas, sin filas en las tablas) hasta que se completen
+las primeras órdenes reales — es esperado, no es un error.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

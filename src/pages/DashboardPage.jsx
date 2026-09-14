@@ -69,12 +69,18 @@ export default function DashboardPage() {
         <h2 className="section-title">Dashboard</h2>
         {/* V34: "Órdenes pasadas" y "Control rápido" dejaron de ser links
             del nav principal (se estaba amontonando arriba) — ahora viven
-            aquí, como botones dentro del propio Dashboard. "Resumen" se
-            sumó después con el mismo criterio (pedido del usuario). */}
+            aquí, como botones dentro del propio Dashboard. "Resumen" y
+            "Estadísticas" se sumaron después con el mismo criterio (pedido
+            del usuario). */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {!tiendaBasica && (
             <Link to="/resumen" className="btn btn--ghost btn--small">
               Resumen
+            </Link>
+          )}
+          {!tiendaBasica && (
+            <Link to="/estadisticas" className="btn btn--ghost btn--small">
+              Estadísticas
             </Link>
           )}
           {!restricted && !tiendaBasica && (

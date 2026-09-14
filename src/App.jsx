@@ -16,6 +16,7 @@ import NewPedidoTiendaPage from './pages/NewPedidoTiendaPage'
 import PedidoTiendaDetailPage from './pages/PedidoTiendaDetailPage'
 import CatalogosPage from './pages/CatalogosPage'
 import ControlRapidoPage from './pages/ControlRapidoPage'
+import EstadisticasPage from './pages/EstadisticasPage'
 import FeatureDisabledPage from './components/common/FeatureDisabledPage'
 import { isSupabaseConfigured } from './lib/supabaseClient'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -75,6 +76,7 @@ function AuthGate() {
           <Route path="/usuarios" element={<UsersPage />} />
           <Route path="/catalogos" element={<CatalogosPage />} />
           <Route path="/control-rapido" element={<ControlRapidoPage />} />
+          <Route path="/estadisticas" element={<EstadisticasPage />} />
           <Route
             path="/pedidos-proveedor"
             element={PEDIDOS_PROVEEDOR_HABILITADO ? <PedidosTiendaPage /> : <FeatureDisabledPage />}
