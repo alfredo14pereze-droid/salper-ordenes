@@ -305,14 +305,20 @@ export default function OrderItemsEditor({
               </div>
             </div>
 
-            <button
-              type="button"
-              className={item.lleva_bordado ? 'btn btn--secondary btn--small' : 'btn btn--ghost btn--small'}
-              style={{ marginTop: 12 }}
-              onClick={() => updateItem(itemIndex, { lleva_bordado: !item.lleva_bordado })}
-            >
-              {item.lleva_bordado ? '✓ Lleva bordado' : '¿Lleva bordado?'}
-            </button>
+            {/* V40: sublimación nunca lleva bordado — el botón ni se ofrece
+                (pedido explícito del usuario). Si una prenda vieja de
+                sublimación ya tenía lleva_bordado=true, el dato se queda
+                como está, solo deja de poder tocarse desde aquí. */}
+            {!isSublimacion && (
+              <button
+                type="button"
+                className={item.lleva_bordado ? 'btn btn--secondary btn--small' : 'btn btn--ghost btn--small'}
+                style={{ marginTop: 12 }}
+                onClick={() => updateItem(itemIndex, { lleva_bordado: !item.lleva_bordado })}
+              >
+                {item.lleva_bordado ? '✓ Lleva bordado' : '¿Lleva bordado?'}
+              </button>
+            )}
 
             {showRosterButton && (
               <button
@@ -409,6 +415,7 @@ export default function OrderItemsEditor({
                 item={item}
                 onApply={(patch) => updateItem(itemIndex, patch)}
                 onProductoCreated={onProductoCreated}
+                canSaveAsProducto={!isSublimacion}
               />
             )}
 

@@ -6,8 +6,19 @@ import { createProducto } from '../../services/productosService'
 // que todavía no puede tener productos). Elegir uno rellena garment/color/
 // pantone/tela/foto en esa prenda — todo se queda editable después. También
 // ofrece guardar la prenda actual como producto nuevo de ese cliente, para
-// la próxima orden.
-export default function ProductoAutocomplete({ clienteId, clienteNombre, productos, telas, item, onApply, onProductoCreated }) {
+// la próxima orden — salvo que `canSaveAsProducto` sea false (V40:
+// sublimación no lo usa, ver OrderItemsEditor.jsx), en cuyo caso solo
+// queda el selector de arriba.
+export default function ProductoAutocomplete({
+  clienteId,
+  clienteNombre,
+  productos,
+  telas,
+  item,
+  onApply,
+  onProductoCreated,
+  canSaveAsProducto = true,
+}) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [saved, setSaved] = useState(false)
@@ -72,11 +83,15 @@ export default function ProductoAutocomplete({ clienteId, clienteNombre, product
         </label>
       )}
 
-      <button type="button" className="btn btn--ghost btn--small" onClick={handleSaveAsProducto} disabled={saving || !item.garment.trim()}>
-        {saving ? 'Guardando…' : `Guardar como producto de ${clienteNombre}`}
-      </button>
-      {saved && <span className="template-hint">✓ Guardado</span>}
-      {error && <p className="form-error">{error.message}</p>}
+      {canSaveAsProducto && (
+        <>
+          <button type="button" className="btn btn--ghost btn--small" onClick={handleSaveAsProducto} disabled={saving || !item.garment.trim()}>
+            {saving ? 'Guardando…' : `Guardar como producto de ${clienteNombre}`}
+          </button>
+          {saved && <span className="template-hint">✓ Guardado</span>}
+          {error && <p className="form-error">{error.message}</p>}
+        </>
+      )}
     </div>
   )
 }

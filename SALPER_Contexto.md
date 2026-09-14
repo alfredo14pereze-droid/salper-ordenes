@@ -1655,6 +1655,31 @@ cree será `SUB-001`. Los folios de escolar/industrial no se tocaron (ya
 estaban en 0 desde la limpieza anterior, ninguna orden nueva se había
 creado en esos tipos).
 
+### V40 — sublimación sin bordado ni "guardar como producto"
+
+Dos botones de más en sublimación (pedido explícito del usuario, ambos
+gateados por el mismo `isSublimacion` de V39 — escolar/industrial no
+cambian):
+
+- **"¿Lleva bordado?"** ya no aparece — "las prendas sublimadas nunca
+  llevan bordado". Si alguna prenda vieja de sublimación ya tenía
+  `lleva_bordado: true` el dato se queda tal cual, solo deja de poder
+  tocarse desde aquí (no se fuerza a `false` ni se toca nada por SQL).
+- **"Guardar como producto de [cliente]"** (en `ProductoAutocomplete.jsx`,
+  nueva prop `canSaveAsProducto`, default `true`) tampoco aparece en
+  sublimación. El selector de arriba ("Producto guardado de...", para
+  autocompletar con un producto ya guardado) **sí se queda** — el
+  usuario solo pidió quitar el botón de guardar uno nuevo, no el
+  autocompletado.
+
+Puramente frontend, sin tocar `items` ni ninguna tabla. Verificado
+montando `OrderItemsEditor` real (mismo método de V39: `main.jsx`
+apuntando directo al componente, con un cliente y un producto de
+prueba) — confirmado que en sublimación no aparecen ninguno de los dos
+botones (el selector de autocompletar sí), y que en escolar ambos
+siguen exactamente igual que antes. Se restauró `main.jsx` y se borró la
+página de depuración al terminar. `npm run build` limpio.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver
