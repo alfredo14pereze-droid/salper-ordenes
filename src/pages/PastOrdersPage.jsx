@@ -24,7 +24,9 @@ export default function PastOrdersPage() {
         if (search.trim()) {
           const q = search.trim().toLowerCase()
           const matches =
-            order.order_number.toLowerCase().includes(q) || order.client_name.toLowerCase().includes(q)
+            order.order_number.toLowerCase().includes(q) ||
+            order.client_name.toLowerCase().includes(q) ||
+            (order.folio_externo || '').toLowerCase().includes(q)
           if (!matches) return false
         }
         return true
@@ -65,7 +67,7 @@ export default function PastOrdersPage() {
           <input
             type="text"
             className="input"
-            placeholder="Número de orden o cliente…"
+            placeholder="Número de orden, folio externo o cliente…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

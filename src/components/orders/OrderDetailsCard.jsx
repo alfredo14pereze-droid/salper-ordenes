@@ -4,6 +4,7 @@ import { formatDate, computeProductionWindow } from '../../utils/dates'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditOrder } from '../../utils/permissions'
 import OrderTypeSelect from './OrderTypeSelect'
+import FolioExternoField from './FolioExternoField'
 
 // Datos generales de la orden. Si el rol actual puede editarla (tienda
 // solo mientras sigue "en_confirmacion"; admin siempre — ver
@@ -99,13 +100,7 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
         </div>
         <label>
           Folio externo (control anterior)
-          <input
-            type="text"
-            className="input"
-            value={form.folioExterno}
-            onChange={(e) => updateField('folioExterno', e.target.value)}
-            placeholder="ORD-0001"
-          />
+          <FolioExternoField value={form.folioExterno} onChange={(v) => updateField('folioExterno', v)} />
         </label>
         <div>
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>

@@ -52,8 +52,13 @@ export default function DashboardPage() {
       if (!matchesStatusGroups(order.status, filters.statuses)) return false
       if (filters.search.trim()) {
         const q = filters.search.trim().toLowerCase()
+        // V37: también busca por folio externo (control anterior) — ya sea
+        // que escriban "ORD0007" completo o solo "0007", ambos hacen match
+        // porque es un simple "contiene" sobre el folio guardado.
         const matches =
-          order.order_number.toLowerCase().includes(q) || order.client_name.toLowerCase().includes(q)
+          order.order_number.toLowerCase().includes(q) ||
+          order.client_name.toLowerCase().includes(q) ||
+          (order.folio_externo || '').toLowerCase().includes(q)
         if (!matches) return false
       }
       return true

@@ -1449,6 +1449,64 @@ overloads viejos) y `has_function_privilege` confirmó `authenticated` =
 true / `anon` = false en las tres. El candado de rol ya está activo del
 lado del servidor, no solo en el frontend.
 
+### V37 — folio externo con "ORD" automático + búsqueda por folio + correo en Usuarios
+
+Dos pedidos del usuario en el mismo mensaje ("ya es lo último" antes de
+empezar a capturar órdenes reales), más uno que llegó a media tarea
+("también, en la página de usuarios, que se vea el correo").
+
+**1) Folio externo — "ORD" fijo, solo se captura el número.** Antes era
+un input de texto libre (el usuario tenía que escribir "ORD0007"
+completo, sin verificación). Ahora: `FolioExternoField.jsx` (nuevo,
+componente compartido entre `NewOrderPage.jsx` y `OrderDetailsCard.jsx`)
+muestra "ORD" como prefijo fijo (no editable, pegado visualmente a la
+caja con la clase nueva `.input-group`) y un input que solo acepta
+dígitos, máximo 4 (`inputMode="numeric"`, se filtra cualquier no-dígito
+en el propio `onChange`). El valor que maneja el resto del formulario
+sigue siendo el folio COMPLETO (ej. "ORD0007") — el componente arma y
+desarma el prefijo internamente, así que no hubo que tocar
+`ordersService.js` ni las funciones SQL (`p_folio_externo` sigue
+recibiendo el string completo, sin cambio de contrato). Formato
+confirmado sin guion ("ORD" + 4 dígitos pegados), igual que se pidió en
+V32 — se verificó antes de implementar que la tabla `orders` no tenía
+ninguna fila con `folio_externo` ya guardado (0 filas), así que no hubo
+riesgo de inconsistencia con datos previos.
+
+**2) Búsqueda por folio externo.** El cuadro de búsqueda del Dashboard
+(`DashboardPage.jsx`) y de Órdenes pasadas (`PastOrdersPage.jsx`) ya
+comparaba `order_number`/`client_name` contra el texto escrito — se le
+agregó `folio_externo` al mismo `includes()`. Como es una comparación de
+"contiene" (no exacta), buscar solo "0007" ya encuentra una orden con
+folio "ORD0007" sin que haga falta escribir el "ORD". Placeholder de
+ambos buscadores actualizado para mencionarlo.
+
+**3) Correo en la página de Usuarios.** `public.profiles` nunca ha
+guardado el correo (vive solo en `auth.users`, fuera del alcance del
+cliente); no había forma de mostrarlo sin una llamada nueva. Se agregó
+la acción `'list'` a la Edge Function `admin-create-user` (ya
+compartida por crear/editar/suspender/eliminar, con la misma
+verificación de que quien llama sea `admin_general`) — regresa
+`{id, email}` de `auth.admin.listUsers()` para todos los usuarios.
+`usersService.js` gana `fetchUserEmails()`; `UsersPage.jsx` la pide una
+vez al entrar (independiente de `useProfiles`, que sigue siendo
+realtime) y cruza por `id`. Si esa llamada falla, la pantalla no se
+bloquea — cada fila cae de vuelta al id crudo (comportamiento idéntico
+al de antes de V37), con un aviso arriba de la lista. El id crudo no
+desapareció: quedó como `title` (tooltip) del mismo elemento.
+**Desplegada en Supabase** (Dashboard → Edge Functions → admin-create-user
+→ Code → pegado vía Monaco + "Deploy updates", confirmado "Successfully
+updated edge function") — el archivo en el repo
+(`supabase/functions/admin-create-user/index.ts`) es la copia de
+respaldo, como ya se documentaba ahí desde antes.
+
+**Verificación hecha**: `npm run build` limpio; smoke-test visual de
+`FolioExternoField` (clases `.input-group`) y de la fila de usuario con
+correo, inyectando markup con las clases reales en el navegador (no se
+pudo iniciar sesión real). Lógica de `FolioExternoField` verificada a
+mano (extracción de dígitos de un valor ya guardado, filtrado de
+no-dígitos al escribir, límite de 4). La Edge Function se probará de
+verdad la próxima vez que se abra Usuarios con sesión real.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

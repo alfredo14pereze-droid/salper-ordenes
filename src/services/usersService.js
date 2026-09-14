@@ -103,3 +103,12 @@ export async function unsuspendUser(userId) {
 export async function deleteUser(userId) {
   return invokeAdminUserFn({ action: 'delete', user_id: userId })
 }
+
+// V37: {id, email} de todos los usuarios — el correo vive solo en
+// auth.users (profiles no lo guarda), así que se pide vía la misma Edge
+// Function (acción 'list', misma verificación de admin_general) para
+// mostrarlo en la pantalla de Usuarios.
+export async function fetchUserEmails() {
+  const { data, error } = await invokeAdminUserFn({ action: 'list' })
+  return { data: data?.users || null, error }
+}

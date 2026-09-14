@@ -53,7 +53,7 @@ export default function OrderFilters({ orderTypes, filters, onChange, statuses =
         <input
           type="text"
           className="input"
-          placeholder="Número de orden o cliente…"
+          placeholder="Número de orden, folio externo o cliente…"
           value={filters.search}
           onChange={(e) => onChange({ ...filters, search: e.target.value })}
         />

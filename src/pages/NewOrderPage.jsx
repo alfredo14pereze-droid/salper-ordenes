@@ -12,6 +12,7 @@ import OrderTypeSelect from '../components/orders/OrderTypeSelect'
 import ClienteSelect from '../components/orders/ClienteSelect'
 import PhotoPicker from '../components/orders/PhotoPicker'
 import OrderItemsEditor from '../components/orders/OrderItemsEditor'
+import FolioExternoField from '../components/orders/FolioExternoField'
 import RequireRole from '../components/common/RequireRole'
 import { canCreateOrder } from '../utils/permissions'
 import { Loading, ErrorState } from '../components/common/States'
@@ -323,17 +324,12 @@ function NewOrderForm() {
 
         <label>
           Folio externo (control anterior)
-          <input
-            type="text"
-            className="input"
-            value={form.folioExterno}
-            onChange={(e) => updateField('folioExterno', e.target.value)}
-            placeholder="ORD-0001"
-          />
+          <FolioExternoField value={form.folioExterno} onChange={(v) => updateField('folioExterno', v)} />
         </label>
         <p className="pantone-hint">
-          Si esta orden ya tenía un folio en su control anterior, ponlo aquí para no perder la referencia — es
-          independiente del folio que asigna SALPER solo (SUB-001, ESC-001, etc.).
+          Si esta orden ya tenía un folio en su control anterior, pon aquí solo los 4 números — el "ORD" se agrega
+          solo. Es independiente del folio que asigna SALPER (SUB-001, ESC-001, etc.), y también se puede buscar por
+          él en el Dashboard.
         </p>
 
         <div>

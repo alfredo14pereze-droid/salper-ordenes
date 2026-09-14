@@ -17,6 +17,9 @@
 //   - 'delete': borra el usuario de auth.users — profiles.id tiene
 //     `on delete cascade` hacia auth.users(id), así que el perfil se borra
 //     solo, sin necesidad de un segundo delete.
+//   - 'list' (V37): regresa {id, email} de todos los usuarios — el correo
+//     vive solo en auth.users (profiles no lo guarda), así que la pantalla
+//     de Usuarios lo pide aquí para mostrarlo junto a cada perfil.
 //
 // Desplegada vía el editor del Dashboard de Supabase (Edge Functions →
 // admin-create-user). Este archivo es la copia de respaldo/documentación
@@ -202,6 +205,17 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: deleteError.message }, 400)
       }
       return jsonResponse({ ok: true }, 200)
+    }
+
+    if (action === 'list') {
+      // perPage 1000: de sobra para el tamaño de este equipo — si algún
+      // día se pasara de eso, habría que paginar con listData.nextPage.
+      const { data: listData, error: listError } = await adminClient.auth.admin.listUsers({ perPage: 1000 })
+      if (listError) {
+        return jsonResponse({ error: listError.message }, 400)
+      }
+      const users = (listData?.users || []).map((u) => ({ id: u.id, email: u.email }))
+      return jsonResponse({ users }, 200)
     }
 
     return jsonResponse({ error: `Acción desconocida: ${action}` }, 400)

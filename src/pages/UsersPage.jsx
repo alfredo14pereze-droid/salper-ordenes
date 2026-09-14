@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useProfiles } from '../hooks/useProfiles'
 import {
   createUser,
   deleteUser,
+  fetchUserEmails,
   suspendUser,
   unsuspendUser,
   updateUserProfile,
@@ -165,7 +166,7 @@ function NewUserForm({ onCreated }) {
 // definitivamente a cualquier usuario — ver supabase/functions/admin-create-user/index.ts.
 // Nunca se muestra suspender/eliminar sobre el propio usuario en sesión
 // (mismo resguardo que ya aplica el backend, para no bloquearse solo).
-function UserRow({ profile, currentUserId, onUpdated }) {
+function UserRow({ profile, email, currentUserId, onUpdated }) {
   const [role, setRole] = useState(profile.role)
   const [editingName, setEditingName] = useState(false)
   const [name, setName] = useState(profile.full_name || '')
@@ -283,7 +284,13 @@ function UserRow({ profile, currentUserId, onUpdated }) {
             )}
           </span>
         )}
-        <span className="user-row__id">{profile.id}</span>
+        {/* V37: el correo vive en auth.users, no en profiles — se pide
+            aparte (ver fetchUserEmails) y por eso puede tardar un
+            instante en aparecer o faltar si esa llamada falló; el id
+            crudo se queda como respaldo y como referencia en el title. */}
+        <span className={email ? 'user-row__email' : 'user-row__id'} title={profile.id}>
+          {email || profile.id}
+        </span>
       </div>
 
       <select className="input" value={role} onChange={(e) => handleRoleChange(e.target.value)} disabled={saving}>
@@ -324,6 +331,31 @@ function UserRow({ profile, currentUserId, onUpdated }) {
 function UsersPageContent() {
   const { profiles, loading, error, refresh } = useProfiles()
   const { user } = useAuth()
+  // V37: el correo vive solo en auth.users (profiles no lo guarda) — se
+  // pide aparte, una sola vez, y se cruza con cada perfil por id. Si esta
+  // llamada falla no se bloquea la pantalla — cada fila cae de vuelta al
+  // id crudo, como antes de V37.
+  const [emailsById, setEmailsById] = useState({})
+  const [emailsError, setEmailsError] = useState(null)
+
+  const loadEmails = useCallback(async () => {
+    const { data, error: fetchError } = await fetchUserEmails()
+    if (fetchError) {
+      setEmailsError(fetchError)
+      return
+    }
+    setEmailsError(null)
+    setEmailsById(Object.fromEntries((data || []).map((u) => [u.id, u.email])))
+  }, [])
+
+  useEffect(() => {
+    loadEmails()
+  }, [loadEmails])
+
+  function refreshAll() {
+    refresh()
+    loadEmails()
+  }
 
   if (loading) return <Loading label="Cargando usuarios…" />
   if (error) return <ErrorState error={error} onRetry={refresh} />
@@ -335,12 +367,15 @@ function UsersPageContent() {
         Crear cuentas nuevas, editar nombre/rol, suspender o eliminar (tienda: ventas / contabilidad / admin — fábrica:
         corte / bordado / sublimado / producción / terminado / admin — o administrador general).
       </p>
+      {emailsError && (
+        <p className="form-error">No se pudieron cargar los correos ({emailsError.message}) — se muestra el id.</p>
+      )}
 
-      <NewUserForm onCreated={refresh} />
+      <NewUserForm onCreated={refreshAll} />
 
       <div className="user-list">
         {profiles.map((p) => (
-          <UserRow key={p.id} profile={p} currentUserId={user?.id} onUpdated={refresh} />
+          <UserRow key={p.id} profile={p} email={emailsById[p.id]} currentUserId={user?.id} onUpdated={refreshAll} />
         ))}
       </div>
     </div>
