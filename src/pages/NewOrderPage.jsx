@@ -6,6 +6,8 @@ import { useTelas } from '../hooks/useTelas'
 import { useProductosByCliente } from '../hooks/useProductosByCliente'
 import { createOrder } from '../services/ordersService'
 import { uploadOrderPhotos } from '../services/photosService'
+import { uploadOrderDocument } from '../services/documentsService'
+import { createAnticipo, METODOS_PAGO } from '../services/anticiposService'
 import { recognizeDocument, MAX_OCR_FILE_SIZE_MB } from '../services/documentOcrService'
 import { similarity } from '../utils/similarity'
 import OrderTypeSelect from '../components/orders/OrderTypeSelect'
@@ -15,6 +17,7 @@ import OrderItemsEditor from '../components/orders/OrderItemsEditor'
 import FolioExternoField from '../components/orders/FolioExternoField'
 import RequireRole from '../components/common/RequireRole'
 import { canCreateOrder } from '../utils/permissions'
+import { useAuth } from '../contexts/AuthContext'
 import { Loading, ErrorState } from '../components/common/States'
 import { buildOrderConfirmationPdfBlob, orderConfirmationPdfFileName } from '../utils/generateOrderPdf'
 import { CAPTURA_FECHA_CREACION_HABILITADA } from '../utils/featureFlags'
@@ -85,6 +88,7 @@ export default function NewOrderPage() {
 }
 
 function NewOrderForm() {
+  const { profile } = useAuth()
   const { orderTypes, loading, error, refresh } = useOrderTypes()
   const { clientes, refresh: refreshClientes } = useClientes()
   const { telas, refresh: refreshTelas } = useTelas()
@@ -95,6 +99,20 @@ function NewOrderForm() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
   const navigate = useNavigate()
+
+  // V41 — cotización, orden de compra y anticipo se pueden capturar desde
+  // aquí mismo, sin tener que entrar después al detalle de la orden
+  // (pedido explícito del usuario). La factura queda fuera a propósito:
+  // "eso ya hasta después" — se sigue subiendo solo desde el detalle
+  // (OrderDocumentsCard.jsx), igual que siempre. Los archivos/datos viven
+  // en memoria hasta que la orden ya existe (necesitan su id) — mismo
+  // patrón que las fotos de referencia, un poco más abajo.
+  const [cotizacionFile, setCotizacionFile] = useState(null)
+  const [ordenCompraFile, setOrdenCompraFile] = useState(null)
+  const [anticipoMonto, setAnticipoMonto] = useState('')
+  const [anticipoMetodo, setAnticipoMetodo] = useState('efectivo')
+  const [anticipoRecibidoPor, setAnticipoRecibidoPor] = useState(profile?.full_name || '')
+  const [anticipoNotas, setAnticipoNotas] = useState('')
 
   const [ocrLoading, setOcrLoading] = useState(false)
   const [ocrWarning, setOcrWarning] = useState(null)
@@ -173,6 +191,15 @@ function NewOrderForm() {
       setSubmitError(new Error('Completa los campos requeridos: cliente, tipo y fecha de entrega.'))
       return
     }
+    const anticipoMontoNum = Number(anticipoMonto)
+    if (anticipoMonto && (!anticipoMontoNum || anticipoMontoNum <= 0)) {
+      setSubmitError(new Error('El monto del anticipo debe ser mayor a cero.'))
+      return
+    }
+    if (anticipoMontoNum > 0 && !anticipoRecibidoPor.trim()) {
+      setSubmitError(new Error('Falta indicar quién recibió el anticipo.'))
+      return
+    }
 
     setSubmitting(true)
     setSubmitError(null)
@@ -215,6 +242,32 @@ function NewOrderForm() {
       if (uploadError) photoError = uploadError.message
     }
 
+    // V41 — mismo criterio que las fotos: cotización/orden de compra/
+    // anticipo son opcionales y, si algo falla aquí, la orden YA se creó
+    // — no se cancela nada, solo se avisa para reintentar desde el
+    // detalle (OrderDocumentsCard/OrderPaymentsCard).
+    let documentError = null
+    if (cotizacionFile) {
+      const { error: docError } = await uploadOrderDocument(data.id, 'cotizacion', cotizacionFile)
+      if (docError) documentError = `Cotización: ${docError.message}`
+    }
+    if (ordenCompraFile) {
+      const { error: docError } = await uploadOrderDocument(data.id, 'orden_compra', ordenCompraFile)
+      if (docError) documentError = documentError ? `${documentError} · Orden de compra: ${docError.message}` : `Orden de compra: ${docError.message}`
+    }
+
+    let anticipoError = null
+    if (anticipoMontoNum > 0) {
+      const { error: anticipoErr } = await createAnticipo({
+        orderId: data.id,
+        monto: anticipoMontoNum,
+        metodoPago: anticipoMetodo,
+        recibidoPor: anticipoRecibidoPor.trim(),
+        notas: anticipoNotas.trim(),
+      })
+      if (anticipoErr) anticipoError = anticipoErr.message
+    }
+
     setSubmitting(false)
 
     // El PDF de confirmación se genera solo al crear la orden, pero ya no
@@ -236,7 +289,7 @@ function NewOrderForm() {
       console.error('No se pudo generar el PDF de confirmación:', pdfErr)
     }
 
-    navigate(`/orden/${data.id}`, { state: { photoUploadError: photoError, pdfPreview } })
+    navigate(`/orden/${data.id}`, { state: { photoUploadError: photoError, documentError, anticipoError, pdfPreview } })
   }
 
   if (loading) return <Loading label="Cargando tipos de orden…" />
@@ -410,6 +463,112 @@ function NewOrderForm() {
           Fotos de referencia
           <PhotoPicker files={photoFiles} onChange={setPhotoFiles} />
         </label>
+
+        <div>
+          <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+            Documentos y anticipo (opcional)
+          </span>
+          <p className="pantone-hint" style={{ marginTop: 0 }}>
+            La factura no va aquí — esa se sube después, desde el detalle de la orden.
+          </p>
+
+          <div className="form-row">
+            <div>
+              <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+                Cotización (PDF)
+              </span>
+              <label className="btn btn--secondary btn--small" style={{ display: 'inline-flex' }}>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  hidden
+                  onChange={(e) => setCotizacionFile(e.target.files?.[0] || null)}
+                />
+                {cotizacionFile ? 'Reemplazar' : 'Subir PDF'}
+              </label>
+              {cotizacionFile && (
+                <div style={{ marginTop: 6, display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <span className="template-hint">{cotizacionFile.name}</span>
+                  <button type="button" className="btn btn--ghost btn--small" onClick={() => setCotizacionFile(null)}>
+                    Quitar
+                  </button>
+                </div>
+              )}
+            </div>
+            <div>
+              <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+                Orden de compra (PDF)
+              </span>
+              <label className="btn btn--secondary btn--small" style={{ display: 'inline-flex' }}>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  hidden
+                  onChange={(e) => setOrdenCompraFile(e.target.files?.[0] || null)}
+                />
+                {ordenCompraFile ? 'Reemplazar' : 'Subir PDF'}
+              </label>
+              {ordenCompraFile && (
+                <div style={{ marginTop: 6, display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <span className="template-hint">{ordenCompraFile.name}</span>
+                  <button type="button" className="btn btn--ghost btn--small" onClick={() => setOrdenCompraFile(null)}>
+                    Quitar
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="form-row" style={{ marginTop: 12 }}>
+            <label>
+              Anticipo recibido
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                className="input"
+                value={anticipoMonto}
+                onChange={(e) => setAnticipoMonto(e.target.value)}
+                placeholder="0.00"
+              />
+            </label>
+            <label>
+              Método de pago
+              <select className="input" value={anticipoMetodo} onChange={(e) => setAnticipoMetodo(e.target.value)}>
+                {METODOS_PAGO.map((m) => (
+                  <option key={m.key} value={m.key}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {anticipoMonto && (
+            <div className="form-row" style={{ marginTop: 12 }}>
+              <label>
+                Quién lo recibió *
+                <input
+                  type="text"
+                  className="input"
+                  value={anticipoRecibidoPor}
+                  onChange={(e) => setAnticipoRecibidoPor(e.target.value)}
+                  placeholder="Nombre de quién cobró"
+                />
+              </label>
+              <label>
+                Notas del anticipo
+                <input
+                  type="text"
+                  className="input"
+                  value={anticipoNotas}
+                  onChange={(e) => setAnticipoNotas(e.target.value)}
+                  placeholder="Opcional"
+                />
+              </label>
+            </div>
+          )}
+        </div>
 
         {submitError && <p className="form-error">{submitError.message}</p>}
 

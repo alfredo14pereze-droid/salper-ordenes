@@ -1680,6 +1680,50 @@ botones (el selector de autocompletar sí), y que en escolar ambos
 siguen exactamente igual que antes. Se restauró `main.jsx` y se borró la
 página de depuración al terminar. `npm run build` limpio.
 
+### V41 — cotización, orden de compra y anticipo desde "Nueva orden"
+
+El usuario preguntó si esto ya existía en el sistema — sí, pero solo
+desde el detalle de una orden YA creada (`OrderDocumentsCard.jsx` /
+`OrderPaymentsCard.jsx`, ambas de antes de esta sesión). Pidió poder
+capturarlo de una vez al crear la orden, **menos la factura** ("eso ya
+hasta después").
+
+Tanto `uploadOrderDocument` como `createAnticipo` necesitan un
+`order_id` que ya exista (el documento se guarda en
+`storage/<orderId>/...`, el anticipo tiene una FK not-null a `orders`),
+así que no había forma de mandarlos junto con `create_order` en una sola
+llamada. Se resolvió con el mismo patrón que ya usan las fotos de
+referencia en `NewOrderPage.jsx`: los archivos/datos se guardan en
+memoria (`cotizacionFile`, `ordenCompraFile`, `anticipoMonto` y demás)
+mientras se llena el formulario, y **después** de que `createOrder`
+regresa con el `id` de la orden ya creada, se suben/crean en secuencia.
+Si algo de esto falla, la orden YA existe — no se cancela nada, se
+manda un aviso al detalle (`documentError`/`anticipoError` en el estado
+de `navigate`, mismo criterio que el `photoUploadError` que ya existía)
+para reintentarlo ahí mismo con los componentes de siempre.
+
+Validación antes de crear la orden (no después): si se puso un monto de
+anticipo, "Quién lo recibió" se vuelve obligatorio — mismo criterio que
+ya tenía `OrderPaymentsCard.jsx`. La factura no tiene ningún campo aquí
+a propósito, ni siquiera para admin_general — solo se sigue subiendo
+desde el detalle.
+
+Sin cambios de permisos: quien ya puede crear una orden (ventas/
+admin_tienda/admin_general) ya podía subir cotización/orden de compra
+(mientras la orden siga en_confirmacion, que es justo el estado en el
+que nace) y registrar un anticipo — ver `canEditOrderDocument`/
+`OrderPaymentsCard.canRegister` en el código, sin tocar.
+
+**Verificación hecha**: `npm run build` limpio; la sección nueva se
+probó aparte (mismo método de depuración temporal que V39/V40) — escribir
+un monto de anticipo revela "Quién lo recibió"/"Notas" y borrarlo los
+vuelve a ocultar; los botones de subir PDF reusan el mismo patrón
+`<input type="file" hidden>` que ya funciona en producción en
+`OrderDocumentsCard.jsx` y en el upload de OCR de esta misma página. No
+se probó con datos reales de principio a fin (crear una orden de
+verdad con cotización+orden de compra+anticipo en el mismo alta) por no
+poder iniciar sesión — pendiente de que el usuario lo confirme.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

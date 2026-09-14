@@ -157,12 +157,24 @@ export default function OrderDetailPage() {
 
         {user && (
           <section className="card">
+            {location.state?.documentError && (
+              <p className="form-error">
+                La orden se creó, pero hubo un problema subiendo un documento: {location.state.documentError}. Puedes
+                intentarlo de nuevo aquí abajo.
+              </p>
+            )}
             <OrderDocumentsCard order={order} onUpdated={refresh} />
           </section>
         )}
 
         {user && (
           <section className="card">
+            {location.state?.anticipoError && (
+              <p className="form-error">
+                La orden se creó, pero hubo un problema guardando el anticipo: {location.state.anticipoError}. Puedes
+                registrarlo de nuevo aquí abajo.
+              </p>
+            )}
             <OrderPaymentsCard orderId={order.id} disabled={!!order.eliminada_en} />
           </section>
         )}
