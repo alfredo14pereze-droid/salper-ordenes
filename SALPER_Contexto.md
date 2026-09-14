@@ -1439,11 +1439,15 @@ cada combinación — coincide exactamente con lo pedido (ver tabla arriba
 en el chat). Smoke-test visual del sidebar con "Estadísticas" en su
 lugar. `npm run build` limpio.
 
-**Migración pendiente de aplicar en Supabase** (`schema_v36_permisos_catalogos.sql`):
-el usuario prefirió iniciar sesión él mismo en el SQL Editor para que yo
-la corra, en vez de dármelo para correrlo él directamente — ver si ya
-quedó aplicada antes de asumir que el candado del servidor está activo
-(el del frontend ya sí está en producción independientemente de esto).
+**Migración aplicada y verificada en Supabase** (`schema_v36_permisos_catalogos.sql`):
+el usuario inició sesión él mismo en el SQL Editor (yo no manejo
+credenciales) y desde ahí corrí el script. Verificado con dos queries
+después de aplicar: `select proname, pronargs from pg_proc where
+proname in (...)` regresó exactamente 1 fila por función
+(`create_cliente`=3 args, `create_tela`=1, `create_producto`=8 — sin
+overloads viejos) y `has_function_privilege` confirmó `authenticated` =
+true / `anon` = false en las tres. El candado de rol ya está activo del
+lado del servidor, no solo en el frontend.
 
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
