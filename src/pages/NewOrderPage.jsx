@@ -422,11 +422,25 @@ function NewOrderForm() {
 
         <div>
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+            Tipo de orden *
+          </span>
+          <OrderTypeSelect
+            orderTypes={orderTypes}
+            value={form.orderTypeKey}
+            onChange={(key) => updateField('orderTypeKey', key)}
+            onTypeCreated={refresh}
+          />
+          <p className="pantone-hint">Elige el tipo de orden primero — la lista de clientes de abajo se filtra según esto.</p>
+        </div>
+
+        <div>
+          <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
             Cliente *
           </span>
           <ClienteSelect
             clientes={clientes}
             value={form.clientId}
+            orderTypeKey={form.orderTypeKey}
             onChange={(clientId, clientName, telefono, correo) => {
               // V42: ClienteSelect ya manda teléfono/correo directo (tanto al
               // crear un cliente nuevo como al elegir uno existente) — se
@@ -499,18 +513,6 @@ function NewOrderForm() {
             </p>
           </>
         )}
-
-        <div>
-          <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
-            Tipo de orden *
-          </span>
-          <OrderTypeSelect
-            orderTypes={orderTypes}
-            value={form.orderTypeKey}
-            onChange={(key) => updateField('orderTypeKey', key)}
-            onTypeCreated={refresh}
-          />
-        </div>
 
         <label>
           Fecha de entrega solicitada *

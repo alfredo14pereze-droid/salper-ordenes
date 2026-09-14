@@ -25,19 +25,37 @@ export async function fetchClienteById(id) {
 }
 
 // "Crear o reusar" — ver create_cliente en supabase/schema_v12_catalogos.sql
-// (y schema_v30_contacto_cliente_y_roles.sql para telefono/correo). El
-// duplicado EXACTO (mismo nombre normalizado) nunca truena, regresa el
-// existente — y si se manda telefono/correo, actualiza esos datos del
-// cliente ya existente (sin borrar lo guardado si se manda vacío). El
-// duplicado "parecido" se avisa aparte en el frontend antes de llamar esto
-// (ver utils/similarity.js), no aquí.
-export async function createCliente(nombre, telefono, correo) {
+// (y schema_v30_contacto_cliente_y_roles.sql para telefono/correo,
+// schema_v45_categorias_cliente.sql para tipoOrden). El duplicado EXACTO
+// (mismo nombre normalizado) nunca truena, regresa el existente — y si se
+// manda telefono/correo/tipoOrden, actualiza esos datos del cliente ya
+// existente (sin borrar lo guardado si se manda vacío/[] — ver el RPC: solo
+// pisa tipo_orden si el arreglo mandado no está vacío). El duplicado
+// "parecido" se avisa aparte en el frontend antes de llamar esto (ver
+// utils/similarity.js), no aquí.
+export async function createCliente(nombre, telefono, correo, tipoOrden = []) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
 
   return supabase
-    .rpc('create_cliente', { p_nombre: nombre, p_telefono: telefono || null, p_correo: correo || null })
+    .rpc('create_cliente', {
+      p_nombre: nombre,
+      p_telefono: telefono || null,
+      p_correo: correo || null,
+      p_tipo_orden: tipoOrden || [],
+    })
     .single()
+}
+
+// V45: editar la categoría (escolar/industrial/sublimación) de un cliente
+// que ya existe — necesario para los clientes de antes de este cambio, que
+// quedan con tipo_orden vacío (y por lo tanto visibles en todas las listas
+// filtradas) hasta que alguien les ponga categoría desde Catálogos.
+export async function setClienteTipoOrden(id, tipoOrden) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('set_cliente_tipo_orden', { p_cliente_id: id, p_tipo_orden: tipoOrden || [] }).single()
 }
 
 // Hard-delete (V24) — exclusivo admin_general. productos.cliente_id tiene

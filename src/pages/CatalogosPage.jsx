@@ -11,7 +11,13 @@ import {
 import { PROVEEDORES_HABILITADO } from '../utils/featureFlags'
 import { Loading, ErrorState } from '../components/common/States'
 import { fetchProveedores, getProveedorDeleteImpact, deleteProveedor } from '../services/proveedoresService'
-import { fetchClientes, createCliente, getClienteDeleteImpact, deleteCliente } from '../services/clientesService'
+import {
+  fetchClientes,
+  createCliente,
+  getClienteDeleteImpact,
+  deleteCliente,
+  setClienteTipoOrden,
+} from '../services/clientesService'
 import { fetchTelas, createTela, getTelaDeleteImpact, deleteTela } from '../services/telasService'
 import {
   fetchProductosByCliente,
@@ -19,14 +25,14 @@ import {
   uploadProductoFoto,
   deleteProducto,
 } from '../services/productosService'
-import { GARMENT_COLORS } from '../lib/constants'
+import { GARMENT_COLORS, CLIENTE_TIPO_ORDEN_OPTIONS } from '../lib/constants'
 
 // Fila genérica con nombre + botón Eliminar — usada por las 3 secciones
 // simples (proveedores/clientes/telas). Pide confirmación en dos pasos y,
 // si se pasa `impactFn`, primero consulta cuántas filas dependientes
 // existen y las muestra antes de la confirmación (ver FKs verificadas en
 // schema_v24_soft_delete.sql: cliente->productos es CASCADE de verdad).
-function CatalogRow({ item, deleteFn, impactFn, impactLabel, onDeleted, canDelete = true }) {
+function CatalogRow({ item, deleteFn, impactFn, impactLabel, onDeleted, canDelete = true, extra }) {
   const [confirming, setConfirming] = useState(false)
   const [impact, setImpact] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -63,6 +69,7 @@ function CatalogRow({ item, deleteFn, impactFn, impactLabel, onDeleted, canDelet
     <div className="document-row">
       <div>
         <span className="document-row__label">{item.nombre}</span>
+        {extra?.(item)}
         {confirming && impact && (
           <p className="form-error" style={{ marginTop: 2 }}>
             {impactLabel?.(impact) || 'Esta acción no se puede deshacer.'}
@@ -104,15 +111,20 @@ function AddClienteForm({ onCreated }) {
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
   const [correo, setCorreo] = useState('')
+  const [tipoOrden, setTipoOrden] = useState([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+
+  function toggleTipoOrden(key) {
+    setTipoOrden((current) => (current.includes(key) ? current.filter((k) => k !== key) : [...current, key]))
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!nombre.trim()) return
     setSaving(true)
     setError(null)
-    const { error: createError } = await createCliente(nombre.trim(), telefono.trim(), correo.trim())
+    const { error: createError } = await createCliente(nombre.trim(), telefono.trim(), correo.trim(), tipoOrden)
     setSaving(false)
     if (createError) {
       setError(createError)
@@ -121,6 +133,7 @@ function AddClienteForm({ onCreated }) {
     setNombre('')
     setTelefono('')
     setCorreo('')
+    setTipoOrden([])
     setOpen(false)
     onCreated?.()
   }
@@ -161,6 +174,19 @@ function AddClienteForm({ onCreated }) {
           />
         </label>
       </div>
+      <div>
+        <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+          Categoría del cliente (puede ser más de una)
+        </span>
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+          {CLIENTE_TIPO_ORDEN_OPTIONS.map((opt) => (
+            <label key={opt.key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 400 }}>
+              <input type="checkbox" checked={tipoOrden.includes(opt.key)} onChange={() => toggleTipoOrden(opt.key)} />
+              {opt.label}
+            </label>
+          ))}
+        </div>
+      </div>
       {error && <p className="form-error">{error.message}</p>}
       <div className="order-form__actions">
         <button type="button" className="btn btn--ghost" onClick={() => setOpen(false)} disabled={saving}>
@@ -171,6 +197,68 @@ function AddClienteForm({ onCreated }) {
         </button>
       </div>
     </form>
+  )
+}
+
+// V45 — categoría de un cliente que ya existe (los de antes de este
+// cambio quedan sin categoría, ver schema_v45_categorias_cliente.sql).
+// Muestra chips de solo lectura + un lápiz para abrir las casillas y
+// guardar con set_cliente_tipo_orden.
+function ClienteTipoOrdenEditor({ cliente, onSaved }) {
+  const [editing, setEditing] = useState(false)
+  const [tipoOrden, setTipoOrden] = useState(cliente.tipo_orden || [])
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  function toggleTipoOrden(key) {
+    setTipoOrden((current) => (current.includes(key) ? current.filter((k) => k !== key) : [...current, key]))
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    setError(null)
+    const { error: saveError } = await setClienteTipoOrden(cliente.id, tipoOrden)
+    setSaving(false)
+    if (saveError) {
+      setError(saveError)
+      return
+    }
+    setEditing(false)
+    onSaved?.()
+  }
+
+  if (!editing) {
+    const labels = CLIENTE_TIPO_ORDEN_OPTIONS.filter((opt) => cliente.tipo_orden?.includes(opt.key)).map((opt) => opt.label)
+    return (
+      <p className="pantone-hint" style={{ marginTop: 2 }}>
+        {labels.length > 0 ? labels.join(' · ') : 'Sin categoría'}{' '}
+        <button type="button" className="btn btn--ghost btn--small" onClick={() => setEditing(true)}>
+          Editar categoría
+        </button>
+      </p>
+    )
+  }
+
+  return (
+    <div style={{ marginTop: 4 }}>
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+        {CLIENTE_TIPO_ORDEN_OPTIONS.map((opt) => (
+          <label key={opt.key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 400 }}>
+            <input type="checkbox" checked={tipoOrden.includes(opt.key)} onChange={() => toggleTipoOrden(opt.key)} />
+            {opt.label}
+          </label>
+        ))}
+      </div>
+      {error && <p className="form-error">{error.message}</p>}
+      <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+        <button type="button" className="btn btn--primary btn--small" onClick={handleSave} disabled={saving}>
+          {saving ? 'Guardando…' : 'Guardar'}
+        </button>
+        <button type="button" className="btn btn--ghost btn--small" onClick={() => setEditing(false)} disabled={saving}>
+          Cancelar
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -225,7 +313,7 @@ function AddTelaForm({ onCreated }) {
   )
 }
 
-function CatalogSection({ title, fetchFn, deleteFn, impactFn, impactLabel, addForm, canDelete = true }) {
+function CatalogSection({ title, fetchFn, deleteFn, impactFn, impactLabel, addForm, canDelete = true, renderExtra }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -267,6 +355,7 @@ function CatalogSection({ title, fetchFn, deleteFn, impactFn, impactLabel, addFo
               impactLabel={impactLabel}
               onDeleted={load}
               canDelete={canDelete}
+              extra={renderExtra ? (i) => renderExtra(i, load) : undefined}
             />
           ))}
         </div>
@@ -540,6 +629,7 @@ function CatalogosPageContent() {
         }
         addForm={showAddCliente ? (onCreated) => <AddClienteForm onCreated={onCreated} /> : undefined}
         canDelete={canDelete}
+        renderExtra={showAddCliente ? (cliente, load) => <ClienteTipoOrdenEditor cliente={cliente} onSaved={load} /> : undefined}
       />
       <CatalogSection
         title="Telas"

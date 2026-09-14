@@ -1893,6 +1893,80 @@ real a mano (con `AuthProvider` real, no mockeado) y confirmar que
 `loading` se queda en `false` — antes del fix esto lo ponía en `true`
 en cada evento; después del fix, no. `npm run build` limpio.
 
+### V45 — categorías de cliente (escolar/industrial/sublimación) y listas filtradas por tipo de orden
+
+Pedido: "quiero que sean diferentes listas de clientes para cada tipo de
+orden. Por ejemplo, para lo escolar, que solo salga la lista de clientes
+que sean colegios, también, que a la hora de agregar un cliente nuevo en
+catálogos, puedan poner si es escolar, industrial, o de sublimación".
+
+**Decisión de diseño** (confirmada con el usuario vía `AskUserQuestion`
+antes de tocar schema, porque cambiaba la forma de la columna): un
+cliente PUEDE tener varias categorías a la vez — ej. una fábrica
+"industrial" que también pide playeras sublimadas de vez en cuando — no
+es excluyente. Por eso `clientes.tipo_orden` es `text[]` (0 a 3 valores:
+`'escolar'|'industrial'|'sublimacion'`, los mismos `key` ya sembrados en
+`order_types` desde V5), no una sola columna de texto.
+
+**Schema** (`schema_v45_categorias_cliente.sql`):
+- `clientes.tipo_orden text[] not null default '{}'`.
+- `create_cliente` gana un 4º parámetro `p_tipo_orden text[] default '{}'`
+  — cambia de firma, así que se hizo `DROP FUNCTION IF EXISTS
+  create_cliente(text,text,text)` antes del `CREATE OR REPLACE` (mismo
+  gotcha de siempre: agregar un parámetro, aunque tenga default, cambia
+  la aridad y crea un overload aparte si no se dropea primero). Sigue
+  siendo "crear o reusar": si el nombre ya existe, actualiza
+  teléfono/correo (si se mandan) y SOLO pisa `tipo_orden` si el arreglo
+  mandado no viene vacío — para no borrarle la categoría a un cliente ya
+  categorizado por accidente en un alta posterior sin categoría.
+- RPC nuevo `set_cliente_tipo_orden(p_cliente_id, p_tipo_orden)` — para
+  editar la categoría de un cliente que ya existe (los 3 reales de antes
+  de V45 quedan con `tipo_orden = '{}'`, ver abajo). Mismo rol que
+  `create_cliente` (ventas + admin_general).
+- Ambas funciones validan que cada valor de `tipo_orden` esté en el
+  conjunto fijo de 3 — no hay FK porque `order_types` es una tabla
+  dinámica (se pueden agregar tipos custom con `create_order_type`) y
+  esta categorización es explícitamente solo de estos 3.
+- Verificado en vivo: `pg_proc` — 1 sola fila por función (sin overload
+  viejo); `has_function_privilege('anon', ...)` = false, `authenticated`
+  = true en ambas; los 3 clientes reales (Colegio Echavarría, Octavio
+  Lopez, TEC MTY) siguen intactos con `tipo_orden = '{}'` después de
+  aplicar la migración.
+
+**Clientes sin categoría = visibles en todas las listas.** Un cliente con
+`tipo_orden` vacío (los 3 de antes de V45, o cualquiera que se cree sin
+marcar nada) aparece en el dropdown de TODOS los tipos de orden, no se
+esconde en ninguna — así no se le esconde a nadie un cliente real de la
+noche a la mañana. Se pueden categorizar después desde Catálogos
+("Editar categoría" en cada fila de Clientes).
+
+**Frontend**:
+- `CLIENTE_TIPO_ORDEN_OPTIONS` (`lib/constants.js`) — las 3 opciones
+  fijas con su label, usadas en ambos formularios de checkboxes.
+- `ClienteSelect.jsx` gana una prop `orderTypeKey`: si es una de las 3
+  categorías fijas, el `<select>` de clientes se filtra a los que
+  incluyen esa categoría (más los sin categoría); si es un tipo de orden
+  custom o todavía no se elige ninguno, se ven todos. Al crear un cliente
+  nuevo desde ahí, se le preseleccionan (editable) las casillas según el
+  tipo de orden actual.
+- `NewOrderPage.jsx`: se reordenó el formulario para que "Tipo de orden"
+  quede ANTES que "Cliente" (antes estaba al revés) — si no, elegir el
+  tipo de orden después de elegir cliente no tendría ningún efecto de
+  filtrado en ese momento. Se agregó un hint explicando el orden.
+- `CatalogosPage.jsx`: `AddClienteForm` gana las mismas 3 casillas.
+  `CatalogRow` gana un slot `extra` (contenido debajo del nombre) usado
+  por el nuevo `ClienteTipoOrdenEditor` — muestra la categoría actual en
+  modo lectura + botón "Editar categoría" que abre las casillas y guarda
+  con `set_cliente_tipo_orden`. Solo visible para quien puede dar de alta
+  clientes (mismo permiso, `canCreateCliente`).
+- `clientesService.js`: `createCliente` manda `tipoOrden` como 4º
+  argumento; `setClienteTipoOrden(id, tipoOrden)` nuevo.
+
+**Verificación**: arnés de depuración con clientes mockeados (con 1, 2 y
+0 categorías) confirmó el filtrado exacto por `orderTypeKey`, que un tipo
+custom muestra todos, y que las casillas de "+ Cliente nuevo" se
+preseleccionan y se pueden combinar. `npm run build` limpio.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

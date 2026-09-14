@@ -131,6 +131,20 @@ export const GARMENT_COLORS = [
 // (ej. sublimación). El resto de los tipos solo piden el color general.
 export const ORDER_TYPES_REQUIRING_PANTONE = ['sublimacion']
 
+// V45 — categorías fijas de cliente (independientes de order_types, que es
+// una tabla dinámica donde se pueden agregar tipos nuevos). Un cliente
+// puede tener 0, 1, 2 o las 3 a la vez (ej. una fábrica "industrial" que
+// también pide playeras sublimadas de vez en cuando) — ver
+// clientes.tipo_orden en schema_v45_categorias_cliente.sql. Coinciden a
+// propósito con los `key` sembrados desde el arranque (schema_v5_folios.sql)
+// para que "cliente de tipo X" y "orden de tipo X" filtren con el mismo
+// valor.
+export const CLIENTE_TIPO_ORDEN_OPTIONS = [
+  { key: 'escolar', label: 'Escolar' },
+  { key: 'industrial', label: 'Industrial' },
+  { key: 'sublimacion', label: 'Sublimación' },
+]
+
 // V39 — en sublimación casi siempre son las mismas 5 prendas: cerrado en
 // vez de texto libre (evita variaciones tipo "playera"/"Playera "/"jersey"
 // para lo mismo, pedido explícito del usuario). Los demás tipos de orden
