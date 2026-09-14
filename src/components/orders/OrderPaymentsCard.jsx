@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchAnticipos, createAnticipo, deleteAnticipo, METODOS_PAGO } from '../../services/anticiposService'
+import { setOrderTotal } from '../../services/ordersService'
 import { formatDateTime } from '../../utils/dates'
 import { useAuth } from '../../contexts/AuthContext'
+import { canEditOrder } from '../../utils/permissions'
 
 function formatMonto(monto) {
   return Number(monto).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })
@@ -12,8 +14,15 @@ function formatMonto(monto) {
 // primero, con el total sumado arriba. Solo visible con sesión (ver
 // OrderDetailPage): es información financiera, la tabla ni siquiera se
 // abre a lectura de invitado (ver schema_v16_anticipos.sql).
-export default function OrderPaymentsCard({ orderId, disabled }) {
+//
+// V42 — se agrega "Total de la orden" (editable, opcional) y "Restante"
+// (total - recibido, calculado aquí mismo, nunca guardado — así nunca se
+// puede desincronizar). El total se edita con set_order_total, aparte de
+// update_order_details a propósito (no dispara pending_reconfirmation_at:
+// no es algo que fábrica necesite reconfirmar).
+export default function OrderPaymentsCard({ order, onUpdated }) {
   const { role, profile } = useAuth()
+  const disabled = !!order.eliminada_en
   const [anticipos, setAnticipos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -26,13 +35,19 @@ export default function OrderPaymentsCard({ orderId, disabled }) {
   const [recibidoPor, setRecibidoPor] = useState('')
   const [notas, setNotas] = useState('')
 
+  const [editingTotal, setEditingTotal] = useState(false)
+  const [totalInput, setTotalInput] = useState(order.total_orden ?? '')
+  const [savingTotal, setSavingTotal] = useState(false)
+  const [totalError, setTotalError] = useState(null)
+
   // disabled: la orden fue eliminada (soft-delete) — ya no admite más
   // anticipos de ningún rol (ver schema_v24_soft_delete.sql).
   const canRegister = !disabled && (role === 'ventas' || role === 'contabilidad' || role === 'admin_tienda' || role === 'admin_general')
   const canDelete = !disabled && (role === 'admin_tienda' || role === 'admin_general')
+  const canEditTotal = !disabled && canEditOrder(role, order)
 
   const load = useCallback(async () => {
-    const { data, error: fetchError } = await fetchAnticipos(orderId)
+    const { data, error: fetchError } = await fetchAnticipos(order.id)
     if (fetchError) {
       setError(fetchError)
     } else {
@@ -40,13 +55,14 @@ export default function OrderPaymentsCard({ orderId, disabled }) {
       setError(null)
     }
     setLoading(false)
-  }, [orderId])
+  }, [order.id])
 
   useEffect(() => {
     load()
   }, [load])
 
-  const total = anticipos.reduce((sum, a) => sum + Number(a.monto), 0)
+  const recibido = anticipos.reduce((sum, a) => sum + Number(a.monto), 0)
+  const restante = order.total_orden != null ? Number(order.total_orden) - recibido : null
 
   function openForm() {
     setRecibidoPor(profile?.full_name || '')
@@ -76,7 +92,7 @@ export default function OrderPaymentsCard({ orderId, disabled }) {
     setSaving(true)
     setError(null)
     const { error: createError } = await createAnticipo({
-      orderId,
+      orderId: order.id,
       monto: montoNum,
       metodoPago,
       recibidoPor: recibidoPor.trim(),
@@ -106,13 +122,93 @@ export default function OrderPaymentsCard({ orderId, disabled }) {
     load()
   }
 
+  async function handleSaveTotal(e) {
+    e.preventDefault()
+    const totalNum = totalInput === '' ? null : Number(totalInput)
+    if (totalInput !== '' && (!totalNum || totalNum <= 0)) {
+      setTotalError(new Error('El total debe ser mayor a cero (o déjalo vacío para quitarlo).'))
+      return
+    }
+    setSavingTotal(true)
+    setTotalError(null)
+    const { error: totalErr } = await setOrderTotal(order.id, totalNum)
+    setSavingTotal(false)
+    if (totalErr) {
+      setTotalError(totalErr)
+      return
+    }
+    setEditingTotal(false)
+    onUpdated?.()
+  }
+
   if (loading) return null
 
   return (
     <div>
       <div className="section-header">
         <h3 className="section-title section-title--small">Anticipos</h3>
-        {total > 0 && <span className="section-count">{formatMonto(total)} recibido{anticipos.length === 1 ? '' : 's'}</span>}
+        {recibido > 0 && <span className="section-count">{formatMonto(recibido)} recibido{anticipos.length === 1 ? '' : 's'}</span>}
+      </div>
+
+      <div className="document-list" style={{ marginBottom: 10 }}>
+        <div className="document-row">
+          <span className="document-row__label">Total de la orden</span>
+          <div className="document-row__actions">
+            {!editingTotal && (
+              <>
+                <span>{order.total_orden != null ? formatMonto(order.total_orden) : 'No capturado'}</span>
+                {canEditTotal && (
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--small"
+                    onClick={() => {
+                      setTotalInput(order.total_orden ?? '')
+                      setTotalError(null)
+                      setEditingTotal(true)
+                    }}
+                  >
+                    Editar
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {editingTotal && (
+          <form className="order-form" onSubmit={handleSaveTotal} style={{ paddingTop: 0 }}>
+            <div className="form-row">
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                className="input"
+                value={totalInput}
+                onChange={(e) => setTotalInput(e.target.value)}
+                placeholder="0.00"
+                autoFocus
+              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="button" className="btn btn--ghost btn--small" onClick={() => setEditingTotal(false)} disabled={savingTotal}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn--primary btn--small" disabled={savingTotal}>
+                  {savingTotal ? 'Guardando…' : 'Guardar'}
+                </button>
+              </div>
+            </div>
+            {totalError && <p className="form-error">{totalError.message}</p>}
+          </form>
+        )}
+
+        {order.total_orden != null && (
+          <div className="document-row">
+            <span className="document-row__label">Restante</span>
+            <span style={{ fontWeight: 700, color: restante > 0 ? 'var(--color-danger)' : 'var(--color-good)' }}>
+              {formatMonto(restante)}
+            </span>
+          </div>
+        )}
       </div>
 
       {anticipos.length === 0 ? (

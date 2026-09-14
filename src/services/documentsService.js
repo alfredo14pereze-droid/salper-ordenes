@@ -60,3 +60,28 @@ export async function removeOrderDocument(orderId, kind) {
 
   return supabase.rpc('set_order_document', { p_order_id: orderId, p_kind: kind, p_path: null }).single()
 }
+
+// V42: constancia de situación fiscal — es del CLIENTE, no de la orden
+// (un cliente casi siempre pide varias veces y su constancia no cambia
+// entre pedidos), pero se sube/ve desde el detalle de la orden porque es
+// justo ahí donde se factura. Mismo bucket privado, prefijo de ruta
+// distinto (`clientes/<id>/...` en vez de `<orderId>/...`).
+export async function uploadClienteConstanciaFiscal(clienteId, file) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  if (file.type !== 'application/pdf') {
+    return { data: null, error: new Error(`"${file.name}" no es un PDF.`) }
+  }
+
+  const path = `clientes/${clienteId}/constancia-${crypto.randomUUID()}.pdf`
+
+  const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file)
+  if (uploadError) return { data: null, error: uploadError }
+
+  const { data, error } = await supabase
+    .rpc('set_cliente_constancia_fiscal', { p_cliente_id: clienteId, p_path: path })
+    .single()
+
+  return { data, error }
+}

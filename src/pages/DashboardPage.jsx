@@ -58,7 +58,7 @@ export default function DashboardPage() {
         const matches =
           order.order_number.toLowerCase().includes(q) ||
           order.client_name.toLowerCase().includes(q) ||
-          (order.folio_externo || '').toLowerCase().includes(q)
+          (order.folios_externos || []).some((f) => f.toLowerCase().includes(q))
         if (!matches) return false
       }
       return true

@@ -4,7 +4,7 @@ import { formatDate, computeProductionWindow } from '../../utils/dates'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditOrder } from '../../utils/permissions'
 import OrderTypeSelect from './OrderTypeSelect'
-import FolioExternoField from './FolioExternoField'
+import FoliosExternosField from './FoliosExternosField'
 
 // Datos generales de la orden. Si el rol actual puede editarla (tienda
 // solo mientras sigue "en_confirmacion"; admin siempre — ver
@@ -21,7 +21,7 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
     orderTypeKey: order.order_type_key,
     description: order.description || '',
     requestedDeliveryDate: order.requested_delivery_date,
-    folioExterno: order.folio_externo || '',
+    foliosExternos: order.folios_externos || [],
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -41,7 +41,7 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
       orderTypeKey: order.order_type_key,
       description: order.description || '',
       requestedDeliveryDate: order.requested_delivery_date,
-      folioExterno: order.folio_externo || '',
+      foliosExternos: order.folios_externos || [],
     })
     setError(null)
     setEditing(true)
@@ -98,10 +98,12 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
             />
           </label>
         </div>
-        <label>
-          Folio externo (control anterior)
-          <FolioExternoField value={form.folioExterno} onChange={(v) => updateField('folioExterno', v)} />
-        </label>
+        <div>
+          <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+            Folios externos (control anterior)
+          </span>
+          <FoliosExternosField value={form.foliosExternos} onChange={(v) => updateField('foliosExternos', v)} />
+        </div>
         <div>
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
             Tipo de orden
@@ -154,10 +156,10 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
         )}
       </div>
       <dl className="detail-list">
-        {order.folio_externo && (
+        {order.folios_externos?.length > 0 && (
           <div>
-            <dt>Folio externo (control anterior)</dt>
-            <dd>{order.folio_externo}</dd>
+            <dt>Folios externos (control anterior)</dt>
+            <dd>{order.folios_externos.join(', ')}</dd>
           </div>
         )}
         {(order.client_telefono || order.client_correo) && (

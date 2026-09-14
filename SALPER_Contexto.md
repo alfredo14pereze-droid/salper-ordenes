@@ -1724,6 +1724,108 @@ se probó con datos reales de principio a fin (crear una orden de
 verdad con cotización+orden de compra+anticipo en el mismo alta) por no
 poder iniciar sesión — pendiente de que el usuario lo confirme.
 
+### V42 — bug de teléfono/correo, borrador persistente, varios folios, constancia fiscal, total/restante
+
+Cinco pedidos del usuario en un solo mensaje.
+
+**1) Bug encontrado y corregido: el teléfono/correo no se guardaba al
+crear un cliente nuevo.** La causa: `ClienteSelect.jsx` (el "+ Cliente
+nuevo" de Nueva Orden) llamaba `createCliente(trimmed)` — SOLO el
+nombre. Los campos "Teléfono del cliente"/"Correo del cliente" viven más
+abajo en `NewOrderPage.jsx`, separados del botón "Guardar cliente" de
+`ClienteSelect`, así que era fácil terminar el alta sin llegar a
+llenarlos. Ahora `ClienteSelect` captura teléfono/correo en su propia
+mini-forma (Nombre → Teléfono → Correo → "Guardar cliente" hasta abajo,
+pedido explícito del usuario) y los manda junto con el nombre. De paso,
+`onChange` ahora manda también teléfono/correo (4 argumentos en vez de
+2) hacia `NewOrderPage.jsx`, cerrando una condición de carrera que
+existía antes (buscar el cliente recién creado en la lista de
+`clientes`, que no siempre había alcanzado a refrescarse).
+
+**2) El progreso de "Nueva orden" ya no se pierde al cambiar de pestaña
+o de app.** En escritorio cambiar de pestaña nunca borraba nada (React
+sigue vivo); el caso real es celular, donde el sistema puede descargar
+la pestaña en segundo plano para liberar memoria y, al volver, el
+navegador la recarga desde cero. Solución: `NewOrderPage.jsx` guarda un
+borrador en `localStorage` (`salper:nueva-orden:draft:v1`) en cada
+cambio y lo recupera al entrar — sobrevive tanto a un cambio de pestaña
+normal como a una recarga completa. Aparece un aviso arriba del
+formulario ("Se recuperó un borrador...") con un botón para descartarlo
+y empezar de cero. **Limitación real, no de esta implementación**: los
+ARCHIVOS (fotos, PDFs de cotización/orden de compra) no se pueden
+guardar en localStorage — un `File` no es serializable — así que esos sí
+se pierden si de verdad hay una recarga completa; todo lo demás
+(cliente, tipo, fechas, prendas, tallas, roster, folios, anticipo, total)
+sí se recupera. El borrador se borra solo al crear la orden con éxito.
+
+**3) Una orden puede llevar varios folios externos.** Antes
+`orders.folio_externo` era un solo `text`; un cliente a veces pedía
+cosas distintas que en su control anterior (antes de SALPER) quedaron en
+VARIAS órdenes de taller separadas. Se reemplazó por
+`orders.folios_externos text[]` — las 2 órdenes reales que ya existían
+(SUB-001 "ORD3148", SUB-002 "ORD3155") se migraron automáticamente antes
+de dejar de usar la columna vieja (que se queda en la tabla, sin usarse,
+por si algún día hace falta consultarla). Nuevo componente
+`FoliosExternosField.jsx` (mismo "ORD" fijo + 4 dígitos de
+`FolioExternoField` de V37, pero ahora junta varios en una lista de
+chips con botón de quitar) — reemplaza a `FolioExternoField.jsx`
+(borrado, ya sin uso) en `NewOrderPage.jsx` y `OrderDetailsCard.jsx`. La
+búsqueda del Dashboard/Órdenes pasadas ahora revisa todos los folios del
+arreglo, no solo uno.
+
+**4) Constancia de situación fiscal — es del CLIENTE, no de la orden.**
+Un cliente casi siempre pide varias veces y su constancia no cambia
+entre pedidos, así que se guarda en `clientes.constancia_fiscal_path`
+(no en `orders`) — pero se sube/ve desde el detalle de la orden
+(`OrderDocumentsCard.jsx`, cuarta fila) porque es justo ahí donde se
+prepara la factura. Mismo bucket privado que cotización/orden de
+compra/factura (`orden-documentos`), con su propio prefijo de ruta
+(`clientes/<id>/...`) — la policy de ese bucket ya es por `bucket_id`,
+no por ruta, así que no hizo falta ninguna policy nueva. Solo aparece si
+la orden tiene un cliente del catálogo (`order.client_id`); si la orden
+tiene cliente de texto libre, no hay dónde guardarla y la fila no
+aparece. Nueva función `set_cliente_constancia_fiscal` y permiso
+`canManageClienteDocuments` (ventas/contabilidad/admin_tienda/
+admin_general — mismo criterio "tienda" que el resto de documentos).
+
+**5) Total de la orden + Restante, automático.** Nuevo campo opcional
+`orders.total_orden` (numeric) — capturable desde "Nueva orden" o
+editable después desde `OrderPaymentsCard.jsx` (tarjeta de Anticipos,
+donde ya vivía "Recibido"). "Restante" = total - anticipos recibidos,
+**calculado en el frontend, nunca guardado** — así nunca se puede
+desincronizar si se borra o corrige un anticipo. Rojo si falta pagar,
+verde si ya está cubierto o de más. Función nueva `set_order_total`,
+**aparte** de `update_order_details` a propósito: cambiar el total no
+dispara `pending_reconfirmation_at` (V38) — no es algo que fábrica
+necesite reconfirmar, es un dato de tienda/contabilidad.
+
+**SQL — todo en `schema_v42_folios_multiples_total_constancia.sql`**:
+`create_order` gana `p_folios_externos`/`p_total_orden` (con su `DROP
+FUNCTION` + `REVOKE`/`GRANT`, gotcha de siempre); `update_order_details`
+**sí cambió de firma esta vez** (a diferencia de V38) por el cambio de
+`folio_externo` a `folios_externos`, así que también lleva su `DROP
+FUNCTION`. `set_order_total` y `set_cliente_constancia_fiscal` son
+funciones nuevas, no necesitaron `DROP`.
+
+**Verificación hecha**: migración aplicada y verificada en Supabase —
+las 2 órdenes reales migraron su folio correctamente a
+`folios_externos`, las 4 funciones quedaron en 1 sola versión cada una
+(sin overloads viejos) y con `authenticated`=true/`anon`=false. `npm run
+build` limpio. Se probó el bug fix y `FoliosExternosField` montando los
+componentes reales con datos de prueba (agregar/quitar folios, elegir
+cliente existente con y sin contacto guardado, abrir "+ Cliente nuevo" y
+confirmar el orden Nombre→Teléfono→Correo→Guardar). El total/restante y
+la fila de constancia fiscal en `OrderDocumentsCard`/`OrderPaymentsCard`
+se verificaron con un smoke-test visual de las clases reales (no se pudo
+probar con datos reales end-to-end por no poder iniciar sesión) — la
+lógica de `restante` y los permisos se revisaron a mano con cuidado.
+El borrador de localStorage se implementó siguiendo el mismo patrón que
+ya usan las fotos/documentos (guardar solo lo serializable) — no se
+pudo probar la recuperación tras una recarga real dentro de esta sesión
+por la misma razón (necesita sesión real para que `NewOrderPage` cargue
+sus datos), pendiente de que el usuario lo confirme cambiando de pestaña
+o recargando a la mitad de una captura.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

@@ -84,8 +84,9 @@ export async function createOrder({
   description,
   requestedDeliveryDate,
   items,
-  folioExterno,
+  foliosExternos,
   createdAt,
+  totalOrden,
 }) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
@@ -100,12 +101,16 @@ export async function createOrder({
       p_client_id: clientId || null,
       p_client_telefono: clientTelefono || null,
       p_client_correo: clientCorreo || null,
-      p_folio_externo: folioExterno || null,
+      // V42: varias órdenes de taller viejas pueden corresponder a esta
+      // misma orden en SALPER — ver FoliosExternosField.jsx.
+      p_folios_externos: foliosExternos || [],
       // V38, TEMPORAL (ver CAPTURA_FECHA_CREACION_HABILITADA en
       // featureFlags.js): para subir el historial de órdenes ya activas
       // con su fecha real, no la de hoy. null = se comporta como
       // siempre (now() del lado del servidor).
       p_created_at: createdAt || null,
+      // V42: opcional, para calcular "Restante" contra los anticipos.
+      p_total_orden: totalOrden || null,
     })
     .single()
 }
@@ -189,7 +194,7 @@ export async function updateOrdenEtapa(orderId, etapa, nuevoEstado) {
 // sigue "en_confirmacion"; admin siempre — ver update_order_details).
 export async function updateOrderDetails(
   orderId,
-  { clientName, orderTypeKey, description, requestedDeliveryDate, clientTelefono, clientCorreo, folioExterno }
+  { clientName, orderTypeKey, description, requestedDeliveryDate, clientTelefono, clientCorreo, foliosExternos }
 ) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
@@ -203,9 +208,20 @@ export async function updateOrderDetails(
       p_requested_delivery_date: requestedDeliveryDate,
       p_client_telefono: clientTelefono || null,
       p_client_correo: clientCorreo || null,
-      p_folio_externo: folioExterno || null,
+      p_folios_externos: foliosExternos || [],
     })
     .single()
+}
+
+// V42: total acordado con el cliente — aparte de update_order_details a
+// propósito (no dispara pending_reconfirmation_at, fábrica no necesita
+// reconfirmar un cambio de precio). "Restante" (total - anticipos) se
+// calcula en el frontend con esto + fetchAnticipos, nunca se guarda.
+export async function setOrderTotal(orderId, total) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('set_order_total', { p_order_id: orderId, p_total: total }).single()
 }
 
 // Fábrica captura el tiempo estimado de producción (solo mientras la

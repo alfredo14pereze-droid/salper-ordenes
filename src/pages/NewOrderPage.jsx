@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOrderTypes } from '../hooks/useOrderTypes'
 import { useClientes } from '../hooks/useClientes'
@@ -14,7 +14,7 @@ import OrderTypeSelect from '../components/orders/OrderTypeSelect'
 import ClienteSelect from '../components/orders/ClienteSelect'
 import PhotoPicker from '../components/orders/PhotoPicker'
 import OrderItemsEditor from '../components/orders/OrderItemsEditor'
-import FolioExternoField from '../components/orders/FolioExternoField'
+import FoliosExternosField from '../components/orders/FoliosExternosField'
 import RequireRole from '../components/common/RequireRole'
 import { canCreateOrder } from '../utils/permissions'
 import { useAuth } from '../contexts/AuthContext'
@@ -30,8 +30,9 @@ const initialForm = {
   orderTypeKey: '',
   description: '',
   requestedDeliveryDate: '',
-  folioExterno: '',
+  foliosExternos: [],
   createdAt: '',
+  totalOrden: '',
 }
 
 const emptyItem = () => ({
@@ -56,6 +57,47 @@ const emptyItem = () => ({
 
 function isItemVacio(item) {
   return !item.garment.trim() && !item.sizes.some((s) => s.talla.trim())
+}
+
+// V42 — "no quiero que se borre el progreso" al cambiar de pestaña o de
+// app (pedido explícito del usuario: buscan información en muchas otras
+// pestañas mientras capturan). En escritorio cambiar de pestaña no borra
+// nada por sí solo (React sigue vivo en memoria) — el caso real es
+// celular: el sistema puede descargar la pestaña en segundo plano para
+// liberar memoria, y al volver el navegador la recarga desde cero. La
+// solución robusta para AMBOS casos es guardar un borrador en
+// localStorage en cada cambio y recuperarlo al entrar — sobrevive tanto
+// a un cambio de pestaña normal como a una recarga completa. Los
+// ARCHIVOS (fotos, PDFs de cotización/orden de compra) no se pueden
+// guardar así — un File no es serializable — así que esos sí se pierden
+// si de verdad hay una recarga; todo lo demás (cliente, tipo, fechas,
+// prendas, tallas, roster, folios, anticipo) sí se recupera.
+const DRAFT_KEY = 'salper:nueva-orden:draft:v1'
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+function saveDraft(draft) {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+  } catch {
+    // localStorage puede fallar (modo privado, cupo lleno...) — no es
+    // grave, el usuario simplemente no recupera el borrador si eso pasa.
+  }
+}
+
+function clearDraft() {
+  try {
+    localStorage.removeItem(DRAFT_KEY)
+  } catch {
+    // ver saveDraft
+  }
 }
 
 // Un documento real casi siempre trae varias tallas de la MISMA prenda en
@@ -92,9 +134,21 @@ function NewOrderForm() {
   const { orderTypes, loading, error, refresh } = useOrderTypes()
   const { clientes, refresh: refreshClientes } = useClientes()
   const { telas, refresh: refreshTelas } = useTelas()
-  const [form, setForm] = useState(initialForm)
+
+  // V42: el borrador se lee UNA sola vez (lazy init) — no en cada
+  // render, si no reabriría localStorage con cada tecla.
+  const [initialDraft] = useState(() => loadDraft())
+  const hasDraft = !!(
+    initialDraft &&
+    (initialDraft.form?.clientName?.trim() ||
+      initialDraft.form?.orderTypeKey ||
+      (initialDraft.items || []).some((it) => it.garment?.trim() || it.sizes?.some((s) => s.talla?.trim())))
+  )
+  const [draftDismissed, setDraftDismissed] = useState(false)
+
+  const [form, setForm] = useState(() => initialDraft?.form || initialForm)
   const { productos, refresh: refreshProductos } = useProductosByCliente(form.clientId)
-  const [items, setItems] = useState([emptyItem()])
+  const [items, setItems] = useState(() => (initialDraft?.items?.length > 0 ? initialDraft.items : [emptyItem()]))
   const [photoFiles, setPhotoFiles] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
@@ -104,20 +158,41 @@ function NewOrderForm() {
   // aquí mismo, sin tener que entrar después al detalle de la orden
   // (pedido explícito del usuario). La factura queda fuera a propósito:
   // "eso ya hasta después" — se sigue subiendo solo desde el detalle
-  // (OrderDocumentsCard.jsx), igual que siempre. Los archivos/datos viven
-  // en memoria hasta que la orden ya existe (necesitan su id) — mismo
-  // patrón que las fotos de referencia, un poco más abajo.
+  // (OrderDocumentsCard.jsx), igual que siempre. Los archivos viven en
+  // memoria hasta que la orden ya existe (necesitan su id) — mismo
+  // patrón que las fotos de referencia, un poco más abajo. Los archivos
+  // NO se recuperan del borrador (ver nota de DRAFT_KEY); los datos del
+  // anticipo sí.
   const [cotizacionFile, setCotizacionFile] = useState(null)
   const [ordenCompraFile, setOrdenCompraFile] = useState(null)
-  const [anticipoMonto, setAnticipoMonto] = useState('')
-  const [anticipoMetodo, setAnticipoMetodo] = useState('efectivo')
-  const [anticipoRecibidoPor, setAnticipoRecibidoPor] = useState(profile?.full_name || '')
-  const [anticipoNotas, setAnticipoNotas] = useState('')
+  const [anticipoMonto, setAnticipoMonto] = useState(() => initialDraft?.anticipoMonto || '')
+  const [anticipoMetodo, setAnticipoMetodo] = useState(() => initialDraft?.anticipoMetodo || 'efectivo')
+  const [anticipoRecibidoPor, setAnticipoRecibidoPor] = useState(
+    () => initialDraft?.anticipoRecibidoPor || profile?.full_name || ''
+  )
+  const [anticipoNotas, setAnticipoNotas] = useState(() => initialDraft?.anticipoNotas || '')
 
   const [ocrLoading, setOcrLoading] = useState(false)
   const [ocrWarning, setOcrWarning] = useState(null)
   const [ocrError, setOcrError] = useState(null)
   const [ocrClienteHint, setOcrClienteHint] = useState(null)
+
+  // Guarda el borrador en cada cambio — barato, y así sobrevive tanto a
+  // un cambio de pestaña como a que el celular recargue la página sola.
+  useEffect(() => {
+    saveDraft({ form, items, anticipoMonto, anticipoMetodo, anticipoRecibidoPor, anticipoNotas })
+  }, [form, items, anticipoMonto, anticipoMetodo, anticipoRecibidoPor, anticipoNotas])
+
+  function discardDraft() {
+    clearDraft()
+    setForm(initialForm)
+    setItems([emptyItem()])
+    setAnticipoMonto('')
+    setAnticipoMetodo('efectivo')
+    setAnticipoRecibidoPor(profile?.full_name || '')
+    setAnticipoNotas('')
+    setDraftDismissed(true)
+  }
 
   async function handleOcrFileInput(e) {
     const file = e.target.files?.[0]
@@ -200,6 +275,11 @@ function NewOrderForm() {
       setSubmitError(new Error('Falta indicar quién recibió el anticipo.'))
       return
     }
+    const totalOrdenNum = Number(form.totalOrden)
+    if (form.totalOrden && (!totalOrdenNum || totalOrdenNum <= 0)) {
+      setSubmitError(new Error('El total de la orden debe ser mayor a cero.'))
+      return
+    }
 
     setSubmitting(true)
     setSubmitError(null)
@@ -222,8 +302,9 @@ function NewOrderForm() {
       description: form.description.trim(),
       requestedDeliveryDate: form.requestedDeliveryDate,
       items: cleanItems,
-      folioExterno: form.folioExterno.trim(),
+      foliosExternos: form.foliosExternos,
       createdAt: CAPTURA_FECHA_CREACION_HABILITADA ? form.createdAt || null : null,
+      totalOrden: totalOrdenNum > 0 ? totalOrdenNum : null,
     })
 
     if (createError) {
@@ -269,6 +350,7 @@ function NewOrderForm() {
     }
 
     setSubmitting(false)
+    clearDraft()
 
     // El PDF de confirmación se genera solo al crear la orden, pero ya no
     // se descarga automático — se manda en vista previa al detalle (mismo
@@ -298,6 +380,15 @@ function NewOrderForm() {
   return (
     <div className="page page--narrow">
       <h2 className="section-title">Nueva orden</h2>
+
+      {hasDraft && !draftDismissed && (
+        <p className="pantone-hint" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span>📝 Se recuperó un borrador sin terminar de esta orden — las fotos y PDFs elegidos no se pudieron guardar, solo el resto.</span>
+          <button type="button" className="btn btn--ghost btn--small" onClick={discardDraft}>
+            Descartar y empezar de cero
+          </button>
+        </p>
+      )}
 
       <form className="order-form" onSubmit={handleSubmit}>
         <div>
@@ -336,18 +427,15 @@ function NewOrderForm() {
           <ClienteSelect
             clientes={clientes}
             value={form.clientId}
-            onChange={(clientId, clientName) => {
-              // Si el cliente elegido ya tiene teléfono/correo guardados de
-              // un pedido anterior, se prellenan solos (sin pisar lo que ya
-              // se haya tecleado a mano en estos campos).
-              const cliente = clientes.find((c) => c.id === clientId)
-              setForm((f) => ({
-                ...f,
-                clientId,
-                clientName,
-                clientTelefono: cliente?.telefono || f.clientTelefono,
-                clientCorreo: cliente?.correo || f.clientCorreo,
-              }))
+            onChange={(clientId, clientName, telefono, correo) => {
+              // V42: ClienteSelect ya manda teléfono/correo directo (tanto al
+              // crear un cliente nuevo como al elegir uno existente) — se
+              // acabó la condición de carrera de buscarlo en `clientes` (la
+              // lista recién refrescada no le ganaba a este onChange). Se
+              // asignan tal cual, sin fallback: si el cliente elegido no
+              // tiene teléfono/correo guardado, el campo se vacía en vez de
+              // quedarse con el del cliente anterior.
+              setForm((f) => ({ ...f, clientId, clientName, clientTelefono: telefono, clientCorreo: correo }))
             }}
             onClienteCreated={refreshClientes}
           />
@@ -380,14 +468,17 @@ function NewOrderForm() {
           pedido.
         </p>
 
-        <label>
-          Folio externo (control anterior)
-          <FolioExternoField value={form.folioExterno} onChange={(v) => updateField('folioExterno', v)} />
-        </label>
+        <div>
+          <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+            Folios externos (control anterior)
+          </span>
+          <FoliosExternosField value={form.foliosExternos} onChange={(v) => updateField('foliosExternos', v)} />
+        </div>
         <p className="pantone-hint">
-          Si esta orden ya tenía un folio en su control anterior, pon aquí solo los 4 números — el "ORD" se agrega
-          solo. Es independiente del folio que asigna SALPER (SUB-001, ESC-001, etc.), y también se puede buscar por
-          él en el Dashboard.
+          Si esta orden ya tenía uno o varios folios en su control anterior, agrégalos aquí — un mismo cliente a
+          veces pedía cosas distintas que quedaron en varias órdenes de taller separadas. Solo pon los 4 números,
+          el "ORD" se agrega solo. Es independiente del folio que asigna SALPER (SUB-001, ESC-001, etc.), y también
+          se puede buscar por ellos en el Dashboard.
         </p>
 
         {CAPTURA_FECHA_CREACION_HABILITADA && (
@@ -466,7 +557,7 @@ function NewOrderForm() {
 
         <div>
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
-            Documentos y anticipo (opcional)
+            Documentos, total y anticipo (opcional)
           </span>
           <p className="pantone-hint" style={{ marginTop: 0 }}>
             La factura no va aquí — esa se sube después, desde el detalle de la orden.
@@ -521,6 +612,18 @@ function NewOrderForm() {
 
           <div className="form-row" style={{ marginTop: 12 }}>
             <label>
+              Total de la orden
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                className="input"
+                value={form.totalOrden}
+                onChange={(e) => updateField('totalOrden', e.target.value)}
+                placeholder="0.00"
+              />
+            </label>
+            <label>
               Anticipo recibido
               <input
                 type="number"
@@ -532,8 +635,16 @@ function NewOrderForm() {
                 placeholder="0.00"
               />
             </label>
+          </div>
+          {form.totalOrden && anticipoMonto && (
+            <p className="pantone-hint">
+              Restante: {(Number(form.totalOrden) - Number(anticipoMonto)).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
+            </p>
+          )}
+
+          <div className="form-row" style={{ marginTop: 12 }}>
             <label>
-              Método de pago
+              Método de pago del anticipo
               <select className="input" value={anticipoMetodo} onChange={(e) => setAnticipoMetodo(e.target.value)}>
                 {METODOS_PAGO.map((m) => (
                   <option key={m.key} value={m.key}>
@@ -542,10 +653,7 @@ function NewOrderForm() {
                 ))}
               </select>
             </label>
-          </div>
-
-          {anticipoMonto && (
-            <div className="form-row" style={{ marginTop: 12 }}>
+            {anticipoMonto && (
               <label>
                 Quién lo recibió *
                 <input
@@ -556,17 +664,20 @@ function NewOrderForm() {
                   placeholder="Nombre de quién cobró"
                 />
               </label>
-              <label>
-                Notas del anticipo
-                <input
-                  type="text"
-                  className="input"
-                  value={anticipoNotas}
-                  onChange={(e) => setAnticipoNotas(e.target.value)}
-                  placeholder="Opcional"
-                />
-              </label>
-            </div>
+            )}
+          </div>
+
+          {anticipoMonto && (
+            <label style={{ marginTop: 12, display: 'block' }}>
+              Notas del anticipo
+              <input
+                type="text"
+                className="input"
+                value={anticipoNotas}
+                onChange={(e) => setAnticipoNotas(e.target.value)}
+                placeholder="Opcional"
+              />
+            </label>
           )}
         </div>
 

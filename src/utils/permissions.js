@@ -47,6 +47,14 @@ export function canEditOrderDocument(role, order, kind) {
   return false
 }
 
+// V42 — constancia de situación fiscal: es del CLIENTE, no de una orden
+// en particular, así que no depende del estado de ninguna orden (a
+// diferencia de canEditOrderDocument arriba). Mismos roles "tienda" de
+// siempre, contabilidad incluida (es quien más la necesita al facturar).
+export function canManageClienteDocuments(role) {
+  return role === 'ventas' || role === 'contabilidad' || role === 'admin_tienda' || role === 'admin_general'
+}
+
 // Desde V23 (etapas paralelas, ver schema_v23_etapas_paralelas.sql) el
 // límite estructural documentado en V21 quedó resuelto: cada rol de etapa
 // ya NO comparte permiso sobre todo orders.status — solo puede tocar su

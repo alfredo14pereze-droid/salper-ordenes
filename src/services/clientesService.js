@@ -14,6 +14,16 @@ export async function fetchClientes() {
   return supabase.from('clientes').select('*').order('nombre', { ascending: true })
 }
 
+// V42: para la constancia de situación fiscal en el detalle de una orden
+// — `orders` solo guarda client_id (FK), no los datos del cliente, así
+// que hay que pedirlo aparte.
+export async function fetchClienteById(id) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.from('clientes').select('*').eq('id', id).single()
+}
+
 // "Crear o reusar" — ver create_cliente en supabase/schema_v12_catalogos.sql
 // (y schema_v30_contacto_cliente_y_roles.sql para telefono/correo). El
 // duplicado EXACTO (mismo nombre normalizado) nunca truena, regresa el

@@ -7,9 +7,26 @@ import { findSimilar, similarity } from '../../utils/similarity'
 // EXACTO no llega ni a pedirle al servidor: si ya existe un cliente con ese
 // nombre (normalizado), se selecciona directo. El "parecido pero no igual"
 // se avisa con un aviso suave que no bloquea (el usuario decide).
+//
+// V42 — bug encontrado: el teléfono/correo NO se guardaba al crear un
+// cliente nuevo desde aquí, porque esta alta solo mandaba el nombre
+// (createCliente(trimmed) sin teléfono/correo) — los campos de
+// "Teléfono del cliente"/"Correo del cliente" de NewOrderPage.jsx están
+// MÁS ABAJO en el formulario, separados de este botón, así que era fácil
+// terminar de crear el cliente sin llegar a llenarlos. Ahora el teléfono
+// y correo se capturan aquí mismo, como parte de la misma alta, con el
+// botón "Guardar cliente" hasta abajo de los tres campos (pedido
+// explícito del usuario). `onChange` ahora manda también
+// teléfono/correo (4 argumentos) para que el formulario de arriba se
+// prellene bien tanto al crear como al seleccionar un cliente existente
+// — antes tenía una condición de carrera con la lista de clientes recién
+// refrescada y casi siempre se quedaba en blanco para un cliente recién
+// creado.
 export default function ClienteSelect({ clientes, value, onChange, onClienteCreated }) {
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
+  const [newTelefono, setNewTelefono] = useState('')
+  const [newCorreo, setNewCorreo] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [similarWarning, setSimilarWarning] = useState(null)
@@ -22,9 +39,11 @@ export default function ClienteSelect({ clientes, value, onChange, onClienteCrea
   }
 
   function selectCliente(cliente) {
-    onChange(cliente.id, cliente.nombre)
+    onChange(cliente.id, cliente.nombre, cliente.telefono || '', cliente.correo || '')
     setCreating(false)
     setNewName('')
+    setNewTelefono('')
+    setNewCorreo('')
     setSimilarWarning(null)
     setExactMatch(null)
   }
@@ -51,7 +70,7 @@ export default function ClienteSelect({ clientes, value, onChange, onClienteCrea
 
     setSaving(true)
     setError(null)
-    const { data, error: createError } = await createCliente(trimmed)
+    const { data, error: createError } = await createCliente(trimmed, newTelefono.trim(), newCorreo.trim())
     setSaving(false)
 
     if (createError) {
@@ -92,6 +111,29 @@ export default function ClienteSelect({ clientes, value, onChange, onClienteCrea
           </p>
         )}
 
+        <div className="form-row" style={{ marginTop: 10 }}>
+          <label>
+            Teléfono
+            <input
+              type="tel"
+              className="input"
+              value={newTelefono}
+              onChange={(e) => setNewTelefono(e.target.value)}
+              placeholder="Opcional"
+            />
+          </label>
+          <label>
+            Correo
+            <input
+              type="email"
+              className="input"
+              value={newCorreo}
+              onChange={(e) => setNewCorreo(e.target.value)}
+              placeholder="Opcional"
+            />
+          </label>
+        </div>
+
         <div className="order-type-create__actions">
           <button type="button" className="btn btn--primary" onClick={() => handleCreate(false)} disabled={saving}>
             {saving ? 'Guardando…' : 'Guardar cliente'}
@@ -102,6 +144,8 @@ export default function ClienteSelect({ clientes, value, onChange, onClienteCrea
             onClick={() => {
               setCreating(false)
               setNewName('')
+              setNewTelefono('')
+              setNewCorreo('')
               setSimilarWarning(null)
               setExactMatch(null)
             }}
@@ -121,7 +165,7 @@ export default function ClienteSelect({ clientes, value, onChange, onClienteCrea
         value={value || ''}
         onChange={(e) => {
           const cliente = clientes.find((c) => c.id === e.target.value)
-          onChange(cliente?.id || '', cliente?.nombre || '')
+          onChange(cliente?.id || '', cliente?.nombre || '', cliente?.telefono || '', cliente?.correo || '')
         }}
       >
         <option value="">Selecciona un cliente…</option>

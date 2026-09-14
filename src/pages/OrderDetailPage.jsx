@@ -92,9 +92,10 @@ export default function OrderDetailPage() {
         <div>
           <h2 className="order-detail__number">
             Orden #{order.order_number}
-            {order.folio_externo && (
+            {order.folios_externos?.length > 0 && (
               <span style={{ fontSize: '0.55em', color: 'var(--color-muted, #6b6558)', marginLeft: 10 }}>
-                (folio externo: {order.folio_externo})
+                (folio{order.folios_externos.length === 1 ? '' : 's'} externo{order.folios_externos.length === 1 ? '' : 's'}:{' '}
+                {order.folios_externos.join(', ')})
               </span>
             )}
           </h2>
@@ -175,7 +176,7 @@ export default function OrderDetailPage() {
                 registrarlo de nuevo aquí abajo.
               </p>
             )}
-            <OrderPaymentsCard orderId={order.id} disabled={!!order.eliminada_en} />
+            <OrderPaymentsCard order={order} onUpdated={refresh} />
           </section>
         )}
 
