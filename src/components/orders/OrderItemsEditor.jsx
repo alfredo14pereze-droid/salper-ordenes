@@ -174,7 +174,7 @@ export default function OrderItemsEditor({
               )}
             </div>
 
-            <div className={needsPantone ? 'form-row-3' : 'form-row'}>
+            <div className={isShort ? 'form-row-4' : needsPantone ? 'form-row-3' : 'form-row'}>
               <label>
                 Prenda
                 {isSublimacion ? (
@@ -264,6 +264,35 @@ export default function OrderItemsEditor({
                     onChange={(e) => updateItem(itemIndex, { pantone: e.target.value })}
                   />
                 </label>
+              )}
+              {/* V47 — pedido explícito: el botón de bolsas se movió de
+                  "Detalles de la prenda" a junto a Prenda/Color/Pantone, y
+                  pasó de un botón ghost (fácil de pasar por alto) a un
+                  selector Sí/No siempre pintado de un color u otro — nunca
+                  se ve "vacío", así no se puede dejar sin contestar sin
+                  querer. */}
+              {isShort && (
+                <div>
+                  <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+                    ¿Lleva bolsas?
+                  </span>
+                  <div className="bolsas-toggle">
+                    <button
+                      type="button"
+                      className={'bolsas-toggle__btn' + (item.lleva_bolsas ? ' bolsas-toggle__btn--si' : '')}
+                      onClick={() => updateItem(itemIndex, { lleva_bolsas: true })}
+                    >
+                      Sí lleva
+                    </button>
+                    <button
+                      type="button"
+                      className={'bolsas-toggle__btn' + (!item.lleva_bolsas ? ' bolsas-toggle__btn--no' : '')}
+                      onClick={() => updateItem(itemIndex, { lleva_bolsas: false })}
+                    >
+                      Sin bolsas
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
             {needsPantone && (
@@ -362,20 +391,6 @@ export default function OrderItemsEditor({
                 onClick={() => updateItem(itemIndex, { lleva_bordado: !item.lleva_bordado })}
               >
                 {item.lleva_bordado ? '✓ Lleva bordado' : '¿Lleva bordado?'}
-              </button>
-            )}
-
-            {/* Solo para short sublimado: a diferencia de bolsillos en otras
-                prendas, el short a veces se pide sin bolsas — pedido
-                explícito del usuario. */}
-            {isShort && (
-              <button
-                type="button"
-                className={item.lleva_bolsas ? 'btn btn--secondary btn--small' : 'btn btn--ghost btn--small'}
-                style={{ marginTop: 12 }}
-                onClick={() => updateItem(itemIndex, { lleva_bolsas: !item.lleva_bolsas })}
-              >
-                {item.lleva_bolsas ? '✓ Lleva bolsas' : '¿Lleva bolsas?'}
               </button>
             )}
 

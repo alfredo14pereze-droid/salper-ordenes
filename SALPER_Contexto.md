@@ -1987,6 +1987,38 @@ aunque técnicamente solo hace falta cuando se guarda.
 confirmó que el botón aparece y alterna a "✓ Lleva bolsas"; con "Playera"
 (prenda de arriba) confirmó que el botón NO aparece. `npm run build` limpio.
 
+### V47 — "¿Lleva bolsas?" se mueve junto a Prenda y se vuelve un señalamiento imposible de ignorar
+
+El usuario vio V46 en la página y pidió dos ajustes sobre el mismo botón:
+que viva junto al campo "Prenda" (en la misma fila que Prenda/Color/
+Pantone, señalando exactamente esa captura de pantalla), y que sea "un
+señalamiento importante de que si lleva o no" — no un botón ghost que se
+puede pasar por alto.
+
+**Ubicación**: la fila de arriba de cada prenda pasa a `form-row-4`
+(4 columnas) solo cuando la prenda es Short, agregando "¿Lleva bolsas?"
+como 4ª columna junto a Prenda/Color/Pantone. Para las demás prendas
+sigue igual (`form-row-3` con Pantone, o `form-row` fuera de sublimación).
+
+**El señalamiento**: se cambió el botón único (ghost/secondary,
+"¿Lleva bolsas?" → "✓ Lleva bolsas") por un selector segmentado de dos
+mitades, "Sí lleva" / "Sin bolsas", donde **una de las dos SIEMPRE está
+pintada** (negro+ámbar para "Sí", naranja fuerte con texto blanco para
+"Sin bolsas") — nunca se ve como un campo vacío o neutro, así que el
+estado se lee de un vistazo y no se puede dejar sin contestar por
+accidente (arranca en "Sin bolsas" por default, que es el valor
+`lleva_bolsas: false` de siempre). CSS nuevo: `.bolsas-toggle` /
+`.bolsas-toggle__btn` (+ modificadores `--si`/`--no`) en `styles/index.css`.
+No se tocó ámbar/negro para "Sí" (reutiliza la paleta de botón primario) y
+se usó naranja fuerte para "No" en vez de rojo — el rojo/verde de la
+identidad visual se guardan exclusivamente para vencida/completado, no
+para esto.
+
+**Verificación**: arnés de depuración a 1000px de ancho (para ver las 4
+columnas reales, no la versión de celular en 1 columna) confirmó la
+posición junto a Prenda/Color/Pantone y que ambos estados se pintan
+correctamente al alternar. `npm run build` limpio.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

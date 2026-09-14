@@ -539,6 +539,44 @@ h4 {
   gap: 16px;
 }
 
+/* V47 — "¿Lleva bolsas?" (short sublimado): a propósito SIEMPRE se ve un
+   lado pintado (nunca los dos en gris neutro), para que el estado
+   Sí/No sea imposible de pasar por alto o dejar sin contestar sin
+   querer — pedido explícito del usuario de un "señalamiento importante". */
+.bolsas-toggle {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  height: 40px;
+}
+
+.bolsas-toggle__btn {
+  flex: 1;
+  border: none;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bolsas-toggle__btn:first-child {
+  border-left: none;
+}
+
+.bolsas-toggle__btn--si {
+  background: var(--color-black);
+  color: var(--color-amber);
+}
+
+.bolsas-toggle__btn--no {
+  background: var(--color-orange-strong);
+  color: #fff;
+}
+
 .order-form__actions {
   display: flex;
   justify-content: flex-end;
