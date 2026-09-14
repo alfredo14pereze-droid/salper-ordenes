@@ -1826,6 +1826,31 @@ por la misma razón (necesita sesión real para que `NewOrderPage` cargue
 sus datos), pendiente de que el usuario lo confirme cambiando de pestaña
 o recargando a la mitad de una captura.
 
+### V43 — "Otro…" en Color (escolar/industrial)
+
+Solo aplica al `<select>` cerrado de Color en `OrderItemsEditor.jsx`
+(escolar/industrial — sublimación ya es texto libre desde V39, no
+cambia). La lista de `GARMENT_COLORS` no siempre alcanza; ahora tiene
+una opción más, "Otro…", que revela un input de texto libre debajo del
+select para escribir el color exacto.
+
+El detalle técnico: no basta con mirar `item.color` para saber "está en
+modo Otro" — en cuanto se elige "Otro…" el color se vacía (`''`) para
+que empiecen a escribir, y una cadena vacía es indistinguible de "no se
+ha elegido nada todavía" (el estado inicial). Por eso hay un `Set` aparte
+(`otroColorIds`, por `item.id`) que recuerda qué prendas están en ese
+modo — puramente de presentación, `item.color` sigue siendo el único
+dato que se guarda. Si una prenda YA trae un color que no está en la
+lista (una orden vieja, o si cambia de tipo de orden), se detecta sola
+sin necesidad de estar en el set. Volver a elegir un color de la lista
+(en vez de escribir) sale del modo Otro y esconde el input de nuevo.
+
+**Verificación hecha**: montando el componente real con datos de
+prueba — seleccionar "Otro…" revela el input vacío; escribir un color
+("Turquesa fosforescente") lo guarda tal cual en `item.color`; volver a
+elegir un color de la lista ("Rojo") esconde el input y reemplaza el
+valor correctamente. `npm run build` limpio.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

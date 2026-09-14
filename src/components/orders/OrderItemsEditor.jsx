@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { GARMENT_COLORS, GARMENT_OPTIONS_SUBLIMACION, GARMENT_TOP_KEYS_SUBLIMACION, ORDER_TYPES_REQUIRING_PANTONE } from '../../lib/constants'
 import TelaSelect from './TelaSelect'
 import ProductoAutocomplete from './ProductoAutocomplete'
+
+const OTRO_COLOR = '__otro__'
 
 // Editor de las prendas de una orden: cada prenda tiene nombre, color,
 // Pantone (solo si el tipo de orden lo requiere — ver constants.js), tela
@@ -35,6 +38,16 @@ export default function OrderItemsEditor({
 }) {
   const needsPantone = ORDER_TYPES_REQUIRING_PANTONE.includes(orderTypeKey)
   const isSublimacion = orderTypeKey === 'sublimacion'
+
+  // V43 — "Otro" en Color (solo escolar/industrial, sublimación ya es
+  // texto libre desde V39): la lista de colores no siempre alcanza, pero
+  // no se puede saber "está en modo Otro" solo con item.color porque
+  // arranca vacío en cuanto se elige "Otro" (y '' es indistinguible de
+  // "nada elegido todavía") — por eso este set aparte, por id de prenda.
+  // Si una prenda YA trae un color que no está en la lista (por ejemplo
+  // al editar una orden vieja), se detecta sola sin tener que estar en
+  // este set (ver colorIsOtro más abajo).
+  const [otroColorIds, setOtroColorIds] = useState(() => new Set())
 
   function updateItem(index, patch) {
     onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)))
@@ -140,6 +153,9 @@ export default function OrderItemsEditor({
         const showCuelloManga = !isSublimacion || isTopGarment
         const showRosterButton = isTopGarment || isShort
         const tallasDisponibles = [...new Set(item.sizes.map((s) => s.talla.trim()).filter(Boolean))]
+        // V43: "otro" si se eligió a propósito (el set) O si ya trae un
+        // color que no está en la lista (orden vieja, o cambió de tipo).
+        const colorIsOtro = otroColorIds.has(item.id) || (!!item.color && !GARMENT_COLORS.includes(item.color))
 
         return (
           <div key={itemIndex} className="item-block">
@@ -194,18 +210,46 @@ export default function OrderItemsEditor({
                     onChange={(e) => updateItem(itemIndex, { color: e.target.value })}
                   />
                 ) : (
-                  <select
-                    className="input"
-                    value={item.color}
-                    onChange={(e) => updateItem(itemIndex, { color: e.target.value })}
-                  >
-                    <option value="">Selecciona…</option>
-                    {GARMENT_COLORS.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
+                  <>
+                    <select
+                      className="input"
+                      value={colorIsOtro ? OTRO_COLOR : item.color}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        if (v === OTRO_COLOR) {
+                          setOtroColorIds((ids) => new Set(ids).add(item.id))
+                          updateItem(itemIndex, { color: '' })
+                        } else {
+                          setOtroColorIds((ids) => {
+                            if (!ids.has(item.id)) return ids
+                            const next = new Set(ids)
+                            next.delete(item.id)
+                            return next
+                          })
+                          updateItem(itemIndex, { color: v })
+                        }
+                      }}
+                    >
+                      <option value="">Selecciona…</option>
+                      {GARMENT_COLORS.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                      <option value={OTRO_COLOR}>Otro…</option>
+                    </select>
+                    {colorIsOtro && (
+                      <input
+                        type="text"
+                        className="input"
+                        style={{ marginTop: 6 }}
+                        placeholder="Escribe el color"
+                        value={item.color}
+                        onChange={(e) => updateItem(itemIndex, { color: e.target.value })}
+                        autoFocus
+                      />
+                    )}
+                  </>
                 )}
               </label>
               {needsPantone && (
