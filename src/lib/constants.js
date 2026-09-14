@@ -130,3 +130,16 @@ export const GARMENT_COLORS = [
 // Tipos de orden cuyas prendas necesitan especificar el Pantone exacto
 // (ej. sublimación). El resto de los tipos solo piden el color general.
 export const ORDER_TYPES_REQUIRING_PANTONE = ['sublimacion']
+
+// V39 — en sublimación casi siempre son las mismas 5 prendas: cerrado en
+// vez de texto libre (evita variaciones tipo "playera"/"Playera "/"jersey"
+// para lo mismo, pedido explícito del usuario). Los demás tipos de orden
+// (escolar, industrial) se quedan con el campo de texto libre de siempre
+// — ver isSublimacion en OrderItemsEditor.jsx.
+export const GARMENT_OPTIONS_SUBLIMACION = ['Playera', 'Short', 'Chamarra', 'Sudadera', 'Pantalonera']
+
+// De esas 5, solo estas 3 llevan cuello y manga ("las de arriba") — short
+// y pantalonera no. Short (y solo short) además lleva su propia lista de
+// números sin nombre — ver GARMENT_TOP_KEYS_SUBLIMACION/roster en
+// OrderItemsEditor.jsx.
+export const GARMENT_TOP_KEYS_SUBLIMACION = ['Playera', 'Chamarra', 'Sudadera']

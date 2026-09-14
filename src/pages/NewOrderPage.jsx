@@ -46,6 +46,8 @@ const emptyItem = () => ({
   punos: '',
   logotipos: '',
   numeros: '',
+  tiene_roster: false,
+  roster: [],
   sizes: [{ talla: '', cantidad: '' }],
 })
 

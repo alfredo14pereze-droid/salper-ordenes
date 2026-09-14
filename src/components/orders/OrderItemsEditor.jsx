@@ -1,4 +1,4 @@
-import { GARMENT_COLORS, ORDER_TYPES_REQUIRING_PANTONE } from '../../lib/constants'
+import { GARMENT_COLORS, GARMENT_OPTIONS_SUBLIMACION, GARMENT_TOP_KEYS_SUBLIMACION, ORDER_TYPES_REQUIRING_PANTONE } from '../../lib/constants'
 import TelaSelect from './TelaSelect'
 import ProductoAutocomplete from './ProductoAutocomplete'
 
@@ -13,6 +13,15 @@ import ProductoAutocomplete from './ProductoAutocomplete'
 // botón). `telas`/`clienteId` son opcionales: si no se pasan, el selector de
 // tela y el autocompletado de producto simplemente no aparecen (una orden
 // vieja sin cliente catalogado se sigue viendo y editando sin error).
+//
+// V39 — solo para sublimación (pedido explícito del usuario, casi siempre
+// son las mismas 5 prendas): "Prenda" pasa de texto libre a opciones
+// cerradas, "Color" pasa AL REVÉS (de opciones cerradas a texto libre,
+// hay demasiados tonos distintos), cuello/manga solo aplican a las 3
+// prendas "de arriba" (playera/chamarra/sudadera), y aparece el roster de
+// nombres+números (o solo números, para short) — ver GARMENT_TOP_KEYS_SUBLIMACION
+// y GARMENT_OPTIONS_SUBLIMACION en utils/constants.js. Los demás tipos de
+// orden (escolar, industrial) se quedan exactamente como estaban.
 export default function OrderItemsEditor({
   items,
   onChange,
@@ -25,6 +34,7 @@ export default function OrderItemsEditor({
   onProductoCreated,
 }) {
   const needsPantone = ORDER_TYPES_REQUIRING_PANTONE.includes(orderTypeKey)
+  const isSublimacion = orderTypeKey === 'sublimacion'
 
   function updateItem(index, patch) {
     onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)))
@@ -52,6 +62,8 @@ export default function OrderItemsEditor({
         punos: '',
         logotipos: '',
         numeros: '',
+        tiene_roster: false,
+        roster: [],
         sizes: [{ talla: '', cantidad: '' }],
       },
     ])
@@ -84,6 +96,34 @@ export default function OrderItemsEditor({
     updateItem(itemIndex, { sizes: item.sizes.filter((_, i) => i !== sizeIndex) })
   }
 
+  // Roster (V39): lista de talla/nombre/número (o solo talla/número para
+  // short) — para equipos, casi siempre llevan nombre y número en la
+  // espalda. Vive aparte de "Tallas y cantidades" (esa sigue siendo el
+  // total a producir); el roster es el detalle de QUIÉN lleva cuál.
+  function toggleRoster(itemIndex) {
+    const item = items[itemIndex]
+    const turningOn = !item.tiene_roster
+    updateItem(itemIndex, {
+      tiene_roster: turningOn,
+      roster: turningOn && (!item.roster || item.roster.length === 0) ? [{ talla: '', nombre: '', numero: '' }] : item.roster,
+    })
+  }
+
+  function addRosterRow(itemIndex) {
+    const item = items[itemIndex]
+    updateItem(itemIndex, { roster: [...(item.roster || []), { talla: '', nombre: '', numero: '' }] })
+  }
+
+  function removeRosterRow(itemIndex, rowIndex) {
+    const item = items[itemIndex]
+    updateItem(itemIndex, { roster: item.roster.filter((_, i) => i !== rowIndex) })
+  }
+
+  function updateRosterRow(itemIndex, rowIndex, patch) {
+    const item = items[itemIndex]
+    updateItem(itemIndex, { roster: item.roster.map((r, i) => (i === rowIndex ? { ...r, ...patch } : r)) })
+  }
+
   const grandTotal = items.reduce(
     (sum, item) => sum + item.sizes.reduce((s, sz) => s + (Number(sz.cantidad) || 0), 0),
     0
@@ -93,6 +133,13 @@ export default function OrderItemsEditor({
     <div className="items-editor">
       {items.map((item, itemIndex) => {
         const itemTotal = item.sizes.reduce((s, sz) => s + (Number(sz.cantidad) || 0), 0)
+        // Solo aplica dentro de sublimación (fuera de ahí "Prenda" sigue
+        // siendo texto libre, así que esto no significa nada).
+        const isTopGarment = isSublimacion && GARMENT_TOP_KEYS_SUBLIMACION.includes(item.garment)
+        const isShort = isSublimacion && item.garment === 'Short'
+        const showCuelloManga = !isSublimacion || isTopGarment
+        const showRosterButton = isTopGarment || isShort
+        const tallasDisponibles = [...new Set(item.sizes.map((s) => s.talla.trim()).filter(Boolean))]
 
         return (
           <div key={itemIndex} className="item-block">
@@ -113,28 +160,53 @@ export default function OrderItemsEditor({
             <div className={needsPantone ? 'form-row-3' : 'form-row'}>
               <label>
                 Prenda
-                <input
-                  type="text"
-                  className="input"
-                  placeholder="Ej. Playera, Short, Chamarra…"
-                  value={item.garment}
-                  onChange={(e) => updateItem(itemIndex, { garment: e.target.value })}
-                />
+                {isSublimacion ? (
+                  <select
+                    className="input"
+                    value={item.garment}
+                    onChange={(e) => updateItem(itemIndex, { garment: e.target.value })}
+                  >
+                    <option value="">Selecciona…</option>
+                    {GARMENT_OPTIONS_SUBLIMACION.map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    className="input"
+                    placeholder="Ej. Playera, Short, Chamarra…"
+                    value={item.garment}
+                    onChange={(e) => updateItem(itemIndex, { garment: e.target.value })}
+                  />
+                )}
               </label>
               <label>
                 Color
-                <select
-                  className="input"
-                  value={item.color}
-                  onChange={(e) => updateItem(itemIndex, { color: e.target.value })}
-                >
-                  <option value="">Selecciona…</option>
-                  {GARMENT_COLORS.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                {isSublimacion ? (
+                  <input
+                    type="text"
+                    className="input"
+                    placeholder="Ej. Azul cielo, verde bandera oscuro…"
+                    value={item.color}
+                    onChange={(e) => updateItem(itemIndex, { color: e.target.value })}
+                  />
+                ) : (
+                  <select
+                    className="input"
+                    value={item.color}
+                    onChange={(e) => updateItem(itemIndex, { color: e.target.value })}
+                  >
+                    <option value="">Selecciona…</option>
+                    {GARMENT_COLORS.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </label>
               {needsPantone && (
                 <label>
@@ -171,16 +243,29 @@ export default function OrderItemsEditor({
               <span className="field-label" style={{ marginBottom: 6, display: 'block', marginTop: 12 }}>
                 Detalles de la prenda
               </span>
-              <div className="form-row-3">
-                <label>
-                  Manga
-                  <input
-                    type="text"
-                    className="input"
-                    value={item.manga || ''}
-                    onChange={(e) => updateItem(itemIndex, { manga: e.target.value })}
-                  />
-                </label>
+              {showCuelloManga && (
+                <div className="form-row">
+                  <label>
+                    Cuello
+                    <input
+                      type="text"
+                      className="input"
+                      value={item.cuello || ''}
+                      onChange={(e) => updateItem(itemIndex, { cuello: e.target.value })}
+                    />
+                  </label>
+                  <label>
+                    Manga
+                    <input
+                      type="text"
+                      className="input"
+                      value={item.manga || ''}
+                      onChange={(e) => updateItem(itemIndex, { manga: e.target.value })}
+                    />
+                  </label>
+                </div>
+              )}
+              <div className="form-row-4" style={{ marginTop: showCuelloManga ? 12 : 0 }}>
                 <label>
                   Vivos
                   <input
@@ -190,17 +275,6 @@ export default function OrderItemsEditor({
                     onChange={(e) => updateItem(itemIndex, { vivos: e.target.value })}
                   />
                 </label>
-                <label>
-                  Cuello
-                  <input
-                    type="text"
-                    className="input"
-                    value={item.cuello || ''}
-                    onChange={(e) => updateItem(itemIndex, { cuello: e.target.value })}
-                  />
-                </label>
-              </div>
-              <div className="form-row-3" style={{ marginTop: 12 }}>
                 <label>
                   Puños
                   <input
@@ -239,6 +313,92 @@ export default function OrderItemsEditor({
             >
               {item.lleva_bordado ? '✓ Lleva bordado' : '¿Lleva bordado?'}
             </button>
+
+            {showRosterButton && (
+              <button
+                type="button"
+                className={item.tiene_roster ? 'btn btn--secondary btn--small' : 'btn btn--ghost btn--small'}
+                style={{ marginTop: 8, marginLeft: 8 }}
+                onClick={() => toggleRoster(itemIndex)}
+              >
+                {item.tiene_roster
+                  ? isShort
+                    ? '✓ Lista de números'
+                    : '✓ Lista de nombres y números'
+                  : isShort
+                    ? '+ Agregar número'
+                    : '+ Agregar nombres y números'}
+              </button>
+            )}
+
+            {showRosterButton && item.tiene_roster && (
+              <div style={{ marginTop: 10 }}>
+                <p className="pantone-hint">
+                  Casi siempre son equipos: cada quien lleva su {isShort ? 'número' : 'nombre y número'} en la espalda —
+                  la talla se toma de las que ya agregaste abajo, para no equivocarnos.
+                </p>
+                <div className={'roster-table' + (isShort ? ' roster-table--numero-only' : '')}>
+                  <div className={'roster-row-header' + (isShort ? ' roster-row--numero-only' : '')}>
+                    <span>Talla</span>
+                    {!isShort && <span>Nombre</span>}
+                    <span>Número</span>
+                    <span />
+                  </div>
+                  {(item.roster || []).map((row, rowIndex) => (
+                    <div key={rowIndex} className={'roster-row' + (isShort ? ' roster-row--numero-only' : '')}>
+                      <select
+                        className="input"
+                        value={row.talla}
+                        onChange={(e) => updateRosterRow(itemIndex, rowIndex, { talla: e.target.value })}
+                      >
+                        <option value="">
+                          {tallasDisponibles.length === 0 ? 'Agrega tallas abajo' : 'Talla…'}
+                        </option>
+                        {tallasDisponibles.map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                      </select>
+                      {!isShort && (
+                        <input
+                          type="text"
+                          className="input"
+                          placeholder="Nombre"
+                          value={row.nombre}
+                          onChange={(e) => updateRosterRow(itemIndex, rowIndex, { nombre: e.target.value })}
+                        />
+                      )}
+                      <input
+                        type="text"
+                        className="input"
+                        placeholder="Número"
+                        value={row.numero}
+                        onChange={(e) => updateRosterRow(itemIndex, rowIndex, { numero: e.target.value })}
+                      />
+                      {(item.roster || []).length > 1 && (
+                        <button
+                          type="button"
+                          className="sizes-row__remove"
+                          onClick={() => removeRosterRow(itemIndex, rowIndex)}
+                          aria-label={isShort ? 'Quitar número' : 'Quitar nombre y número'}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="add-size-btn"
+                  style={{ marginTop: 8 }}
+                  onClick={() => addRosterRow(itemIndex)}
+                >
+                  {isShort ? '+ Agregar número' : '+ Agregar nombre y número'}
+                </button>
+              </div>
+            )}
 
             {clienteId && (
               <ProductoAutocomplete

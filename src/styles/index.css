@@ -532,6 +532,13 @@ h4 {
   gap: 16px;
 }
 
+/* V39 — fila de 4 (vivos/puños/logotipos/números en OrderItemsEditor). */
+.form-row-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
 .order-form__actions {
   display: flex;
   justify-content: flex-end;
@@ -1159,6 +1166,35 @@ h4 {
 
 .sizes-row__remove:hover {
   color: var(--color-danger);
+}
+
+/* V39 — roster de nombres+números (o solo números, para short). Mismo
+   patrón visual que .sizes-table/.sizes-row, con una columna más. */
+.roster-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.roster-row,
+.roster-row-header {
+  display: grid;
+  grid-template-columns: 90px 1fr 90px 28px;
+  gap: 8px;
+  align-items: center;
+}
+
+.roster-row--numero-only {
+  grid-template-columns: 90px 90px 28px;
+}
+
+.roster-row-header {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-weight: 700;
 }
 
 .add-size-btn,
@@ -1823,6 +1859,7 @@ h4 {
 @media (max-width: 720px) {
   .form-row,
   .form-row-3,
+  .form-row-4,
   .order-detail__grid {
     grid-template-columns: 1fr;
   }

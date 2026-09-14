@@ -1575,6 +1575,61 @@ algo como admin_tienda y confirmar que la tarjeta se pone azul para un
 rol de fábrica (y sigue normal para ventas/tienda); darle "Confirmar
 cambios" desde fábrica y confirmar que se quita.
 
+### V39 — prendas cerradas + roster de nombres/números, solo en sublimación
+
+Todo esto vive en `OrderItemsEditor.jsx` (usado tanto en "Nueva orden"
+como al editar una orden ya creada) y está gateado por
+`isSublimacion = orderTypeKey === 'sublimacion'` — **escolar e industrial
+no cambian en nada**, se quedan exactamente como estaban. Puramente
+frontend: `items` sigue siendo el mismo JSONB de siempre, así que no
+hizo falta ninguna migración de SQL (los campos nuevos son claves más
+en cada prenda del arreglo, igual que `manga`/`vivos`/etc. de V32).
+
+**"Prenda" pasa de texto libre a opciones cerradas** (`GARMENT_OPTIONS_SUBLIMACION`
+en `lib/constants.js`): Playera, Short, Chamarra, Sudadera, Pantalonera
+— pedido explícito del usuario, para no tener variaciones tipo
+"playera"/"Playera "/"jersey" para lo mismo.
+
+**"Color" pasa AL REVÉS: de opciones cerradas a texto libre**, solo en
+sublimación — "hay muchos tonos diferentes". Los demás tipos de orden
+siguen con el `<select>` de `GARMENT_COLORS` de siempre.
+
+**Cuello y manga solo para las 3 prendas "de arriba"** (Playera, Chamarra,
+Sudadera — `GARMENT_TOP_KEYS_SUBLIMACION`); Short y Pantalonera no los
+piden. Tela, vivos, puños, logotipos y números se siguen pidiendo para
+las 5 por igual (sin cambio ahí). Layout: cuello/manga en su propia fila
+condicional arriba de una fila de 4 columnas (nueva clase `.form-row-4`)
+con vivos/puños/logotipos/números.
+
+**Roster de nombres y números (nuevo)**: botón "+ Agregar nombres y
+números" para Playera/Chamarra/Sudadera, "+ Agregar número" (sin nombre)
+para Short — ninguno para Pantalonera. Mismo patrón que "¿Lleva
+bordado?" (un toggle que no borra el dato al desactivarse). Cada prenda
+gana `tiene_roster: boolean` + `roster: [{talla, nombre, numero}]`. La
+tabla es de 3 columnas (2 para short, sin "Nombre") y el selector de
+**talla se llena solo con las tallas que ya se agregaron** en "Tallas y
+cantidades" de esa misma prenda — pedido explícito del usuario ("para
+asegurarnos de que esté bien"), así no se puede escribir a mano una
+talla que no coincide con nada.
+
+**Verificación hecha — funcional, no solo visual**: se montó
+`OrderItemsEditor` de verdad (con React real, sin mockear el DOM) en una
+página de depuración temporal (`main.jsx` apuntando directo al
+componente, sin pasar por login/rutas) para poder darle clic/escribir
+como un usuario real. Se probó: seleccionar cada prenda de sublimación y
+confirmar que cuello/manga y el botón de roster aparecen/desaparecen
+según toca; agregar una talla, activar el roster y confirmar que esa
+talla ya aparece en su selector; llenar nombre+número y agregar una fila
+más; cambiar a "Short" y confirmar que la columna "Nombre" desaparece
+sin perder el dato ya cargado; cambiar a "Pantalonera" y confirmar que
+no hay ningún botón de roster; cambiar el tipo de orden a "escolar" y
+confirmar que Prenda vuelve a texto libre, Color vuelve al `<select>`
+cerrado, y cuello/manga se muestran siempre (sin botón de roster). Se
+revisó el JSON del estado en cada paso para confirmar la forma exacta de
+los datos. Al terminar se restauró `main.jsx` a su versión original y se
+borró la página de depuración — no quedó nada de esto en el código.
+`npm run build` limpio.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver
