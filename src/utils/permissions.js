@@ -106,6 +106,36 @@ export function canManageCatalogs(role) {
   return role === 'admin_general'
 }
 
+// V36 — dar de alta clientes/telas desde Catálogos: antes toda la
+// pantalla era exclusiva de admin_general (mismo candado que borrar). El
+// usuario pidió abrirlo específicamente para dar de alta, sin tocar quién
+// puede BORRAR (eso se queda en canManageCatalogs, sin excepción). Mismo
+// candado espejado del lado del servidor en create_cliente/create_tela
+// (ver schema_v36_permisos_catalogos.sql) — esto de aquí solo decide qué
+// se muestra, la función SQL es la que de verdad lo hace cumplir.
+export function canCreateCliente(role) {
+  return role === 'ventas' || role === 'admin_general'
+}
+
+export function canCreateTela(role) {
+  return role === 'ventas' || role === 'admin_fabrica' || role === 'admin_general'
+}
+
+// Productos: mismo criterio que Clientes (se capturan juntos — un
+// producto siempre es "de" un cliente ya elegido en la misma pantalla).
+export function canCreateProducto(role) {
+  return canCreateCliente(role)
+}
+
+// Quién puede ENTRAR a la pantalla de Catálogos — más amplio que quién
+// puede borrar: cualquiera que pueda dar de alta algo ahí (cliente, tela
+// o producto) también necesita ver la pantalla para hacerlo. Quien no
+// tenga ninguno de esos permisos ni siquiera llega a la pantalla
+// (RequireRole en CatalogosPage.jsx).
+export function canViewCatalogos(role) {
+  return canCreateCliente(role) || canCreateTela(role) || canCreateProducto(role) || canManageCatalogs(role)
+}
+
 // Bordado condicional por prenda (V25): subir/borrar fotos en
 // orden_bordados es exclusivo de bordado + admin_fabrica/admin_general —
 // no de ventas/admin_tienda, que sí deciden CUÁLES prendas llevan bordado
@@ -150,6 +180,14 @@ export function canManagePedidosTienda(role) {
 // schema_v18_pedidos_tienda.sql.
 export function canViewPedidosTienda(role) {
   return !!role
+}
+
+// V36 — Estadísticas: pantalla de análisis (tiempos de producción, % a
+// tiempo) para quien toma decisiones, no para operarlo día a día. Pedido
+// explícito del usuario: solo los 3 roles "admin_*" (general, tienda,
+// fábrica) — ni ventas/contabilidad ni ningún rol de etapa de fábrica.
+export function canViewEstadisticas(role) {
+  return role === 'admin_general' || role === 'admin_tienda' || role === 'admin_fabrica'
 }
 
 // Los 5 roles de etapa de fábrica solo necesitan ver Dashboard y Resumen

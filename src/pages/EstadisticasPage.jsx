@@ -7,6 +7,8 @@ import { computeOrderStats } from '../utils/orderStats'
 import { formatDate, daysUntil } from '../utils/dates'
 import TypeBadge from '../components/orders/TypeBadge'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
+import RequireRole from '../components/common/RequireRole'
+import { canViewEstadisticas } from '../utils/permissions'
 
 // V35: pantalla de estadísticas de producción — cuánto nos tardamos, qué
 // tan seguido entregamos a tiempo y en qué etapa se atora más una orden.
@@ -35,6 +37,18 @@ function StatCard({ label, value, hint, color }) {
 }
 
 export default function EstadisticasPage() {
+  return (
+    <RequireRole allow={canViewEstadisticas}>
+      <EstadisticasPageContent />
+    </RequireRole>
+  )
+}
+
+// V36: solo los 3 roles admin_* (ver canViewEstadisticas) — antes de esto
+// el candado solo estaba en el nav (se escondía el botón/link), ahora
+// también bloquea si alguien entra directo por la URL, igual que
+// Catálogos/Usuarios.
+function EstadisticasPageContent() {
   const { orders, loading: loadingOrders, error: errorOrders, refresh: refreshOrders } = useOrders()
   const {
     historyByOrder,

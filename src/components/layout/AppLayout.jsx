@@ -5,9 +5,10 @@ import ChatWidget from '../chat/ChatWidget'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   canCreateOrder,
-  canManageCatalogs,
+  canViewCatalogos,
   canManageUsers,
   canViewPedidosTienda,
+  canViewEstadisticas,
   hasRestrictedNav,
   isTiendaBasica,
   ROLE_LABELS,
@@ -19,6 +20,9 @@ import { PEDIDOS_PROVEEDOR_HABILITADO } from '../../utils/featureFlags'
 // empezaba a amontonar). "Órdenes pasadas", "Control rápido" y "Resumen"
 // ya no viven aquí — se movieron a ser botones dentro del propio
 // Dashboard (ver DashboardPage.jsx) para dejar el menú más corto todavía.
+// "Estadísticas" (V35) empezó ahí también, pero V36 la subió a su propia
+// pestaña aquí — el usuario la quiso separada, no como botón, y visible
+// solo para los 3 roles admin_* (ver canViewEstadisticas).
 //
 // En celular el sidebar se esconde fuera de la pantalla (ver
 // .app-sidebar en index.css) y se abre con el botón de hamburguesa de
@@ -41,6 +45,7 @@ export default function AppLayout({ children }) {
   const navItems = [
     { to: '/', label: 'Dashboard', end: true, show: true },
     { to: '/nueva', label: 'Nueva orden', show: canCreateOrder(role) },
+    { to: '/estadisticas', label: 'Estadísticas', show: canViewEstadisticas(role) },
     { to: '/calendario', label: 'Calendario', show: !restricted && !tiendaBasica },
     { to: '/pendientes', label: 'Pendientes', show: !restricted },
     { to: '/anuncios', label: 'Anuncios', show: !restricted && !tiendaBasica },
@@ -53,7 +58,7 @@ export default function AppLayout({ children }) {
       label: 'Pedidos a Proveedor',
       show: PEDIDOS_PROVEEDOR_HABILITADO && !restricted && !tiendaBasica && canViewPedidosTienda(role),
     },
-    { to: '/catalogos', label: 'Catálogos', show: canManageCatalogs(role) },
+    { to: '/catalogos', label: 'Catálogos', show: canViewCatalogos(role) },
     { to: '/usuarios', label: 'Usuarios', show: canManageUsers(role) },
   ]
 

@@ -1382,6 +1382,69 @@ ya se limpiaron a cero (ver más arriba), esta pantalla vivirá vacía
 ("—" en las tarjetas, sin filas en las tablas) hasta que se completen
 las primeras órdenes reales — es esperado, no es un error.
 
+### V36 — Estadísticas a su propia pestaña + candados de permisos en Catálogos
+
+El usuario preguntó "cuando agregamos algo nuevo, ¿quién tiene permiso
+para ver o editar eso?" y pidió el resumen completo de roles (respondido
+en el chat, no repetido aquí). Al revisarlo se encontró un hueco real y,
+en el mismo mensaje, el usuario pidió 2 cambios de permisos concretos —
+los tres se resuelven juntos en esta versión.
+
+**1) Hueco de seguridad cerrado — `create_cliente`/`create_tela`/
+`create_producto` sin candado de rol.** Estas 3 funciones (agregadas en
+`schema_v12_catalogos.sql`, antes de que existiera el modelo de roles
+granular) nunca revisaron `current_user_role()` adentro — a diferencia
+de `create_order` y el resto de las funciones de escritura. Solo estaban
+protegidas porque la pantalla las escondía (`RequireRole` con
+`canManageCatalogs`, exclusivo admin_general). Cualquier rol con sesión
+que llamara el RPC directo (no desde la pantalla) podía crear un
+cliente/tela/producto sin que el servidor lo rechazara. Cerrado en
+`supabase/schema_v36_permisos_catalogos.sql` — mismas 3 firmas, solo se
+reemplazó el cuerpo (sin DROP FUNCTION, sin volver a tocar GRANT/REVOKE).
+
+**2) Quién puede DAR DE ALTA cada catálogo** (antes: solo admin_general,
+para los tres). Pedido explícito del usuario:
+- **Clientes**: ventas + admin_general.
+- **Telas**: ventas + admin_fabrica + admin_general.
+- **Productos**: mismo criterio que Clientes (ventas + admin_general) —
+  se capturan juntos, un producto siempre es "de" un cliente ya elegido
+  en la misma pantalla; el usuario lo confirmó así vía pregunta directa.
+
+**BORRAR (hard-delete) no cambió — sigue exclusivo de admin_general, sin
+excepción**, en los tres catálogos y en Proveedores. Nuevas funciones en
+`utils/permissions.js`: `canCreateCliente`, `canCreateTela`,
+`canCreateProducto` (= `canCreateCliente`), y `canViewCatalogos` (la
+unión de las tres + `canManageCatalogs`, para decidir quién entra a la
+pantalla). `CatalogosPage.jsx`: el `RequireRole` de arriba pasó de
+`canManageCatalogs` a `canViewCatalogos`; cada `CatalogSection` recibe su
+propio `addForm` (o ninguno) y un `canDelete` para esconder el botón
+"Eliminar" fila por fila si el rol no puede borrar — la pantalla ahora
+puede tener, al mismo tiempo, a alguien que ve pero no puede dar de alta
+nada, a alguien que da de alta pero no puede borrar, etc.
+
+**3) Estadísticas se separó del Dashboard, a su propia pestaña del menú
+lateral, restringida a los 3 roles admin_\*.** El usuario la quiso como
+pestaña propia (no botón dentro del Dashboard, como quedó en V35) y
+solo visible para admin_general, admin_tienda y admin_fabrica — "nadie
+más" (ni ventas/contabilidad, ni ningún rol de etapa de fábrica). Nueva
+`canViewEstadisticas` en `utils/permissions.js`; `AppLayout.jsx` gana el
+link `/estadisticas` en `navItems`; `DashboardPage.jsx` pierde el botón
+que tenía desde V35; `EstadisticasPage.jsx` gana su propio `RequireRole`
+(antes no tenía ninguno — dependía solo de que el nav lo escondiera).
+
+**Verificación hecha**: `computeOrderStats` de V35 no se tocó. Se
+corrieron las 6 funciones de permiso nuevas/editadas para los 12 roles
+(vía `import()` del módulo real desde el dev server) confirmando a mano
+cada combinación — coincide exactamente con lo pedido (ver tabla arriba
+en el chat). Smoke-test visual del sidebar con "Estadísticas" en su
+lugar. `npm run build` limpio.
+
+**Migración pendiente de aplicar en Supabase** (`schema_v36_permisos_catalogos.sql`):
+el usuario prefirió iniciar sesión él mismo en el SQL Editor para que yo
+la corra, en vez de dármelo para correrlo él directamente — ver si ya
+quedó aplicada antes de asumir que el candado del servidor está activo
+(el del frontend ya sí está en producción independientemente de esto).
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

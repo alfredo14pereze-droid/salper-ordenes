@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import RequireRole from '../components/common/RequireRole'
-import { canManageCatalogs } from '../utils/permissions'
+import { useAuth } from '../contexts/AuthContext'
+import {
+  canManageCatalogs,
+  canCreateCliente,
+  canCreateTela,
+  canCreateProducto,
+  canViewCatalogos,
+} from '../utils/permissions'
 import { PROVEEDORES_HABILITADO } from '../utils/featureFlags'
 import { Loading, ErrorState } from '../components/common/States'
 import { fetchProveedores, getProveedorDeleteImpact, deleteProveedor } from '../services/proveedoresService'
@@ -19,7 +26,7 @@ import { GARMENT_COLORS } from '../lib/constants'
 // si se pasa `impactFn`, primero consulta cuántas filas dependientes
 // existen y las muestra antes de la confirmación (ver FKs verificadas en
 // schema_v24_soft_delete.sql: cliente->productos es CASCADE de verdad).
-function CatalogRow({ item, deleteFn, impactFn, impactLabel, onDeleted }) {
+function CatalogRow({ item, deleteFn, impactFn, impactLabel, onDeleted, canDelete = true }) {
   const [confirming, setConfirming] = useState(false)
   const [impact, setImpact] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -63,7 +70,7 @@ function CatalogRow({ item, deleteFn, impactFn, impactLabel, onDeleted }) {
         )}
         {error && <p className="form-error">{error.message}</p>}
       </div>
-      {!confirming ? (
+      {!canDelete ? null : !confirming ? (
         <button type="button" className="btn btn--ghost btn--small" onClick={startConfirm} disabled={busy}>
           Eliminar
         </button>
@@ -218,7 +225,7 @@ function AddTelaForm({ onCreated }) {
   )
 }
 
-function CatalogSection({ title, fetchFn, deleteFn, impactFn, impactLabel, addForm }) {
+function CatalogSection({ title, fetchFn, deleteFn, impactFn, impactLabel, addForm, canDelete = true }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -259,6 +266,7 @@ function CatalogSection({ title, fetchFn, deleteFn, impactFn, impactLabel, addFo
               impactFn={impactFn}
               impactLabel={impactLabel}
               onDeleted={load}
+              canDelete={canDelete}
             />
           ))}
         </div>
@@ -436,7 +444,7 @@ function AddProductoForm({ clienteId, clienteNombre, telas, onCreated }) {
 
 // Productos: a diferencia de proveedores/clientes/telas, están agrupados
 // por cliente (no hay un catálogo plano) — se elige un cliente primero.
-function ProductosSection() {
+function ProductosSection({ canAdd, canDelete }) {
   const [clientes, setClientes] = useState([])
   const [clienteId, setClienteId] = useState('')
   const [telas, setTelas] = useState([])
@@ -481,11 +489,11 @@ function ProductosSection() {
       {!loading && productos.length > 0 && (
         <div className="document-list">
           {productos.map((p) => (
-            <CatalogRow key={p.id} item={p} deleteFn={deleteProducto} onDeleted={loadProductos} />
+            <CatalogRow key={p.id} item={p} deleteFn={deleteProducto} onDeleted={loadProductos} canDelete={canDelete} />
           ))}
         </div>
       )}
-      {clienteId && (
+      {clienteId && canAdd && (
         <div style={{ marginTop: 12 }}>
           <AddProductoForm clienteId={clienteId} clienteNombre={clienteNombre} telas={telas} onCreated={loadProductos} />
         </div>
@@ -495,12 +503,21 @@ function ProductosSection() {
 }
 
 function CatalogosPageContent() {
+  const { role } = useAuth()
+  // V36: quién puede BORRAR (hard-delete) sigue exclusivo de admin_general,
+  // sin excepción — lo que se abrió fue quién puede DAR DE ALTA cada
+  // catálogo (ver canCreateCliente/canCreateTela en utils/permissions.js).
+  const canDelete = canManageCatalogs(role)
+  const showAddCliente = canCreateCliente(role)
+  const showAddTela = canCreateTela(role)
+
   return (
     <div className="page page--narrow">
       <h2 className="section-title">Catálogos</h2>
       <p className="page-subtitle">
-        Eliminar aquí es definitivo (hard-delete) — a diferencia de eliminar una orden, que solo la marca como
-        "Eliminada" sin borrarla. Exclusivo de administrador general.
+        Dar de alta depende del catálogo: Clientes y Productos son de ventas y administrador general; Telas es de
+        ventas, administrador de fábrica y administrador general. Eliminar (hard-delete, definitivo) sigue siendo
+        exclusivo de administrador general.
       </p>
 
       {PROVEEDORES_HABILITADO && (
@@ -510,6 +527,7 @@ function CatalogosPageContent() {
           deleteFn={deleteProveedor}
           impactFn={getProveedorDeleteImpact}
           impactLabel={(i) => `${i.pedidos_count} pedido(s) a proveedor perderán esta referencia (no se borran).`}
+          canDelete={canDelete}
         />
       )}
       <CatalogSection
@@ -520,7 +538,8 @@ function CatalogosPageContent() {
         impactLabel={(i) =>
           `${i.productos_count} producto(s) guardado(s) de este cliente se eliminarán también. ${i.orders_count} orden(es) perderán esta referencia (no se borran).`
         }
-        addForm={(onCreated) => <AddClienteForm onCreated={onCreated} />}
+        addForm={showAddCliente ? (onCreated) => <AddClienteForm onCreated={onCreated} /> : undefined}
+        canDelete={canDelete}
       />
       <CatalogSection
         title="Telas"
@@ -528,16 +547,17 @@ function CatalogosPageContent() {
         deleteFn={deleteTela}
         impactFn={getTelaDeleteImpact}
         impactLabel={(i) => `${i.productos_count} producto(s) perderán esta referencia (no se borran).`}
-        addForm={(onCreated) => <AddTelaForm onCreated={onCreated} />}
+        addForm={showAddTela ? (onCreated) => <AddTelaForm onCreated={onCreated} /> : undefined}
+        canDelete={canDelete}
       />
-      <ProductosSection />
+      <ProductosSection canAdd={canCreateProducto(role)} canDelete={canDelete} />
     </div>
   )
 }
 
 export default function CatalogosPage() {
   return (
-    <RequireRole allow={canManageCatalogs}>
+    <RequireRole allow={canViewCatalogos}>
       <CatalogosPageContent />
     </RequireRole>
   )
