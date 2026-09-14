@@ -1967,6 +1967,26 @@ noche a la mañana. Se pueden categorizar después desde Catálogos
 custom muestra todos, y que las casillas de "+ Cliente nuevo" se
 preseleccionan y se pueden combinar. `npm run build` limpio.
 
+### V46 — "¿Lleva bolsas?" en short sublimado
+
+Pedido: "quiero que cuando sea un short sublimado, agregues un botón para
+ver si lleva bolsas o no".
+
+Mismo patrón exacto que "¿Lleva bordado?" (botón toggle ghost/secondary
+que cambia `lleva_bolsas: true/false` en la prenda) pero al revés en su
+condición: solo aparece cuando `isShort` (sublimación + prenda = Short),
+en vez de "todo excepto sublimación". No hace falta migración — `items`
+es JSONB sin schema fijo, así que la prenda simplemente gana una clave
+más; las prendas viejas sin `lleva_bolsas` se tratan como `false` (falsy)
+sin romper nada. Se agregó el default `lleva_bolsas: false` en los 3
+lugares donde se construye una prenda nueva vacía (`OrderItemsEditor.jsx`,
+`OrderItemsCard.jsx`, `NewOrderPage.jsx`) para que quede consistente
+aunque técnicamente solo hace falta cuando se guarda.
+
+**Verificación**: arnés de depuración con una prenda "Short" en sublimación
+confirmó que el botón aparece y alterna a "✓ Lleva bolsas"; con "Playera"
+(prenda de arriba) confirmó que el botón NO aparece. `npm run build` limpio.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

@@ -69,6 +69,7 @@ export default function OrderItemsEditor({
         tela_nombre: '',
         foto_url: '',
         lleva_bordado: false,
+        lleva_bolsas: false,
         manga: '',
         vivos: '',
         cuello: '',
@@ -361,6 +362,20 @@ export default function OrderItemsEditor({
                 onClick={() => updateItem(itemIndex, { lleva_bordado: !item.lleva_bordado })}
               >
                 {item.lleva_bordado ? '✓ Lleva bordado' : '¿Lleva bordado?'}
+              </button>
+            )}
+
+            {/* Solo para short sublimado: a diferencia de bolsillos en otras
+                prendas, el short a veces se pide sin bolsas — pedido
+                explícito del usuario. */}
+            {isShort && (
+              <button
+                type="button"
+                className={item.lleva_bolsas ? 'btn btn--secondary btn--small' : 'btn btn--ghost btn--small'}
+                style={{ marginTop: 12 }}
+                onClick={() => updateItem(itemIndex, { lleva_bolsas: !item.lleva_bolsas })}
+              >
+                {item.lleva_bolsas ? '✓ Lleva bolsas' : '¿Lleva bolsas?'}
               </button>
             )}
 

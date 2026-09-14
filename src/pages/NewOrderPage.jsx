@@ -44,6 +44,7 @@ const emptyItem = () => ({
   tela_nombre: '',
   foto_url: '',
   lleva_bordado: false,
+  lleva_bolsas: false,
   manga: '',
   vivos: '',
   cuello: '',
