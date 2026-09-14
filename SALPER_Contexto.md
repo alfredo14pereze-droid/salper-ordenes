@@ -1215,6 +1215,50 @@ campos abiertos siempre visibles, sin ninguna lógica condicional.
 editarlo después desde "Editar" en Detalles; llenar los 6 campos nuevos
 de una prenda y confirmar que se guardan al crear/editar la orden.
 
+### V33 — alta de clientes/telas/productos desde Catálogos, sin pasar por una orden
+
+Pedido explícito del usuario: poder agregar clientes, telas y productos
+(estos últimos con foto) directo desde `CatalogosPage.jsx`, sin tener que
+crear una orden nueva primero — hasta V32, `createCliente`/`createTela`
+solo se llamaban desde los selectores inline dentro del formulario de
+orden (`ClienteSelect.jsx`/`TelaSelect.jsx`).
+
+**Sin ningún cambio de esquema** — `create_cliente`, `create_tela` y
+`create_producto` ya existían con las firmas correctas desde V12/V30,
+así que esto fue 100% frontend:
+- `AddClienteForm`/`AddTelaForm` (nuevos, dentro de `CatalogosPage.jsx`):
+  mismo "crear o reusar" que ya usan los selectores de una orden, ahora
+  también disponible junto al título de cada sección.
+- `AddProductoForm` (nuevo): a diferencia de "guardar como producto"
+  dentro de una orden (`ProductoAutocomplete.jsx`, que en la práctica
+  NUNCA adjuntaba una foto real porque las prendas de una orden no
+  tienen selector de foto propio), este formulario sí sube un archivo
+  real — `uploadProductoFoto` (nuevo, en `productosService.js`) usa el
+  mismo bucket público `order-photos` que las fotos de referencia de
+  órdenes, bajo su propia carpeta `productos/<clienteId>/...` para no
+  mezclarse con las carpetas de órdenes.
+- **Proveedores escondido en producción**: pedido explícito del
+  usuario ("lo agregamos después") — mismo patrón de feature flag que
+  Pedidos a Proveedor (V31): `PROVEEDORES_HABILITADO = false` en
+  `featureFlags.js` esconde la sección en `CatalogosPage.jsx`; el
+  catálogo y sus RPCs siguen intactos, solo la UI está apagada.
+
+**Sobre la rama `dev`**: el usuario pidió que el trabajo de Proveedores
+"se pase a la branch que tenemos para seguir trabajando en eso" — como
+`dev` llevaba desde antes de V28 sin actualizarse (todo el trabajo de
+V28-V33 se hizo directo en `main`), se sincronizó `dev` con el estado
+actual de `main` (mismo código, nada nuevo que mergear en conflicto) y
+ahí se dejó `PROVEEDORES_HABILITADO = true` — para que sea el lugar
+donde seguir viendo/desarrollando ese catálogo sin afectar la versión
+reducida que ya está en uso real.
+
+**Falta probar manualmente**: desde Catálogos, agregar un cliente nuevo
+y confirmar que aparece en la lista y en el selector de "Nueva orden";
+agregar una tela nueva igual; elegir un cliente y agregarle un producto
+con foto, confirmar que se guarda y que aparece en el autocompletado de
+producto al crear una orden para ese cliente; confirmar que Proveedores
+ya no aparece en `main` pero sí en el preview de `dev`.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

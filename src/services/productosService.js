@@ -1,10 +1,41 @@
 import { supabase } from '../lib/supabaseClient'
 
+const BUCKET = 'order-photos'
+export const MAX_PRODUCTO_FOTO_SIZE_MB = 5
+
 function ensureClient() {
   if (!supabase) {
     return { error: new Error('Supabase no está configurado (revisa tu archivo .env).') }
   }
   return { error: null }
+}
+
+// Sube la foto de un producto al mismo bucket que las fotos de
+// referencia de órdenes (order-photos, ya público), bajo su propia
+// carpeta `productos/<clienteId>/...` para no mezclarse con las
+// carpetas de órdenes (que usan el UUID de la orden). Regresa
+// {url, path} listos para pasarle a createProducto — igual patrón que
+// uploadOrderPhotos en photosService.js.
+export async function uploadProductoFoto(clienteId, file) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  if (!file.type.startsWith('image/')) {
+    return { data: null, error: new Error(`"${file.name}" no es una imagen.`) }
+  }
+  if (file.size > MAX_PRODUCTO_FOTO_SIZE_MB * 1024 * 1024) {
+    return { data: null, error: new Error(`"${file.name}" pesa más de ${MAX_PRODUCTO_FOTO_SIZE_MB}MB.`) }
+  }
+
+  const ext = file.name.split('.').pop()
+  const path = `productos/${clienteId}/${crypto.randomUUID()}.${ext}`
+
+  const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file)
+  if (uploadError) return { data: null, error: uploadError }
+
+  const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(path)
+
+  return { data: { url: publicUrlData.publicUrl, path }, error: null }
 }
 
 export async function fetchProductosByCliente(clienteId) {
