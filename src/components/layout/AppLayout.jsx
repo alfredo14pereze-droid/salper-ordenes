@@ -16,9 +16,9 @@ import { PEDIDOS_PROVEEDOR_HABILITADO } from '../../utils/featureFlags'
 
 // V34: el nav pasó de barra horizontal arriba a menú lateral (pedido
 // explícito del usuario — con tantas secciones, la barra de arriba se
-// empezaba a amontonar). "Órdenes pasadas" y "Control rápido" ya no
-// viven aquí — se movieron a ser botones dentro del propio Dashboard
-// (ver DashboardPage.jsx) para dejar el menú más corto todavía.
+// empezaba a amontonar). "Órdenes pasadas", "Control rápido" y "Resumen"
+// ya no viven aquí — se movieron a ser botones dentro del propio
+// Dashboard (ver DashboardPage.jsx) para dejar el menú más corto todavía.
 //
 // En celular el sidebar se esconde fuera de la pantalla (ver
 // .app-sidebar en index.css) y se abre con el botón de hamburguesa de
@@ -41,7 +41,6 @@ export default function AppLayout({ children }) {
   const navItems = [
     { to: '/', label: 'Dashboard', end: true, show: true },
     { to: '/nueva', label: 'Nueva orden', show: canCreateOrder(role) },
-    { to: '/resumen', label: 'Resumen', show: !tiendaBasica },
     { to: '/calendario', label: 'Calendario', show: !restricted && !tiendaBasica },
     { to: '/pendientes', label: 'Pendientes', show: !restricted },
     { to: '/anuncios', label: 'Anuncios', show: !restricted && !tiendaBasica },
