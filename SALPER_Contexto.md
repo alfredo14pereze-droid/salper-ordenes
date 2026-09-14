@@ -1851,6 +1851,48 @@ prueba — seleccionar "Otro…" revela el input vacío; escribir un color
 elegir un color de la lista ("Rojo") esconde el input y reemplaza el
 valor correctamente. `npm run build` limpio.
 
+### V44 — la causa real de "se borra el progreso al cambiar de pestaña"
+
+El usuario reportó que, incluso después de V42 (borrador en
+localStorage), seguía perdiendo cosas al cambiar de pestaña — "no se
+guarda todo". Investigando se encontró que el borrador de V42 nunca era
+el problema real: **la app entera se estaba desmontando y volviendo a
+montar cada vez que la pestaña recuperaba el foco**, sin que hiciera
+falta ninguna recarga de página.
+
+**La causa**: `AuthContext.jsx` ponía `loading = true` en CUALQUIER
+evento de `supabase.auth.onAuthStateChange` — incluido `'TOKEN_REFRESHED'`,
+que Supabase dispara solo (autoRefreshToken) al recuperar la
+visibilidad de la pestaña/app, revisando si el token sigue vigente, sin
+que el usuario haga nada. `App.jsx` (`AuthGate`) muestra `<Loading/>`
+en vez de `<HashRouter><AppLayout><Routes>...` mientras `loading` es
+true — así que CADA VEZ que alguien volvía a la pestaña, toda la app
+(incluida "Nueva orden") se desmontaba y volvía a montar solo por eso.
+El borrador de localStorage (V42) sí recuperaba los campos de texto en
+ese remount, pero **las fotos y PDFs elegidos** (`photoFiles`,
+`cotizacionFile`, `ordenCompraFile` — `File`s en memoria, nunca
+pudieron vivir en el borrador) se perdían siempre, en cada cambio de
+pestaña, no solo en una recarga real como se pensaba en V42.
+
+**El fix**: `onAuthStateChange` ahora solo pone `loading = true` para
+una transición real de sesión (`'SIGNED_IN'`/`'SIGNED_OUT'`) — un
+`'TOKEN_REFRESHED'` (o cualquier otro evento de fondo) actualiza la
+sesión/el perfil sin tocar `loading`, así que ya no desmonta nada. Con
+esto, el caso normal (cambiar de pestaña o de app y volver) ya NO
+remonta "Nueva orden" — todo lo que había en memoria, fotos y PDFs
+incluidos, se queda exactamente como estaba, sin necesitar el borrador
+para nada. El borrador de V42 se queda como red de seguridad para el
+caso más raro de una recarga COMPLETA de verdad (el celular mata el
+proceso de la pestaña por memoria) — ahí las fotos/PDFs sí se siguen
+perdiendo (un `File` no es serializable), pero ese caso ya es mucho
+menos común que "simplemente cambiar de pestaña".
+
+**Verificación hecha**: se interceptó `supabase.auth.onAuthStateChange`
+en un arnés de depuración para disparar un evento `'TOKEN_REFRESHED'`
+real a mano (con `AuthProvider` real, no mockeado) y confirmar que
+`loading` se queda en `false` — antes del fix esto lo ponía en `true`
+en cada evento; después del fix, no. `npm run build` limpio.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

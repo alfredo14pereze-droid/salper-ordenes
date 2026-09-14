@@ -34,11 +34,26 @@ export function AuthProvider({ children }) {
       setLoading(false)
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+    // V44 — bug encontrado: esto ponía `loading=true` en CUALQUIER
+    // evento de auth, incluido 'TOKEN_REFRESHED' — que Supabase dispara
+    // solo con volver a la pestaña/app (revisa el token al recuperar
+    // visibilidad), sin que el usuario haga nada. Como App.jsx muestra
+    // <Loading/> en vez de las rutas mientras loading es true, TODA la
+    // app (incluido "Nueva orden") se desmontaba y volvía a montar en
+    // cada cambio de pestaña — perdiendo las fotos/PDFs elegidos (que
+    // viven en memoria, no en el borrador de localStorage) aunque el
+    // usuario no hubiera hecho nada. Ahora `loading` solo se usa para
+    // una transición real de sesión (entrar/salir) — un refresco de
+    // token de fondo actualiza el perfil sin desmontar nada.
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
       setSession(nextSession)
-      setLoading(true)
-      await loadProfile(nextSession?.user?.id)
-      setLoading(false)
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        setLoading(true)
+        await loadProfile(nextSession?.user?.id)
+        setLoading(false)
+      } else {
+        await loadProfile(nextSession?.user?.id)
+      }
     })
 
     return () => listener.subscription.unsubscribe()
