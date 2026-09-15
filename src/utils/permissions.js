@@ -264,6 +264,18 @@ export function canResolvePendingItems(role) {
   return !!role && role !== 'lectura'
 }
 
+// V51 — Notas internas de una orden: comentario libre que NUNCA sale en
+// ningún PDF ni se le muestra al cliente, solo vive dentro del sistema
+// (ver OrderNotesCard.jsx / generateOrderPdf.jsx, que ni la referencia).
+// Mismo criterio amplio que Pendientes (canCreatePendingItems): cualquier
+// rol con sesión menos 'lectura' puede escribir una nota — es una
+// bitácora de comunicación interna, no un dato de la orden en sí, así
+// que no se restringe al mismo candado que canEditOrder. 'lectura' sigue
+// pudiendo LEER las notas (ve todo el sistema), solo no puede escribir.
+export function canManageOrderNotes(role) {
+  return !!role && role !== 'lectura'
+}
+
 export const ROLE_LABELS = {
   ventas: 'Ventas',
   contabilidad: 'Contabilidad',

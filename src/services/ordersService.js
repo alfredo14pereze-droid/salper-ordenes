@@ -224,6 +224,17 @@ export async function setOrderTotal(orderId, total) {
   return supabase.rpc('set_order_total', { p_order_id: orderId, p_total: total }).single()
 }
 
+// V51: notas internas — comunicación entre áreas, nunca sale en ningún
+// PDF ni se le muestra al cliente (ver OrderNotesCard.jsx). Aparte de
+// update_order_details a propósito, mismo criterio que setOrderTotal:
+// no es un dato de la orden que fábrica necesite reconfirmar.
+export async function setOrderNotasInternas(orderId, notas) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('set_order_notas_internas', { p_order_id: orderId, p_notas: notas || null }).single()
+}
+
 // Fábrica captura el tiempo estimado de producción (solo mientras la
 // orden sigue "en_confirmacion"; admin no tiene esa restricción).
 export async function setEstimatedProductionDays(orderId, days) {

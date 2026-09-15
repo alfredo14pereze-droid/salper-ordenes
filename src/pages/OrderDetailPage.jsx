@@ -11,6 +11,7 @@ import OrderItemsCard from '../components/orders/OrderItemsCard'
 import OrderDocumentsCard from '../components/orders/OrderDocumentsCard'
 import OrderPaymentsCard from '../components/orders/OrderPaymentsCard'
 import OrderDetailsCard from '../components/orders/OrderDetailsCard'
+import OrderNotesCard from '../components/orders/OrderNotesCard'
 import OrderReconfirmBanner from '../components/orders/OrderReconfirmBanner'
 import EstimatedDaysCard from '../components/orders/EstimatedDaysCard'
 import CancelOrderCard from '../components/orders/CancelOrderCard'
@@ -142,6 +143,15 @@ export default function OrderDetailPage() {
         <section className="card">
           <OrderDetailsCard order={order} orderTypes={orderTypes} onUpdated={refresh} />
         </section>
+
+        {/* V51 — bitácora interna, nunca sale en el PDF de cliente ni en
+            el interno. Visible para cualquiera con sesión (hasta
+            'lectura'), no para invitados. */}
+        {user && (
+          <section className="card">
+            <OrderNotesCard order={order} onUpdated={refresh} />
+          </section>
+        )}
 
         {/* V48 — la foto de referencia se movió hasta arriba (antes vivía
             hasta abajo, después de Historial) para que no se pierda entre

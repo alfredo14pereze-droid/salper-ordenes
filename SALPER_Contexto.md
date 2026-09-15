@@ -2140,6 +2140,56 @@ componentes confirmó que ya no hay texto encimado en Pagos y que el
 resumen de prendas muestra "T.10: 6 · T.12: 4 · T.CH: 1" y la lista de
 nombres/números línea por línea. `npm run build` limpio.
 
+### V51 — Notas internas (nunca visibles para el cliente)
+
+Pedido: "quiero que se puedan agregar notas a las órdenes, pero que eso
+solo sea algo interno, que no se vea reflejado en la orden del cliente".
+
+**Schema** (`schema_v51_notas_internas.sql`): `orders.notas_internas
+text` nullable, sin relación con `description` (esa SÍ sale en ambos
+PDFs — es la descripción del pedido en sí). RPC nuevo
+`set_order_notas_internas(p_order_id, p_notas)`, aparte de
+`update_order_details` a propósito (mismo criterio que `set_order_total`
+en V42: no dispara `pending_reconfirmation_at`, no es algo que fábrica
+necesite reconfirmar).
+
+**Por qué nunca puede aparecer en el PDF del cliente**: no es un
+permiso ni un `if` que se pueda desactivar por error — `generateOrderPdf.jsx`
+y `OrderConfirmationPdf.jsx` simplemente NO referencian `notas_internas`
+en ningún lado. Para que apareciera ahí, alguien tendría que agregarlo a
+mano en esos archivos.
+
+**Permiso deliberadamente amplio** (`canManageOrderNotes` en
+`permissions.js`): cualquier rol con sesión menos `lectura` puede
+escribir una nota — se trató como bitácora de comunicación entre áreas
+(ej. "cliente pidió que se apure", "cliente conflictivo"), no como un
+dato de la orden que necesite el mismo candado que `canEditOrder`.
+`lectura` sigue pudiendo LEER las notas (ve todo el sistema), solo no
+escribe — mismo criterio que el resto de sus restricciones.
+
+**Nota de seguridad ya existente, documentada de nuevo aquí para que no
+se pierda**: `anon` tiene `SELECT` de tabla completa sobre `orders`
+desde V10 (modo invitado) — igual que `total_orden`, esta columna
+técnicamente viaja en la respuesta cruda de la API para un invitado,
+aunque la UI nunca la muestre sin sesión (gateado por `{user && ...}`
+en `OrderDetailPage.jsx`, mismo patrón que Documentos/Pagos). No es una
+debilidad nueva de esta migración, es el modelo de protección que ya
+tenía este proyecto para datos de oficina — si se necesita blindar a
+nivel de columna más adelante, es un cambio aparte.
+
+**Frontend**: `OrderNotesCard.jsx` (nuevo) — mismo patrón resumen+Editar
+que `OrderDetailsCard`/`OrderItemsCard`: texto de solo lectura por
+default con un aviso fijo ("Esto no lo ve el cliente..."), botón
+"+ Agregar nota"/"Editar" (según haya o no nota ya) que abre un
+textarea. Montada en `OrderDetailPage.jsx` justo después de "Detalles",
+visible para cualquiera con sesión.
+
+**Verificación**: arnés de depuración con dos roles (ventas editable,
+lectura de solo lectura) confirmó el flujo completo de crear/editar la
+nota y que el botón no aparece para lectura. Aplicado en Supabase y
+verificado en vivo: 1 sola fila en `pg_proc`, `anon`=false/
+`authenticated`=true. `npm run build` limpio.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver
