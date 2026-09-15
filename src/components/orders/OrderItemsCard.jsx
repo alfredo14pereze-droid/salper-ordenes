@@ -44,10 +44,16 @@ function buildInitialItems(order) {
 // posible"). El formulario completo (OrderItemsEditor, con tela/roster/
 // etc.) solo aparece al entrar a "Editar" — antes vivía siempre montado,
 // nada más deshabilitado con un fieldset si el rol no podía tocarlo.
+// V50 — "T." antes de cada talla (pedido explícito: se confundía con la
+// cantidad, ej. "6: 4" ¿cuál es la talla y cuál la cantidad?). Se aplica
+// tanto a "Tallas y cantidades" como al roster de nombres/números, que
+// también mezcla talla con otro número (el de la playera).
+const conTalla = (talla) => (talla ? `T.${talla}` : '')
+
 function ItemSummary({ item, index }) {
   const sizesText = (item.sizes || [])
     .filter((s) => String(s.talla).trim())
-    .map((s) => `${s.talla}: ${s.cantidad}`)
+    .map((s) => `${conTalla(s.talla)}: ${s.cantidad}`)
     .join(' · ')
 
   const detalleRows = [
@@ -61,13 +67,13 @@ function ItemSummary({ item, index }) {
     item.numeros && ['Números', item.numeros],
   ].filter(Boolean)
 
-  const notas = [
-    item.lleva_bordado && 'Lleva bordado',
-    item.lleva_bolsas && 'Lleva bolsas',
-    item.tiene_roster &&
-      (item.roster || []).length > 0 &&
-      `Lista de ${item.roster.length} registro${item.roster.length === 1 ? '' : 's'} (nombres/números)`,
-  ].filter(Boolean)
+  const notas = [item.lleva_bordado && 'Lleva bordado', item.lleva_bolsas && 'Lleva bolsas'].filter(Boolean)
+
+  // V50 — antes solo se decía "Lista de N registros"; el usuario pidió
+  // que la lista de nombres/números en sí se vea en el resumen (no solo
+  // el conteo) — solo aplica a sublimación, que es la única que llena
+  // tiene_roster/roster (ver OrderItemsEditor.jsx).
+  const roster = item.tiene_roster ? item.roster || [] : []
 
   return (
     <div className="item-block">
@@ -92,6 +98,18 @@ function ItemSummary({ item, index }) {
           <dt>Tallas y cantidades</dt>
           <dd>{sizesText || 'Sin tallas capturadas'}</dd>
         </div>
+        {roster.length > 0 && (
+          <div>
+            <dt>Nombres y números</dt>
+            <dd>
+              {roster.map((r, i) => (
+                <div key={i}>
+                  {[conTalla(r.talla), r.nombre, r.numero ? `#${r.numero}` : ''].filter(Boolean).join(' — ')}
+                </div>
+              ))}
+            </dd>
+          </div>
+        )}
         {notas.length > 0 && (
           <div>
             <dt>Notas</dt>

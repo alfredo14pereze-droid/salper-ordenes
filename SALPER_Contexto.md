@@ -2110,6 +2110,36 @@ admin":
 3 escenarios (sin total, con restante pendiente, liquidado) confirmó los
 colores y el formato de cada celda. `npm run build` limpio.
 
+### V50 — texto amontonado en Pagos, "T." antes de cada talla, lista de nombres/números en el resumen
+
+Tres pedidos sobre lo recién entregado en V48/V49:
+
+1. **Bug visual en "Pagos"**: "Anticipos registrados" y "Todavía no se ha
+   recibido ningún anticipo." se veían encimados. Causa: ese segundo
+   texto usaba la clase `page-subtitle`, que trae `margin-top: -20px` —
+   pensada para ir pegada justo debajo de un `<h2>` de página, no como
+   texto suelto en medio de una tarjeta. Cambiado a `pantone-hint` (mismo
+   tono muted, sin margen negativo).
+
+2. **"T." antes de cada talla**: en el resumen de prendas, "Tallas y
+   cantidades" mostraba `6: 4` — el usuario reportó que se confundía cuál
+   era la talla y cuál la cantidad. Ahora dice `T.6: 4`. Se aplicó el
+   mismo prefijo al roster de nombres/números (`OrderItemsCard.jsx`, ver
+   punto 3) porque ahí también se mezcla la talla con el número de la
+   playera — mismo problema, mismo arreglo, aunque no se pidió
+   explícito para esa parte.
+
+3. **Lista real de nombres/números en el resumen**: antes el resumen solo
+   decía "Lista de N registros (nombres/números)"; ahora se ve la lista
+   completa (una línea por registro: `T.<talla> — <nombre> — #<número>`,
+   o sin nombre para short). Solo aplica de facto a sublimación, que es
+   la única que llena `tiene_roster`/`roster` (ver V39).
+
+**Verificación**: arnés de depuración con una réplica exacta de ambos
+componentes confirmó que ya no hay texto encimado en Pagos y que el
+resumen de prendas muestra "T.10: 6 · T.12: 4 · T.CH: 1" y la lista de
+nombres/números línea por línea. `npm run build` limpio.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

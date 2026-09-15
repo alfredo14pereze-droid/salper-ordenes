@@ -218,7 +218,11 @@ export default function OrderPaymentsCard({ order, onUpdated }) {
         Anticipos registrados
       </p>
       {anticipos.length === 0 ? (
-        <p className="page-subtitle">Todavía no se ha recibido ningún anticipo.</p>
+        // V50 — bug encontrado: "page-subtitle" trae un margin-top: -20px
+        // (pensada para ir pegada debajo de un <h2>, no como texto suelto)
+        // y se montaba encima de la etiqueta de arriba. "pantone-hint" es
+        // el mismo tono de texto muted sin ese margen negativo.
+        <p className="pantone-hint">Todavía no se ha recibido ningún anticipo.</p>
       ) : (
         <div className="document-list">
           {anticipos.map((a) => (
