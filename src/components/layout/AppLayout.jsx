@@ -28,8 +28,25 @@ import { PEDIDOS_PROVEEDOR_HABILITADO } from '../../utils/featureFlags'
 // .app-sidebar en index.css) y se abre con el botón de hamburguesa de
 // la barra superior — `sidebarOpen` controla eso; se cierra solo al
 // navegar (onClick en cada link) o al tocar el overlay oscuro detrás.
+// V53 — orden fijo de opciones para "Ver como" (mismos roles que
+// ROLE_LABELS, sin admin_general: ese es "mi vista", no una opción de
+// disfraz).
+const VIEW_AS_ROLES = [
+  'ventas',
+  'contabilidad',
+  'admin_tienda',
+  'corte',
+  'bordado',
+  'sublimado',
+  'produccion',
+  'terminado',
+  'admin_fabrica',
+  'lectura',
+  'tienda',
+]
+
 export default function AppLayout({ children }) {
-  const { user, profile, role, signOut } = useAuth()
+  const { user, profile, role, trueRole, viewAsRole, setViewAsRole, signOut } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   // Los 5 roles de etapa de fábrica (corte/bordado/sublimado/producción/
   // terminado) solo necesitan Dashboard + Resumen para hacer su trabajo —
@@ -107,6 +124,28 @@ export default function AppLayout({ children }) {
         </nav>
 
         <div className="app-sidebar__user">
+          {/* V53 — "Ver como": exclusivo de admin_general de verdad
+              (trueRole, no `role` — si ya se está viendo como otro rol,
+              el selector debe seguir apareciendo para poder regresar o
+              cambiar a un tercero). Solo cambia qué se ve en pantalla —
+              el servidor sigue validando el rol real en cada RPC. */}
+          {trueRole === 'admin_general' && (
+            <label className="view-as-picker">
+              Ver como
+              <select
+                className="input input--small"
+                value={viewAsRole || ''}
+                onChange={(e) => setViewAsRole(e.target.value || null)}
+              >
+                <option value="">Mi vista (Administrador general)</option>
+                {VIEW_AS_ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {ROLE_LABELS[r]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {user ? (
             <>
               <span className="app-header__user-name">
@@ -136,7 +175,17 @@ export default function AppLayout({ children }) {
         </div>
       </aside>
 
-      <main className="app-main">{children}</main>
+      <main className="app-main">
+        {viewAsRole && (
+          <div className="view-as-banner">
+            Viendo como <strong>{ROLE_LABELS[viewAsRole] || viewAsRole}</strong> — así es como se ve el sistema para ese rol.
+            <button type="button" className="btn btn--ghost btn--small" onClick={() => setViewAsRole(null)}>
+              Volver a mi vista
+            </button>
+          </div>
+        )}
+        {children}
+      </main>
       <ChatWidget />
     </div>
   )

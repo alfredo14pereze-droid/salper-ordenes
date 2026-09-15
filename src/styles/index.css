@@ -144,6 +144,43 @@ h4 {
   border-top: 1px solid var(--color-border);
 }
 
+/* V53 — selector "Ver como" (exclusivo admin_general): mismo espacio que
+   el resto del pie del sidebar, con la etiqueta chiquita arriba del
+   select, como cualquier <label> del sistema. */
+.view-as-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.view-as-picker .input--small {
+  max-width: none;
+  text-transform: none;
+  font-weight: 400;
+  font-size: 13px;
+}
+
+/* Franja fija arriba del contenido mientras admin_general está viendo
+   como otro rol — nunca se pierde de vista que es una simulación, y
+   siempre hay a la mano un botón para volver a la vista real. */
+.view-as-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  border: 1px solid var(--color-amber-strong);
+  background: var(--color-orange-soft);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
 /* Barra superior: solo aparece en celular (ver @media) — en escritorio
    se queda con display:none, el sidebar ya está siempre visible. */
 .app-topbar {

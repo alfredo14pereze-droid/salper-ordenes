@@ -2236,6 +2236,50 @@ confirmó: la clase `dropzone--active` aparece al entrar el arrastre y
 desaparece al salir, y el archivo soltado llega a `onFiles` igual que
 si viniera del selector nativo. `npm run build` limpio.
 
+### V53 — "Ver como": admin_general simula la vista de cualquier otro rol
+
+Pedido: "quiero que yo como admin general, pueda cambiar mi vista de la
+página... que mi cuenta se pueda convertir en el tipo de cuenta que yo
+quiera con un click".
+
+**Qué es y qué NO es**: es una simulación de PANTALLA únicamente — nunca
+un cambio de permisos real. `AuthContext.jsx` ahora distingue `trueRole`
+(el rol real del perfil en la base de datos) de `role` (el que ve el
+resto de la app — `viewAsRole` si está activo, si no, igual a
+`trueRole`). Como absolutamente TODO en el frontend (nav, botones
+"Editar", tarjetas visibles/ocultas, `RequireRole` en páginas enteras)
+ya leía `role` desde `useAuth()`, con solo cambiar qué valor devuelve ese
+`role` la simulación se propaga sola a cada rincón de la app sin tocar
+ningún otro archivo. Los RPC de Supabase, en cambio, NUNCA se tocaron —
+siguen validando `current_user_role()` del lado del servidor con el rol
+real de la sesión, así que esto no otorga ni quita ningún permiso de
+verdad: si el admin "ve como ventas" simplemente no aparecen los botones
+que ventas no vería, pero en el fondo la cuenta sigue siendo
+admin_general con sus permisos reales intactos. Esto se le explicó al
+usuario para que quede claro que no es un sandbox de seguridad — para
+probar un candado real sigue haciendo falta una cuenta de verdad con ese
+rol.
+
+**Dónde vive el control**: `AppLayout.jsx`, pie del menú lateral —
+selector "Ver como" con las 11 opciones (todos los roles menos
+admin_general, que es "mi vista"), visible SOLO si `trueRole ===
+'admin_general'` (nunca según el rol simulado — si no, alguien podría
+quedarse "atorado" viendo como otro rol sin forma de regresar). Mientras
+hay una vista simulada activa, aparece una franja fija arriba del
+contenido ("Viendo como: X — Volver a mi vista") para que nunca se le
+olvide que está en modo simulación.
+
+**Persistencia**: se guarda en `localStorage` (sobrevive un refresh
+mientras se prueba) y se borra automáticamente al cerrar sesión — para
+que no se le quede pegada a otra cuenta que entre después en el mismo
+navegador. También se limpia sola si por alguna razón `trueRole` deja de
+ser `admin_general`.
+
+**Verificación**: arnés de depuración con el selector + banner (mismos
+componentes/CSS) confirmó el flujo completo: elegir un rol cambia el
+"role efectivo" al instante, aparece la franja, y "Volver a mi vista"
+regresa todo a admin_general. `npm run build` limpio.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver
