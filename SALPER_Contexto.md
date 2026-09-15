@@ -2190,6 +2190,52 @@ nota y que el botón no aparece para lectura. Aplicado en Supabase y
 verificado en vivo: 1 sola fila en `pg_proc`, `anon`=false/
 `authenticated`=true. `npm run build` limpio.
 
+### V52 — arrastrar y soltar (drag-and-drop) en todos los campos de foto/PDF
+
+Pedido: "quiero que se puedan arrastrar pdf o fotos a los campos que
+aceptan fotos o pdf, que no se tenga que subir desde el ordenador
+forzosamente".
+
+**Primitivas nuevas** (sin backend, puro frontend):
+- `hooks/useFileDrop.js` — hook genérico: da `dragActive` (bool) +
+  `dropHandlers` (onDragOver/onDragEnter/onDragLeave/onDrop) para
+  pegarle a cualquier elemento envolvente; `onDrop` llama `onFiles(File[])`
+  con los archivos soltados, mismo formato que `Array.from(e.target.files)`.
+- `components/common/FileDropLabel.jsx` — reemplaza el patrón repetido
+  `<label>...<input type="file" hidden/>...</label>` que ya existía en
+  varios lados: mismo click-para-elegir de siempre, más los manejadores
+  de arrastre ya integrados. Solo cambia la firma de "qué pasa cuando
+  hay archivos": antes `onChange={(e) => ...}`, ahora
+  `onFiles={(files) => ...}`.
+- CSS `.dropzone--active` (outline punteado ámbar + fondo naranja suave,
+  se resalta mientras se arrastra un archivo encima) y `.dropzone-inline`
+  (envoltorio mínimo para los 2 casos que usan un `<input type="file">`
+  nativo visible en vez de un label estilizado).
+
+**Aplicado en los 9 lugares de la app donde se sube foto o PDF**:
+`PhotoPicker.jsx` (fotos al crear una orden), `PhotoGallery.jsx` (fotos
+de una orden ya creada), `OrderDocumentsCard.jsx` (cotización/orden de
+compra/factura + constancia fiscal del cliente — 2 puntos), `NewOrderPage.jsx`
+(subir foto/PDF y prellenar con OCR, cotización, orden de compra — 3
+puntos), `NewPedidoTiendaPage.jsx` (OCR de pedido a proveedor),
+`PendingItemForm.jsx` (foto de una reparación), `CatalogosPage.jsx`
+(foto de producto) y `OrderBordadosCard.jsx` (foto de bordado, input
+nativo). En los 2 últimos, que usaban un input nativo visible en vez de
+un label estilizado, se conservó el input tal cual y solo se envolvió en
+un `<span className="dropzone-inline">` para el resaltado.
+
+**Alcance del "campo" que acepta el drop**: el área que resalta y recibe
+el archivo es el propio botón/label de "+ Subir…" (no toda la tarjeta) —
+sigue siendo mucho más cómodo que forzar el explorador de archivos, pero
+no es un dropzone de tarjeta completa.
+
+**Verificación**: arnés de depuración disparando eventos
+`dragenter`/`drop` sintéticos con un `DataTransfer` real (sin poder
+arrastrar un archivo real del sistema operativo dentro de este entorno)
+confirmó: la clase `dropzone--active` aparece al entrar el arrastre y
+desaparece al salir, y el archivo soltado llega a `onFiles` igual que
+si viniera del selector nativo. `npm run build` limpio.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

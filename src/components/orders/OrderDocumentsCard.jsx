@@ -3,6 +3,7 @@ import { uploadOrderDocument, uploadClienteConstanciaFiscal, getSignedDocumentUr
 import { fetchClienteById } from '../../services/clientesService'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditOrderDocument, canManageClienteDocuments } from '../../utils/permissions'
+import FileDropLabel from '../common/FileDropLabel'
 
 const DOC_TYPES = [
   { kind: 'cotizacion', label: 'Cotización', field: 'cotizacion_pdf_path' },
@@ -108,16 +109,14 @@ export default function OrderDocumentsCard({ order, onUpdated }) {
                   </button>
                 )}
                 {editable && (
-                  <label className="btn btn--secondary btn--small">
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      hidden
-                      disabled={busy}
-                      onChange={(e) => handleUpload(kind, e.target.files?.[0])}
-                    />
-                    {busy ? 'Subiendo…' : path ? 'Reemplazar' : 'Subir PDF'}
-                  </label>
+                  <FileDropLabel
+                    className="btn btn--secondary btn--small"
+                    accept="application/pdf"
+                    disabled={busy}
+                    onFiles={(files) => handleUpload(kind, files[0])}
+                  >
+                    {busy ? 'Subiendo…' : path ? 'Reemplazar' : 'Subir PDF (o arrastra aquí)'}
+                  </FileDropLabel>
                 )}
                 {!path && !editable && <span className="document-row__empty">Sin documento</span>}
               </div>
@@ -136,16 +135,18 @@ export default function OrderDocumentsCard({ order, onUpdated }) {
                 </button>
               )}
               {constanciaEditable && (
-                <label className="btn btn--secondary btn--small">
-                  <input
-                    type="file"
-                    accept="application/pdf"
-                    hidden
-                    disabled={busyKind === 'constancia'}
-                    onChange={(e) => handleUploadConstancia(e.target.files?.[0])}
-                  />
-                  {busyKind === 'constancia' ? 'Subiendo…' : cliente?.constancia_fiscal_path ? 'Reemplazar' : 'Subir PDF'}
-                </label>
+                <FileDropLabel
+                  className="btn btn--secondary btn--small"
+                  accept="application/pdf"
+                  disabled={busyKind === 'constancia'}
+                  onFiles={(files) => handleUploadConstancia(files[0])}
+                >
+                  {busyKind === 'constancia'
+                    ? 'Subiendo…'
+                    : cliente?.constancia_fiscal_path
+                      ? 'Reemplazar'
+                      : 'Subir PDF (o arrastra aquí)'}
+                </FileDropLabel>
               )}
               {!cliente?.constancia_fiscal_path && !constanciaEditable && <span className="document-row__empty">Sin documento</span>}
             </div>

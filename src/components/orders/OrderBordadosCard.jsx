@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchOrdenBordados, createOrdenBordado, deleteOrdenBordado } from '../../services/bordadosService'
 import { useAuth } from '../../contexts/AuthContext'
 import { canManageBordado } from '../../utils/permissions'
+import { useFileDrop } from '../../hooks/useFileDrop'
 
 const UBICACIONES = ['Frente', 'Espalda', 'Manga izquierda', 'Manga derecha', 'Otro']
 
@@ -14,6 +15,7 @@ function PrendaBordadoRow({ orderId, item, registros, canEdit, onChanged }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const fileInputRef = useRef(null)
+  const { dragActive, dropHandlers } = useFileDrop((files) => setFile(files[0] || null))
 
   async function handleAdd() {
     setSaving(true)
@@ -87,7 +89,12 @@ function PrendaBordadoRow({ orderId, item, registros, canEdit, onChanged }) {
               </option>
             ))}
           </select>
-          <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+          <span
+            className={'dropzone-inline' + (dragActive ? ' dropzone--active' : '')}
+            {...dropHandlers}
+          >
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+          </span>
           <button type="button" className="btn btn--primary btn--small" onClick={handleAdd} disabled={saving}>
             {saving ? 'Guardando…' : 'Guardar'}
           </button>

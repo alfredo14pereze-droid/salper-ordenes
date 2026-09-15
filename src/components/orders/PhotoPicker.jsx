@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import FileDropLabel from '../common/FileDropLabel'
 
 // Selector de fotos para el formulario de "Nueva orden": la orden todavía
 // no existe (no hay order_id para subir a Storage), así que aquí solo se
@@ -14,10 +15,8 @@ export default function PhotoPicker({ files, onChange }) {
     return () => urls.forEach((url) => URL.revokeObjectURL(url))
   }, [files])
 
-  function handleFileInput(e) {
-    const newFiles = Array.from(e.target.files || [])
+  function handleNewFiles(newFiles) {
     onChange([...files, ...newFiles])
-    e.target.value = ''
   }
 
   function removeAt(index) {
@@ -26,10 +25,9 @@ export default function PhotoPicker({ files, onChange }) {
 
   return (
     <div className="photo-picker">
-      <label className="photo-picker__add">
-        <input type="file" accept="image/*" multiple onChange={handleFileInput} hidden />
-        + Agregar fotos
-      </label>
+      <FileDropLabel className="photo-picker__add" accept="image/*" multiple onFiles={handleNewFiles}>
+        + Agregar fotos (o arrastra aquí)
+      </FileDropLabel>
 
       {previews.length > 0 && (
         <div className="photo-picker__grid">

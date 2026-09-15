@@ -16,6 +16,7 @@ import PhotoPicker from '../components/orders/PhotoPicker'
 import OrderItemsEditor from '../components/orders/OrderItemsEditor'
 import FoliosExternosField from '../components/orders/FoliosExternosField'
 import RequireRole from '../components/common/RequireRole'
+import FileDropLabel from '../components/common/FileDropLabel'
 import { canCreateOrder } from '../utils/permissions'
 import { useAuth } from '../contexts/AuthContext'
 import { Loading, ErrorState } from '../components/common/States'
@@ -195,9 +196,8 @@ function NewOrderForm() {
     setDraftDismissed(true)
   }
 
-  async function handleOcrFileInput(e) {
-    const file = e.target.files?.[0]
-    e.target.value = ''
+  async function handleOcrFiles(files) {
+    const file = files[0]
     if (!file) return
 
     setOcrLoading(true)
@@ -396,16 +396,15 @@ function NewOrderForm() {
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
             Foto o PDF de la orden (opcional)
           </span>
-          <label className="photo-picker__add" style={{ display: 'inline-flex' }}>
-            <input
-              type="file"
-              accept="image/*,application/pdf"
-              onChange={handleOcrFileInput}
-              hidden
-              disabled={ocrLoading}
-            />
-            {ocrLoading ? 'Leyendo el archivo…' : '+ Subir foto o PDF y prellenar la orden'}
-          </label>
+          <FileDropLabel
+            className="photo-picker__add"
+            style={{ display: 'inline-flex' }}
+            accept="image/*,application/pdf"
+            disabled={ocrLoading}
+            onFiles={handleOcrFiles}
+          >
+            {ocrLoading ? 'Leyendo el archivo…' : '+ Subir foto o PDF y prellenar la orden (o arrastra aquí)'}
+          </FileDropLabel>
           <p className="pantone-hint">
             Foto o PDF, máximo {MAX_OCR_FILE_SIZE_MB}MB. Prellena cliente, fecha de entrega y prendas cuando se
             alcancen a leer con claridad — el reconocimiento automático no es perfecto, revisa y corrige todo antes
@@ -571,15 +570,14 @@ function NewOrderForm() {
               <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
                 Cotización (PDF)
               </span>
-              <label className="btn btn--secondary btn--small" style={{ display: 'inline-flex' }}>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  hidden
-                  onChange={(e) => setCotizacionFile(e.target.files?.[0] || null)}
-                />
-                {cotizacionFile ? 'Reemplazar' : 'Subir PDF'}
-              </label>
+              <FileDropLabel
+                className="btn btn--secondary btn--small"
+                style={{ display: 'inline-flex' }}
+                accept="application/pdf"
+                onFiles={(files) => setCotizacionFile(files[0] || null)}
+              >
+                {cotizacionFile ? 'Reemplazar' : 'Subir PDF (o arrastra aquí)'}
+              </FileDropLabel>
               {cotizacionFile && (
                 <div style={{ marginTop: 6, display: 'flex', gap: 8, alignItems: 'center' }}>
                   <span className="template-hint">{cotizacionFile.name}</span>
@@ -593,15 +591,14 @@ function NewOrderForm() {
               <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
                 Orden de compra (PDF)
               </span>
-              <label className="btn btn--secondary btn--small" style={{ display: 'inline-flex' }}>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  hidden
-                  onChange={(e) => setOrdenCompraFile(e.target.files?.[0] || null)}
-                />
-                {ordenCompraFile ? 'Reemplazar' : 'Subir PDF'}
-              </label>
+              <FileDropLabel
+                className="btn btn--secondary btn--small"
+                style={{ display: 'inline-flex' }}
+                accept="application/pdf"
+                onFiles={(files) => setOrdenCompraFile(files[0] || null)}
+              >
+                {ordenCompraFile ? 'Reemplazar' : 'Subir PDF (o arrastra aquí)'}
+              </FileDropLabel>
               {ordenCompraFile && (
                 <div style={{ marginTop: 6, display: 'flex', gap: 8, alignItems: 'center' }}>
                   <span className="template-hint">{ordenCompraFile.name}</span>

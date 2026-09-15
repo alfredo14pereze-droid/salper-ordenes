@@ -6,6 +6,7 @@ import { useProveedores } from '../hooks/useProveedores'
 import PedidoArticulosEditor from '../components/pedidos/PedidoArticulosEditor'
 import ProveedorSelect from '../components/pedidos/ProveedorSelect'
 import RequireRole from '../components/common/RequireRole'
+import FileDropLabel from '../components/common/FileDropLabel'
 import { canManagePedidosTienda } from '../utils/permissions'
 import { useAuth } from '../contexts/AuthContext'
 import { Loading, ErrorState } from '../components/common/States'
@@ -45,9 +46,8 @@ function NewPedidoTiendaForm() {
   const [ocrWarning, setOcrWarning] = useState(null)
   const [ocrError, setOcrError] = useState(null)
 
-  async function handleOcrFileInput(e) {
-    const file = e.target.files?.[0]
-    e.target.value = ''
+  async function handleOcrFiles(files) {
+    const file = files[0]
     if (!file) return
 
     setOcrLoading(true)
@@ -169,16 +169,15 @@ function NewPedidoTiendaForm() {
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
             Foto o PDF de la nota o remisión del proveedor
           </span>
-          <label className="photo-picker__add" style={{ display: 'inline-flex' }}>
-            <input
-              type="file"
-              accept="image/*,application/pdf"
-              onChange={handleOcrFileInput}
-              hidden
-              disabled={ocrLoading}
-            />
-            {ocrLoading ? 'Leyendo el archivo…' : '+ Subir foto o PDF y prellenar artículos'}
-          </label>
+          <FileDropLabel
+            className="photo-picker__add"
+            style={{ display: 'inline-flex' }}
+            accept="image/*,application/pdf"
+            disabled={ocrLoading}
+            onFiles={handleOcrFiles}
+          >
+            {ocrLoading ? 'Leyendo el archivo…' : '+ Subir foto o PDF y prellenar artículos (o arrastra aquí)'}
+          </FileDropLabel>
           <p className="pantone-hint">
             Foto o PDF, máximo {MAX_OCR_FILE_SIZE_MB}MB. El reconocimiento automático no es perfecto — revisa y
             corrige los artículos antes de crear el pedido.

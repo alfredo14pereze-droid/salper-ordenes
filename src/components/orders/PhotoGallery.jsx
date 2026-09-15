@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { uploadOrderPhotos, removeOrderPhoto, MAX_PHOTO_SIZE_MB } from '../../services/photosService'
 import { useAuth } from '../../contexts/AuthContext'
 import { canManageOrderPhotos } from '../../utils/permissions'
+import FileDropLabel from '../common/FileDropLabel'
 
 // Fotos de referencia ya guardadas en una orden (order.reference_photos),
 // con opción de agregar más y de eliminar. Vive en el detalle de la orden.
@@ -14,9 +15,7 @@ export default function PhotoGallery({ order, onUpdated }) {
   const [error, setError] = useState(null)
   const photos = order.reference_photos || []
 
-  async function handleFileInput(e) {
-    const files = Array.from(e.target.files || [])
-    e.target.value = ''
+  async function handleFiles(files) {
     if (files.length === 0) return
 
     setUploading(true)
@@ -46,10 +45,9 @@ export default function PhotoGallery({ order, onUpdated }) {
       <div className="photo-gallery__header">
         <h4>Fotos de especificación</h4>
         {canManage && (
-          <label className="btn btn--secondary btn--small">
-            <input type="file" accept="image/*" multiple onChange={handleFileInput} hidden disabled={uploading} />
-            {uploading ? 'Subiendo…' : '+ Agregar fotos'}
-          </label>
+          <FileDropLabel className="btn btn--secondary btn--small" accept="image/*" multiple disabled={uploading} onFiles={handleFiles}>
+            {uploading ? 'Subiendo…' : '+ Agregar fotos (o arrastra aquí)'}
+          </FileDropLabel>
         )}
       </div>
 

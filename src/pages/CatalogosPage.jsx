@@ -10,6 +10,7 @@ import {
 } from '../utils/permissions'
 import { PROVEEDORES_HABILITADO } from '../utils/featureFlags'
 import { Loading, ErrorState } from '../components/common/States'
+import { useFileDrop } from '../hooks/useFileDrop'
 import { fetchProveedores, getProveedorDeleteImpact, deleteProveedor } from '../services/proveedoresService'
 import {
   fetchClientes,
@@ -389,6 +390,13 @@ function AddProductoForm({ clienteId, clienteNombre, telas, onCreated }) {
     setPreview(URL.createObjectURL(f))
   }
 
+  const { dragActive, dropHandlers } = useFileDrop((files) => {
+    const f = files[0]
+    if (!f) return
+    setFile(f)
+    setPreview(URL.createObjectURL(f))
+  })
+
   function reset() {
     setNombre('')
     setGarment('')
@@ -509,8 +517,14 @@ function AddProductoForm({ clienteId, clienteNombre, telas, onCreated }) {
       </div>
 
       <label>
-        Foto del producto
-        <input type="file" accept="image/*" onChange={handleFile} className="input" />
+        Foto del producto (o arrastra aquí)
+        <span
+          className={'dropzone-inline' + (dragActive ? ' dropzone--active' : '')}
+          style={{ display: 'block' }}
+          {...dropHandlers}
+        >
+          <input type="file" accept="image/*" onChange={handleFile} className="input" />
+        </span>
       </label>
       {preview && (
         <div className="photo-picker__thumb" style={{ width: 120, marginTop: 8 }}>

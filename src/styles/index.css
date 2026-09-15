@@ -1040,6 +1040,24 @@ h4 {
   color: var(--color-orange-strong);
 }
 
+/* V52 — se resalta cualquier botón de subir (foto/PDF) mientras se le
+   arrastra un archivo encima, sin importar su estilo normal (label con
+   borde punteado, botón sólido, etc.) — por eso usa outline en vez de
+   border, que no le pisa el borde propio de cada uno. */
+.dropzone--active {
+  outline: 2px dashed var(--color-amber-strong);
+  outline-offset: 2px;
+  background: var(--color-orange-soft);
+}
+
+/* Envoltorio para los pocos casos donde el input de archivo se ve tal
+   cual (nativo, sin label estilizado) — solo le da un borde propio para
+   que el outline de .dropzone--active tenga algo a qué pegarse. */
+.dropzone-inline {
+  display: inline-flex;
+  border-radius: var(--radius-sm);
+}
+
 .photo-picker__grid,
 .photo-gallery__grid {
   display: grid;

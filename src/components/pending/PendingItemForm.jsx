@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { createPendingItem, uploadPendingItemPhoto } from '../../services/pendingItemsService'
+import FileDropLabel from '../common/FileDropLabel'
 
 const TIPOS = [
   { key: 'general', label: 'General' },
@@ -42,9 +43,8 @@ export default function PendingItemForm({ onCreated }) {
     setPhotoPreview(null)
   }
 
-  function handlePhotoInput(e) {
-    const file = e.target.files?.[0]
-    e.target.value = ''
+  function handlePhotoFiles(files) {
+    const file = files[0]
     if (!file) return
     setPhoto(file)
     setPhotoPreview(URL.createObjectURL(file))
@@ -237,10 +237,9 @@ export default function PendingItemForm({ onCreated }) {
       {isReparacion && (
         <div className="photo-picker">
           {!photoPreview ? (
-            <label className="photo-picker__add">
-              <input type="file" accept="image/*" onChange={handlePhotoInput} hidden />
-              + Agregar foto
-            </label>
+            <FileDropLabel className="photo-picker__add" accept="image/*" onFiles={handlePhotoFiles}>
+              + Agregar foto (o arrastra aquí)
+            </FileDropLabel>
           ) : (
             <div className="photo-picker__grid">
               <div className="photo-picker__thumb">
