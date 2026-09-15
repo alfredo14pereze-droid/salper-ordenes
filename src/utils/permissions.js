@@ -82,6 +82,17 @@ export function canChangeStatus(role) {
   return canConfirmOrder(role) || canCompleteOrder(role)
 }
 
+// V49 — "Etapas de producción" (OrderEtapasCard) es la herramienta real
+// de corte/bordado/sublimado/producción/terminado para avanzar SU etapa
+// — no es solo informativo para ellos. Para el lado de tienda
+// (ventas/contabilidad/admin_tienda/tienda) y 'lectura' es puro
+// duplicado de solo lectura de lo que ya muestra el StatusStepper de
+// arriba — pedido explícito del usuario de quitarlo ahí por ser ruido
+// visual. admin_general lo sigue viendo (ve todo el sistema).
+export function canViewEtapas(role) {
+  return FABRICA_ETAPA_ROLES.includes(role) || role === 'admin_fabrica' || role === 'admin_general'
+}
+
 // V38 — "Confirmar cambios": una orden ya confirmada que se editó
 // después (ver pending_reconfirmation_at) necesita que fábrica la
 // revise de nuevo. Mismos roles que pueden confirmar una orden nueva —

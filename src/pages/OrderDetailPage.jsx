@@ -27,7 +27,7 @@ import {
   remisionPdfFileName,
 } from '../utils/generateOrderPdf'
 import { useAuth } from '../contexts/AuthContext'
-import { canViewRemision, canManageSurtido } from '../utils/permissions'
+import { canViewRemision, canManageSurtido, canChangeStatus, canSetEstimatedDays, canViewEtapas } from '../utils/permissions'
 
 export default function OrderDetailPage() {
   const { user, role } = useAuth()
@@ -156,14 +156,24 @@ export default function OrderDetailPage() {
           <PhotoGallery order={order} onUpdated={refresh} />
         </section>
 
-        {user && !order.eliminada_en && (
+        {/* V49 — antes esta tarjeta se montaba para cualquier usuario con
+            sesión, aunque StatusChanger/EstimatedDaysCard no tuvieran nada
+            que mostrar para su rol (ambos regresan null solos) — se veía
+            como un recuadro vacío feo. Ahora solo se monta si el rol
+            actual puede hacer algo aquí. */}
+        {user && !order.eliminada_en && (canChangeStatus(role) || canSetEstimatedDays(role, order)) && (
           <section className="card">
             <StatusChanger order={order} onUpdated={refresh} />
             <EstimatedDaysCard order={order} onUpdated={refresh} />
           </section>
         )}
 
-        {user && !order.eliminada_en && (
+        {/* V49 — "Etapas de producción" es la herramienta real de fábrica
+            para avanzar su etapa; para tienda (ventas/contabilidad/
+            admin_tienda/tienda) y lectura es puro duplicado de solo
+            lectura de lo que ya muestra el stepper de arriba — pedido
+            explícito del usuario de quitarlo de esa vista por ser ruido. */}
+        {user && !order.eliminada_en && canViewEtapas(role) && (
           <section className="card">
             <OrderEtapasCard orderId={order.id} onUpdated={refresh} />
           </section>

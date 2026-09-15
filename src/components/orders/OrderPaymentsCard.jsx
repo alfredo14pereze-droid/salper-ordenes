@@ -146,71 +146,77 @@ export default function OrderPaymentsCard({ order, onUpdated }) {
   return (
     <div>
       <div className="section-header">
-        <h3 className="section-title section-title--small">Anticipos</h3>
-        {recibido > 0 && <span className="section-count">{formatMonto(recibido)} recibido{anticipos.length === 1 ? '' : 's'}</span>}
+        <h3 className="section-title section-title--small">Pagos</h3>
       </div>
 
-      <div className="document-list" style={{ marginBottom: 10 }}>
-        <div className="document-row">
-          <span className="document-row__label">Total de la orden</span>
-          <div className="document-row__actions">
-            {!editingTotal && (
-              <>
-                <span>{order.total_orden != null ? formatMonto(order.total_orden) : 'No capturado'}</span>
-                {canEditTotal && (
-                  <button
-                    type="button"
-                    className="btn btn--ghost btn--small"
-                    onClick={() => {
-                      setTotalInput(order.total_orden ?? '')
-                      setTotalError(null)
-                      setEditingTotal(true)
-                    }}
-                  >
-                    Editar
-                  </button>
-                )}
-              </>
-            )}
-          </div>
+      {/* V49 — antes "Total de la orden"/"Restante" vivían mezclados
+          adentro de la lista de documentos, y "Restante" ni aparecía si
+          no había total capturado — pedido explícito del usuario: un
+          solo lugar donde se vea junto Total/Recibido/Restante, siempre
+          los 3, para no tener que buscar el dinero entre varias filas. */}
+      <div className="payments-summary">
+        <div className="payments-summary__stat">
+          <span className="payments-summary__label">Total de la orden</span>
+          <span className="payments-summary__value">{order.total_orden != null ? formatMonto(order.total_orden) : '—'}</span>
+          {canEditTotal && !editingTotal && (
+            <button
+              type="button"
+              className="btn btn--ghost btn--small"
+              style={{ marginTop: 6 }}
+              onClick={() => {
+                setTotalInput(order.total_orden ?? '')
+                setTotalError(null)
+                setEditingTotal(true)
+              }}
+            >
+              Editar
+            </button>
+          )}
         </div>
-
-        {editingTotal && (
-          <form className="order-form" onSubmit={handleSaveTotal} style={{ paddingTop: 0 }}>
-            <div className="form-row">
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
-                className="input"
-                value={totalInput}
-                onChange={(e) => setTotalInput(e.target.value)}
-                placeholder="0.00"
-                autoFocus
-              />
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button type="button" className="btn btn--ghost btn--small" onClick={() => setEditingTotal(false)} disabled={savingTotal}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn btn--primary btn--small" disabled={savingTotal}>
-                  {savingTotal ? 'Guardando…' : 'Guardar'}
-                </button>
-              </div>
-            </div>
-            {totalError && <p className="form-error">{totalError.message}</p>}
-          </form>
-        )}
-
-        {order.total_orden != null && (
-          <div className="document-row">
-            <span className="document-row__label">Restante</span>
-            <span style={{ fontWeight: 700, color: restante > 0 ? 'var(--color-danger)' : 'var(--color-good)' }}>
-              {formatMonto(restante)}
-            </span>
-          </div>
-        )}
+        <div className="payments-summary__stat">
+          <span className="payments-summary__label">Anticipo recibido</span>
+          <span className="payments-summary__value">{formatMonto(recibido)}</span>
+        </div>
+        <div className="payments-summary__stat">
+          <span className="payments-summary__label">Restante</span>
+          <span
+            className="payments-summary__value"
+            style={restante != null ? { color: restante > 0 ? 'var(--color-danger)' : 'var(--color-good)' } : undefined}
+          >
+            {restante != null ? formatMonto(restante) : '—'}
+          </span>
+        </div>
       </div>
 
+      {editingTotal && (
+        <form className="order-form" onSubmit={handleSaveTotal} style={{ marginTop: 10 }}>
+          <div className="form-row">
+            <input
+              type="number"
+              min="0.01"
+              step="0.01"
+              className="input"
+              value={totalInput}
+              onChange={(e) => setTotalInput(e.target.value)}
+              placeholder="0.00"
+              autoFocus
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className="btn btn--ghost btn--small" onClick={() => setEditingTotal(false)} disabled={savingTotal}>
+                Cancelar
+              </button>
+              <button type="submit" className="btn btn--primary btn--small" disabled={savingTotal}>
+                {savingTotal ? 'Guardando…' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+          {totalError && <p className="form-error">{totalError.message}</p>}
+        </form>
+      )}
+
+      <p className="field-label" style={{ margin: '16px 0 8px' }}>
+        Anticipos registrados
+      </p>
       {anticipos.length === 0 ? (
         <p className="page-subtitle">Todavía no se ha recibido ningún anticipo.</p>
       ) : (

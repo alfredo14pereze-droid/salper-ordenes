@@ -2064,6 +2064,52 @@ Prendas/Etapas.
 resumen (2 prendas con distintos campos llenos) confirmó que se ve
 compacto y que el total suma bien. `npm run build` limpio.
 
+### V49 — sin recuadros vacíos, "Etapas" solo para fábrica, resumen de dinero unificado
+
+El usuario mandó capturas de la vista de detalle de orden viendo como
+ventas (rol "Alfredo Ventas") y se quejó de 3 cosas puntuales, todas bajo
+el mismo pedido de "que se vea mucho más limpio para todos menos los
+admin":
+
+1. **Recuadro vacío feo**: la tarjeta que envuelve `StatusChanger` +
+   `EstimatedDaysCard` se montaba para cualquier usuario con sesión, pero
+   AMBOS componentes ya regresaban `null` internamente si el rol no tenía
+   nada que hacer ahí (ventas no cambia estados ni captura días
+   estimados) — el resultado era una tarjeta blanca completamente vacía.
+   Arreglado gateando la sección completa en `OrderDetailPage.jsx` con
+   `canChangeStatus(role) || canSetEstimatedDays(role, order)` — si
+   ninguno de los dos aplica, la sección ni se monta. admin_general/
+   admin_fabrica siempre tienen algo que mostrar ahí, así que a ellos
+   nunca les afectaba este bug.
+
+2. **"Etapas de producción" quitada para tienda/lectura**: nuevo
+   `canViewEtapas(role)` en `permissions.js` — cuidado importante: NO se
+   limitó a "solo admin" como pidió el usuario literalmente, porque
+   corte/bordado/sublimado/producción/terminado usan esa tarjeta como su
+   herramienta real para avanzar su propia etapa (no es solo informativa
+   para ellos, como sí lo es para ventas). Se quedó visible para los 5
+   roles de etapa + admin_fabrica + admin_general, y se ocultó solo para
+   el lado de tienda (ventas/contabilidad/admin_tienda/tienda) y
+   'lectura' — para esos roles sí es puro duplicado de lo que ya muestra
+   el `StatusStepper` de arriba.
+
+3. **"Anticipos" → "Pagos", con Total/Recibido/Restante juntos**:
+   `OrderPaymentsCard.jsx` mezclaba el total (dentro de una lista de
+   "documentos") con "Restante" (que ni aparecía si no había total
+   capturado) — pedido explícito: una sola franja con los 3 valores
+   siempre visibles (usa "—" solo cuando de verdad no hay dato, "Anticipo
+   recibido" siempre muestra un monto real aunque sea $0.00). CSS nuevo
+   `.payments-summary`/`.payments-summary__stat` (3 columnas con
+   separador, mismo lenguaje visual que `.bolsas-toggle` de V47) — el
+   botón "Editar" del total vive dentro de su propia columna. La lista de
+   anticipos y el botón "+ Registrar anticipo" se quedan abajo, sin
+   cambios de lógica ni de permisos (canRegister/canDelete/canEditTotal
+   iguales).
+
+**Verificación**: arnés de depuración replicando `.payments-summary` en
+3 escenarios (sin total, con restante pendiente, liquidado) confirmó los
+colores y el formato de cada celda. `npm run build` limpio.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver
