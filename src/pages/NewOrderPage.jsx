@@ -387,10 +387,14 @@ function NewOrderForm() {
   if (loading) return <Loading label="Cargando tipos de orden…" />
   if (error) return <ErrorState error={error} onRetry={refresh} />
 
-  // V55 — carga de esa fecha ANTES de agregar esta orden nueva (así se
-  // avisa si ya está saturada, no después de que esta orden ya cuenta).
-  const deliveryLoad = form.requestedDeliveryDate ? getLoadForDate(demand, parseDate(form.requestedDeliveryDate)) : 0
-  const deliverySaturated = deliveryLoad > 0 && deliveryLoad >= demand.threshold
+  // V55/V56 — carga de esa fecha ANTES de agregar esta orden nueva (así
+  // se avisa si ya está saturada, no después de que esta orden ya
+  // cuenta) — tanto en órdenes como en prendas (una orden grande también
+  // debe disparar el aviso, no solo muchas órdenes chiquitas).
+  const deliveryLoad = form.requestedDeliveryDate
+    ? getLoadForDate(demand, parseDate(form.requestedDeliveryDate))
+    : { orders: 0, pieces: 0 }
+  const deliverySaturated = deliveryLoad.orders >= demand.orderThreshold || deliveryLoad.pieces >= demand.pieceThreshold
 
   return (
     <div className="page page--narrow">
@@ -539,8 +543,10 @@ function NewOrderForm() {
         </label>
         {deliverySaturated && (
           <p className="pantone-hint" style={{ color: 'var(--color-orange-strong)' }}>
-            ⚠ Esta fecha ya tiene {deliveryLoad} orden{deliveryLoad === 1 ? '' : 'es'} en producción encimadas — más
-            de lo normal para este taller. Si se puede, considera platicar con el cliente para correr la fecha.
+            ⚠ Esta fecha ya tiene {deliveryLoad.orders} orden{deliveryLoad.orders === 1 ? '' : 'es'} (
+            {deliveryLoad.pieces.toLocaleString('es-MX')} prenda{deliveryLoad.pieces === 1 ? '' : 's'}) en producción
+            encimadas — más de lo normal para este taller. Si se puede, considera platicar con el cliente para
+            correr la fecha.
           </p>
         )}
 

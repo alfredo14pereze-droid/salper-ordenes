@@ -15,7 +15,7 @@ import {
 } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { computeCalendarWindow, isWithinRange } from '../../utils/dates'
-import { buildDemandMap } from '../../utils/demand'
+import { buildDemandMap, getLoadForDate } from '../../utils/demand'
 import { getStatus } from '../../utils/status'
 import { STATUSES } from '../../lib/constants'
 
@@ -52,10 +52,12 @@ export default function MonthCalendar({ orders, typesByKey }) {
     [ordersWithWindow, days]
   )
 
-  // V55 — pedido del usuario: que el calendario detecte cuando hay
-  // mucha demanda. El umbral se calcula sobre TODAS las órdenes
-  // visibles (no solo las del mes que se está viendo) para que no
-  // cambie de significado con solo cambiar de mes — ver
+  // V55/V56 — pedido del usuario: que el calendario detecte cuando hay
+  // mucha demanda, tomando en cuenta tanto cuántas órdenes como cuántas
+  // PRENDAS traen (una orden de 2000 prendas es más trabajo que 10
+  // órdenes de 10 prendas). El umbral se calcula sobre TODAS las
+  // órdenes visibles (no solo las del mes que se está viendo) para que
+  // no cambie de significado con solo cambiar de mes — ver
   // utils/demand.js.
   const demand = useMemo(() => buildDemandMap(orders), [orders])
 
@@ -90,7 +92,13 @@ export default function MonthCalendar({ orders, typesByKey }) {
         {days.map((day) => {
           const dayOrders = ordersWithWindow.filter(({ window }) => isWithinRange(day, window.start, window.end))
           const inMonth = isSameMonth(day, monthCursor)
-          const saturated = dayOrders.length > 0 && dayOrders.length >= demand.threshold
+          const { orders: orderLoad, pieces: pieceLoad } = getLoadForDate(demand, day)
+          const saturated = orderLoad >= demand.orderThreshold || pieceLoad >= demand.pieceThreshold
+          // V56 — la etiqueta muestra el número de piezas cuando hay
+          // datos de prendas capturadas (es la señal real de trabajo,
+          // pedido explícito del usuario); si esa orden todavía no tiene
+          // prendas capturadas, cae de vuelta al conteo de órdenes.
+          const badgeLabel = pieceLoad > 0 ? `${pieceLoad.toLocaleString('es-MX')} pz` : `${orderLoad} ord.`
 
           return (
             <div
@@ -107,9 +115,9 @@ export default function MonthCalendar({ orders, typesByKey }) {
                 {saturated && (
                   <span
                     className="month-calendar__day-badge"
-                    title={`${dayOrders.length} órdenes en producción este día — más de lo normal para este taller (umbral actual: ${demand.threshold}).`}
+                    title={`${orderLoad} orden${orderLoad === 1 ? '' : 'es'} · ${pieceLoad.toLocaleString('es-MX')} prenda${pieceLoad === 1 ? '' : 's'} en producción este día — más de lo normal para este taller (umbral: ${demand.orderThreshold} órdenes o ${demand.pieceThreshold.toLocaleString('es-MX')} prendas).`}
                   >
-                    ⚠ {dayOrders.length}
+                    ⚠ {badgeLabel}
                   </span>
                 )}
               </div>
@@ -151,7 +159,8 @@ export default function MonthCalendar({ orders, typesByKey }) {
         ))}
         <span className="calendar-legend__item">
           <span className="month-calendar__day-badge">⚠</span>
-          Día saturado — {demand.threshold} o más órdenes encimadas ese día, más de lo normal para este taller
+          Día saturado — {demand.orderThreshold} o más órdenes, o {demand.pieceThreshold.toLocaleString('es-MX')} o más
+          prendas encimadas ese día (más de lo normal para este taller)
         </span>
       </div>
     </div>

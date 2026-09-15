@@ -2379,6 +2379,42 @@ además se verificó `buildDemandMap`/`getLoadForDate`/`isSaturated`
 directo en consola con el mismo set de datos, mismo resultado. `npm run
 build` limpio.
 
+### V56 — la saturación ahora también se mide en prendas, no solo en órdenes
+
+Corrección del usuario sobre V55: "no solo quiero que lo haga por la
+cantidad de órdenes, si no por la cantidad de prendas en cada orden...
+si hay una orden de 2000 prendas, es más trabajo que 10 órdenes de 10
+prendas cada una, entonces quiero que te bases en las dos cosas".
+
+**`utils/demand.js` reescrito**: ahora `buildDemandMap` cuenta, para
+cada día, tanto órdenes encimadas como PRENDAS encimadas (suma de
+`sizes.cantidad` de todos los items de cada orden — nueva
+`getOrderPieceCount`). Se calculan DOS umbrales relativos por separado
+(mismo criterio de siempre: 1.5x el promedio, nunca un número fijo):
+- Órdenes: igual que V55 (piso de 3).
+- Prendas: piso = 3 × el tamaño promedio real de una orden en este
+  taller (no un número inventado — sale de los propios datos, mismo
+  espíritu que el piso de 3 órdenes).
+
+Un día se marca saturado si CUALQUIERA de los dos umbrales se alcanza —
+así una sola orden gigante satura por prendas aunque sea la única orden
+ese día (el caso exacto que señaló el usuario), y muchas órdenes
+chiquitas siguen saturando por cantidad aunque cada una traiga pocas
+piezas.
+
+**Frontend**: el badge del calendario (`MonthCalendar.jsx`) ahora
+muestra el número de prendas cuando hay datos capturados (ej. "⚠ 2,000
+pz" en vez de solo "⚠ 1"), con el conteo de órdenes en el tooltip; si
+una orden todavía no tiene prendas capturadas, cae de vuelta a mostrar
+el conteo de órdenes. La leyenda y el aviso de "Nueva orden" explican
+ambos umbrales.
+
+**Verificación**: arnés de depuración replicando el ejemplo exacto del
+usuario (una orden de 2,000 prendas sola un día vs. 10 órdenes de 10
+prendas cada una en otro día) confirmó que AMBOS escenarios se marcan
+como saturados — el primero por prendas, el segundo por cantidad de
+órdenes. `npm run build` limpio.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver
