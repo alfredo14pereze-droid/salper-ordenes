@@ -2333,6 +2333,52 @@ real.
 usuario confirmó el conteo día por día, navegación de mes y botón "Hoy".
 `npm run build` limpio.
 
+### V55 — el calendario detecta demanda alta ("días saturados")
+
+Pregunta del usuario: "¿hay alguna manera de que la página detecte
+cuando hay muchas órdenes, mucha demanda, y que ajuste el calendario
+acorde a eso?".
+
+**Aclarado con el usuario antes de construir nada** (2 preguntas, porque
+cambiaban qué se construye): quería AMBAS cosas — (a) marcar
+visualmente los días saturados en el calendario, y (b) avisar al elegir
+la fecha de entrega en "Nueva orden" si esa fecha ya está saturada — y
+el umbral de "saturado" debía ser **relativo** a la propia carga
+reciente del taller, no un número fijo que alguien tuviera que mantener
+actualizado.
+
+**`utils/demand.js`** (nuevo): `buildDemandMap(orders)` cuenta, para
+cada día, cuántas órdenes tienen ese día dentro de su "ventana de
+calendario" (la de V54, ya con el margen de +3 días hábiles incluido) —
+y calcula un umbral de saturación como **1.5× el promedio de carga de
+los días que sí tienen algo programado**, con un piso de 3 (para que un
+taller con muy pocas órdenes encimadas no marque como "saturado" un día
+con solo 1 o 2). Se auto-ajusta solo: si el taller en general trae más
+volumen, el umbral relativo sube solo, sin tocar código.
+
+**En el calendario** (`MonthCalendar.jsx`): los días que llegan o pasan
+el umbral se resaltan con un borde/fondo naranja (nunca rojo — ese queda
+exclusivo de "vencida", regla de identidad visual de siempre) y una
+etiqueta "⚠ N" con el conteo exacto; nueva línea en la leyenda
+explicando qué significa. El umbral se calcula sobre TODAS las órdenes
+visibles (no solo el mes que se está viendo), para que no cambie de
+significado con solo cambiar de mes.
+
+**En "Nueva orden"** (`NewOrderPage.jsx`): al elegir la fecha de entrega,
+si ese día YA está saturado (antes de contar la orden que se está
+creando), aparece un aviso naranja debajo del campo — "Esta fecha ya
+tiene N órdenes en producción encimadas... considera platicar con el
+cliente para correr la fecha". Es solo un aviso, no bloquea crear la
+orden.
+
+**Verificación**: arnés de depuración con 5 órdenes entregando el mismo
+día (más varias sueltas para no inflar el promedio general) confirmó
+que el calendario resalta exactamente ese periodo con el conteo correcto
+(⚠3 a ⚠6 según el día) y deja sin marcar los días con 1 sola orden;
+además se verificó `buildDemandMap`/`getLoadForDate`/`isSaturated`
+directo en consola con el mismo set de datos, mismo resultado. `npm run
+build` limpio.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

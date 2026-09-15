@@ -15,6 +15,7 @@ import {
 } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { computeCalendarWindow, isWithinRange } from '../../utils/dates'
+import { buildDemandMap } from '../../utils/demand'
 import { getStatus } from '../../utils/status'
 import { STATUSES } from '../../lib/constants'
 
@@ -51,6 +52,13 @@ export default function MonthCalendar({ orders, typesByKey }) {
     [ordersWithWindow, days]
   )
 
+  // V55 — pedido del usuario: que el calendario detecte cuando hay
+  // mucha demanda. El umbral se calcula sobre TODAS las órdenes
+  // visibles (no solo las del mes que se está viendo) para que no
+  // cambie de significado con solo cambiar de mes — ver
+  // utils/demand.js.
+  const demand = useMemo(() => buildDemandMap(orders), [orders])
+
   return (
     <div className="month-calendar">
       <div className="month-calendar__nav">
@@ -82,6 +90,7 @@ export default function MonthCalendar({ orders, typesByKey }) {
         {days.map((day) => {
           const dayOrders = ordersWithWindow.filter(({ window }) => isWithinRange(day, window.start, window.end))
           const inMonth = isSameMonth(day, monthCursor)
+          const saturated = dayOrders.length > 0 && dayOrders.length >= demand.threshold
 
           return (
             <div
@@ -89,10 +98,21 @@ export default function MonthCalendar({ orders, typesByKey }) {
               className={
                 'month-calendar__day' +
                 (inMonth ? '' : ' month-calendar__day--muted') +
-                (isToday(day) ? ' month-calendar__day--today' : '')
+                (isToday(day) ? ' month-calendar__day--today' : '') +
+                (saturated ? ' month-calendar__day--saturated' : '')
               }
             >
-              <span className="month-calendar__day-number">{format(day, 'd')}</span>
+              <div className="month-calendar__day-top">
+                <span className="month-calendar__day-number">{format(day, 'd')}</span>
+                {saturated && (
+                  <span
+                    className="month-calendar__day-badge"
+                    title={`${dayOrders.length} órdenes en producción este día — más de lo normal para este taller (umbral actual: ${demand.threshold}).`}
+                  >
+                    ⚠ {dayOrders.length}
+                  </span>
+                )}
+              </div>
               {dayOrders.length > 0 && (
                 <div className="month-calendar__events">
                   {dayOrders.map(({ order, window }) => {
@@ -129,6 +149,10 @@ export default function MonthCalendar({ orders, typesByKey }) {
             {s.label}
           </span>
         ))}
+        <span className="calendar-legend__item">
+          <span className="month-calendar__day-badge">⚠</span>
+          Día saturado — {demand.threshold} o más órdenes encimadas ese día, más de lo normal para este taller
+        </span>
       </div>
     </div>
   )

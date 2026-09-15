@@ -1,9 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOrderTypes } from '../hooks/useOrderTypes'
 import { useClientes } from '../hooks/useClientes'
 import { useTelas } from '../hooks/useTelas'
 import { useProductosByCliente } from '../hooks/useProductosByCliente'
+import { useOrders } from '../hooks/useOrders'
+import { buildDemandMap, getLoadForDate } from '../utils/demand'
+import { parseDate } from '../utils/dates'
+import { isActiveStatus } from '../utils/status'
 import { createOrder } from '../services/ordersService'
 import { uploadOrderPhotos } from '../services/photosService'
 import { uploadOrderDocument } from '../services/documentsService'
@@ -136,6 +140,11 @@ function NewOrderForm() {
   const { orderTypes, loading, error, refresh } = useOrderTypes()
   const { clientes, refresh: refreshClientes } = useClientes()
   const { telas, refresh: refreshTelas } = useTelas()
+  // V55 — para avisar si la fecha de entrega elegida ya cae en un
+  // periodo saturado (ver utils/demand.js). Mismo criterio de "activas"
+  // que usa el calendario por default (sin "Incluir completadas").
+  const { orders: allOrders } = useOrders()
+  const demand = useMemo(() => buildDemandMap(allOrders.filter((o) => isActiveStatus(o.status))), [allOrders])
 
   // V42: el borrador se lee UNA sola vez (lazy init) — no en cada
   // render, si no reabriría localStorage con cada tecla.
@@ -378,6 +387,11 @@ function NewOrderForm() {
   if (loading) return <Loading label="Cargando tipos de orden…" />
   if (error) return <ErrorState error={error} onRetry={refresh} />
 
+  // V55 — carga de esa fecha ANTES de agregar esta orden nueva (así se
+  // avisa si ya está saturada, no después de que esta orden ya cuenta).
+  const deliveryLoad = form.requestedDeliveryDate ? getLoadForDate(demand, parseDate(form.requestedDeliveryDate)) : 0
+  const deliverySaturated = deliveryLoad > 0 && deliveryLoad >= demand.threshold
+
   return (
     <div className="page page--narrow">
       <h2 className="section-title">Nueva orden</h2>
@@ -523,6 +537,12 @@ function NewOrderForm() {
             onChange={(e) => updateField('requestedDeliveryDate', e.target.value)}
           />
         </label>
+        {deliverySaturated && (
+          <p className="pantone-hint" style={{ color: 'var(--color-orange-strong)' }}>
+            ⚠ Esta fecha ya tiene {deliveryLoad} orden{deliveryLoad === 1 ? '' : 'es'} en producción encimadas — más
+            de lo normal para este taller. Si se puede, considera platicar con el cliente para correr la fecha.
+          </p>
+        )}
 
         <label>
           Descripción / especificaciones generales
