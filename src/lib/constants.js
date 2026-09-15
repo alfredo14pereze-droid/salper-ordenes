@@ -107,9 +107,6 @@ export const PEDIDO_TIENDA_ESTADOS = [
 
 export const DEFAULT_ORDER_TYPE_COLOR = '#e8720c'
 
-// Cuántas semanas hacia adelante se muestran en el calendario de producción.
-export const CALENDAR_WEEKS_AHEAD = 8
-
 // Colores predefinidos para las prendas de una orden (ver OrderItemsEditor).
 // Lista fija por ahora — si más adelante se necesita que cualquiera pueda
 // agregar colores nuevos sin pedírselo a un programador, se puede migrar a

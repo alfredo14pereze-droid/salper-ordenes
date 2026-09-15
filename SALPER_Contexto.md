@@ -2280,6 +2280,59 @@ componentes/CSS) confirmó el flujo completo: elegir un rol cambia el
 "role efectivo" al instante, aparece la franja, y "Volver a mi vista"
 regresa todo a admin_general. `npm run build` limpio.
 
+### V54 — Calendario rediseñado: vista de mes común, con margen de seguridad
+
+Pedido: "quiero cambiar el calendario, quiero que sea algo así, como un
+calendario común, que tenga todas las órdenes ahí, con fechas de
+entrega, que cada orden ocupe los días hábiles que va a tomar en el
+calendario... si en la fábrica dice que va a tomar 5 días, tu ponla en 7
+u 8 días para que esté sobrado". El usuario mandó una captura de un
+calendario de pared normal (Dom-Sáb, casillas por día) como referencia
+visual.
+
+**Antes**: `ProductionCalendar.jsx` era una tabla tipo Gantt — filas por
+orden, columnas por semana (8 semanas fijas hacia adelante). El usuario
+lo quería "completamente diferente".
+
+**Aclarado con el usuario antes de tocar código** (2 preguntas, porque
+cambiaban el resultado visual y no había forma segura de adivinarlas):
+- Días hábiles para la fábrica: **lunes a viernes** (no sábado).
+- Regla de margen: sus dos ejemplos (2 días de fábrica → se ve como 5;
+  5 días → se ve como "7 u 8") calzan exacto con sumar siempre **+3 días
+  hábiles** al estimado — confirmado como la regla a usar.
+
+**`MonthCalendar.jsx`** (nuevo, reemplaza `ProductionCalendar.jsx`):
+vista de mes real con navegación (← mes anterior / Hoy / mes siguiente
+→), encabezado Dom-Sáb, y una cuadrícula de días (los del mes actual en
+blanco, los de meses vecinos en gris, hoy con un círculo ámbar). Cada
+orden aparece como un chip de color en cada día de su ventana — mismo
+color por estado que ya usaba el calendario viejo (`getStatus`/
+`STATUSES`) y la misma leyenda de abajo. Clic en un chip navega al
+detalle de la orden.
+
+**`computeCalendarWindow`** (nuevo en `utils/dates.js`, aparte de
+`computeProductionWindow` que sigue igual — esa es la que muestra el
+estimado REAL sin inflar en "Ventana de producción estimada" del detalle
+de la orden, no se toca): `totalDays = estimated_production_days + 3`;
+el inicio se cuenta con `subBusinessDays` de date-fns (lunes a viernes,
+salta sábado/domingo solo al CONTAR los días hacia atrás) — la barra en
+sí se pinta continua en el calendario, fines de semana de por medio
+incluidos, solo el conteo del margen salta findes de semana. Verificado
+con los dos ejemplos exactos del usuario: 2 días de fábrica con entrega
+viernes → aparece lunes a viernes de esa misma semana (5 días); 5 días
+de fábrica con entrega viernes → aparece desde el miércoles de la semana
+anterior (8 días hábiles reales, con el fin de semana de por medio
+pintado también).
+
+**Limpieza**: se borraron `buildWeekColumns`, `rangesOverlap` y
+`CALENDAR_WEEKS_AHEAD` (quedaron huérfanos, solo los usaba el calendario
+viejo) — `isWithinRange` (ya existía sin usarse) ahora sí tiene un uso
+real.
+
+**Verificación**: arnés de depuración con los 2 ejemplos exactos del
+usuario confirmó el conteo día por día, navegación de mes y botón "Hoy".
+`npm run build` limpio.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

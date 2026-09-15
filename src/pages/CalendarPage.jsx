@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useOrders } from '../hooks/useOrders'
 import { useOrderTypes } from '../hooks/useOrderTypes'
-import ProductionCalendar from '../components/calendar/ProductionCalendar'
+import MonthCalendar from '../components/calendar/MonthCalendar'
 import { Loading, ErrorState } from '../components/common/States'
 import { isActiveStatus } from '../utils/status'
 
@@ -27,7 +27,7 @@ export default function CalendarPage() {
           Incluir completadas
         </label>
       </div>
-      <ProductionCalendar orders={visibleOrders} typesByKey={typesByKey} />
+      <MonthCalendar orders={visibleOrders} typesByKey={typesByKey} />
     </div>
   )
 }

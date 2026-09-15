@@ -1,13 +1,4 @@
-import {
-  addDays,
-  subDays,
-  addWeeks,
-  startOfWeek,
-  differenceInCalendarDays,
-  isWithinInterval,
-  parseISO,
-  format,
-} from 'date-fns'
+import { subDays, subBusinessDays, differenceInCalendarDays, isWithinInterval, parseISO, format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 // Las fechas que vienen de Supabase (columnas "date") llegan como string
@@ -44,25 +35,26 @@ export function computeProductionWindow(order) {
   return { start, end }
 }
 
-// Genera columnas semanales (lunes a domingo) para el calendario de
-// producción, empezando en la semana actual.
-export function buildWeekColumns(numWeeks, from = new Date()) {
-  const firstWeekStart = startOfWeek(from, { weekStartsOn: 1 })
-  return Array.from({ length: numWeeks }).map((_, i) => {
-    const start = addWeeks(firstWeekStart, i)
-    const end = addDays(start, 6)
-    return {
-      start,
-      end,
-      label: `${format(start, 'd MMM', { locale: es })} – ${format(end, 'd MMM', { locale: es })}`,
-    }
-  })
-}
-
-export function rangesOverlap(aStart, aEnd, bStart, bEnd) {
-  return aStart <= bEnd && bStart <= aEnd
-}
-
 export function isWithinRange(date, start, end) {
   return isWithinInterval(date, { start, end })
+}
+
+// V54 — ventana que se pinta en el calendario de producción (distinta de
+// computeProductionWindow: esa muestra el estimado REAL de fábrica en el
+// detalle de la orden, sin tocar). Aquí, a pedido explícito del usuario,
+// se le suma un margen fijo de 3 días hábiles al estimado — "si dice que
+// va a tomar 5 días, ponla en 7 u 8 para que esté sobrado" — y el inicio
+// se cuenta en días hábiles de lunes a viernes (subBusinessDays de
+// date-fns ya salta sábado/domingo). La barra en sí se pinta continua
+// entre inicio y fin (incluye fines de semana de por medio si los hay),
+// solo el CONTEO de los días hacia atrás salta fin de semana.
+const CALENDAR_BUFFER_BUSINESS_DAYS = 3
+
+export function computeCalendarWindow(order) {
+  const end = parseDate(order.requested_delivery_date)
+  if (!end) return null
+  const rawDays = Math.max(Number(order.estimated_production_days) || 1, 1)
+  const totalDays = rawDays + CALENDAR_BUFFER_BUSINESS_DAYS
+  const start = subBusinessDays(end, totalDays - 1)
+  return { start, end }
 }
