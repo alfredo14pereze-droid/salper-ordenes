@@ -2019,6 +2019,51 @@ columnas reales, no la versión de celular en 1 columna) confirmó la
 posición junto a Prenda/Color/Pantone y que ambos estados se pintan
 correctamente al alternar. `npm run build` limpio.
 
+### V48 — detalle de orden compacto: resumen de prendas, "Cantidad surtida" solo para terminado, foto arriba
+
+Queja del usuario: una orden ya creada se veía "con demasiada información",
+"muy feo" — específicamente señaló dos cosas: (1) las prendas se veían
+siempre como el formulario completo de captura (todos los inputs de
+tela/cuello/manga/vivos/puños/logotipos/números/roster, editable o no) en
+vez de un resumen; (2) "Cantidad surtida" (comparación pedido vs.
+realmente surtido, por talla) es ruido para cualquiera que no sea
+terminado y no debería ni verse fuera de ese rol. Después, mid-turno,
+agregó que la foto de referencia se pierde hasta abajo de la página y
+debería estar arriba.
+
+**Prendas — resumen por default + "Editar"** (`OrderItemsCard.jsx`,
+reescrito): antes `OrderItemsEditor` vivía SIEMPRE montado (con un
+`<fieldset disabled>` si el rol no podía tocarlo — visualmente igual de
+extenso para todos). Ahora por default se ve un resumen de solo lectura
+por prenda (mismo patrón dt/dd que `OrderDetailsCard`: Prenda · Color,
+Tela, Pantone, Cuello/Manga/Vivos/Puños/Logotipos/Números si tienen
+valor, Tallas y cantidades en una sola línea, y una fila de "Notas" con
+Lleva bordado/Lleva bolsas/cantidad de registros del roster si aplica) +
+un total de piezas al final. El botón "Editar" (mismo criterio de
+siempre, `canEditOrder` — tienda mientras la orden sigue en
+`en_confirmacion`, admin_tienda/admin_general siempre) revela el
+`OrderItemsEditor` completo tal cual existía, con "Cancelar"/"Guardar
+cambios de prendas" — quien no puede editar ya ni ve el botón. "Guardar
+esta orden como plantilla" se movió adentro del modo edición (antes vivía
+siempre visible arriba del formulario).
+
+**"Cantidad surtida" — visibilidad, no solo edición, restringida a
+terminado**: antes se mostraba a cualquier usuario con sesión (`user &&
+order.items?.length > 0`), y el candado (`canManageSurtido`: terminado +
+admin_fabrica/admin_general) solo bloqueaba poder EDITAR las cantidades,
+no verlas. Ahora `OrderDetailPage.jsx` ni monta la sección completa a
+menos que `canManageSurtido(role)` — el resto de los roles no sabe que
+existe, exactamente como pidió el usuario.
+
+**Foto de referencia arriba**: `PhotoGallery` se movió de hasta abajo
+(después de "Historial de estados") a justo después de "Detalles", como
+la 2ª tarjeta de la página — ya no se pierde entre Documentos/Pagos/
+Prendas/Etapas.
+
+**Verificación**: arnés de depuración con una réplica exacta del JSX del
+resumen (2 prendas con distintos campos llenos) confirmó que se ve
+compacto y que el total suma bien. `npm run build` limpio.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

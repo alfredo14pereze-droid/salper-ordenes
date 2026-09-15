@@ -27,7 +27,7 @@ import {
   remisionPdfFileName,
 } from '../utils/generateOrderPdf'
 import { useAuth } from '../contexts/AuthContext'
-import { canViewRemision } from '../utils/permissions'
+import { canViewRemision, canManageSurtido } from '../utils/permissions'
 
 export default function OrderDetailPage() {
   const { user, role } = useAuth()
@@ -143,6 +143,19 @@ export default function OrderDetailPage() {
           <OrderDetailsCard order={order} orderTypes={orderTypes} onUpdated={refresh} />
         </section>
 
+        {/* V48 — la foto de referencia se movió hasta arriba (antes vivía
+            hasta abajo, después de Historial) para que no se pierda entre
+            todas las demás tarjetas — pedido explícito del usuario. */}
+        <section className="card">
+          {location.state?.photoUploadError && (
+            <p className="form-error">
+              La orden se creó, pero hubo un problema subiendo las fotos: {location.state.photoUploadError}.
+              Puedes intentarlo de nuevo aquí abajo.
+            </p>
+          )}
+          <PhotoGallery order={order} onUpdated={refresh} />
+        </section>
+
         {user && !order.eliminada_en && (
           <section className="card">
             <StatusChanger order={order} onUpdated={refresh} />
@@ -190,7 +203,13 @@ export default function OrderDetailPage() {
           </section>
         )}
 
-        {order.items?.length > 0 && (
+        {/* V48 — "Cantidad surtida" es demasiado ruido visual para quien
+            solo consulta la orden (comparación pedido/surtido por cada
+            talla de cada prenda) y además no es información que le sirva a
+            nadie fuera de terminado — pedido explícito del usuario: que
+            solo terminado (y admin_fabrica/admin_general, mismo criterio
+            que canManageSurtido) puedan siquiera VERLA, no solo editarla. */}
+        {order.items?.length > 0 && canManageSurtido(role) && (
           <section className="card">
             <OrderSurtidoCard order={order} onUpdated={refresh} />
           </section>
@@ -199,16 +218,6 @@ export default function OrderDetailPage() {
         <section className="card">
           <h3 className="section-title section-title--small">Historial de estados</h3>
           <StatusHistoryList history={history} />
-        </section>
-
-        <section className="card">
-          {location.state?.photoUploadError && (
-            <p className="form-error">
-              La orden se creó, pero hubo un problema subiendo las fotos: {location.state.photoUploadError}.
-              Puedes intentarlo de nuevo aquí abajo.
-            </p>
-          )}
-          <PhotoGallery order={order} onUpdated={refresh} />
         </section>
 
         <section className="card card--placeholders">
