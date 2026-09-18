@@ -276,6 +276,16 @@ export function canManageOrderNotes(role) {
   return !!role && role !== 'lectura'
 }
 
+// V57 — Pedidos Colegio (beta): módulo OCULTO, exclusivo admin_general —
+// ni aparece en el menú para ningún otro rol. Espejo de lo que ya exige
+// el servidor (RLS de SELECT solo admin_general, y los RPC create_colegio*/
+// add_colegio_abono/etc. revisan el rol adentro) — esto solo decide qué
+// se muestra. Usa el rol EFECTIVO de useAuth(), así que con "Ver como"
+// (V53) el módulo desaparece igual que para cualquier otro rol.
+export function canManagePedidosColegio(role) {
+  return role === 'admin_general'
+}
+
 export const ROLE_LABELS = {
   ventas: 'Ventas',
   contabilidad: 'Contabilidad',

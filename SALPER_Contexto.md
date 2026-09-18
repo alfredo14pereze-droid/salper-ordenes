@@ -2415,6 +2415,109 @@ prendas cada una en otro día) confirmó que AMBOS escenarios se marcan
 como saturados — el primero por prendas, el segundo por cantidad de
 órdenes. `npm run build` limpio.
 
+### V57 — Módulo "Pedidos Colegio" (BETA, oculto, solo admin_general)
+
+Prompt del usuario: control de "Pedidos Colegio" — ventas de uniformes
+escolares levantadas en campo que hoy viven en papel + Microsip, sin
+visibilidad de qué falta surtir. Esta beta cubre alta de colegios, pedidos
+con sus prendas, folio por colegio, anticipo, abonos posteriores y recibo
+en PDF. **Módulo nuevo y aislado**: no toca `orders`, `orden_etapas` ni
+ningún flujo de producción.
+
+**Diferencias entre el prompt y el proyecto real (resueltas antes de
+construir; el esquema se confirmó con el usuario antes de aplicarse):**
+- El prompt pedía construir en la rama `fase-2` — estaba **59 commits
+  atrás de `main`** (ya fusionada, ver la sección más abajo). El usuario
+  eligió construir **directo en `main`** (el módulo queda oculto para todo
+  rol menos admin_general, así que no afecta V1).
+- `super_admin` = `admin_general` (mismo criterio que ya se documentó en
+  V22). `creado_por`/`registrado_por` apuntan a `profiles(id)` (no existe
+  una tabla `users`).
+- El PDF de ejemplo (`Downloads/SALPER DEPORTES.pdf`) es de **AVENUE
+  SCHOOL, folio AS1** — colegio que NO estaba en la lista de 5 del prompt.
+  El usuario pidió sembrarlo como **6º colegio** (código `AS`).
+
+**Esquema** (`supabase/schema_v57_pedidos_colegio.sql`, aplicado y
+verificado en vivo): `colegios` (+ `ultimo_folio`, contador por colegio,
+extra sobre el prompt), `colegio_pedidos`, `colegio_pedido_articulos` (+
+`posicion`, orden de captura; **sin** `cantidad_surtida` todavía — es de
+la siguiente fase), `colegio_pedido_abonos`. Colegios sembrados: Instituto
+Tricio `IT`, Colegio Doris Beckman `CDB`, Colegio Juan Beckman `CJB`,
+Colegio Echavarría `CJE`, Sistema Educativo Nexus `SEN`, Avenue School
+`AS`.
+- **Folio** = `{codigo}{consecutivo}` (IT1, IT2…). El UPDATE atómico de
+  `colegios.ultimo_folio` dentro de `create_colegio_pedido` toma el candado
+  de la fila del colegio (dos capturas simultáneas se serializan); solo
+  sube, nunca se reutiliza aunque el pedido se elimine (soft delete). Las
+  líneas se validan ANTES de consumir el folio, para no quemar un
+  consecutivo con un pedido inválido. `codigo_folio` solo letras (1-6) —
+  así "A"+"11" nunca choca con "A1"+"1".
+- **El servidor calcula todo**: subtotal, importe de cada línea y el
+  anticipo (si viene monto manda el monto y se deriva el %; si no, el %,
+  default 100 como el recibo de ejemplo). El navegador solo previsualiza.
+- **Seguridad, distinta al resto de la app**: aquí NADA es público (hay
+  teléfonos de clientes y dinero). RLS activo en las 4 tablas, SELECT solo
+  para `authenticated` con `current_user_role() = 'admin_general'`, `anon`
+  sin ningún privilegio, `authenticated` sin INSERT/UPDATE/DELETE directo.
+  Escritura solo por RPC `SECURITY DEFINER` (`create_colegio`,
+  `create_colegio_pedido`, `add_colegio_abono`, `delete_colegio_abono`,
+  `soft_delete_colegio_pedido`) con `revoke ... from public` + `grant ... to
+  authenticated` y el chequeo de rol adentro. Un abono no puede pasarse del
+  saldo pendiente.
+- **Verificado en vivo**: 6 colegios sembrados; exactamente 1 fila en
+  `pg_proc` por función; `anon` = false (funciones y tablas); RLS en las 4
+  tablas. Simulación de los RPC dentro de una transacción con `ROLLBACK`
+  (16 chequeos: folios AS1/AS2/AS3, anticipo 100%/50%/monto → 20.83%, líneas
+  en orden, abono válido, abono excedido, sin artículos, cantidad 0,
+  anticipo > subtotal, abono a pedido eliminado, código duplicado, código
+  con número, rol `ventas` rechazado, sin sesión rechazado) — todos
+  pasaron, y después se confirmó que no quedó ningún dato (0 pedidos, 0
+  líneas, 0 abonos, `ultimo_folio` en 0).
+
+**Frontend**: menú "Pedidos Colegio" solo con `canManagePedidosColegio`
+(`admin_general`; usa el rol EFECTIVO, así que con "Ver como" (V53)
+desaparece igual que para cualquier rol, y la ruta directa da "No tienes
+permiso"). Rutas `/pedidos-colegio`, `/pedidos-colegio/nuevo`,
+`/pedidos-colegio/:id`. `PedidosColegioPage` (colegios expandibles con sus
+pedidos, saldo en rojo/verde, "+ Agregar colegio"), `NewPedidoColegioPage`
+(renglones con auto-agregado, anticipo por % o monto directo, subtotal/
+anticipo/saldo en vivo, aviso si el anticipo pasa del subtotal),
+`PedidoColegioDetailPage` (Pagos, artículos, abonos con fecha/monto/nota y
+borrar, "Eliminar pedido" con confirmación, "Generar recibo PDF").
+**Recibo PDF** (`PedidoColegioPdf.jsx`, basado en el ejemplo): encabezado
+SALPER DEPORTES + teléfonos, Fecha/Folio, caja Cliente, tabla, importe con
+letra del saldo (`montoConLetra`), los 4 términos del ejemplo, Subtotal/
+Anticipo/Abonos/Saldo. **Hoja doble**: el recibo va dos veces (COPIA
+SALPER / COPIA CLIENTE) separado por línea punteada; si el pedido trae más
+de 12 renglones, cada copia pasa a su propia hoja. Se abre en vista previa
+(`PdfPreviewModal`) al crear el pedido y con el botón del detalle.
+
+**Verificación del frontend**: app completa montada con un Supabase
+simulado en memoria (solo en un arnés temporal, ya borrado): lista →
+alta con anticipo por monto → detalle con la vista previa del recibo
+abriéndose sola → abono excedido rechazado → abono válido (saldo
+actualizado) → "Ver como Ventas" oculta el módulo y bloquea la ruta. El PDF
+se renderizó en 3 escenarios (ejemplo AS1, con abonos, y 15 renglones a
+2 hojas). Se corrigieron en el camino: "Uno peso" → "Un peso"
+(apócope) y el saldo negativo mostrado como `$-499,540.00` (ahora
+`-$499,540.00` + aviso en el formulario).
+
+**Decisiones menores tomadas sin preguntar (ajustables):** además de lo
+del prompt se agregó borrar abonos y eliminar (soft) un pedido, porque un
+error de captura en dinero no debería quedar sin salida; el PDF muestra
+solo "Artículo" + "Talla" (el ejemplo trae una columna de código Microsip
+y la talla dentro del nombre — el prompt pedía columnas separadas).
+
+**Pendiente — SIGUIENTE FASE (ya diseñada, no incluida en esta beta):**
+captura de cantidad surtida por línea con estado automático (completo /
+parcial / falta), cortes automáticos por fecha por colegio, resumen
+consolidado de faltantes (por producto/talla) y detallado (por cliente), y
+envío automático del reporte por correo al cerrarse un corte. También sin
+hacer: editar un pedido ya creado (líneas/anticipo), desactivar un colegio
+desde la UI (la columna `activo` existe pero no hay botón), y ajustar la
+leyenda de "solo entregas totales" del recibo cuando se implemente el
+control de entregas parciales.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

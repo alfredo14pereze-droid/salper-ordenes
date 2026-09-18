@@ -7,6 +7,7 @@ import {
   canCreateOrder,
   canViewCatalogos,
   canManageUsers,
+  canManagePedidosColegio,
   canViewPedidosTienda,
   canViewEstadisticas,
   hasRestrictedNav,
@@ -76,6 +77,8 @@ export default function AppLayout({ children }) {
       show: PEDIDOS_PROVEEDOR_HABILITADO && !restricted && !tiendaBasica && canViewPedidosTienda(role),
     },
     { to: '/catalogos', label: 'Catálogos', show: canViewCatalogos(role) },
+    // V57 — beta oculta: solo admin_general (ver canManagePedidosColegio).
+    { to: '/pedidos-colegio', label: 'Pedidos Colegio', show: canManagePedidosColegio(role) },
     { to: '/usuarios', label: 'Usuarios', show: canManageUsers(role) },
   ]
 

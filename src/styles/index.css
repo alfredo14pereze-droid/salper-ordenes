@@ -1341,6 +1341,20 @@ h4 {
   grid-template-columns: 1fr 90px 100px 28px;
 }
 
+/* V57 — renglones de Pedidos Colegio: artículo / talla / cantidad /
+   precio / importe / quitar. No toca .sizes-row (otros editores siguen
+   con 3 y 4 columnas). */
+.pedido-colegio-row {
+  grid-template-columns: 1fr 70px 84px 96px 92px 28px;
+}
+
+.pedido-colegio-importe {
+  text-align: right;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 .sizes-row__remove {
   border: none;
   background: transparent;

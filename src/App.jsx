@@ -17,6 +17,9 @@ import PedidoTiendaDetailPage from './pages/PedidoTiendaDetailPage'
 import CatalogosPage from './pages/CatalogosPage'
 import ControlRapidoPage from './pages/ControlRapidoPage'
 import EstadisticasPage from './pages/EstadisticasPage'
+import PedidosColegioPage from './pages/PedidosColegioPage'
+import NewPedidoColegioPage from './pages/NewPedidoColegioPage'
+import PedidoColegioDetailPage from './pages/PedidoColegioDetailPage'
 import FeatureDisabledPage from './components/common/FeatureDisabledPage'
 import { isSupabaseConfigured } from './lib/supabaseClient'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -77,6 +80,11 @@ function AuthGate() {
           <Route path="/catalogos" element={<CatalogosPage />} />
           <Route path="/control-rapido" element={<ControlRapidoPage />} />
           <Route path="/estadisticas" element={<EstadisticasPage />} />
+          {/* V57 — Pedidos Colegio (beta): cada página se protege sola con
+              RequireRole (solo admin_general); el servidor lo exige igual. */}
+          <Route path="/pedidos-colegio" element={<PedidosColegioPage />} />
+          <Route path="/pedidos-colegio/nuevo" element={<NewPedidoColegioPage />} />
+          <Route path="/pedidos-colegio/:id" element={<PedidoColegioDetailPage />} />
           <Route
             path="/pedidos-proveedor"
             element={PEDIDOS_PROVEEDOR_HABILITADO ? <PedidosTiendaPage /> : <FeatureDisabledPage />}
