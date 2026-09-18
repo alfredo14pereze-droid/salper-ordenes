@@ -2518,6 +2518,64 @@ desde la UI (la columna `activo` existe pero no hay botón), y ajustar la
 leyenda de "solo entregas totales" del recibo cuando se implemente el
 control de entregas parciales.
 
+### V58 — Documentos múltiples, ventas/contabilidad suben después de creada la orden, total por prenda
+
+Pedido del usuario (tres cosas, con capturas de una orden real vista con
+"Ver como → Ventas"):
+
+**1. Ventas y contabilidad suben cotizaciones/órdenes de compra aunque la
+orden ya esté confirmada, y pueden ser varias.** Antes: una sola columna
+por tipo en `orders` (`cotizacion_pdf_path`/`orden_compra_pdf_path`/
+`factura_pdf_path`), y ventas/contabilidad solo podían mientras la orden
+seguía `en_confirmacion` (tope de estado en `set_order_document` y en
+`canEditOrderDocument`). `supabase/schema_v58_documentos_multiples.sql`
+(aplicado y verificado en vivo, ADITIVO):
+- Tabla nueva `order_documentos` (una fila por archivo; `kind`,
+  `path` único, `nombre` original, `created_by`), RLS solo lectura con
+  sesión, `anon` sin nada, escritura solo por RPC. Los 2 PDFs que ya
+  existían (1 cotización, 1 orden de compra) se COPIARON a la tabla (1→1,
+  1→1, factura 0→0); las columnas viejas NO se borraron.
+- RPC nuevos `add_order_documento` / `delete_order_documento`: cotización
+  y orden de compra → ventas, contabilidad, admin_tienda, admin_general,
+  **sin tope de estado**; factura → contabilidad, admin_tienda,
+  admin_general (ventas nunca, igual que antes). Orden eliminada = nadie
+  edita. `add` exige que la ruta del archivo empiece con el id de ESA
+  orden.
+- `set_order_document` (que una pestaña desactualizada todavía puede
+  llamar) conserva su firma y sus reglas, y ahora además refleja el
+  archivo en la tabla nueva — nada subido desde una pestaña vieja queda
+  invisible (mismo problema de "pestaña vieja" que ya se vio en V44/
+  error de `p_folio_externo`).
+- Frontend: `OrderDocumentsCard` reescrita (lista de archivos por tipo,
+  "Subir PDF (o arrastra aquí)" / "+ Agregar otro" con varios a la vez,
+  "Ver", "Quitar"); `documentsService` (`fetchOrderDocumentos`,
+  `uploadOrderDocument` ahora agrega en vez de reemplazar,
+  `deleteOrderDocumento`; se quitó `removeOrderDocument`, que no tenía
+  usos); `canEditOrderDocument` sin tope de estado; `NewOrderPage` también
+  acepta varios PDFs por tipo al crear la orden.
+- Verificado: simulación SQL con `ROLLBACK` (13 chequeos: ventas sube 2
+  cotizaciones a una orden ya en `en_terminado`, ventas rechazada con
+  factura, contabilidad sí, rol `corte` rechazado, ruta de otra orden,
+  tipo inválido, orden eliminada, compat de `set_order_document`, sin
+  sesión) y después se confirmó que no quedó nada (2 documentos, rol del
+  admin restaurado). En pantalla (Supabase simulado): ventas sube 2 PDFs
+  arrastrando a la vez y quita uno en una orden ya confirmada; contabilidad
+  puede con los 3 tipos; `terminado` solo ve.
+
+**2. "Que el admin general pueda borrar anticipos" — no requirió cambio
+de código.** `delete_anticipo` ya permitía `admin_general`/`admin_tienda`
+(verificado en la base en vivo), y el botón "Borrar" de `OrderPaymentsCard`
+usa `canDelete` = esos mismos roles. En la captura del usuario estaba
+activo **"Ver como → Ventas"** (V53), que simula el rol EFECTIVO — y
+ventas no puede borrar anticipos, así que el botón no aparece en esa
+vista. Se le explicó: volver a "Mi vista (Administrador general)".
+
+**3. Total por prenda.** `OrderItemsCard` (resumen de prendas del detalle
+de la orden) ahora muestra "Total de esta prenda: N piezas" por cada
+prenda, además del total de piezas de la orden. `ResumenPage` (Resumen
+por cliente) muestra "· N pz" junto al nombre de cada prenda. (El PDF de
+la orden ya traía el total por prenda.)
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver

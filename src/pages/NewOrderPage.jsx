@@ -135,6 +135,40 @@ export default function NewOrderPage() {
   )
 }
 
+// V58 — selector de PDFs de un tipo (cotización / orden de compra) para el
+// formulario de "Nueva orden": pueden ser VARIOS; la subida real ocurre
+// después de crear la orden.
+function DocumentosPicker({ label, files, onChange }) {
+  return (
+    <div>
+      <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+        {label}
+      </span>
+      <FileDropLabel
+        className="btn btn--secondary btn--small"
+        style={{ display: 'inline-flex' }}
+        accept="application/pdf"
+        multiple
+        onFiles={(nuevos) => onChange([...files, ...nuevos])}
+      >
+        {files.length > 0 ? '+ Agregar otro' : 'Subir PDF (o arrastra aquí)'}
+      </FileDropLabel>
+      {files.map((file, i) => (
+        <div key={`${file.name}-${i}`} style={{ marginTop: 6, display: 'flex', gap: 8, alignItems: 'center' }}>
+          <span className="template-hint">{file.name}</span>
+          <button
+            type="button"
+            className="btn btn--ghost btn--small"
+            onClick={() => onChange(files.filter((_, j) => j !== i))}
+          >
+            Quitar
+          </button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function NewOrderForm() {
   const { profile } = useAuth()
   const { orderTypes, loading, error, refresh } = useOrderTypes()
@@ -174,8 +208,8 @@ function NewOrderForm() {
   // patrón que las fotos de referencia, un poco más abajo. Los archivos
   // NO se recuperan del borrador (ver nota de DRAFT_KEY); los datos del
   // anticipo sí.
-  const [cotizacionFile, setCotizacionFile] = useState(null)
-  const [ordenCompraFile, setOrdenCompraFile] = useState(null)
+  const [cotizacionFiles, setCotizacionFiles] = useState([])
+  const [ordenCompraFiles, setOrdenCompraFiles] = useState([])
   const [anticipoMonto, setAnticipoMonto] = useState(() => initialDraft?.anticipoMonto || '')
   const [anticipoMetodo, setAnticipoMetodo] = useState(() => initialDraft?.anticipoMetodo || 'efectivo')
   const [anticipoRecibidoPor, setAnticipoRecibidoPor] = useState(
@@ -337,15 +371,19 @@ function NewOrderForm() {
     // anticipo son opcionales y, si algo falla aquí, la orden YA se creó
     // — no se cancela nada, solo se avisa para reintentar desde el
     // detalle (OrderDocumentsCard/OrderPaymentsCard).
-    let documentError = null
-    if (cotizacionFile) {
-      const { error: docError } = await uploadOrderDocument(data.id, 'cotizacion', cotizacionFile)
-      if (docError) documentError = `Cotización: ${docError.message}`
+    // V58 — pueden ser varias de cada tipo. Se sube una por una y se juntan
+    // los errores (los que sí se subieron quedan registrados).
+    const documentErrors = []
+    for (const [kind, label, files] of [
+      ['cotizacion', 'Cotización', cotizacionFiles],
+      ['orden_compra', 'Orden de compra', ordenCompraFiles],
+    ]) {
+      for (const file of files) {
+        const { error: docError } = await uploadOrderDocument(data.id, kind, file)
+        if (docError) documentErrors.push(`${label}: ${docError.message}`)
+      }
     }
-    if (ordenCompraFile) {
-      const { error: docError } = await uploadOrderDocument(data.id, 'orden_compra', ordenCompraFile)
-      if (docError) documentError = documentError ? `${documentError} · Orden de compra: ${docError.message}` : `Orden de compra: ${docError.message}`
-    }
+    const documentError = documentErrors.length > 0 ? documentErrors.join(' · ') : null
 
     let anticipoError = null
     if (anticipoMontoNum > 0) {
@@ -592,48 +630,8 @@ function NewOrderForm() {
           </p>
 
           <div className="form-row">
-            <div>
-              <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
-                Cotización (PDF)
-              </span>
-              <FileDropLabel
-                className="btn btn--secondary btn--small"
-                style={{ display: 'inline-flex' }}
-                accept="application/pdf"
-                onFiles={(files) => setCotizacionFile(files[0] || null)}
-              >
-                {cotizacionFile ? 'Reemplazar' : 'Subir PDF (o arrastra aquí)'}
-              </FileDropLabel>
-              {cotizacionFile && (
-                <div style={{ marginTop: 6, display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span className="template-hint">{cotizacionFile.name}</span>
-                  <button type="button" className="btn btn--ghost btn--small" onClick={() => setCotizacionFile(null)}>
-                    Quitar
-                  </button>
-                </div>
-              )}
-            </div>
-            <div>
-              <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
-                Orden de compra (PDF)
-              </span>
-              <FileDropLabel
-                className="btn btn--secondary btn--small"
-                style={{ display: 'inline-flex' }}
-                accept="application/pdf"
-                onFiles={(files) => setOrdenCompraFile(files[0] || null)}
-              >
-                {ordenCompraFile ? 'Reemplazar' : 'Subir PDF (o arrastra aquí)'}
-              </FileDropLabel>
-              {ordenCompraFile && (
-                <div style={{ marginTop: 6, display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span className="template-hint">{ordenCompraFile.name}</span>
-                  <button type="button" className="btn btn--ghost btn--small" onClick={() => setOrdenCompraFile(null)}>
-                    Quitar
-                  </button>
-                </div>
-              )}
-            </div>
+            <DocumentosPicker label="Cotización (PDF)" files={cotizacionFiles} onChange={setCotizacionFiles} />
+            <DocumentosPicker label="Orden de compra (PDF)" files={ordenCompraFiles} onChange={setOrdenCompraFiles} />
           </div>
 
           <div className="form-row" style={{ marginTop: 12 }}>

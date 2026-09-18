@@ -1,37 +1,60 @@
-import { useEffect, useState } from 'react'
-import { uploadOrderDocument, uploadClienteConstanciaFiscal, getSignedDocumentUrl } from '../../services/documentsService'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  fetchOrderDocumentos,
+  uploadOrderDocument,
+  deleteOrderDocumento,
+  uploadClienteConstanciaFiscal,
+  getSignedDocumentUrl,
+} from '../../services/documentsService'
 import { fetchClienteById } from '../../services/clientesService'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditOrderDocument, canManageClienteDocuments } from '../../utils/permissions'
 import FileDropLabel from '../common/FileDropLabel'
 
 const DOC_TYPES = [
-  { kind: 'cotizacion', label: 'Cotización', field: 'cotizacion_pdf_path' },
-  { kind: 'orden_compra', label: 'Orden de compra', field: 'orden_compra_pdf_path' },
-  { kind: 'factura', label: 'Factura', field: 'factura_pdf_path' },
+  { kind: 'cotizacion', label: 'Cotización' },
+  { kind: 'orden_compra', label: 'Orden de compra' },
+  { kind: 'factura', label: 'Factura' },
 ]
 
-// Cotización, orden de compra y factura son independientes entre sí —
-// puede haber cualquier combinación. El archivo vive en un bucket privado
-// (ver documentsService.js): "Ver" pide una URL firmada al momento del
-// clic, no hay URL fija guardada. Quién puede subir/reemplazar CADA
-// documento se decide por fila (canEditOrderDocument), no para la tarjeta
-// completa: la factura se puede subir en cualquier estado de la orden,
-// cotización/orden de compra solo mientras sigue en_confirmacion (para
-// tienda; admin siempre puede con los tres).
+// Cotización, orden de compra y factura son independientes entre sí, y
+// desde V58 de cada tipo puede haber VARIOS archivos (tabla
+// order_documentos) — se listan todos, y quien tenga permiso puede
+// agregar más o quitar alguno. El archivo vive en un bucket privado (ver
+// documentsService.js): "Ver" pide una URL firmada al momento del clic, no
+// hay URL fija guardada. Quién puede subir/quitar CADA tipo se decide por
+// fila (canEditOrderDocument): ventas y contabilidad pueden con
+// cotización/orden de compra en cualquier momento (V58: antes solo
+// mientras la orden estaba en_confirmacion); la factura solo
+// contabilidad/admin_tienda/admin_general.
 //
 // V42: se agrega una fila más — la constancia de situación fiscal, pero
 // es del CLIENTE (clientes.constancia_fiscal_path), no de la orden, así
 // que vive aparte del resto: se pide con fetchClienteById (order solo
 // trae client_id, no los datos del cliente) y solo aparece si esta orden
 // tiene un cliente del catálogo (order.client_id) — si no, no hay dónde
-// guardarla.
+// guardarla. Sigue siendo un solo archivo (reemplazable).
 export default function OrderDocumentsCard({ order, onUpdated }) {
   const { role } = useAuth()
+  const [documentos, setDocumentos] = useState([])
   const [busyKind, setBusyKind] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
   const [error, setError] = useState(null)
   const [cliente, setCliente] = useState(null)
   const [clienteLoading, setClienteLoading] = useState(!!order.client_id)
+
+  const loadDocumentos = useCallback(async () => {
+    const { data, error: fetchError } = await fetchOrderDocumentos(order.id)
+    if (fetchError) {
+      setError(fetchError)
+      return
+    }
+    setDocumentos(data || [])
+  }, [order.id])
+
+  useEffect(() => {
+    loadDocumentos()
+  }, [loadDocumentos])
 
   useEffect(() => {
     if (!order.client_id) {
@@ -46,22 +69,41 @@ export default function OrderDocumentsCard({ order, onUpdated }) {
     })
   }, [order.client_id])
 
-  async function handleUpload(kind, file) {
-    if (!file) return
+  // Sube uno o varios PDFs seguidos; si alguno falla se avisa cuál, y los
+  // que sí se subieron quedan registrados.
+  async function handleUpload(kind, files) {
+    if (!files || files.length === 0) return
     setBusyKind(kind)
     setError(null)
 
-    const { error: uploadError } = await uploadOrderDocument(order.id, kind, file)
-    setBusyKind(null)
-
-    if (uploadError) {
-      setError(uploadError)
-      return
+    for (const file of files) {
+      const { error: uploadError } = await uploadOrderDocument(order.id, kind, file)
+      if (uploadError) {
+        setError(uploadError)
+        break
+      }
     }
+
+    setBusyKind(null)
+    await loadDocumentos()
     onUpdated?.()
   }
 
-  async function handleUploadConstancia(file) {
+  async function handleDelete(documento) {
+    setDeletingId(documento.id)
+    setError(null)
+    const { error: deleteError } = await deleteOrderDocumento(documento)
+    setDeletingId(null)
+    if (deleteError) {
+      setError(deleteError)
+      return
+    }
+    await loadDocumentos()
+    onUpdated?.()
+  }
+
+  async function handleUploadConstancia(files) {
+    const file = files?.[0]
     if (!file || !order.client_id) return
     setBusyKind('constancia')
     setError(null)
@@ -93,33 +135,56 @@ export default function OrderDocumentsCard({ order, onUpdated }) {
       <h3 className="section-title section-title--small">Documentos</h3>
 
       <div className="document-list">
-        {DOC_TYPES.map(({ kind, label, field }) => {
-          const path = order[field]
+        {DOC_TYPES.map(({ kind, label }) => {
+          const docs = documentos.filter((d) => d.kind === kind)
           const busy = busyKind === kind
           const editable = canEditOrderDocument(role, order, kind) && !order.eliminada_en
 
           return (
-            <div key={kind} className="document-row">
-              <span className="document-row__label">{label}</span>
-
-              <div className="document-row__actions">
-                {path && (
-                  <button type="button" className="btn btn--ghost btn--small" onClick={() => handleView(path)}>
-                    Ver
-                  </button>
-                )}
-                {editable && (
+            <div key={kind} className="document-row document-row--stacked">
+              <div className="document-row__head">
+                <span className="document-row__label">{label}</span>
+                {editable ? (
                   <FileDropLabel
                     className="btn btn--secondary btn--small"
                     accept="application/pdf"
+                    multiple
                     disabled={busy}
-                    onFiles={(files) => handleUpload(kind, files[0])}
+                    onFiles={(files) => handleUpload(kind, files)}
                   >
-                    {busy ? 'Subiendo…' : path ? 'Reemplazar' : 'Subir PDF (o arrastra aquí)'}
+                    {busy ? 'Subiendo…' : docs.length > 0 ? '+ Agregar otro' : 'Subir PDF (o arrastra aquí)'}
                   </FileDropLabel>
+                ) : (
+                  docs.length === 0 && <span className="document-row__empty">Sin documento</span>
                 )}
-                {!path && !editable && <span className="document-row__empty">Sin documento</span>}
               </div>
+
+              {docs.length > 0 && (
+                <ul className="document-files">
+                  {docs.map((doc, i) => (
+                    <li key={doc.id} className="document-files__item">
+                      <span className="document-files__name" title={doc.nombre || undefined}>
+                        {doc.nombre || `${label} ${i + 1}`}
+                      </span>
+                      <span className="document-row__actions">
+                        <button type="button" className="btn btn--ghost btn--small" onClick={() => handleView(doc.path)}>
+                          Ver
+                        </button>
+                        {editable && (
+                          <button
+                            type="button"
+                            className="btn btn--ghost btn--small"
+                            disabled={deletingId === doc.id}
+                            onClick={() => handleDelete(doc)}
+                          >
+                            {deletingId === doc.id ? 'Quitando…' : 'Quitar'}
+                          </button>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )
         })}
@@ -139,7 +204,7 @@ export default function OrderDocumentsCard({ order, onUpdated }) {
                   className="btn btn--secondary btn--small"
                   accept="application/pdf"
                   disabled={busyKind === 'constancia'}
-                  onFiles={(files) => handleUploadConstancia(files[0])}
+                  onFiles={handleUploadConstancia}
                 >
                   {busyKind === 'constancia'
                     ? 'Subiendo…'

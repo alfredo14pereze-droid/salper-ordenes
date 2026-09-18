@@ -16,9 +16,22 @@ function ensureClient() {
   return { error: null }
 }
 
-// Sube un PDF nuevo (o de reemplazo) para una orden y lo registra en la
-// columna correspondiente. `kind` es 'cotizacion', 'orden_compra' o
-// 'factura'.
+// Lista de archivos subidos a una orden (V58: puede haber varios por tipo).
+// `kind` es 'cotizacion', 'orden_compra' o 'factura'.
+export async function fetchOrderDocumentos(orderId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase
+    .from('order_documentos')
+    .select('*')
+    .eq('order_id', orderId)
+    .order('created_at', { ascending: true })
+}
+
+// Sube UN PDF a la orden y lo registra como un documento más (no
+// reemplaza a los que ya había). Si el registro falla después de haber
+// subido el archivo, se intenta borrar el archivo huérfano.
 export async function uploadOrderDocument(orderId, kind, file) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
@@ -33,9 +46,12 @@ export async function uploadOrderDocument(orderId, kind, file) {
   if (uploadError) return { data: null, error: uploadError }
 
   const { data, error } = await supabase
-    .rpc('set_order_document', { p_order_id: orderId, p_kind: kind, p_path: path })
+    .rpc('add_order_documento', { p_order_id: orderId, p_kind: kind, p_path: path, p_nombre: file.name })
     .single()
 
+  if (error) {
+    await supabase.storage.from(BUCKET).remove([path])
+  }
   return { data, error }
 }
 
@@ -50,15 +66,18 @@ export async function getSignedDocumentUrl(path) {
   return { data: data.signedUrl, error: null }
 }
 
-// Quita el documento de la orden (deja el campo en null). No borra el
-// archivo viejo de Storage — si se está "reemplazando", el flujo de arriba
-// (uploadOrderDocument) ya sobreescribe el registro con el path nuevo; este
-// helper es para el caso de "quitar sin reemplazar".
-export async function removeOrderDocument(orderId, kind) {
+// Quita UN documento de la orden (V58). El registro se borra por RPC (el
+// servidor revisa el rol); el archivo de Storage se borra después, sin
+// que un fallo ahí cuente como error — el documento ya dejó de aparecer.
+export async function deleteOrderDocumento(documento) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
 
-  return supabase.rpc('set_order_document', { p_order_id: orderId, p_kind: kind, p_path: null }).single()
+  const { error } = await supabase.rpc('delete_order_documento', { p_documento_id: documento.id })
+  if (error) return { data: null, error }
+
+  await supabase.storage.from(BUCKET).remove([documento.path])
+  return { data: true, error: null }
 }
 
 // V42: constancia de situación fiscal — es del CLIENTE, no de la orden

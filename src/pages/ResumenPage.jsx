@@ -147,7 +147,11 @@ export default function ResumenPage() {
                                   }}
                                 >
                                   <div>
-                                    <div style={{ fontWeight: 600, fontSize: 14 }}>{item.garment}</div>
+                                    <div style={{ fontWeight: 600, fontSize: 14 }}>
+                                      {item.garment}{' '}
+                                      {/* V58 — total de ESTA prenda (pedido explícito del usuario). */}
+                                      <span style={{ color: 'var(--color-orange-strong)' }}>· {itemTotal(item)} pz</span>
+                                    </div>
                                     <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
                                       {[item.color, item.pantone].filter(Boolean).join(' · ')}
                                     </div>

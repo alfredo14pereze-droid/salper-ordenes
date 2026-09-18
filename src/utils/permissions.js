@@ -34,16 +34,17 @@ export function canEditOrder(role, order) {
   return false
 }
 
-// Documentos de la orden (cotización/orden de compra/factura): mismo
-// espejo que set_order_document en Supabase. ventas y contabilidad pueden
-// subir cotización/orden de compra (mientras la orden siga
-// "en_confirmacion"); la factura es exclusiva de contabilidad, y sin tope
-// de estado — casi siempre se sube DESPUÉS de que fábrica ya confirmó
-// (cuando se entrega o se está por entregar).
+// Documentos de la orden (cotización/orden de compra/factura): espejo de
+// add_order_documento/delete_order_documento en Supabase (V58). ventas y
+// contabilidad pueden subir/quitar cotización y orden de compra en
+// CUALQUIER momento (V58: antes solo mientras la orden seguía
+// "en_confirmacion" — pedido explícito del usuario: que se pueda después de
+// creada); la factura es exclusiva de contabilidad/admin_tienda/
+// admin_general, también sin tope de estado. El parámetro `order` se
+// conserva por compatibilidad con los llamadores, ya no se usa.
 export function canEditOrderDocument(role, order, kind) {
-  if (role === 'admin_tienda' || role === 'admin_general') return true
-  if (role === 'contabilidad') return kind === 'factura' || order?.status === 'en_confirmacion'
-  if (role === 'ventas') return kind !== 'factura' && order?.status === 'en_confirmacion'
+  if (role === 'admin_tienda' || role === 'admin_general' || role === 'contabilidad') return true
+  if (role === 'ventas') return kind !== 'factura'
   return false
 }
 

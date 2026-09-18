@@ -56,6 +56,8 @@ function ItemSummary({ item, index }) {
     .map((s) => `${conTalla(s.talla)}: ${s.cantidad}`)
     .join(' · ')
 
+  const piezasPrenda = (item.sizes || []).reduce((sum, s) => sum + (Number(s.cantidad) || 0), 0)
+
   const detalleRows = [
     item.tela_nombre && ['Tela', item.tela_nombre],
     item.pantone && ['Pantone / especificación', item.pantone],
@@ -97,6 +99,16 @@ function ItemSummary({ item, index }) {
         <div>
           <dt>Tallas y cantidades</dt>
           <dd>{sizesText || 'Sin tallas capturadas'}</dd>
+        </div>
+        {/* V58 — cada prenda con su propio total (pedido explícito del
+            usuario: no solo el total de piezas de toda la orden). */}
+        <div>
+          <dt>Total de esta prenda</dt>
+          <dd>
+            <strong>
+              {piezasPrenda} pieza{piezasPrenda === 1 ? '' : 's'}
+            </strong>
+          </dd>
         </div>
         {roster.length > 0 && (
           <div>
