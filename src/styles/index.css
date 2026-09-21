@@ -2227,3 +2227,11 @@ h4 {
   gap: 14px;
   padding: 14px 0;
 }
+
+/* V61 — campos de cada prenda en una sola columna, en el mismo orden que la
+   orden física en papel. */
+.item-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

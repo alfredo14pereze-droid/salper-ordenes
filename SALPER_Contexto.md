@@ -3311,3 +3311,18 @@ demasiado texto/información — dejarlo simple.
 muestra multi-tipo + sin categoría y oculta industriales; cambiar de tipo
 limpia el cliente; "Otro cliente" envía `p_client_id: null` con nombre,
 teléfono y correo. Build limpio.
+
+### V61 — Campos de cada prenda en el mismo orden que la orden física
+
+**Pedido del usuario:** con la foto de la orden de taller en papel, que los
+campos de "Nueva orden" (vivos, etc.) sigan el MISMO orden que la hoja física,
+sin agregar ningún campo.
+
+**Cambio (`OrderItemsEditor.jsx` + `.item-fields` en `index.css`):** una sola
+columna con el orden del papel: Prenda → Color → Manga → Vivos → Cuello →
+Puños → Tela → Logotipos → Números → Tallas y cantidades. Sin campos nuevos.
+Los condicionales se conservan en su lugar (Pantone tras Color solo en
+sublimación; "¿Lleva bolsas?" tras Prenda solo en Short; Manga/Cuello solo en
+prendas de arriba). "¿Lleva bordado?" y la lista de nombres/números pasaron a
+DESPUÉS de las tallas; el autocompletado de productos del cliente quedó arriba
+de los campos (los rellena). Verificado en arnés leyendo el orden del DOM.

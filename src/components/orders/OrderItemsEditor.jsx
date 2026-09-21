@@ -174,7 +174,23 @@ export default function OrderItemsEditor({
               )}
             </div>
 
-            <div className={isShort ? 'form-row-4' : needsPantone ? 'form-row-3' : 'form-row'}>
+            {clienteId && (
+              <ProductoAutocomplete
+                clienteId={clienteId}
+                clienteNombre={clienteNombre}
+                productos={productos}
+                telas={telas}
+                item={item}
+                onApply={(patch) => updateItem(itemIndex, patch)}
+                onProductoCreated={onProductoCreated}
+                canSaveAsProducto={!isSublimacion}
+              />
+            )}
+
+            {/* V61 — mismo orden que la orden física en papel: Prenda, Color,
+                Manga, Vivos, Cuello, Puños, Tela, Logotipos, Números, Tallas.
+                Sin campos nuevos; solo se reordenaron los que ya existían. */}
+            <div className="item-fields">
               <label>
                 Prenda
                 {isSublimacion ? (
@@ -294,84 +310,118 @@ export default function OrderItemsEditor({
                   </div>
                 </div>
               )}
-            </div> 
-
-            <div>
-              <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
-                Tela
-              </span>
+              {showCuelloManga && (
+              <label>
+                Manga
+                <input
+                  type="text"
+                  className="input"
+                  value={item.manga || ''}
+                  onChange={(e) => updateItem(itemIndex, { manga: e.target.value })}
+                />
+              </label>
+              )}
+              <label>
+                Vivos
+                <input
+                  type="text"
+                  className="input"
+                  value={item.vivos || ''}
+                  onChange={(e) => updateItem(itemIndex, { vivos: e.target.value })}
+                />
+              </label>
+              {showCuelloManga && (
+              <label>
+                Cuello
+                <input
+                  type="text"
+                  className="input"
+                  value={item.cuello || ''}
+                  onChange={(e) => updateItem(itemIndex, { cuello: e.target.value })}
+                />
+              </label>
+              )}
+              <label>
+                Puños
+                <input
+                  type="text"
+                  className="input"
+                  value={item.punos || ''}
+                  onChange={(e) => updateItem(itemIndex, { punos: e.target.value })}
+                />
+              </label>
+              <div>
+                <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+                  Tela
+                </span>
               <TelaSelect
                 telas={telas}
                 value={item.tela_id}
                 onChange={(telaId, telaNombre) => updateItem(itemIndex, { tela_id: telaId, tela_nombre: telaNombre })}
                 onTelaCreated={onTelaCreated}
               />
+              </div>
+              <label>
+                Logotipos
+                <input
+                  type="text"
+                  className="input"
+                  value={item.logotipos || ''}
+                  onChange={(e) => updateItem(itemIndex, { logotipos: e.target.value })}
+                />
+              </label>
+              <label>
+                Números
+                <input
+                  type="text"
+                  className="input"
+                  value={item.numeros || ''}
+                  onChange={(e) => updateItem(itemIndex, { numeros: e.target.value })}
+                />
+              </label>
             </div>
 
             <div>
-              <span className="field-label" style={{ marginBottom: 6, display: 'block', marginTop: 12 }}>
-                Detalles de la prenda
-              </span>
-              {showCuelloManga && (
-                <div className="form-row">
-                  <label>
-                    Cuello
-                    <input
-                      type="text"
-                      className="input"
-                      value={item.cuello || ''}
-                      onChange={(e) => updateItem(itemIndex, { cuello: e.target.value })}
-                    />
-                  </label>
-                  <label>
-                    Manga
-                    <input
-                      type="text"
-                      className="input"
-                      value={item.manga || ''}
-                      onChange={(e) => updateItem(itemIndex, { manga: e.target.value })}
-                    />
-                  </label>
+              <span className="field-label">Tallas y cantidades</span>
+              <div className="sizes-table" style={{ marginTop: 8 }}>
+                <div className="sizes-row-header">
+                  <span>Talla</span>
+                  <span>Cantidad</span>
+                  <span />
                 </div>
-              )}
-              <div className="form-row-4" style={{ marginTop: showCuelloManga ? 12 : 0 }}>
-                <label>
-                  Vivos
-                  <input
-                    type="text"
-                    className="input"
-                    value={item.vivos || ''}
-                    onChange={(e) => updateItem(itemIndex, { vivos: e.target.value })}
-                  />
-                </label>
-                <label>
-                  Puños
-                  <input
-                    type="text"
-                    className="input"
-                    value={item.punos || ''}
-                    onChange={(e) => updateItem(itemIndex, { punos: e.target.value })}
-                  />
-                </label>
-                <label>
-                  Logotipos
-                  <input
-                    type="text"
-                    className="input"
-                    value={item.logotipos || ''}
-                    onChange={(e) => updateItem(itemIndex, { logotipos: e.target.value })}
-                  />
-                </label>
-                <label>
-                  Números
-                  <input
-                    type="text"
-                    className="input"
-                    value={item.numeros || ''}
-                    onChange={(e) => updateItem(itemIndex, { numeros: e.target.value })}
-                  />
-                </label>
+                {item.sizes.map((size, sizeIndex) => (
+                  <div key={sizeIndex} className="sizes-row">
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder="Ej. 8, CH, 34…"
+                      value={size.talla}
+                      onChange={(e) => updateSize(itemIndex, sizeIndex, { talla: e.target.value })}
+                    />
+                    <input
+                      type="number"
+                      min="1"
+                      className="input"
+                      placeholder="0"
+                      value={size.cantidad}
+                      onChange={(e) => updateSize(itemIndex, sizeIndex, { cantidad: e.target.value })}
+                    />
+                    {item.sizes.length > 1 && (
+                      <button
+                        type="button"
+                        className="sizes-row__remove"
+                        onClick={() => removeSize(itemIndex, sizeIndex)}
+                        aria-label="Quitar talla"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
+              <button type="button" className="add-size-btn" style={{ marginTop: 8 }} onClick={() => addSize(itemIndex)}>
+                + Agregar talla
+              </button>
             </div>
 
             {/* V40: sublimación nunca lleva bordado — el botón ni se ofrece
@@ -423,7 +473,7 @@ export default function OrderItemsEditor({
                         onChange={(e) => updateRosterRow(itemIndex, rowIndex, { talla: e.target.value })}
                       >
                         <option value="">
-                          {tallasDisponibles.length === 0 ? 'Agrega tallas abajo' : 'Talla…'}
+                          {tallasDisponibles.length === 0 ? 'Agrega tallas arriba' : 'Talla…'}
                         </option>
                         {tallasDisponibles.map((t) => (
                           <option key={t} value={t}>
@@ -471,61 +521,6 @@ export default function OrderItemsEditor({
               </div>
             )}
 
-            {clienteId && (
-              <ProductoAutocomplete
-                clienteId={clienteId}
-                clienteNombre={clienteNombre}
-                productos={productos}
-                telas={telas}
-                item={item}
-                onApply={(patch) => updateItem(itemIndex, patch)}
-                onProductoCreated={onProductoCreated}
-                canSaveAsProducto={!isSublimacion}
-              />
-            )}
-
-            <div>
-              <span className="field-label">Tallas y cantidades</span>
-              <div className="sizes-table" style={{ marginTop: 8 }}>
-                <div className="sizes-row-header">
-                  <span>Talla</span>
-                  <span>Cantidad</span>
-                  <span />
-                </div>
-                {item.sizes.map((size, sizeIndex) => (
-                  <div key={sizeIndex} className="sizes-row">
-                    <input
-                      type="text"
-                      className="input"
-                      placeholder="Ej. 8, CH, 34…"
-                      value={size.talla}
-                      onChange={(e) => updateSize(itemIndex, sizeIndex, { talla: e.target.value })}
-                    />
-                    <input
-                      type="number"
-                      min="1"
-                      className="input"
-                      placeholder="0"
-                      value={size.cantidad}
-                      onChange={(e) => updateSize(itemIndex, sizeIndex, { cantidad: e.target.value })}
-                    />
-                    {item.sizes.length > 1 && (
-                      <button
-                        type="button"
-                        className="sizes-row__remove"
-                        onClick={() => removeSize(itemIndex, sizeIndex)}
-                        aria-label="Quitar talla"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <button type="button" className="add-size-btn" style={{ marginTop: 8 }} onClick={() => addSize(itemIndex)}>
-                + Agregar talla
-              </button>
-            </div>
 
             <div className="item-block__total">
               Piezas en esta prenda: <b>{itemTotal}</b>
