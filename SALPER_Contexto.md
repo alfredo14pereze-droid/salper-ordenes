@@ -3326,3 +3326,12 @@ sublimación; "¿Lleva bolsas?" tras Prenda solo en Short; Manga/Cuello solo en
 prendas de arriba). "¿Lleva bordado?" y la lista de nombres/números pasaron a
 DESPUÉS de las tallas; el autocompletado de productos del cliente quedó arriba
 de los campos (los rellena). Verificado en arnés leyendo el orden del DOM.
+
+### V62 — Folios anteriores y fecha de creación visibles otra vez
+
+**Pedido del usuario:** volver a mostrar "folio anterior" y "fecha de creación"
+en Nueva orden para terminar de subir las órdenes pendientes. V60 los había
+metido en la sección plegable. Ahora van siempre visibles, entre Fecha de
+entrega y Prendas (`NewOrderPage.jsx`). La fecha de creación sigue atada a
+`CAPTURA_FECHA_CREACION_HABILITADA` (`true`); al terminar la carga histórica
+basta ponerla en `false`. La sección plegable queda como "Notas y fotos".

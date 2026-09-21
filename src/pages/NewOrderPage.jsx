@@ -558,6 +558,26 @@ function NewOrderForm() {
           </p>
         )}
 
+        {CAPTURA_FECHA_CREACION_HABILITADA && (
+          <label>
+            Fecha de creación (orden anterior)
+            <input
+              type="date"
+              className="input"
+              value={form.createdAt}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => updateField('createdAt', e.target.value)}
+            />
+          </label>
+        )}
+
+        <div>
+          <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+            Folios del control anterior
+          </span>
+          <FoliosExternosField value={form.foliosExternos} onChange={(v) => updateField('foliosExternos', v)} />
+        </div>
+
         <div>
           <span className="field-label" style={{ marginBottom: 8, display: 'block' }}>
             Prendas
@@ -576,7 +596,7 @@ function NewOrderForm() {
         </div>
 
         <details className="form-optional">
-          <summary>Notas, fotos y folios (opcional)</summary>
+          <summary>Notas y fotos (opcional)</summary>
           <div className="form-optional__body">
             <label>
               Notas de la orden
@@ -594,26 +614,6 @@ function NewOrderForm() {
               </span>
               <PhotoPicker files={photoFiles} onChange={setPhotoFiles} />
             </div>
-
-            <div>
-              <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
-                Folios del control anterior
-              </span>
-              <FoliosExternosField value={form.foliosExternos} onChange={(v) => updateField('foliosExternos', v)} />
-            </div>
-
-            {CAPTURA_FECHA_CREACION_HABILITADA && (
-              <label>
-                Fecha de creación (solo para subir historial)
-                <input
-                  type="date"
-                  className="input"
-                  value={form.createdAt}
-                  max={new Date().toISOString().slice(0, 10)}
-                  onChange={(e) => updateField('createdAt', e.target.value)}
-                />
-              </label>
-            )}
           </div>
         </details>
 
