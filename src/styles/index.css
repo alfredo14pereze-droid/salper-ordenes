@@ -2193,3 +2193,37 @@ h4 {
 .simple-table tbody tr:hover {
   background: var(--color-orange-soft, #fdf3e7);
 }
+
+/* V60 — "Nueva orden": encabezado con acción de prellenado y secciones
+   opcionales colapsadas (menos ruido; se abren solo si hacen falta). */
+.new-order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.form-optional {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0 14px;
+}
+
+.form-optional > summary {
+  cursor: pointer;
+  padding: 12px 0;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.form-optional[open] > summary {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.form-optional__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 0;
+}

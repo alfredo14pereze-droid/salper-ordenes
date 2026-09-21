@@ -3277,3 +3277,37 @@ Node aparte confirmando la lógica de agrupado con datos de prueba
 1 sola prenda con 3 tallas; "Short" aparte). No se pudo volver a probar
 con una foto/PDF real y una sesión real — queda pendiente que el usuario
 lo confirme con el mismo documento que le falló antes.
+
+### V60 — "Nueva orden": tipo primero, clientes por tipo, cliente incidental, menos texto
+
+**Pedido del usuario:** (1) lo primero del formulario debe ser el tipo de
+orden; (2) el cliente se ofrece según el tipo (un cliente puede ser de más de
+un tipo); (3) un cliente nuevo se da de alta en Catálogos, NO desde la orden;
+(4) si el cliente no está registrado, capturar nombre/teléfono/correo a mano
+sin guardarlo como cliente futuro (clientes incidentales); (5) había
+demasiado texto/información — dejarlo simple.
+
+**Cambios (solo frontend, sin cambios de base de datos):**
+- `utils/clientes.js` (nuevo): `filtrarClientesPorTipo` + `CLIENTE_OTRO`.
+  Clientes con `tipo_orden` vacío se siguen mostrando en TODOS los tipos
+  (los clientes reales aún no están categorizados; se esconderían de golpe).
+  Tipos personalizados ("+ Nuevo tipo") muestran todos.
+- `ClienteSelect.jsx` reescrito: deshabilitado hasta elegir tipo; lista
+  filtrada; última opción "Otro cliente (no registrado)" que abre
+  Nombre* / Teléfono / Correo. Ya NO existe "+ Cliente nuevo" aquí. En la
+  orden se guarda `client_id = null` con nombre/teléfono/correo en la propia
+  orden; el catálogo no se toca.
+- `NewOrderPage.jsx`: orden Tipo → Cliente → Fecha de entrega → Prendas; el
+  prellenado por foto/PDF pasó a un botón chico junto al título (si no hay
+  tipo elegido avisa; si el cliente reconocido no está en el catálogo queda
+  como "Otro cliente"); cambiar de tipo limpia el cliente si ya no
+  corresponde; notas, fotos, folios anteriores, cotización/OC, total y
+  anticipo quedan en dos secciones plegables opcionales; se quitaron casi
+  todos los textos de ayuda (incluidos los de Pantone y roster en
+  `OrderItemsEditor`). Borradores viejos siguen funcionando.
+- Arreglo de paso: el aviso de fecha saturada ya no sale sin fecha/carga.
+
+**Verificación:** arnés con supabase falso (clientes con categorías): Escolar
+muestra multi-tipo + sin categoría y oculta industriales; cambiar de tipo
+limpia el cliente; "Otro cliente" envía `p_client_id: null` con nombre,
+teléfono y correo. Build limpio.

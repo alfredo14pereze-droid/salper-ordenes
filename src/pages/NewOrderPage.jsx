@@ -12,8 +12,9 @@ import { createOrder } from '../services/ordersService'
 import { uploadOrderPhotos } from '../services/photosService'
 import { uploadOrderDocument } from '../services/documentsService'
 import { createAnticipo, METODOS_PAGO } from '../services/anticiposService'
-import { recognizeDocument, MAX_OCR_FILE_SIZE_MB } from '../services/documentOcrService'
+import { recognizeDocument } from '../services/documentOcrService'
 import { similarity } from '../utils/similarity'
+import { filtrarClientesPorTipo } from '../utils/clientes'
 import OrderTypeSelect from '../components/orders/OrderTypeSelect'
 import ClienteSelect from '../components/orders/ClienteSelect'
 import PhotoPicker from '../components/orders/PhotoPicker'
@@ -29,6 +30,9 @@ import { CAPTURA_FECHA_CREACION_HABILITADA } from '../utils/featureFlags'
 
 const initialForm = {
   clientId: '',
+  // V60 — true = "Otro cliente (no registrado)": nombre/teléfono/correo
+  // capturados a mano solo para esta orden, sin guardarse en el catálogo.
+  clienteIncidental: false,
   clientName: '',
   clientTelefono: '',
   clientCorreo: '',
@@ -172,7 +176,7 @@ function DocumentosPicker({ label, files, onChange }) {
 function NewOrderForm() {
   const { profile } = useAuth()
   const { orderTypes, loading, error, refresh } = useOrderTypes()
-  const { clientes, refresh: refreshClientes } = useClientes()
+  const { clientes } = useClientes()
   const { telas, refresh: refreshTelas } = useTelas()
   // V55 — para avisar si la fecha de entrega elegida ya cae en un
   // periodo saturado (ver utils/demand.js). Mismo criterio de "activas"
@@ -191,7 +195,7 @@ function NewOrderForm() {
   )
   const [draftDismissed, setDraftDismissed] = useState(false)
 
-  const [form, setForm] = useState(() => initialDraft?.form || initialForm)
+  const [form, setForm] = useState(() => (initialDraft?.form ? { ...initialForm, ...initialDraft.form } : initialForm))
   const { productos, refresh: refreshProductos } = useProductosByCliente(form.clientId)
   const [items, setItems] = useState(() => (initialDraft?.items?.length > 0 ? initialDraft.items : [emptyItem()]))
   const [photoFiles, setPhotoFiles] = useState([])
@@ -220,7 +224,6 @@ function NewOrderForm() {
   const [ocrLoading, setOcrLoading] = useState(false)
   const [ocrWarning, setOcrWarning] = useState(null)
   const [ocrError, setOcrError] = useState(null)
-  const [ocrClienteHint, setOcrClienteHint] = useState(null)
 
   // Guarda el borrador en cada cambio — barato, y así sobrevive tanto a
   // un cambio de pestaña como a que el celular recargue la página sola.
@@ -246,7 +249,6 @@ function NewOrderForm() {
     setOcrLoading(true)
     setOcrWarning(null)
     setOcrError(null)
-    setOcrClienteHint(null)
 
     const { data, error: ocrErr } = await recognizeDocument(file, 'orden')
     setOcrLoading(false)
@@ -259,17 +261,27 @@ function NewOrderForm() {
       setOcrWarning(data.warning)
     }
 
-    // Cliente: si ya hay uno elegido, no se toca. Si el nombre reconocido
-    // coincide exacto con uno del catálogo, se selecciona solo; si no,
-    // se muestra como sugerencia (el usuario decide si lo agrega con
-    // "+ Cliente nuevo") — nunca se mete un clientName suelto sin pasar
-    // por ClienteSelect, para que la UI no quede en un estado a medias.
-    if (data.cliente && !form.clientId) {
-      const exact = clientes.find((c) => similarity(c.nombre, data.cliente) === 1)
-      if (exact) {
-        setForm((f) => ({ ...f, clientId: exact.id, clientName: exact.nombre }))
+    // Cliente (V60): solo si ya se eligió el tipo de orden y todavía no hay
+    // cliente. Si el nombre reconocido coincide exacto con uno del catálogo
+    // de ese tipo, se selecciona; si no, se deja como "Otro cliente" con el
+    // nombre reconocido (revisable) — nunca se da de alta en el catálogo.
+    if (data.cliente && !form.clientId && !form.clienteIncidental) {
+      if (!form.orderTypeKey) {
+        setOcrWarning('Elige primero el tipo de orden para que también se prellene el cliente.')
       } else {
-        setOcrClienteHint(data.cliente)
+        const exact = filtrarClientesPorTipo(clientes, form.orderTypeKey).find((c) => similarity(c.nombre, data.cliente) === 1)
+        if (exact) {
+          setForm((f) => ({
+            ...f,
+            clientId: exact.id,
+            clienteIncidental: false,
+            clientName: exact.nombre,
+            clientTelefono: exact.telefono || '',
+            clientCorreo: exact.correo || '',
+          }))
+        } else {
+          setForm((f) => ({ ...f, clientId: '', clienteIncidental: true, clientName: data.cliente }))
+        }
       }
     }
 
@@ -303,11 +315,48 @@ function NewOrderForm() {
     setForm((f) => ({ ...f, [field]: value }))
   }
 
+  // V60 — el tipo de orden manda: filtra los clientes. Si el cliente ya
+  // elegido no pertenece al nuevo tipo, se limpia (un "otro cliente" a mano
+  // se conserva, no depende del catálogo).
+  function handleTypeChange(key) {
+    setForm((f) => {
+      const sigueValido = !f.clientId || filtrarClientesPorTipo(clientes, key).some((c) => c.id === f.clientId)
+      return sigueValido
+        ? { ...f, orderTypeKey: key }
+        : { ...f, orderTypeKey: key, clientId: '', clientName: '', clientTelefono: '', clientCorreo: '' }
+    })
+  }
+
+  function handleSelectCliente(c) {
+    setForm((f) => ({
+      ...f,
+      clientId: c?.id || '',
+      clienteIncidental: false,
+      clientName: c?.nombre || '',
+      clientTelefono: c?.telefono || '',
+      clientCorreo: c?.correo || '',
+    }))
+  }
+
+  function handleSelectIncidental() {
+    setForm((f) =>
+      f.clienteIncidental ? f : { ...f, clientId: '', clienteIncidental: true, clientName: '', clientTelefono: '', clientCorreo: '' }
+    )
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
 
-    if (!form.clientName.trim() || !form.orderTypeKey || !form.requestedDeliveryDate) {
-      setSubmitError(new Error('Completa los campos requeridos: cliente, tipo y fecha de entrega.'))
+    if (!form.orderTypeKey) {
+      setSubmitError(new Error('Elige el tipo de orden.'))
+      return
+    }
+    if (!form.clientName.trim()) {
+      setSubmitError(new Error(form.clienteIncidental ? 'Escribe el nombre del cliente.' : 'Elige un cliente.'))
+      return
+    }
+    if (!form.requestedDeliveryDate) {
+      setSubmitError(new Error('Falta la fecha de entrega.'))
       return
     }
     const anticipoMontoNum = Number(anticipoMonto)
@@ -339,7 +388,7 @@ function NewOrderForm() {
 
     const { data, error: createError } = await createOrder({
       clientName: form.clientName.trim(),
-      clientId: form.clientId || null,
+      clientId: form.clienteIncidental ? null : form.clientId || null,
       clientTelefono: form.clientTelefono.trim(),
       clientCorreo: form.clientCorreo.trim(),
       orderTypeKey: form.orderTypeKey,
@@ -432,17 +481,32 @@ function NewOrderForm() {
   const deliveryLoad = form.requestedDeliveryDate
     ? getLoadForDate(demand, parseDate(form.requestedDeliveryDate))
     : { orders: 0, pieces: 0 }
-  const deliverySaturated = deliveryLoad.orders >= demand.orderThreshold || deliveryLoad.pieces >= demand.pieceThreshold
+  const deliverySaturated =
+    deliveryLoad.orders > 0 &&
+    (deliveryLoad.orders >= demand.orderThreshold || deliveryLoad.pieces >= demand.pieceThreshold)
 
   return (
     <div className="page page--narrow">
-      <h2 className="section-title">Nueva orden</h2>
+      <div className="new-order-header">
+        <h2 className="section-title">Nueva orden</h2>
+        <FileDropLabel
+          className="btn btn--ghost btn--small"
+          style={{ display: 'inline-flex' }}
+          accept="image/*,application/pdf"
+          disabled={ocrLoading}
+          onFiles={handleOcrFiles}
+        >
+          {ocrLoading ? 'Leyendo…' : 'Prellenar con foto o PDF'}
+        </FileDropLabel>
+      </div>
+      {ocrWarning && <p className="pantone-hint">{ocrWarning}</p>}
+      {ocrError && <p className="form-error">{ocrError.message}</p>}
 
       {hasDraft && !draftDismissed && (
         <p className="pantone-hint" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <span>📝 Se recuperó un borrador sin terminar de esta orden — las fotos y PDFs elegidos no se pudieron guardar, solo el resto.</span>
+          <span>Se recuperó un borrador sin terminar (las fotos y PDFs no se guardan).</span>
           <button type="button" className="btn btn--ghost btn--small" onClick={discardDraft}>
-            Descartar y empezar de cero
+            Empezar de cero
           </button>
         </p>
       )}
@@ -450,43 +514,14 @@ function NewOrderForm() {
       <form className="order-form" onSubmit={handleSubmit}>
         <div>
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
-            Foto o PDF de la orden (opcional)
-          </span>
-          <FileDropLabel
-            className="photo-picker__add"
-            style={{ display: 'inline-flex' }}
-            accept="image/*,application/pdf"
-            disabled={ocrLoading}
-            onFiles={handleOcrFiles}
-          >
-            {ocrLoading ? 'Leyendo el archivo…' : '+ Subir foto o PDF y prellenar la orden (o arrastra aquí)'}
-          </FileDropLabel>
-          <p className="pantone-hint">
-            Foto o PDF, máximo {MAX_OCR_FILE_SIZE_MB}MB. Prellena cliente, fecha de entrega y prendas cuando se
-            alcancen a leer con claridad — el reconocimiento automático no es perfecto, revisa y corrige todo antes
-            de crear la orden.
-          </p>
-          {ocrWarning && <p className="pantone-hint">{ocrWarning}</p>}
-          {ocrClienteHint && (
-            <p className="pantone-hint">
-              Se reconoció el cliente "{ocrClienteHint}" — no está en el catálogo. Usa "+ Cliente nuevo" abajo si
-              quieres agregarlo.
-            </p>
-          )}
-          {ocrError && <p className="form-error">{ocrError.message}</p>}
-        </div>
-
-        <div>
-          <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
             Tipo de orden *
           </span>
           <OrderTypeSelect
             orderTypes={orderTypes}
             value={form.orderTypeKey}
-            onChange={(key) => updateField('orderTypeKey', key)}
+            onChange={handleTypeChange}
             onTypeCreated={refresh}
           />
-          <p className="pantone-hint">Elige el tipo de orden primero — la lista de clientes de abajo se filtra según esto.</p>
         </div>
 
         <div>
@@ -495,83 +530,20 @@ function NewOrderForm() {
           </span>
           <ClienteSelect
             clientes={clientes}
-            value={form.clientId}
             orderTypeKey={form.orderTypeKey}
-            onChange={(clientId, clientName, telefono, correo) => {
-              // V42: ClienteSelect ya manda teléfono/correo directo (tanto al
-              // crear un cliente nuevo como al elegir uno existente) — se
-              // acabó la condición de carrera de buscarlo en `clientes` (la
-              // lista recién refrescada no le ganaba a este onChange). Se
-              // asignan tal cual, sin fallback: si el cliente elegido no
-              // tiene teléfono/correo guardado, el campo se vacía en vez de
-              // quedarse con el del cliente anterior.
-              setForm((f) => ({ ...f, clientId, clientName, clientTelefono: telefono, clientCorreo: correo }))
-            }}
-            onClienteCreated={refreshClientes}
+            clientId={form.clientId}
+            incidental={form.clienteIncidental}
+            nombre={form.clientName}
+            telefono={form.clientTelefono}
+            correo={form.clientCorreo}
+            onSelectCliente={handleSelectCliente}
+            onSelectIncidental={handleSelectIncidental}
+            onField={updateField}
           />
         </div>
 
-        <div className="form-row">
-          <label>
-            Teléfono del cliente
-            <input
-              type="tel"
-              className="input"
-              value={form.clientTelefono}
-              onChange={(e) => updateField('clientTelefono', e.target.value)}
-              placeholder="Opcional"
-            />
-          </label>
-          <label>
-            Correo del cliente
-            <input
-              type="email"
-              className="input"
-              value={form.clientCorreo}
-              onChange={(e) => updateField('clientCorreo', e.target.value)}
-              placeholder="Opcional"
-            />
-          </label>
-        </div>
-        <p className="pantone-hint">
-          Si el cliente ya está en el catálogo, esto se guarda para prellenarse solo la próxima vez que le hagan un
-          pedido.
-        </p>
-
-        <div>
-          <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
-            Folios externos (control anterior)
-          </span>
-          <FoliosExternosField value={form.foliosExternos} onChange={(v) => updateField('foliosExternos', v)} />
-        </div>
-        <p className="pantone-hint">
-          Si esta orden ya tenía uno o varios folios en su control anterior, agrégalos aquí — un mismo cliente a
-          veces pedía cosas distintas que quedaron en varias órdenes de taller separadas. Solo pon los 4 números,
-          el "ORD" se agrega solo. Es independiente del folio que asigna SALPER (SUB-001, ESC-001, etc.), y también
-          se puede buscar por ellos en el Dashboard.
-        </p>
-
-        {CAPTURA_FECHA_CREACION_HABILITADA && (
-          <>
-            <label>
-              Fecha de creación (temporal — para subir el historial)
-              <input
-                type="date"
-                className="input"
-                value={form.createdAt}
-                max={new Date().toISOString().slice(0, 10)}
-                onChange={(e) => updateField('createdAt', e.target.value)}
-              />
-            </label>
-            <p className="pantone-hint">
-              Solo úsalo si esta orden ya existía antes de hoy y la estás subiendo al sistema — déjalo vacío en
-              cualquier orden nueva de verdad y se le pone la fecha de hoy automáticamente, como siempre.
-            </p>
-          </>
-        )}
-
         <label>
-          Fecha de entrega solicitada *
+          Fecha de entrega *
           <input
             type="date"
             className="input"
@@ -581,27 +553,14 @@ function NewOrderForm() {
         </label>
         {deliverySaturated && (
           <p className="pantone-hint" style={{ color: 'var(--color-orange-strong)' }}>
-            ⚠ Esta fecha ya tiene {deliveryLoad.orders} orden{deliveryLoad.orders === 1 ? '' : 'es'} (
-            {deliveryLoad.pieces.toLocaleString('es-MX')} prenda{deliveryLoad.pieces === 1 ? '' : 's'}) en producción
-            encimadas — más de lo normal para este taller. Si se puede, considera platicar con el cliente para
-            correr la fecha.
+            ⚠ Fecha muy cargada: ya hay {deliveryLoad.orders} orden{deliveryLoad.orders === 1 ? '' : 'es'} y{' '}
+            {deliveryLoad.pieces.toLocaleString('es-MX')} prenda{deliveryLoad.pieces === 1 ? '' : 's'} esos días.
           </p>
         )}
 
-        <label>
-          Descripción / especificaciones generales
-          <textarea
-            className="input"
-            rows={3}
-            value={form.description}
-            onChange={(e) => updateField('description', e.target.value)}
-            placeholder="Notas del pedido que no son de una prenda en particular…"
-          />
-        </label>
-
         <div>
           <span className="field-label" style={{ marginBottom: 8, display: 'block' }}>
-            Prendas, tallas y colores
+            Prendas
           </span>
           <OrderItemsEditor
             items={items}
@@ -609,101 +568,131 @@ function NewOrderForm() {
             orderTypeKey={form.orderTypeKey}
             telas={telas}
             onTelaCreated={refreshTelas}
-            clienteId={form.clientId}
+            clienteId={form.clienteIncidental ? '' : form.clientId}
             clienteNombre={form.clientName}
             productos={productos}
             onProductoCreated={refreshProductos}
           />
         </div>
 
-        <label>
-          Fotos de referencia
-          <PhotoPicker files={photoFiles} onChange={setPhotoFiles} />
-        </label>
-
-        <div>
-          <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
-            Documentos, total y anticipo (opcional)
-          </span>
-          <p className="pantone-hint" style={{ marginTop: 0 }}>
-            La factura no va aquí — esa se sube después, desde el detalle de la orden.
-          </p>
-
-          <div className="form-row">
-            <DocumentosPicker label="Cotización (PDF)" files={cotizacionFiles} onChange={setCotizacionFiles} />
-            <DocumentosPicker label="Orden de compra (PDF)" files={ordenCompraFiles} onChange={setOrdenCompraFiles} />
-          </div>
-
-          <div className="form-row" style={{ marginTop: 12 }}>
+        <details className="form-optional">
+          <summary>Notas, fotos y folios (opcional)</summary>
+          <div className="form-optional__body">
             <label>
-              Total de la orden
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
+              Notas de la orden
+              <textarea
                 className="input"
-                value={form.totalOrden}
-                onChange={(e) => updateField('totalOrden', e.target.value)}
-                placeholder="0.00"
+                rows={3}
+                value={form.description}
+                onChange={(e) => updateField('description', e.target.value)}
               />
             </label>
-            <label>
-              Anticipo recibido
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
-                className="input"
-                value={anticipoMonto}
-                onChange={(e) => setAnticipoMonto(e.target.value)}
-                placeholder="0.00"
-              />
-            </label>
-          </div>
-          {form.totalOrden && anticipoMonto && (
-            <p className="pantone-hint">
-              Restante: {(Number(form.totalOrden) - Number(anticipoMonto)).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
-            </p>
-          )}
 
-          <div className="form-row" style={{ marginTop: 12 }}>
-            <label>
-              Método de pago del anticipo
-              <select className="input" value={anticipoMetodo} onChange={(e) => setAnticipoMetodo(e.target.value)}>
-                {METODOS_PAGO.map((m) => (
-                  <option key={m.key} value={m.key}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {anticipoMonto && (
+            <div>
+              <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+                Fotos de referencia
+              </span>
+              <PhotoPicker files={photoFiles} onChange={setPhotoFiles} />
+            </div>
+
+            <div>
+              <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+                Folios del control anterior
+              </span>
+              <FoliosExternosField value={form.foliosExternos} onChange={(v) => updateField('foliosExternos', v)} />
+            </div>
+
+            {CAPTURA_FECHA_CREACION_HABILITADA && (
               <label>
-                Quién lo recibió *
+                Fecha de creación (solo para subir historial)
                 <input
-                  type="text"
+                  type="date"
                   className="input"
-                  value={anticipoRecibidoPor}
-                  onChange={(e) => setAnticipoRecibidoPor(e.target.value)}
-                  placeholder="Nombre de quién cobró"
+                  value={form.createdAt}
+                  max={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => updateField('createdAt', e.target.value)}
                 />
               </label>
             )}
           </div>
+        </details>
 
-          {anticipoMonto && (
-            <label style={{ marginTop: 12, display: 'block' }}>
-              Notas del anticipo
-              <input
-                type="text"
-                className="input"
-                value={anticipoNotas}
-                onChange={(e) => setAnticipoNotas(e.target.value)}
-                placeholder="Opcional"
-              />
-            </label>
-          )}
-        </div>
+        <details className="form-optional">
+          <summary>Cotización, total y anticipo (opcional)</summary>
+          <div className="form-optional__body">
+            <div className="form-row">
+              <DocumentosPicker label="Cotización (PDF)" files={cotizacionFiles} onChange={setCotizacionFiles} />
+              <DocumentosPicker label="Orden de compra (PDF)" files={ordenCompraFiles} onChange={setOrdenCompraFiles} />
+            </div>
+
+            <div className="form-row">
+              <label>
+                Total de la orden
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  className="input"
+                  value={form.totalOrden}
+                  onChange={(e) => updateField('totalOrden', e.target.value)}
+                  placeholder="0.00"
+                />
+              </label>
+              <label>
+                Anticipo recibido
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  className="input"
+                  value={anticipoMonto}
+                  onChange={(e) => setAnticipoMonto(e.target.value)}
+                  placeholder="0.00"
+                />
+              </label>
+            </div>
+            {form.totalOrden && anticipoMonto && (
+              <p className="pantone-hint">
+                Restante: {(Number(form.totalOrden) - Number(anticipoMonto)).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
+              </p>
+            )}
+
+            {anticipoMonto && (
+              <>
+                <div className="form-row">
+                  <label>
+                    Método de pago
+                    <select className="input" value={anticipoMetodo} onChange={(e) => setAnticipoMetodo(e.target.value)}>
+                      {METODOS_PAGO.map((m) => (
+                        <option key={m.key} value={m.key}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Quién lo recibió *
+                    <input
+                      type="text"
+                      className="input"
+                      value={anticipoRecibidoPor}
+                      onChange={(e) => setAnticipoRecibidoPor(e.target.value)}
+                    />
+                  </label>
+                </div>
+                <label>
+                  Notas del anticipo
+                  <input
+                    type="text"
+                    className="input"
+                    value={anticipoNotas}
+                    onChange={(e) => setAnticipoNotas(e.target.value)}
+                  />
+                </label>
+              </>
+            )}
+          </div>
+        </details>
 
         {submitError && <p className="form-error">{submitError.message}</p>}
 

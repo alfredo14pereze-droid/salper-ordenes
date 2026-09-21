@@ -294,12 +294,7 @@ export default function OrderItemsEditor({
                   </div>
                 </div>
               )}
-            </div>
-            {needsPantone && (
-              <p className="pantone-hint">
-                Solo en sublimación: aquí se especifica el tono exacto. En otros tipos de orden basta con el color de arriba.
-              </p>
-            )}
+            </div> 
 
             <div>
               <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
@@ -413,10 +408,6 @@ export default function OrderItemsEditor({
 
             {showRosterButton && item.tiene_roster && (
               <div style={{ marginTop: 10 }}>
-                <p className="pantone-hint">
-                  Casi siempre son equipos: cada quien lleva su {isShort ? 'número' : 'nombre y número'} en la espalda —
-                  la talla se toma de las que ya agregaste abajo, para no equivocarnos.
-                </p>
                 <div className={'roster-table' + (isShort ? ' roster-table--numero-only' : '')}>
                   <div className={'roster-row-header' + (isShort ? ' roster-row--numero-only' : '')}>
                     <span>Talla</span>
