@@ -10,8 +10,9 @@ import { supabaseServer } from './supabaseServer.js'
 const ETAPAS = ['en_confirmacion', 'confirmado', 'cortado', 'sublimado', 'en_produccion', 'completado']
 
 function sumarPiezas(items) {
-  return (items || []).reduce(
-    (total, item) => total + (item.sizes || []).reduce((s, sz) => s + (Number(sz.cantidad) || 0), 0),
+  // V59: tolerante a tallas/items nulos (ver limpiarItems en ordersService.js).
+  return (Array.isArray(items) ? items : []).reduce(
+    (total, item) => total + (Array.isArray(item?.sizes) ? item.sizes : []).reduce((s, sz) => s + (Number(sz?.cantidad) || 0), 0),
     0
   )
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
+import ErrorBoundary from '../common/ErrorBoundary'
 import Logo from './Logo'
 import ChatWidget from '../chat/ChatWidget'
 import { useAuth } from '../../contexts/AuthContext'
@@ -49,6 +50,7 @@ const VIEW_AS_ROLES = [
 export default function AppLayout({ children }) {
   const { user, profile, role, trueRole, viewAsRole, setViewAsRole, signOut } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const location = useLocation()
   // Los 5 roles de etapa de fábrica (corte/bordado/sublimado/producción/
   // terminado) solo necesitan Dashboard + Resumen para hacer su trabajo —
   // ver hasRestrictedNav en utils/permissions.js. admin_fabrica sigue
@@ -187,7 +189,10 @@ export default function AppLayout({ children }) {
             </button>
           </div>
         )}
-        {children}
+        {/* V59: un error al pintar una pantalla ya no deja toda la app en
+            blanco — se contiene aquí (ver ErrorBoundary). `key` lo reinicia al
+            cambiar de ruta. */}
+        <ErrorBoundary key={location.pathname}>{children}</ErrorBoundary>
       </main>
       <ChatWidget />
     </div>

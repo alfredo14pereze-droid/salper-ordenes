@@ -11,6 +11,28 @@ function ensureClient() {
   return { error: null }
 }
 
+// V59 — las prendas (`orders.items`, JSONB sin schema fijo) a veces traen
+// basura: una talla `null` suelta dentro de `sizes` (ya pasó de verdad: la
+// orden ESC-005 tenía una en la posición 12 de una Pantalonera), o un item
+// que no es objeto. Como muchísimo código recorre `item.sizes[].cantidad`,
+// UNA sola talla nula bastaba para tirar la pantalla completa (página en
+// blanco en "Nueva orden" y Calendario). Se limpia aquí, al leer, para que
+// todo lo que viene después reciba siempre la forma esperada — no se
+// modifica nada en la base.
+function limpiarItems(items) {
+  if (!Array.isArray(items)) return []
+  return items
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => ({
+      ...item,
+      sizes: Array.isArray(item.sizes) ? item.sizes.filter((sz) => sz && typeof sz === 'object') : [],
+    }))
+}
+
+function limpiarOrden(order) {
+  return order ? { ...order, items: limpiarItems(order.items) } : order
+}
+
 // Dashboard/Resumen/Calendario/Órdenes pasadas viven todos de este hook
 // (useOrders) — desde V24 excluye por default las órdenes con
 // eliminada_en no nulo (soft-delete de admin_general). Para la pantalla
@@ -20,11 +42,12 @@ export async function fetchOrders() {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
 
-  return supabase
+  const { data, error } = await supabase
     .from('orders')
     .select('*')
     .is('eliminada_en', null)
     .order('requested_delivery_date', { ascending: true })
+  return { data: data ? data.map(limpiarOrden) : data, error }
 }
 
 // "Control rápido de órdenes" (V24): folio/cliente/estado para TODAS las
@@ -40,7 +63,8 @@ export async function fetchOrderById(id) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
 
-  return supabase.from('orders').select('*').eq('id', id).single()
+  const { data, error } = await supabase.from('orders').select('*').eq('id', id).single()
+  return { data: limpiarOrden(data), error }
 }
 
 export async function fetchOrderHistory(orderId) {

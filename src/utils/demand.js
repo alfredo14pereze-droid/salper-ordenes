@@ -23,11 +23,15 @@ import { computeCalendarWindow } from './dates'
 const SATURATION_MULTIPLIER = 1.5
 const MIN_ORDER_THRESHOLD = 3
 
+// V59 — tolerante a datos raros (una talla `null` suelta ya rompió la
+// pantalla completa en producción): nunca asume que un item o una talla
+// existen. ordersService ya limpia esto al leer; aquí es defensa extra.
 export function getOrderPieceCount(order) {
-  return (order.items || []).reduce(
-    (sum, item) => sum + (item.sizes || []).reduce((s, sz) => s + (Number(sz.cantidad) || 0), 0),
-    0
-  )
+  const items = Array.isArray(order?.items) ? order.items : []
+  return items.reduce((sum, item) => {
+    const sizes = Array.isArray(item?.sizes) ? item.sizes : []
+    return sum + sizes.reduce((s, sz) => s + (Number(sz?.cantidad) || 0), 0)
+  }, 0)
 }
 
 // Recibe la MISMA lista de órdenes que ya se le pasa al calendario

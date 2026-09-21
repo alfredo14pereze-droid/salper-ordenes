@@ -2576,6 +2576,54 @@ prenda, además del total de piezas de la orden. `ResumenPage` (Resumen
 por cliente) muestra "· N pz" junto al nombre de cada prenda. (El PDF de
 la orden ya traía el total por prenda.)
 
+### V59 — "Nueva orden" (y Calendario) en blanco: una talla `null` en una orden real
+
+**Reporte del usuario:** al darle clic a "Nueva orden" la página no cargaba
+(pantalla completamente en blanco, ni menú lateral).
+
+**Causa raíz (reproducida en producción, en el Chrome real con sesión, leyendo
+la consola):** `TypeError: Cannot read properties of null (reading
+'cantidad')`, dentro de `getOrderPieceCount` (`utils/demand.js`, V56 — el
+cálculo de prendas por día para marcar "días saturados"). Una orden REAL, la
+**ESC-005** (Colegio Hernando de Tovar Parras, Pantalonera), tenía una talla
+`null` suelta en la posición 12 de su lista `sizes` — un dato raro que
+nunca había estorbado porque nada lo recorría a todas las órdenes a la vez.
+"Nueva orden" (aviso de fecha saturada, V55) y el Calendario (V54–V56)
+recorren TODAS las órdenes para calcular la demanda, así que esa sola talla
+nula tiraba la pantalla completa. Mi verificación de V55/V56 solo probó con
+datos que yo mismo armé — no con las 32 órdenes reales; la revisión de datos
+que hice esta vez (fechas nulas, días estimados, `items`/`sizes` que no
+fueran arreglos) tampoco vio el caso hasta que la consola dio el error
+exacto (la consulta original no revisaba elementos `null` DENTRO del
+arreglo).
+
+**Arreglos:**
+1. `ordersService.js`: `fetchOrders`/`fetchOrderById` ahora LIMPIAN `items`
+   al leer (`limpiarItems`: descarta items y tallas que no sean objetos,
+   `sizes` siempre arreglo) — así todo lo que recorre `sizes[].cantidad`
+   (Dashboard, Resumen, PDF, Surtido, resumen de prendas, demanda, edición)
+   recibe siempre la forma esperada. **No se modificó nada en la base** —
+   la ESC-005 sigue teniendo su `null`; el código simplemente ya lo tolera
+   (si alguien edita las prendas de esa orden y guarda, el `null` se
+   descarta solo).
+2. `utils/demand.js` (`getOrderPieceCount`) y `api/_chat/tools.js`
+   (`sumarPiezas`, chat del lado del servidor, que leía las órdenes sin
+   pasar por `ordersService`): defensa extra con `?.`/`Array.isArray`.
+3. **`ErrorBoundary` nuevo** (`components/common/ErrorBoundary.jsx`,
+   montado en `AppLayout.jsx` con `key={location.pathname}`): antes, UN
+   error al pintar cualquier pantalla dejaba TODA la app en blanco sin
+   ningún mensaje; ahora el error se contiene en el área de contenido —
+   el menú sigue visible, se explica qué pasó, con el detalle técnico y
+   botones "Recargar la página" / "Ir al Dashboard".
+
+**Verificación:** con el arnés se confirmó que `getOrderPieceCount`/
+`buildDemandMap` ya no truenan con items `null`, tallas `null` o `sizes`
+`null` (cuenta 5 piezas ignorando los nulos), y que el `ErrorBoundary` con
+un error forzado (el mismo TypeError) muestra el mensaje con el menú
+visible en vez de blanco. **Pendiente de confirmar por el usuario** (no hay
+sesión propia para probar el flujo real completo): que "Nueva orden" y el
+Calendario vuelvan a cargar en producción.
+
 ### Fase 2 (rama `fase-2`) — trabajo previo, sin relación con lo de arriba
 
 Las 7 mejoras del módulo de Órdenes que pidió el usuario, en 3 fases (ver
