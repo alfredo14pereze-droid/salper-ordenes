@@ -9,6 +9,7 @@ import {
   canViewCatalogos,
   canManageUsers,
   canManagePedidosColegio,
+  canViewTalleros,
   canViewPedidosTienda,
   canViewEstadisticas,
   hasRestrictedNav,
@@ -78,6 +79,8 @@ export default function AppLayout({ children }) {
       label: 'Pedidos a Proveedor',
       show: PEDIDOS_PROVEEDOR_HABILITADO && !restricted && !tiendaBasica && canViewPedidosTienda(role),
     },
+    // V63 — visible también para fábrica (ver canViewTalleros).
+    { to: '/talleros', label: 'Talleros', show: canViewTalleros(role) },
     { to: '/catalogos', label: 'Catálogos', show: canViewCatalogos(role) },
     // V57 — beta oculta: solo admin_general (ver canManagePedidosColegio).
     { to: '/pedidos-colegio', label: 'Pedidos Colegio', show: canManagePedidosColegio(role) },

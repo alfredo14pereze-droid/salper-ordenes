@@ -3335,3 +3335,34 @@ metido en la sección plegable. Ahora van siempre visibles, entre Fecha de
 entrega y Prendas (`NewOrderPage.jsx`). La fecha de creación sigue atada a
 `CAPTURA_FECHA_CREACION_HABILITADA` (`true`); al terminar la carga histórica
 basta ponerla en `false`. La sección plegable queda como "Notas y fotos".
+
+### V63 — Módulo "Talleros" (muestrarios que se prestan) — EN REVISIÓN
+
+Reemplaza la hoja TALLEROS del Excel `Control_Salper.xlsx` (18 talleros,
+TAL-001…TAL-018, más el catálogo de prendas de la hoja CONFIG).
+
+**Decisiones del usuario:** agregar `tallas` y `tallas_faltantes`; fábrica
+también ve el módulo (a veces son quienes piden los talleros); "quién recibe"
+es TEXTO LIBRE (sin catálogo de clientes).
+
+**Schema (`supabase/schema_v63_talleros.sql`):** `mt_productos`,
+`mt_contenedores` (estado de uso disponible/prestado/en_reparacion SEPARADO de
+estado de contenido completo/incompleto, como en el Excel; ubicación
+tienda/fabrica nullable — el Excel la traía vacía), `mt_movimientos`
+(prestamo/devolucion/ajuste; `persona_equipo` + `persona_externa`; `orden_id`
+uuid FK opcional). Código TAL-### por SECUENCIA (nunca se recicla; los nuevos
+empiezan en TAL-019). Bucket público `mt-fotos` (subir/borrar solo admins).
+RLS: lectura para todo rol con sesión salvo `tienda` (rol básico); escritura
+solo por RPC `mt_*` SECURITY DEFINER.
+
+**Permisos:** ver = todos menos `tienda` (fábrica incluida, solo consulta);
+prestar/devolver = ventas, admin_tienda, admin_general; alta/edición/baja y
+catálogo de prendas = admin_tienda, admin_general (`canViewTalleros`,
+`canLoanTalleros`, `canManageTalleros`).
+
+**Frontend:** `/talleros` (filtros por prenda/color/estado/búsqueda, tarjetas,
+contadores, catálogo de prendas) y `/talleros/:id` (foto, datos, historial);
+modales Prestar (con vínculo opcional a una orden activa), Devolver (permite
+corregir completo/incompleto y tallas faltantes) y Alta/Edición con foto.
+Verificado con arnés (datos falsos) para ventas, corte y admin_general.
+Pendiente: aplicar el SQL, verificar grants (anon = false) y publicar.

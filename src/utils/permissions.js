@@ -287,6 +287,23 @@ export function canManagePedidosColegio(role) {
   return role === 'admin_general'
 }
 
+// V63 — Talleros (muestrarios que se prestan a clientes). Espejo de
+// supabase/schema_v63_talleros.sql. Ver: cualquier rol con sesión salvo el
+// básico `tienda` (incluye fábrica — a veces son quienes piden los
+// talleros). Prestar/devolver: ventas y admins de tienda. Alta/edición/
+// baja y catálogo de prendas: admin_tienda / admin_general.
+export function canViewTalleros(role) {
+  return !!role && role !== 'tienda'
+}
+
+export function canLoanTalleros(role) {
+  return role === 'ventas' || role === 'admin_tienda' || role === 'admin_general'
+}
+
+export function canManageTalleros(role) {
+  return role === 'admin_tienda' || role === 'admin_general'
+}
+
 export const ROLE_LABELS = {
   ventas: 'Ventas',
   contabilidad: 'Contabilidad',
