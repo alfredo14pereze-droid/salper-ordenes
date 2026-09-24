@@ -3389,4 +3389,4 @@ parámetro opcional `p_tallas_prestadas` (DROP de la firma anterior) y
 `prestado` (un solo préstamo vigente a la vez; devolver regresa todo).
 Frontend: botón "Prestar parcial" en tarjeta, detalle y encabezado; el modal
 exige las tallas; se muestra "Parcial: CH, M" en tarjeta, detalle, historial
-y al devolver. Verificado con arnés. Pendiente: aplicar el SQL y publicar.
+y al devolver. Verificado con arnés. Aplicado en Supabase (2026-09-24): una sola versión de mt_prestar, 6 funciones mt_* con anon = false, 2 columnas nuevas.
