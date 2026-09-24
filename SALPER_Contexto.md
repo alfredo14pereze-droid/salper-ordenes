@@ -3369,3 +3369,11 @@ Verificado con arnés (datos falsos) para ventas, corte y admin_general.
 talleros (7 incompletos), 6 funciones `mt_*` con anon = false / authenticated
 = true, sin INSERT directo para authenticated, RLS activo en las 3 tablas,
 bucket `mt-fotos` público, secuencia lista para TAL-019.
+
+### V64 — Prendas de la orden visibles en el Dashboard
+
+Pedido del usuario: que la tarjeta de cada orden en el Dashboard diga qué
+lleva ("Short", "Playera y Short"…). `utils/prendas.js` (`resumenPrendas`:
+nombres únicos sin distinguir mayúsculas, en orden de captura, unidos con
+"," y "y"; tolera items nulos) + línea `.order-card__prendas` en
+`OrderCard.jsx` (máx. 2 renglones). Sin cambios de base de datos.

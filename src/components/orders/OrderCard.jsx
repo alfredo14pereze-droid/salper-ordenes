@@ -3,6 +3,7 @@ import StatusBadge from './StatusBadge'
 import TypeBadge from './TypeBadge'
 import { formatDate, daysUntil } from '../../utils/dates'
 import { isCompleted } from '../../utils/status'
+import { resumenPrendas } from '../../utils/prendas'
 import { useAuth } from '../../contexts/AuthContext'
 import { canConfirmOrderChanges } from '../../utils/permissions'
 
@@ -11,6 +12,7 @@ export default function OrderCard({ order, orderType }) {
   const { role } = useAuth()
   const days = daysUntil(order.requested_delivery_date)
   const completed = isCompleted(order.status)
+  const prendas = resumenPrendas(order)
   // V38: una orden ya confirmada que se editó después queda marcada con
   // pending_reconfirmation_at — solo fábrica ve el cuadro completo en
   // azul (pedido explícito del usuario: "a los usuarios de la fábrica
@@ -66,6 +68,7 @@ export default function OrderCard({ order, orderType }) {
         {order.cancelled_at ? <span className="badge badge--danger">Cancelada</span> : <StatusBadge status={order.status} />}
       </div>
       <h3 className="order-card__client">{order.client_name}</h3>
+      {prendas && <p className="order-card__prendas">{prendas}</p>}
       {needsReconfirm && <p className="order-card__reconfirm-notice">✎ Se modificó después de confirmarse</p>}
       <div className="order-card__meta">
         <TypeBadge type={orderType} />
