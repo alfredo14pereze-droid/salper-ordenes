@@ -3336,7 +3336,7 @@ entrega y Prendas (`NewOrderPage.jsx`). La fecha de creación sigue atada a
 `CAPTURA_FECHA_CREACION_HABILITADA` (`true`); al terminar la carga histórica
 basta ponerla en `false`. La sección plegable queda como "Notas y fotos".
 
-### V63 — Módulo "Talleros" (muestrarios que se prestan) — EN REVISIÓN
+### V63 — Módulo "Talleros" (muestrarios que se prestan)
 
 Reemplaza la hoja TALLEROS del Excel `Control_Salper.xlsx` (18 talleros,
 TAL-001…TAL-018, más el catálogo de prendas de la hoja CONFIG).
@@ -3365,4 +3365,7 @@ contadores, catálogo de prendas) y `/talleros/:id` (foto, datos, historial);
 modales Prestar (con vínculo opcional a una orden activa), Devolver (permite
 corregir completo/incompleto y tallas faltantes) y Alta/Edición con foto.
 Verificado con arnés (datos falsos) para ventas, corte y admin_general.
-Pendiente: aplicar el SQL, verificar grants (anon = false) y publicar.
+**Aplicado en Supabase (2026-09-24)** con verificación: 24 prendas, 18
+talleros (7 incompletos), 6 funciones `mt_*` con anon = false / authenticated
+= true, sin INSERT directo para authenticated, RLS activo en las 3 tablas,
+bucket `mt-fotos` público, secuencia lista para TAL-019.
