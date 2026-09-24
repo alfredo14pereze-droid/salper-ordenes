@@ -7,7 +7,7 @@ export function fmtFecha(ts) {
 
 // V63 — tarjeta de un tallero en el listado. Los botones que se muestran
 // dependen del rol (los decide la página vía `can*`).
-export default function TalleroCard({ t, canLoan, canManage, onPrestar, onDevolver, onEditar, onBaja }) {
+export default function TalleroCard({ t, canLoan, canManage, onPrestar, onPrestarParcial, onDevolver, onEditar, onBaja }) {
   return (
     <div className="card tallero-card">
       <Link to={`/talleros/${t.id}`} className="tallero-card__photo">
@@ -31,12 +31,18 @@ export default function TalleroCard({ t, canLoan, canManage, onPrestar, onDevolv
         {t.estado_uso === 'prestado' && (
           <p className="tallero-card__meta">
             Con <b>{t.prestado_a}</b> desde {fmtFecha(t.prestado_desde)}
+            {t.tallas_prestadas ? ` · Parcial: ${t.tallas_prestadas}` : ''}
           </p>
         )}
         <div className="tallero-card__actions">
           {canLoan && t.estado_uso === 'disponible' && (
             <button type="button" className="btn btn--primary btn--small" onClick={() => onPrestar(t)}>
               Prestar
+            </button>
+          )}
+          {canLoan && t.estado_uso === 'disponible' && (
+            <button type="button" className="btn btn--secondary btn--small" onClick={() => onPrestarParcial(t)}>
+              Prestar parcial
             </button>
           )}
           {canLoan && t.estado_uso === 'prestado' && (

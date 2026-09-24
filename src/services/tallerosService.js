@@ -128,7 +128,7 @@ export async function darDeBajaTallero(id) {
   return supabase.rpc('mt_dar_de_baja', { p_id: id }).single()
 }
 
-export async function prestarTallero({ id, personaEquipo, personaExterna, ordenId, notas }) {
+export async function prestarTallero({ id, personaEquipo, personaExterna, ordenId, notas, tallasPrestadas }) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
   return supabase
@@ -138,6 +138,7 @@ export async function prestarTallero({ id, personaEquipo, personaExterna, ordenI
       p_persona_externa: personaExterna,
       p_orden_id: ordenId || null,
       p_notas: notas || null,
+      p_tallas_prestadas: tallasPrestadas || null,
     })
     .single()
 }

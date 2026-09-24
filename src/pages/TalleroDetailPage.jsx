@@ -83,6 +83,7 @@ function TalleroDetail() {
               <dt>Lo tiene</dt>
               <dd>
                 {tallero.prestado_a} (prestó {tallero.prestado_por}, {fmtFecha(tallero.prestado_desde)})
+                {tallero.tallas_prestadas ? ` — solo tallas: ${tallero.tallas_prestadas}` : ''}
               </dd>
             </>
           )}
@@ -99,6 +100,11 @@ function TalleroDetail() {
         {canLoan && tallero.estado_uso === 'disponible' && (
           <button type="button" className="btn btn--primary" onClick={() => setModal('prestar')}>
             Prestar
+          </button>
+        )}
+        {canLoan && tallero.estado_uso === 'disponible' && (
+          <button type="button" className="btn btn--secondary" onClick={() => setModal('prestar-parcial')}>
+            Prestar parcial
           </button>
         )}
         {canLoan && tallero.estado_uso === 'prestado' && (
@@ -130,8 +136,8 @@ function TalleroDetail() {
             <li key={m.id}>
               <b>{TIPO_LABEL[m.tipo] || m.tipo}</b> · {fmtFecha(m.fecha)}
               <div className="template-hint">
-                {m.tipo === 'prestamo' && `${m.persona_equipo} lo prestó a ${m.persona_externa}`}
-                {m.tipo === 'devolucion' && `${m.persona_externa ? `${m.persona_externa} lo devolvió; ` : ''}lo recibió ${m.persona_equipo}`}
+                {m.tipo === 'prestamo' && `${m.persona_equipo} lo prestó a ${m.persona_externa}${m.tallas ? ` (parcial: ${m.tallas})` : ''}`}
+                {m.tipo === 'devolucion' && `${m.persona_externa ? `${m.persona_externa} lo devolvió; ` : ''}lo recibió ${m.persona_equipo}${m.tallas ? ` (tallas: ${m.tallas})` : ''}`}
                 {m.tipo === 'ajuste' && `${m.estado_anterior} → ${m.estado_nuevo}`}
                 {m.orders?.order_number ? ` · Orden #${m.orders.order_number}` : ''}
                 {m.notas ? ` · ${m.notas}` : ''}
@@ -141,7 +147,9 @@ function TalleroDetail() {
         </ul>
       )}
 
-      {modal === 'prestar' && <PrestarModal tallero={tallero} onClose={() => setModal(null)} onDone={done} />}
+      {(modal === 'prestar' || modal === 'prestar-parcial') && (
+        <PrestarModal tallero={tallero} parcial={modal === 'prestar-parcial'} onClose={() => setModal(null)} onDone={done} />
+      )}
       {modal === 'devolver' && <DevolverModal tallero={tallero} onClose={() => setModal(null)} onDone={done} />}
       {modal === 'form' && <TalleroFormModal tallero={tallero} productos={productos} onClose={() => setModal(null)} onDone={done} />}
     </div>

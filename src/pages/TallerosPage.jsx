@@ -79,6 +79,9 @@ function TallerosContent() {
               <button type="button" className="btn btn--primary btn--small" onClick={() => setModal({ kind: 'prestar' })}>
                 Prestar
               </button>
+              <button type="button" className="btn btn--secondary btn--small" onClick={() => setModal({ kind: 'prestar', parcial: true })}>
+                Prestar parcial
+              </button>
               <button type="button" className="btn btn--secondary btn--small" onClick={() => setModal({ kind: 'devolver' })}>
                 Devolver
               </button>
@@ -144,6 +147,7 @@ function TallerosContent() {
               canLoan={canLoan}
               canManage={canManage}
               onPrestar={(x) => setModal({ kind: 'prestar', tallero: x })}
+              onPrestarParcial={(x) => setModal({ kind: 'prestar', tallero: x, parcial: true })}
               onDevolver={(x) => setModal({ kind: 'devolver', tallero: x })}
               onEditar={(x) => setModal({ kind: 'form', tallero: x })}
               onBaja={handleBaja}
@@ -153,7 +157,7 @@ function TallerosContent() {
       )}
 
       {modal?.kind === 'prestar' && (
-        <PrestarModal tallero={modal.tallero} talleros={talleros} onClose={() => setModal(null)} onDone={closeAndRefresh} />
+        <PrestarModal tallero={modal.tallero} parcial={!!modal.parcial} talleros={talleros} onClose={() => setModal(null)} onDone={closeAndRefresh} />
       )}
       {modal?.kind === 'devolver' && (
         <DevolverModal tallero={modal.tallero} talleros={talleros} onClose={() => setModal(null)} onDone={closeAndRefresh} />

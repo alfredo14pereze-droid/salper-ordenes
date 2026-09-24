@@ -6,13 +6,15 @@ import { prestarTallero, fetchOrdenesParaVincular } from '../../services/tallero
 // V63 — quién recibe es TEXTO LIBRE (colegio/cliente), sin catálogo. Si el
 // tallero ya viene elegido (desde su detalle o tarjeta) no se muestra el
 // selector.
-export default function PrestarModal({ tallero, talleros, onClose, onDone }) {
+export default function PrestarModal({ tallero, talleros, parcial: parcialInicial = false, onClose, onDone }) {
   const { profile } = useAuth()
   const disponibles = (talleros || []).filter((t) => t.estado_uso === 'disponible')
   const [id, setId] = useState(tallero?.id || '')
   const [equipo, setEquipo] = useState(profile?.full_name || '')
   const [externa, setExterna] = useState('')
   const [notas, setNotas] = useState('')
+  const [parcial, setParcial] = useState(parcialInicial)
+  const [tallasPrestadas, setTallasPrestadas] = useState('')
   const [vincular, setVincular] = useState(false)
   const [ordenId, setOrdenId] = useState('')
   const [ordenes, setOrdenes] = useState([])
@@ -34,6 +36,7 @@ export default function PrestarModal({ tallero, talleros, onClose, onDone }) {
       personaExterna: externa.trim(),
       ordenId: vincular ? ordenId : null,
       notas: notas.trim(),
+      tallasPrestadas: parcial ? tallasPrestadas.trim() : '',
     })
     setSaving(false)
     if (err) return setError(err)
@@ -41,7 +44,7 @@ export default function PrestarModal({ tallero, talleros, onClose, onDone }) {
   }
 
   return (
-    <Modal title="Prestar tallero" onClose={onClose}>
+    <Modal title={parcial ? 'Prestar parcial' : 'Prestar tallero'} onClose={onClose}>
       <form className="order-form" onSubmit={handleSubmit}>
         {tallero ? (
           <p>
@@ -70,6 +73,23 @@ export default function PrestarModal({ tallero, talleros, onClose, onDone }) {
             <input type="text" className="input" value={externa} onChange={(e) => setExterna(e.target.value)} autoFocus />
           </label>
         </div>
+        <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input type="checkbox" checked={parcial} onChange={(e) => setParcial(e.target.checked)} />
+          Préstamo parcial (solo algunas tallas)
+        </label>
+        {parcial && (
+          <label>
+            Tallas que se prestan *
+            <input
+              type="text"
+              className="input"
+              value={tallasPrestadas}
+              onChange={(e) => setTallasPrestadas(e.target.value)}
+              placeholder="Ej. CH, M, G"
+              autoFocus={!!tallero}
+            />
+          </label>
+        )}
         <label>
           Notas
           <input type="text" className="input" value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Opcional" />
@@ -93,7 +113,7 @@ export default function PrestarModal({ tallero, talleros, onClose, onDone }) {
           <button type="button" className="btn btn--ghost" onClick={onClose} disabled={saving}>
             Cancelar
           </button>
-          <button type="submit" className="btn btn--primary" disabled={saving || !id || !equipo.trim() || !externa.trim()}>
+          <button type="submit" className="btn btn--primary" disabled={saving || !id || !equipo.trim() || !externa.trim() || (parcial && !tallasPrestadas.trim())}>
             {saving ? 'Guardando…' : 'Registrar préstamo'}
           </button>
         </div>

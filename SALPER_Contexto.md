@@ -3377,3 +3377,16 @@ lleva ("Short", "Playera y Short"…). `utils/prendas.js` (`resumenPrendas`:
 nombres únicos sin distinguir mayúsculas, en orden de captura, unidos con
 "," y "y"; tolera items nulos) + línea `.order-card__prendas` en
 `OrderCard.jsx` (máx. 2 renglones). Sin cambios de base de datos.
+
+### V65 — Talleros: "Prestar parcial" (solo algunas tallas)
+
+Pedido del usuario: botón "Prestar parcial" para registrar qué tallas se
+prestaron cuando no sale el tallero completo. `supabase/schema_v65_prestamo_
+parcial.sql`: `mt_contenedores.tallas_prestadas` (préstamo vigente; null =
+completo) y `mt_movimientos.tallas` (historial); `mt_prestar` gana el
+parámetro opcional `p_tallas_prestadas` (DROP de la firma anterior) y
+`mt_devolver` limpia/registra las tallas. Un tallero parcial cuenta como
+`prestado` (un solo préstamo vigente a la vez; devolver regresa todo).
+Frontend: botón "Prestar parcial" en tarjeta, detalle y encabezado; el modal
+exige las tallas; se muestra "Parcial: CH, M" en tarjeta, detalle, historial
+y al devolver. Verificado con arnés. Pendiente: aplicar el SQL y publicar.

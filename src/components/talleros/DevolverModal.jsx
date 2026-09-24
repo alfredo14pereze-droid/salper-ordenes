@@ -51,6 +51,7 @@ export default function DevolverModal({ tallero, talleros, onClose, onDone }) {
         {tallero ? (
           <p>
             <b>{tallero.codigo}</b> · {tallero.mt_productos?.nombre} {tallero.color || ''}
+            {tallero.tallas_prestadas ? ` — parcial: ${tallero.tallas_prestadas}` : ''}
           </p>
         ) : (
           <label>
@@ -59,7 +60,7 @@ export default function DevolverModal({ tallero, talleros, onClose, onDone }) {
               <option value="">Selecciona…</option>
               {prestados.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.codigo} — {t.mt_productos?.nombre} {t.color || ''} (con {t.prestado_a})
+                  {t.codigo} — {t.mt_productos?.nombre} {t.color || ''} (con {t.prestado_a}{t.tallas_prestadas ? `, parcial: ${t.tallas_prestadas}` : ''})
                 </option>
               ))}
             </select>
