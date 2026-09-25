@@ -19,6 +19,7 @@ import ControlRapidoPage from './pages/ControlRapidoPage'
 import EstadisticasPage from './pages/EstadisticasPage'
 import PedidosColegioPage from './pages/PedidosColegioPage'
 import TallerosPage from './pages/TallerosPage'
+import ProduccionCapturaPage from './pages/ProduccionCapturaPage'
 import TalleroDetailPage from './pages/TalleroDetailPage'
 import NewPedidoColegioPage from './pages/NewPedidoColegioPage'
 import PedidoColegioDetailPage from './pages/PedidoColegioDetailPage'
@@ -84,6 +85,7 @@ function AuthGate() {
           <Route path="/estadisticas" element={<EstadisticasPage />} />
           {/* V57 — Pedidos Colegio (beta): cada página se protege sola con
               RequireRole (solo admin_general); el servidor lo exige igual. */}
+          <Route path="/produccion/captura" element={<ProduccionCapturaPage />} />
           <Route path="/talleros" element={<TallerosPage />} />
           <Route path="/talleros/:id" element={<TalleroDetailPage />} />
           <Route path="/pedidos-colegio" element={<PedidosColegioPage />} />

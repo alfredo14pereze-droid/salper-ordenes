@@ -11,6 +11,7 @@ import {
   canManagePedidosColegio,
   canViewTalleros,
   isCapturaProduccion,
+  canCapturarProduccion,
   canViewPedidosTienda,
   canViewEstadisticas,
   hasRestrictedNav,
@@ -84,6 +85,8 @@ export default function AppLayout({ children }) {
       label: 'Pedidos a Proveedor',
       show: PEDIDOS_PROVEEDOR_HABILITADO && !restricted && !tiendaBasica && canViewPedidosTienda(role),
     },
+    // V68 — captura de producción (Juanis + admin_general/admin_fabrica).
+    { to: '/produccion/captura', label: 'Producción', show: canCapturarProduccion(role) },
     // V63 — visible también para fábrica (ver canViewTalleros).
     { to: '/talleros', label: 'Talleros', show: canViewTalleros(role) },
     { to: '/catalogos', label: 'Catálogos', show: canViewCatalogos(role) },

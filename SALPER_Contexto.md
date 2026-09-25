@@ -3487,3 +3487,31 @@ notas ni talleros.
   el lugar 31 y reciben bono de lugar ($50), como se confirmó. Una persona con
   semana anterior en 0 queda "Sin base".
 - Pendiente: Fase 3 (captura rápida con teclado).
+
+### V68 — Producción y Premios · FASE 3 (captura rápida)
+
+- **Pantalla `/produccion/captura`** ("Producción" en el menú; admin_general,
+  admin_fabrica y `captura_produccion`): fecha (hoy por default, sin fechas
+  futuras) → operadora (busca por número o nombre, ↑↓ + Enter) → **Folio →
+  Tab/Enter → Piezas → Enter guarda y vuelve al Folio**. **F2** cambia de
+  operadora sin soltar el teclado (el foco sigue al flujo con un efecto, no con
+  timeouts). Muestra prenda·parte·operación del folio al escribirlo;
+  lista de lo capturado ese día por operadora (editar/borrar mientras la
+  semana siga abierta) y contador "X de Y operadoras capturadas hoy" con la
+  lista de a quién le falta. **Nunca muestra pesos.**
+- **Validaciones (servidor):** folio inexistente → error, no guarda; folio
+  inactivo o piezas > 1.5× lo esperado por jornada (`segundos_jornada /
+  segundos`) → ADVERTENCIA que se confirma con Enter otra vez (no bloquea);
+  semana no abierta (o fecha futura) → no permite.
+- **SQL aplicado** (`supabase/schema_v68_produccion_captura.sql`): RPCs
+  `prod_capturar_registro`, `prod_editar_registro`, `prod_borrar_registro`,
+  `prod_listar_registros`, `prod_resumen_captura` (+ helper interno
+  `prod_semana_de`, sin grant) que NO devuelven montos; la semana
+  (miércoles→martes) se crea/asigna sola en la primera captura; snapshot de
+  segundos y precio al guardar. Los admins también corrigen en `en_revision`.
+- **Verificado** como `captura_produccion` en transacción con ROLLBACK:
+  captura normal (respuesta sin montos), folio inexistente, confirmación por
+  exceso, semana aprobada bloqueada, fecha futura bloqueada, listar/resumen,
+  editar/borrar, y `select` directo a `prod_registros` → 0 filas visibles.
+  Pantalla probada con arnés de teclado real (Enter/Tab/F2).
+- Pendiente: Fase 4 (cierre semanal, revisión y aprobación).
