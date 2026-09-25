@@ -3598,3 +3598,37 @@ TABLA "Historial de préstamos" (fecha, movimiento, quién lo prestó/recibió,
 cliente, teléfono, dinero, detalle) y las tarjetas tienen botón "Historial".
 Aviso: talleros lo ven todos los roles con sesión salvo `tienda` y
 `captura_produccion` (fábrica incluida), así que teléfono y dinero también.
+
+
+### V72 — Estadísticas de producción (Fase 6)
+
+Nueva sección de menú "Estadísticas de producción" (`/estadisticas-produccion`,
+solo `admin_general`/`admin_fabrica`), separada de "Estadísticas" (tiempos de
+entrega) pero con el mismo estilo. `supabase/schema_v72_produccion_estadisticas.sql`
+(aplicado 2026-09-25): funciones NUEVAS, todas con `prod_puede_ver_montos()` y
+sin acceso para anon: `prod_stats_info`, `prod_stats_semanas`,
+`prod_stats_distribucion_meta`, `prod_stats_destacados`, `prod_stats_prendas`,
+`prod_stats_operaciones`, `prod_stats_dias`. Nada de cálculo duplicado en el
+frontend (premios de semanas abiertas/en revisión salen de `prod_revision_semana`).
+Filtros: rango de semanas (default últimas 12) + operadora. Secciones: KPIs de la
+semana elegida, tendencia valor vs premios, premios/valor %, distribución por
+nivel de bono meta (incluye "sin bono meta"), destacados (top 5 valor, top 5 %
+mejora sin "Sin base", rachas de 3+ semanas ≥10% abajo de su promedio de 4),
+valor por prenda, top 10 operaciones (piezas y valor) y producción por día
+(mié–mar). Las semanas importadas solo traen totales por persona: prendas,
+operaciones y días usan solo semanas con registros, con nota "Datos por operación
+desde …". Semanas abiertas/en revisión se marcan "preliminar" (barras rayadas).
+Origen del premio: `congelado` (aprobada con snapshot), `preliminar`, `calculado`
+(importada sin snapshot: se recalcula con las reglas actuales).
+Aviso: por ser recalculado, el total de premios de semanas importadas cambia si se
+cambia "participa en bonos" o las reglas. Validado: semana 09-22 = $6,800 con las
+32 participantes originales; hoy da $6,400 porque Adriana Aguirre y Jaqui Romero
+se marcaron "no participa".
+
+### V73 — "Costura" en estados y usuarios
+
+Solo etiquetas (las claves internas no cambian): estado `en_produccion` →
+"En costura", `produccion` → "Costura terminada", grupo/etapa "Costura", rol
+`produccion` → "Costura", `captura_produccion` → "Captura de costura".
+"Producción" queda para el proceso completo (Órdenes/Etapas de producción, módulo
+Producción y Premios).
