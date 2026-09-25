@@ -88,8 +88,12 @@ function Captura() {
   }, [])
 
   const sem = useMemo(() => semanaDe(fecha), [fecha])
-  const estadoSemana = semana?.estado || 'abierta'
-  const puedeCapturar = estadoSemana === 'abierta' || (estadoSemana === 'en_revision' && esAdmin)
+  // Misma regla que el servidor (prod_puede_editar_semana): aprobada = nunca; admins mientras no esté
+  // aprobada; quien solo captura: solo si está abierta Y su martes no ha terminado.
+  const estadoBase = semana?.estado || 'abierta'
+  const vencida = estadoBase === 'abierta' && sem.fin < hoy
+  const estadoSemana = vencida ? 'en_revision' : estadoBase
+  const puedeCapturar = estadoBase === 'aprobada' ? false : esAdmin ? true : estadoBase === 'abierta' && !vencida
 
   const refrescar = useCallback(async () => {
     const [r, s, sm] = await Promise.all([
@@ -408,7 +412,7 @@ function Captura() {
                       </td>
                       <td>{r.piezas}</td>
                       <td>
-                        {(r.semana_estado === 'abierta' || (r.semana_estado === 'en_revision' && esAdmin)) && (
+                        {(r.semana_estado !== 'aprobada' && (esAdmin || (r.semana_estado === 'abierta' && !vencida))) && (
                           <>
                             <button type="button" className="btn btn--ghost btn--small" onClick={() => setEdit({ id: r.id, folio: String(r.folio), piezas: String(r.piezas) })}>
                               Editar

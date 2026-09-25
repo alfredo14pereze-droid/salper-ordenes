@@ -2519,3 +2519,75 @@ h4 {
     grid-template-columns: 1fr;
   }
 }
+
+/* V69 — Revisión de producción */
+.revision__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin: 12px 0;
+}
+.revision__acciones {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.revision__estado--abierta {
+  background: var(--color-orange-soft);
+  color: var(--color-orange-strong);
+}
+.revision__estado--en_revision {
+  background: var(--color-info-soft);
+  color: var(--color-info);
+}
+.revision__estado--aprobada {
+  background: var(--color-good-soft);
+  color: var(--color-good);
+}
+.revision__resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin: 12px 0 16px;
+}
+.revision__resumen > div {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.revision__resumen span {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.revision__resumen b {
+  font-size: 20px;
+}
+.revision__sube {
+  color: var(--color-good);
+  font-size: 13px;
+}
+.revision__baja {
+  color: var(--color-danger);
+  font-size: 13px;
+}
+.revision__tabla-wrap {
+  overflow-x: auto;
+}
+.revision__tabla td,
+.revision__tabla th {
+  white-space: nowrap;
+}
+.revision__fila {
+  cursor: pointer;
+}
+.revision__fila:hover {
+  background: var(--color-orange-soft);
+}
+.revision__detalle {
+  background: var(--color-bg);
+}

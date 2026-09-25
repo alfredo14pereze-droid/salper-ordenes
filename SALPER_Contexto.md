@@ -3515,3 +3515,30 @@ notas ni talleros.
   editar/borrar, y `select` directo a `prod_registros` → 0 filas visibles.
   Pantalla probada con arnés de teclado real (Enter/Tab/F2).
 - Pendiente: Fase 4 (cierre semanal, revisión y aprobación).
+
+### V69 — Producción y Premios · FASE 4 (cierre, revisión y aprobación)
+
+- **Cierre semanal SIN cron** (activar `pg_cron` es un cambio de plataforma, no
+  se hizo): una semana ya NO la puede capturar quien solo captura
+  (`captura_produccion`) en cuanto termina el martes (00:00 hora de Torreón =
+  "martes 23:59"). El estado `en_revision` se materializa al abrir la pantalla
+  de revisión (`prod_cerrar_vencidas`) o con el botón "Pasar a revisión"
+  (`prod_cerrar_semana`). Los admins corrigen registros mientras la semana NO
+  esté aprobada (`prod_puede_editar_semana`, misma regla en las 3 RPC de
+  captura, re-creadas con la misma firma).
+- **Aprobar** (`prod_aprobar_semana`) ahora exige `en_revision`; congela el
+  snapshot en `prod_premios_semana`. **Reabrir** (`prod_reabrir_semana`): solo
+  `admin_general`, con motivo (se agrega a `notas`), borra el snapshot y deja
+  la semana en `en_revision`; las semanas importadas del Excel no se reabren.
+- **Pantalla `/produccion/revision`** ("Revisión producción"; admin_general y
+  admin_fabrica): selector de semana, botones según estado, resumen (total de
+  premios, personas, valor generado, comparación contra la semana anterior),
+  tabla por lugar (valor generado, semana anterior, mejora o "Sin base",
+  bonos, total) y detalle por operadora con sus registros. Todo el cálculo
+  viene del servidor (`prod_revision_semana`: congelado si está aprobada,
+  calculado si no). `supabase/schema_v69_produccion_revision.sql`.
+- **Verificado** con una semana de prueba en transacción con ROLLBACK
+  (Juanis captura → cierre → vista previa → aprobar → snapshot → editar/borrar/
+  capturar bloqueados → reabrir con motivo → editar de nuevo): 100% según lo
+  esperado; Juanis no puede aprobar, reabrir ni ver montos.
+- Pendiente: Fase 5 (dashboard, imprimibles, pantallas de administración).

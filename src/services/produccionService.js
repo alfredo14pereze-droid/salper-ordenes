@@ -67,3 +67,45 @@ export async function resumenCaptura(fecha) {
   if (cfgError) return { data: null, error: cfgError }
   return supabase.rpc('prod_resumen_captura', { p_fecha: fecha })
 }
+
+// V69 — Revisión y aprobación (SOLO admin_general / admin_fabrica; traen montos).
+export async function listarSemanas(limit = 30) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_listar_semanas', { p_limit: limit })
+}
+
+export async function revisionSemana(semanaId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_revision_semana', { p_semana_id: semanaId })
+}
+
+export async function cerrarSemana(semanaId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_cerrar_semana', { p_semana_id: semanaId }).single()
+}
+
+export async function aprobarSemana(semanaId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_aprobar_semana', { p_semana_id: semanaId }).single()
+}
+
+export async function reabrirSemana(semanaId, motivo) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_reabrir_semana', { p_semana_id: semanaId, p_motivo: motivo }).single()
+}
+
+export async function fetchRegistrosOperadora(semanaId, operadoraId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase
+    .from('prod_registros')
+    .select('id, fecha, piezas, valor, folio_operacion, prod_operaciones(prenda, parte, operacion)')
+    .eq('semana_id', semanaId)
+    .eq('operadora_id', operadoraId)
+    .order('fecha', { ascending: true })
+}
