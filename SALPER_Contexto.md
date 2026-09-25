@@ -3557,7 +3557,7 @@ notas ni talleros.
   con datos (valor > 0) y clasificación (umbral propuesto ±10% contra su
   promedio: "Arriba / En su / Abajo de su promedio", "Sin base"). Lógica en
   `utils/produccionStats.js`.
-- **Imprimibles** (`components/pdf/ProduccionPdf.jsx`, vista previa en
+- **Imprimibles (ajustado a petición: sin número de operadora; el ranking solo trae lugar, nombre, valor actual, anterior y % de mejora, sin bonos)** (`components/pdf/ProduccionPdf.jsx`, vista previa en
   `PdfPreviewModal` antes de descargar): **hoja por operadora** (valor
   generado, lugar, premio desglosado, gráfica de barras de las últimas 8
   semanas, comparación con su promedio; "no es tu sueldo") — una hoja por

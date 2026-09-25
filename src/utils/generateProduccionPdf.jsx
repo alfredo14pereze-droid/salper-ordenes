@@ -7,8 +7,7 @@ export async function buildProduccionOperadorasPdfBlob(semana, personas) {
 }
 
 export async function buildProduccionRankingPdfBlob(semana, filas) {
-  const total = filas.reduce((s, f) => s + Number(f.total_premio || 0), 0)
-  return pdf(<ProduccionRankingDoc semana={semana} filas={filas} totalPremios={total} />).toBlob()
+  return pdf(<ProduccionRankingDoc semana={semana} filas={filas} />).toBlob()
 }
 
 export const produccionPdfFileName = (tipo, semana) => `Produccion-${tipo}-${semana.fecha_fin}.pdf`

@@ -40,7 +40,7 @@ const s = StyleSheet.create({
   tr: { flexDirection: 'row', paddingVertical: 3, paddingHorizontal: 4, borderBottomWidth: 0.5, borderBottomColor: LINE },
   cLugar: { width: 30 },
   cNombre: { flex: 1 },
-  cNum: { width: 62, textAlign: 'right' },
+  cNum: { width: 86, textAlign: 'right' },
   cNumS: { width: 48, textAlign: 'right' },
 })
 
@@ -75,10 +75,7 @@ export function HojaOperadora({ semana, persona }) {
     <Page size="LETTER" style={s.page}>
       <Text style={s.brand}>SALPER · PRODUCCIÓN SEMANAL</Text>
       <Text style={s.sub}>Semana del {dia(semana.fecha_inicio)} al {dia(semana.fecha_fin)}</Text>
-      <Text style={s.nombre}>
-        {op.numero_operadora ? `${op.numero_operadora} · ` : ''}
-        {op.nombre}
-      </Text>
+      <Text style={s.nombre}>{op.nombre}</Text>
 
       <View style={s.kpis}>
         <View style={s.kpi}>
@@ -153,7 +150,7 @@ export function ProduccionOperadorasDoc({ semana, personas }) {
   )
 }
 
-export function ProduccionRankingDoc({ semana, filas, totalPremios }) {
+export function ProduccionRankingDoc({ semana, filas }) {
   return (
     <Document>
       <Page size="LETTER" style={s.page}>
@@ -162,31 +159,19 @@ export function ProduccionRankingDoc({ semana, filas, totalPremios }) {
         <View style={[s.th, { marginTop: 14 }]}>
           <Text style={[s.thT, s.cLugar]}>Lugar</Text>
           <Text style={[s.thT, s.cNombre]}>Operadora</Text>
-          <Text style={[s.thT, s.cNum]}>Valor gen.</Text>
-          <Text style={[s.thT, s.cNumS]}>Mejora</Text>
-          <Text style={[s.thT, s.cNumS]}>Meta</Text>
-          <Text style={[s.thT, s.cNumS]}>Lugar</Text>
-          <Text style={[s.thT, s.cNumS]}>Mejora</Text>
-          <Text style={[s.thT, s.cNum]}>Premio</Text>
+          <Text style={[s.thT, s.cNum]}>Semana actual</Text>
+          <Text style={[s.thT, s.cNum]}>Semana anterior</Text>
+          <Text style={[s.thT, s.cNum]}>Mejora</Text>
         </View>
         {filas.map((f) => (
           <View key={f.operadora_id} style={s.tr} wrap={false}>
             <Text style={s.cLugar}>{f.lugar}</Text>
-            <Text style={s.cNombre}>
-              {f.numero_operadora ?? '—'} · {f.nombre}
-            </Text>
-            <Text style={s.cNum}>{money(f.valor_generado)}</Text>
-            <Text style={s.cNumS}>{f.mejora_pct == null ? 'S/base' : `${Number(f.mejora_pct).toFixed(0)}%`}</Text>
-            <Text style={s.cNumS}>{Number(f.bono_meta)}</Text>
-            <Text style={s.cNumS}>{Number(f.bono_lugar)}</Text>
-            <Text style={s.cNumS}>{Number(f.bono_mejora)}</Text>
-            <Text style={[s.cNum, s.bold]}>{money(f.total_premio)}</Text>
+            <Text style={s.cNombre}>{f.nombre}</Text>
+            <Text style={[s.cNum, s.bold]}>{money(f.valor_generado)}</Text>
+            <Text style={s.cNum}>{f.valor_anterior == null ? '—' : money(f.valor_anterior)}</Text>
+            <Text style={s.cNum}>{f.mejora_pct == null ? 'Sin base' : `${f.mejora_pct >= 0 ? '+' : ''}${Number(f.mejora_pct).toFixed(1)}%`}</Text>
           </View>
         ))}
-        <View style={s.rowTotal}>
-          <Text style={s.bold}>Total de premios de la semana</Text>
-          <Text style={s.bold}>{money(totalPremios)}</Text>
-        </View>
       </Page>
     </Document>
   )
