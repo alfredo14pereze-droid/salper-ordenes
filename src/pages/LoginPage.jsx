@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import Logo from '../components/layout/Logo'
 
@@ -80,6 +80,9 @@ export default function LoginPage() {
         </form>
 
         <p className="login-card__hint">¿No tienes cuenta? Pídele acceso a un administrador.</p>
+        <p className="login-card__hint">
+          <Link to="/instalar">Instalar la app</Link>
+        </p>
       </div>
     </div>
   )

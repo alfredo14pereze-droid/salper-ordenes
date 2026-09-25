@@ -2,6 +2,8 @@ import { HashRouter, Routes, Route } from 'react-router-dom'
 import AppLayout from './components/layout/AppLayout'
 import ConfigMissing from './components/common/ConfigMissing'
 import LoginPage from './pages/LoginPage'
+import InstalarPage from './pages/InstalarPage'
+import UpdatePrompt from './components/pwa/UpdatePrompt'
 import DashboardPage from './pages/DashboardPage'
 import PastOrdersPage from './pages/PastOrdersPage'
 import ResumenPage from './pages/ResumenPage'
@@ -65,7 +67,11 @@ function AuthGate() {
   if (!user) {
     return (
       <HashRouter>
-        <LoginPage />
+        <Routes>
+          <Route path="/instalar" element={<InstalarPage />} />
+          <Route path="*" element={<LoginPage />} />
+        </Routes>
+        <UpdatePrompt />
       </HashRouter>
     )
   }
@@ -78,6 +84,7 @@ function AuthGate() {
           <Route path="/pasadas" element={<PastOrdersPage />} />
           <Route path="/resumen" element={<ResumenPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/instalar" element={<InstalarPage />} />
           <Route path="/nueva" element={<NewOrderPage />} />
           <Route path="/orden/:id" element={<OrderDetailPage />} />
           <Route path="/calendario" element={<CalendarPage />} />
@@ -113,6 +120,7 @@ function AuthGate() {
           />
         </Routes>
       </AppLayout>
+      <UpdatePrompt />
     </HashRouter>
   )
 }

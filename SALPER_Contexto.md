@@ -3632,3 +3632,17 @@ Solo etiquetas (las claves internas no cambian): estado `en_produccion` →
 `produccion` → "Costura", `captura_produccion` → "Captura de costura".
 "Producción" queda para el proceso completo (Órdenes/Etapas de producción, módulo
 Producción y Premios).
+
+
+### V74 — PWA instalable
+
+`vite-plugin-pwa` (registerType `prompt`, generateSW). Manifest "SALPER", standalone,
+theme `#16130f`, fondo `#f7f6f2`, `start_url` `./#/`; íconos 192/512 + `maskable-icon-512.png`
+(copia del 512, el logo ya cae dentro de la zona segura) + apple-touch-icon. El service
+worker solo precachea JS/CSS/HTML/íconos; SIN runtimeCaching, así que Supabase y APIs
+nunca se cachean. Aviso "Hay una nueva versión — Actualizar" (`components/pwa/UpdatePrompt.jsx`,
+revisa cada 30 min y al volver a la app). `/#/instalar` es pública (también sin sesión):
+botón Instalar con `beforeinstallprompt` (capturado en `lib/pwaInstall.js`), pasos de
+Safari para iPhone/iPad (avisa si no es Safari), "Ya tienes la app instalada". Login
+email+contraseña en localStorage: funciona en la app instalada; en iPhone se inicia
+sesión una vez porque no comparte sesión con Safari. `vercel.json`: sw.js/manifest sin caché.
