@@ -3542,3 +3542,42 @@ notas ni talleros.
   capturar bloqueados → reabrir con motivo → editar de nuevo): 100% según lo
   esperado; Juanis no puede aprobar, reabrir ni ver montos.
 - Pendiente: Fase 5 (dashboard, imprimibles, pantallas de administración).
+
+### V70 — Producción y Premios · FASE 5 (dashboard, imprimibles y administración)
+
+- **SQL aplicado** (`supabase/schema_v70_produccion_reportes_admin.sql`, solo
+  admin_general/admin_fabrica): `prod_historial_valores` (valor por operadora
+  por semana; aprobadas/importadas desde `prod_valor_semana`, las demás desde
+  registros), `prod_guardar_operacion`, `prod_guardar_operadora`,
+  `prod_guardar_regla`, `prod_guardar_config`. No hay función de borrado: las
+  operaciones solo se desactivan y un folio jamás se reutiliza. Verificado con
+  ROLLBACK (altas, duplicados, ediciones, permisos; Juanis bloqueada).
+- **`/produccion/dashboard`**: una fila por operadora activa con semana actual,
+  anterior, promedio de las 4 anteriores, % de cambio, mejor semana, semanas
+  con datos (valor > 0) y clasificación (umbral propuesto ±10% contra su
+  promedio: "Arriba / En su / Abajo de su promedio", "Sin base"). Lógica en
+  `utils/produccionStats.js`.
+- **Imprimibles** (`components/pdf/ProduccionPdf.jsx`, vista previa en
+  `PdfPreviewModal` antes de descargar): **hoja por operadora** (valor
+  generado, lugar, premio desglosado, gráfica de barras de las últimas 8
+  semanas, comparación con su promedio; "no es tu sueldo") — una hoja por
+  persona o una sola desde el botón "Hoja" — y **ranking general** de la
+  semana (una hoja, total de premios). Probado con datos reales (semana
+  16–22 sep: total $6,800).
+- **`/produccion/admin`** (pestañas): Operaciones (filtro por prenda,
+  búsqueda, editar parte/operación/segundos, activar/desactivar, panel
+  "folios libres por centena", alta con sugerencia de folio), Operadoras
+  (alta/edición, participa en bonos, activa), Reglas de premios (mejora en
+  %), Configuración (precio por segundo y segundos de jornada). Aviso fijo:
+  "Cambiar un tiempo o precio no modifica semanas ya capturadas".
+- **Folios por centena** (`sugerirFolioPrendaExistente`, `sugerirCentenaNueva`,
+  `validarFolioNuevo`): prenda existente → máximo folio de esa prenda + 1,
+  saltando folios de cualquier otra prenda (las centenas compartidas: 400
+  Playera/Camisolas, 1000 Chamarras); prenda nueva → primera centena libre
+  (hoy **1300**); folio editable con validación de existencia, aviso si queda
+  fuera de la centena de la prenda, y aviso si a la centena le quedan < 10
+  libres. Hoy ninguna centena está por debajo de 10 libres. (El renombre de
+  "CHAMARA CON FORRO" ya se hizo en la Fase 1.)
+- Menú: "Dashboard producción" y "Admin producción" (admins). Fuera de
+  alcance (sin tocar): foto del papelito con Claude Vision, ligar registros a
+  órdenes, avance a media semana para cada operadora, COSTEO/ORDEN PROD.
