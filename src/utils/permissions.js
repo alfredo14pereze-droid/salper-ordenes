@@ -243,7 +243,9 @@ export function isTiendaBasica(role) {
 // sesión podía hacer esto sin importar el rol (nunca se les puso un
 // candado específico). Con los roles nuevos ('lectura' no debe escribir
 // NADA; 'tienda' tampoco participa de esto) hizo falta ponerles uno.
-const SIN_ESCRITURA_GENERAL = ['lectura', 'tienda']
+// V66 — 'captura_produccion' (Juanis) tampoco escribe nada fuera de la captura
+// de producción: solo consulta órdenes.
+const SIN_ESCRITURA_GENERAL = ['lectura', 'tienda', 'captura_produccion']
 
 export function canManageAnnouncements(role) {
   return !!role && !SIN_ESCRITURA_GENERAL.includes(role)
@@ -258,11 +260,11 @@ export function canManageOrderPhotos(role) {
 // terminó una reparación, no solo agregar). 'lectura' sigue sin poder
 // tocar nada, como todo lo demás.
 export function canCreatePendingItems(role) {
-  return !!role && role !== 'lectura'
+  return !!role && role !== 'lectura' && role !== 'captura_produccion'
 }
 
 export function canResolvePendingItems(role) {
-  return !!role && role !== 'lectura'
+  return !!role && role !== 'lectura' && role !== 'captura_produccion'
 }
 
 // V51 — Notas internas de una orden: comentario libre que NUNCA sale en
@@ -274,7 +276,7 @@ export function canResolvePendingItems(role) {
 // que no se restringe al mismo candado que canEditOrder. 'lectura' sigue
 // pudiendo LEER las notas (ve todo el sistema), solo no puede escribir.
 export function canManageOrderNotes(role) {
-  return !!role && role !== 'lectura'
+  return !!role && role !== 'lectura' && role !== 'captura_produccion'
 }
 
 // V57 — Pedidos Colegio (beta): módulo OCULTO, exclusivo admin_general —
@@ -293,7 +295,7 @@ export function canManagePedidosColegio(role) {
 // talleros). Prestar/devolver: ventas y admins de tienda. Alta/edición/
 // baja y catálogo de prendas: admin_tienda / admin_general.
 export function canViewTalleros(role) {
-  return !!role && role !== 'tienda'
+  return !!role && role !== 'tienda' && role !== 'captura_produccion'
 }
 
 export function canLoanTalleros(role) {
@@ -302,6 +304,22 @@ export function canLoanTalleros(role) {
 
 export function canManageTalleros(role) {
   return role === 'admin_tienda' || role === 'admin_general'
+}
+
+// V66 — Producción y Premios. `captura_produccion` (Juanis, secretaria):
+// solo captura producción y consulta órdenes. Montos (valor generado,
+// premios): admin_general y admin_fabrica — espejo de prod_puede_ver_montos()
+// / prod_puede_capturar() en supabase/schema_v66_produccion_fase1.sql.
+export function isCapturaProduccion(role) {
+  return role === 'captura_produccion'
+}
+
+export function canViewProduccionMontos(role) {
+  return role === 'admin_general' || role === 'admin_fabrica'
+}
+
+export function canCapturarProduccion(role) {
+  return role === 'admin_general' || role === 'admin_fabrica' || role === 'captura_produccion'
 }
 
 export const ROLE_LABELS = {
@@ -317,4 +335,5 @@ export const ROLE_LABELS = {
   admin_general: 'Administrador general',
   lectura: 'Solo lectura',
   tienda: 'Tienda (básico)',
+  captura_produccion: 'Captura de producción',
 }

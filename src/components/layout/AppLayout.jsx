@@ -10,6 +10,7 @@ import {
   canManageUsers,
   canManagePedidosColegio,
   canViewTalleros,
+  isCapturaProduccion,
   canViewPedidosTienda,
   canViewEstadisticas,
   hasRestrictedNav,
@@ -46,6 +47,7 @@ const VIEW_AS_ROLES = [
   'admin_fabrica',
   'lectura',
   'tienda',
+  'captura_produccion',
 ]
 
 export default function AppLayout({ children }) {
@@ -62,6 +64,9 @@ export default function AppLayout({ children }) {
   // combina con `restricted` porque las formas no coinciden (ver
   // isTiendaBasica en utils/permissions.js).
   const tiendaBasica = isTiendaBasica(role)
+  // V66 — Juanis (captura_produccion): solo Dashboard (consultar órdenes) y,
+  // desde la Fase 3, la pantalla de captura. Nada más en el menú.
+  const soloCaptura = isCapturaProduccion(role)
 
   const navItems = [
     { to: '/', label: 'Dashboard', end: true, show: true },
@@ -117,7 +122,7 @@ export default function AppLayout({ children }) {
 
         <nav className="app-nav">
           {navItems
-            .filter((item) => item.show)
+            .filter((item) => item.show && (!soloCaptura || item.to === '/' || item.to.startsWith('/produccion')))
             .map((item) => (
               <NavLink
                 key={item.to}
@@ -197,7 +202,7 @@ export default function AppLayout({ children }) {
             cambiar de ruta. */}
         <ErrorBoundary key={location.pathname}>{children}</ErrorBoundary>
       </main>
-      <ChatWidget />
+      {!soloCaptura && <ChatWidget />}
     </div>
   )
 }

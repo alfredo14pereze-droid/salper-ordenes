@@ -19,6 +19,7 @@ const ROLES = [
   'corte', 'bordado', 'sublimado', 'produccion', 'terminado', 'admin_fabrica',
   'admin_general',
   'lectura', 'tienda',
+  'captura_produccion',
 ]
 
 function NewUserForm({ onCreated }) {

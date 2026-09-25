@@ -3390,3 +3390,71 @@ parámetro opcional `p_tallas_prestadas` (DROP de la firma anterior) y
 Frontend: botón "Prestar parcial" en tarjeta, detalle y encabezado; el modal
 exige las tallas; se muestra "Parcial: CH, M" en tarjeta, detalle, historial
 y al devolver. Verificado con arnés. Aplicado en Supabase (2026-09-24): una sola versión de mt_prestar, 6 funciones mt_* con anon = false, 2 columnas nuevas.
+
+### V66 — Producción y Premios · FASE 1 (esquema y catálogos)
+
+Reemplaza el Excel `Salper_Produccion.xlsm` (producción por operadora y
+premios semanales). Trabajo directo en `main` (decisión del usuario; la rama
+`fase-2` no se usa). Terminología de interfaz: **"valor generado"**, nunca
+"sueldo". Fases 2–5 pendientes (motor de premios, captura rápida, cierre y
+aprobación, reportes); **una fase por vez, con visto bueno del usuario**.
+
+**Datos y decisiones (Excel real):**
+- 635 operaciones (folios únicos 1–2039; 485 textos con espacios sobrantes,
+  recortados; prenda `CHAMARA CON FORRO` → `CHAMARRA CON FORRO`, 20 filas).
+- 35 personas; 33 con número de operadora (faltan EMP009 y EMP027, ambas
+  inactivas). EMP014 está activa pero NO participa en bonos. 32 participan.
+- Reglas: 6 meta + 4 lugar + **4 mejora** (el Excel trae 80%→$300 además de
+  los 3 del prompt; el usuario pidió conservarla → 14 reglas). Consecuencia:
+  la prueba de la Fase 2 (semana que cierra 2026-09-22) da **$6,800** con las
+  4 reglas de mejora ($6,700 solo con 3; calculado en Python antes de tocar
+  la base) — el resultado esperado se ajustó.
+- Historial: 528 filas / 16 fechas (martes, miércoles y jueves mezclados);
+  falta la semana que cierra 2026-08-04; 09-23 y 09-24 son la MISMA semana
+  (cierre 09-22, se conserva la del 24). Se importa en la Fase 2 (con tabla de
+  mapeo aprobada primero).
+
+**Permisos (confirmados):** montos solo `admin_general` y `admin_fabrica`
+(super_admin = admin_general). Juanis (secretaria): ROL NUEVO
+`captura_produccion` — solo captura producción (fases 3–4) y consulta órdenes
+(menú: solo Dashboard; sin chat, anuncios, pendientes, notas, fotos,
+talleros ni montos). `prod_registros` guarda el valor en pesos, así que su
+lectura será por un RPC sin montos (Fase 3), nunca por SELECT directo.
+
+**SQL aplicado (2026-09-24):**
+- `supabase/schema_v66_produccion_fase1.sql`: 8 tablas `prod_*` (semana con
+  `UNIQUE(fecha_inicio)` miércoles→martes; RLS; sin acceso anon; sin escritura
+  directa), helpers `prod_puede_ver_montos()`/`prod_puede_capturar()`, rol
+  nuevo en `profiles_role_check` y en `admin_update_user_role`, y parche a las
+  7 funciones que bloqueaban roles por lista (anuncios, fotos, pendientes,
+  notas) + las políticas de Talleros. Los parches toman la definición VIVA.
+- `supabase/schema_v66b_guardas_captura.sql`: 4 funciones que nunca tuvieron
+  candado de rol (`create_order_type`, `create_order_template`,
+  `delete_order_template`, `recompute_order_status`) ahora rechazan al rol
+  nuevo. Las encontró una simulación: como `captura_produccion` (transacción
+  con ROLLBACK) se llamaron las 60 funciones de escritura del sistema → 58
+  bloqueadas; las otras 2 (`delete_order_documento`, `update_orden_etapa`)
+  validan un argumento antes del rol pero usan lista positiva de roles.
+  Control: `admin_general` sigue pudiendo. Otros roles no cambiaron.
+- Catálogos: `scripts/import_produccion_fase1.py` lee el `.xlsm`
+  (`scripts/data/`, ignorado por git) y GENERA `scripts/data/import_fase1.sql`
+  (idempotente, `on conflict do nothing`); aplicado dos veces: 635
+  operaciones, 35 operadoras (33 con número), 14 reglas, config
+  (0.025 / 25650), sin duplicados, 0 semanas/registros.
+
+**Frontend:** `ROLE_LABELS`/Usuarios/"Ver como" con `captura_produccion`;
+`isCapturaProduccion`, `canViewProduccionMontos`, `canCapturarProduccion`;
+menú reducido y sin chat para ese rol; sin permisos de anuncios, pendientes,
+notas ni talleros.
+
+**Pendiente / avisos:**
+- Desplegar `supabase/functions/admin-create-user` (ya lleva el rol nuevo en
+  `VALID_ROLES`) desde el Dashboard para poder CREAR usuarios con ese rol;
+  cambiar el rol de un usuario existente ya funciona.
+- Hueco previo a V66 (sin tocar): `lectura` y `tienda` tampoco están
+  bloqueados en las 4 funciones sin candado; y la restricción de roles en la
+  base NO incluye `lectura`/`tienda` (V30 nunca la actualizó → no se pueden
+  asignar hoy).
+- Límite de seguridad de lectura: cualquier usuario con sesión puede LEER casi
+  todas las tablas (diseño "todos ven todo"); la restricción de Juanis es de
+  menú/botones + escritura bloqueada en el servidor.

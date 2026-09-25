@@ -9,3 +9,4 @@ dist
 dev.sh
 .vercel
 .env*
+scripts/data/
