@@ -3458,3 +3458,22 @@ notas ni talleros.
 - Límite de seguridad de lectura: cualquier usuario con sesión puede LEER casi
   todas las tablas (diseño "todos ven todo"); la restricción de Juanis es de
   menú/botones + escritura bloqueada en el servidor.
+
+### V67 — Producción y Premios · FASE 2 (motor de premios e historial) — EN CURSO
+
+- **Motor aplicado (2026-09-24)** — `supabase/schema_v67_produccion_motor.sql`:
+  `prod_calcular_premios(semana_id)` (calcula y REGRESA sin guardar; vista
+  previa) y `prod_aprobar_semana(semana_id)` (calcula, guarda el snapshot en
+  `prod_premios_semana`, congela valor por persona y pone la semana en
+  `aprobada`). Toda la lógica de premios vive ahí, nada en el frontend.
+  Semana anterior = la APROBADA inmediatamente anterior que exista; mejora en
+  PORCENTAJE (bug de unidades del Excel evitado); participan quienes tengan
+  `participa_bonos` y `activo` aunque tengan valor 0; lugar = 1 + mayores
+  estrictos (empates comparten). Verificado: `anon` sin acceso,
+  `captura_produccion` bloqueado, `admin_general` permitido.
+- **Importación de historial:** `scripts/import_produccion_historial.py`
+  genera `scripts/data/import_historial.sql` + `mapeo_semanas.txt` (ignorados
+  por git). 16 fechas → 15 semanas (09-23 descartada, se conserva la del 24).
+  **Pendiente del visto bueno del usuario a la tabla de mapeo antes de
+  insertar.** Después: caso de prueba (semana que cierra 2026-09-22 vs
+  2026-09-15; con las 4 reglas de mejora da $6,800).
