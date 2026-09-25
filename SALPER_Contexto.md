@@ -3459,21 +3459,31 @@ notas ni talleros.
   todas las tablas (diseño "todos ven todo"); la restricción de Juanis es de
   menú/botones + escritura bloqueada en el servidor.
 
-### V67 — Producción y Premios · FASE 2 (motor de premios e historial) — EN CURSO
+### V67 — Producción y Premios · FASE 2 (motor de premios e historial) — COMPLETA
 
-- **Motor aplicado (2026-09-24)** — `supabase/schema_v67_produccion_motor.sql`:
+- **Motor** (`supabase/schema_v67_produccion_motor.sql`, aplicado 2026-09-24):
   `prod_calcular_premios(semana_id)` (calcula y REGRESA sin guardar; vista
   previa) y `prod_aprobar_semana(semana_id)` (calcula, guarda el snapshot en
-  `prod_premios_semana`, congela valor por persona y pone la semana en
-  `aprobada`). Toda la lógica de premios vive ahí, nada en el frontend.
-  Semana anterior = la APROBADA inmediatamente anterior que exista; mejora en
-  PORCENTAJE (bug de unidades del Excel evitado); participan quienes tengan
-  `participa_bonos` y `activo` aunque tengan valor 0; lugar = 1 + mayores
-  estrictos (empates comparten). Verificado: `anon` sin acceso,
-  `captura_produccion` bloqueado, `admin_general` permitido.
-- **Importación de historial:** `scripts/import_produccion_historial.py`
-  genera `scripts/data/import_historial.sql` + `mapeo_semanas.txt` (ignorados
-  por git). 16 fechas → 15 semanas (09-23 descartada, se conserva la del 24).
-  **Pendiente del visto bueno del usuario a la tabla de mapeo antes de
-  insertar.** Después: caso de prueba (semana que cierra 2026-09-22 vs
-  2026-09-15; con las 4 reglas de mejora da $6,800).
+  `prod_premios_semana`, congela el valor por persona y pone `aprobada`).
+  Toda la lógica de premios vive ahí, nada en el frontend. Semana anterior =
+  la APROBADA inmediatamente anterior que exista; mejora en PORCENTAJE (bug de
+  unidades del Excel evitado); participan quienes tengan `participa_bonos` y
+  `activo` aunque valgan 0; lugar = 1 + mayores estrictos (empates comparten).
+  Verificado: `anon` sin acceso, `captura_produccion` bloqueado,
+  `admin_general` permitido.
+- **Historial importado** (`scripts/import_produccion_historial.py` →
+  `scripts/data/import_historial.sql`, ignorado por git; mapeo aprobado por
+  el usuario): 16 fechas → **15 semanas** (`importada = true`, `aprobada`),
+  495 valores; la fila duplicada del 2026-09-23 se descartó y se conservó la
+  del 09-24 (misma semana, cierre 09-22). No hay semanas duplicadas ni inicios
+  que no sean miércoles. Semana sin datos: la que cierra 2026-08-04. Nota: en
+  el historial, desde el cierre 09-08 aparecen EMP034 y EMP035 (reemplazan a
+  EMP027 y EMP009, inactivas) — son personas distintas, ya existían en el
+  catálogo.
+- **Caso de prueba** (semana que cierra 2026-09-22 vs 2026-09-15, 32
+  participantes): **total de premios $6,800** (meta $1,400 + lugar $3,200 +
+  mejora $2,200). Con solo 3 niveles de mejora (sin 80%→$300) daría $6,700, y
+  el Excel daba $7,600 por sus dos bugs. Dos personas con valor 0 empatan en
+  el lugar 31 y reciben bono de lugar ($50), como se confirmó. Una persona con
+  semana anterior en 0 queda "Sin base".
+- Pendiente: Fase 3 (captura rápida con teclado).

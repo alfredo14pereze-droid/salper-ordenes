@@ -81,18 +81,20 @@ def main():
         orig = conservar[fin]
         filas_sem.append(f"  ('{ini}', '{fin}', 'aprobada', true, 'Importada del Excel (fecha original {orig})')")
     sql += [",\n".join(filas_sem), "on conflict (fecha_inicio) do nothing;", ""]
-    vals = []
+    # Formato compacto: una fila por semana con "EMP001:valor,EMP002:valor,..."
+    filas = []
     for fin in sorted(conservar):
-        for folio, v in por_fecha[conservar[fin]]:
-            vals.append(f"  ('{fin}'::date, '{folio}', {v})")
+        datos = ",".join(f"{folio}:{v}" for folio, v in por_fecha[conservar[fin]])
+        filas.append(f"  ('{fin}'::date, '{datos}')")
     sql += [
         "insert into public.prod_valor_semana (semana_id, operadora_id, valor_generado)",
-        "select s.id, o.id, x.valor",
+        "select s.id, o.id, split_part(kv, ':', 2)::numeric",
         "from (values",
-        ",\n".join(vals),
-        ") as x(fin, folio, valor)",
+        ",\n".join(filas),
+        ") as x(fin, datos)",
+        "cross join lateral unnest(string_to_array(x.datos, ',')) as kv",
         "join public.prod_semanas s on s.fecha_fin = x.fin",
-        "join public.prod_operadoras o on o.folio_empleado = x.folio",
+        "join public.prod_operadoras o on o.folio_empleado = split_part(kv, ':', 1)",
         "on conflict (semana_id, operadora_id) do nothing;",
         "commit;",
         "",
@@ -100,7 +102,7 @@ def main():
     with open(OUT_SQL, "w", encoding="utf-8") as f:
         f.write("\n".join(sql))
     print("\n".join(lineas))
-    print(f"\nfilas de valor a insertar: {len(vals)} -> {OUT_SQL}")
+    print(f"\nfilas de valor a insertar: {sum(len(por_fecha[conservar[f]]) for f in conservar)} -> {OUT_SQL}")
 
 
 if __name__ == "__main__":
