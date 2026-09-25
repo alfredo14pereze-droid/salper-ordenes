@@ -109,3 +109,70 @@ export async function fetchRegistrosOperadora(semanaId, operadoraId) {
     .eq('operadora_id', operadoraId)
     .order('fecha', { ascending: true })
 }
+
+// V70 — Dashboard, imprimibles y administración de catálogos (admin_general / admin_fabrica).
+export async function historialValores(semanas = 16) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_historial_valores', { p_semanas: semanas })
+}
+
+export async function fetchOperadorasTodas() {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.from('prod_operadoras').select('*').order('numero_operadora', { ascending: true, nullsFirst: false })
+}
+
+export async function fetchOperacionesTodas() {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.from('prod_operaciones').select('folio, prenda, parte, operacion, segundos, activa').order('folio')
+}
+
+export async function fetchReglas() {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.from('prod_reglas_premios').select('*').order('desde', { ascending: true })
+}
+
+export async function fetchConfig() {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.from('prod_config').select('clave, valor')
+}
+
+export async function guardarOperacion({ folio, prenda, parte, operacion, segundos, activa, nuevo }) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase
+    .rpc('prod_guardar_operacion', { p_folio: folio, p_prenda: prenda, p_parte: parte, p_operacion: operacion, p_segundos: segundos, p_activa: activa, p_nuevo: !!nuevo })
+    .single()
+}
+
+export async function guardarOperadora({ id, folioEmpleado, numero, nombre, puesto, participa, activo }) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase
+    .rpc('prod_guardar_operadora', {
+      p_id: id || null,
+      p_folio_empleado: folioEmpleado,
+      p_numero: numero === '' || numero == null ? null : Number(numero),
+      p_nombre: nombre,
+      p_puesto: puesto || null,
+      p_participa: participa,
+      p_activo: activo,
+    })
+    .single()
+}
+
+export async function guardarRegla({ id, tipo, desde, bono, activa }) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_guardar_regla', { p_id: id || null, p_tipo: tipo, p_desde: desde, p_bono: bono, p_activa: activa }).single()
+}
+
+export async function guardarConfig(precio, segundos) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_guardar_config', { p_precio: precio, p_segundos: segundos })
+}

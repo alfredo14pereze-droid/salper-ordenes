@@ -2591,3 +2591,52 @@ h4 {
 .revision__detalle {
   background: var(--color-bg);
 }
+
+/* V70 — Dashboard y administración de producción */
+.produccion__aviso {
+  padding: 8px 12px;
+  border: 1px solid var(--color-orange);
+  background: var(--color-orange-soft);
+  border-radius: var(--radius-sm);
+  color: var(--color-orange-strong);
+  margin: 8px 0;
+}
+.produccion__tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 12px 0 16px;
+}
+.produccion__tab {
+  padding: 8px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  cursor: pointer;
+  font-weight: 600;
+}
+.produccion__tab--activa {
+  background: var(--color-black);
+  color: var(--color-amber);
+  border-color: var(--color-black);
+}
+.produccion__pocos td {
+  color: var(--color-warning);
+  font-weight: 700;
+}
+.produccion__clase--arriba {
+  background: var(--color-good-soft);
+  color: var(--color-good);
+}
+.produccion__clase--igual {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+.produccion__clase--abajo {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+.produccion__clase--sinbase {
+  background: var(--color-info-soft);
+  color: var(--color-info);
+}

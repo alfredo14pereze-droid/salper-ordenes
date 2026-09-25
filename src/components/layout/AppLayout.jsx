@@ -90,6 +90,9 @@ export default function AppLayout({ children }) {
     { to: '/produccion/captura', label: 'Producción', show: canCapturarProduccion(role) },
     // V69 — revisión/aprobación semanal (con montos: solo admin_general/admin_fabrica).
     { to: '/produccion/revision', label: 'Revisión producción', show: canViewProduccionMontos(role) },
+    // V70 — dashboard/imprimibles y administración de catálogos de producción.
+    { to: '/produccion/dashboard', label: 'Dashboard producción', show: canViewProduccionMontos(role) },
+    { to: '/produccion/admin', label: 'Admin producción', show: canViewProduccionMontos(role) },
     // V63 — visible también para fábrica (ver canViewTalleros).
     { to: '/talleros', label: 'Talleros', show: canViewTalleros(role) },
     { to: '/catalogos', label: 'Catálogos', show: canViewCatalogos(role) },
