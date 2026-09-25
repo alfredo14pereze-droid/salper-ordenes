@@ -176,3 +176,41 @@ export async function guardarConfig(precio, segundos) {
   if (cfgError) return { data: null, error: cfgError }
   return supabase.rpc('prod_guardar_config', { p_precio: precio, p_segundos: segundos })
 }
+
+// V72 — Estadísticas de producción (admin_general / admin_fabrica). Todo el cálculo vive en Supabase
+// (supabase/schema_v72_produccion_estadisticas.sql); aquí solo se piden los datos.
+export async function statsInfo() {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_stats_info')
+}
+export async function statsSemanas(operadoraId = null) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_stats_semanas', { p_desde: null, p_hasta: null, p_operadora: operadoraId })
+}
+export async function statsDistribucionMeta(semanaId, operadoraId = null) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_stats_distribucion_meta', { p_semana_id: semanaId, p_operadora: operadoraId })
+}
+export async function statsDestacados(semanaId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_stats_destacados', { p_semana_id: semanaId, p_umbral: 10 })
+}
+export async function statsPrendas(desde, hasta, operadoraId = null) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_stats_prendas', { p_desde: desde, p_hasta: hasta, p_operadora: operadoraId })
+}
+export async function statsOperaciones(desde, hasta, operadoraId = null) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_stats_operaciones', { p_desde: desde, p_hasta: hasta, p_operadora: operadoraId })
+}
+export async function statsDias(desde, hasta, operadoraId = null) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_stats_dias', { p_desde: desde, p_hasta: hasta, p_operadora: operadoraId })
+}

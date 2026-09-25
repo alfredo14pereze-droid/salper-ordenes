@@ -329,11 +329,11 @@ export const ROLE_LABELS = {
   corte: 'Corte',
   bordado: 'Bordado',
   sublimado: 'Sublimado',
-  produccion: 'Producción',
+  produccion: 'Costura',
   terminado: 'Terminado',
   admin_fabrica: 'Admin (Fábrica)',
   admin_general: 'Administrador general',
   lectura: 'Solo lectura',
   tienda: 'Tienda (básico)',
-  captura_produccion: 'Captura de producción',
+  captura_produccion: 'Captura de costura',
 }

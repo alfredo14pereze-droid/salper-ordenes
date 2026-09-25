@@ -74,6 +74,8 @@ export default function AppLayout({ children }) {
     { to: '/', label: 'Dashboard', end: true, show: true },
     { to: '/nueva', label: 'Nueva orden', show: canCreateOrder(role) },
     { to: '/estadisticas', label: 'Estadísticas', show: canViewEstadisticas(role) },
+    // V72 — estadísticas de producción (admin_general / admin_fabrica).
+    { to: '/estadisticas-produccion', label: 'Estadísticas de producción', show: canViewProduccionMontos(role) },
     { to: '/calendario', label: 'Calendario', show: !restricted && !tiendaBasica },
     { to: '/pendientes', label: 'Pendientes', show: !restricted },
     { to: '/anuncios', label: 'Anuncios', show: !restricted && !tiendaBasica },

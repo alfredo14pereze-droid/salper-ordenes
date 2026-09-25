@@ -2640,3 +2640,104 @@ h4 {
   background: var(--color-info-soft);
   color: var(--color-info);
 }
+
+/* V72 — Estadísticas de producción (gráficas SVG con los tokens del sistema) */
+.pstat-chart {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+.pstat-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.pstat-grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+.pstat-axis {
+  font-size: 10px;
+  fill: var(--color-text-muted);
+}
+.pstat-etiqueta {
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--color-text);
+}
+.pstat-bar {
+  fill: var(--color-black);
+}
+.pstat-bar2 {
+  fill: var(--color-amber-strong);
+}
+.pstat-bar--prelim,
+.pstat-bar2--prelim {
+  fill: url(#pstat-rayas);
+  stroke: var(--color-orange-strong);
+  stroke-dasharray: 3 2;
+}
+.pstat-line {
+  fill: none;
+  stroke: var(--color-orange);
+  stroke-width: 2.5;
+}
+.pstat-punto {
+  fill: var(--color-orange);
+  stroke: var(--color-surface);
+  stroke-width: 2;
+}
+.pstat-punto--prelim {
+  fill: var(--color-surface);
+  stroke: var(--color-orange-strong);
+  stroke-width: 2;
+}
+.pstat-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 6px;
+}
+.pstat-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 4px;
+  vertical-align: -1px;
+}
+.pstat-dot--valor {
+  background: var(--color-black);
+}
+.pstat-dot--premios {
+  background: var(--color-amber-strong);
+}
+.pstat-dot--prelim {
+  background: repeating-linear-gradient(45deg, var(--color-amber), var(--color-amber) 2px, var(--color-surface) 2px, var(--color-surface) 4px);
+  border: 1px dashed var(--color-orange-strong);
+}
+.pstat-badge {
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-orange-soft);
+  color: var(--color-orange-strong);
+  border: 1px dashed var(--color-orange-strong);
+}
+.pstat-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.pstat-cols--2 {
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+}
+.pstat-sub {
+  font-size: 14px;
+  margin: 0 0 6px;
+}

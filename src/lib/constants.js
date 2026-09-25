@@ -34,8 +34,8 @@ export const STATUSES = [
   // de la etapa 'produccion' en orden_etapas (ver recompute_order_status
   // en schema_v23_etapas_paralelas.sql). Familia ámbar, sin usar antes en
   // esta lista.
-  { key: 'en_produccion', label: 'En producción', color: '#fde6b8', textColor: '#16130f' },
-  { key: 'produccion', label: 'Producción', color: '#d98c0a', textColor: '#ffffff' },
+  { key: 'en_produccion', label: 'En costura', color: '#fde6b8', textColor: '#16130f' },
+  { key: 'produccion', label: 'Costura terminada', color: '#d98c0a', textColor: '#ffffff' },
   { key: 'en_bordado', label: 'En bordado', color: '#bdeae2', textColor: '#16130f' },
   { key: 'bordado', label: 'Bordado', color: '#158a76', textColor: '#ffffff' },
   { key: 'en_terminado', label: 'En terminado', color: '#ddd0f5', textColor: '#16130f' },
@@ -55,7 +55,7 @@ export const STATUS_GROUPS = [
   { key: 'confirmado', label: 'Confirmación', keys: ['en_confirmacion', 'confirmado'] },
   { key: 'cortado', label: 'Cortado', keys: ['en_corte', 'cortado'] },
   { key: 'sublimado', label: 'Sublimado', keys: ['en_sublimado', 'sublimado'] },
-  { key: 'produccion', label: 'Producción', keys: ['en_produccion', 'produccion'] },
+  { key: 'produccion', label: 'Costura', keys: ['en_produccion', 'produccion'] },
   { key: 'bordado', label: 'Bordado', keys: ['en_bordado', 'bordado'] },
   { key: 'terminado', label: 'Terminado', keys: ['en_terminado', 'terminado'] },
   { key: 'completado', label: 'Completado', keys: ['completado'] },
@@ -70,7 +70,7 @@ export const STATUS_GROUPS = [
 export const ETAPA_LABELS = {
   corte: 'Corte',
   sublimado: 'Sublimado',
-  produccion: 'Producción',
+  produccion: 'Costura',
   bordado: 'Bordado',
   terminado: 'Terminado',
 }
