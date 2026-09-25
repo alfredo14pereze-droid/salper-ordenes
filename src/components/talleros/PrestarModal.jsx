@@ -13,6 +13,8 @@ export default function PrestarModal({ tallero, talleros, parcial: parcialInicia
   const [equipo, setEquipo] = useState(profile?.full_name || '')
   const [externa, setExterna] = useState('')
   const [notas, setNotas] = useState('')
+  const [telefono, setTelefono] = useState('')
+  const [deposito, setDeposito] = useState('')
   const [parcial, setParcial] = useState(parcialInicial)
   const [tallasPrestadas, setTallasPrestadas] = useState('')
   const [vincular, setVincular] = useState(false)
@@ -37,6 +39,8 @@ export default function PrestarModal({ tallero, talleros, parcial: parcialInicia
       ordenId: vincular ? ordenId : null,
       notas: notas.trim(),
       tallasPrestadas: parcial ? tallasPrestadas.trim() : '',
+      telefono: telefono.trim(),
+      deposito: Number(deposito) || 0,
     })
     setSaving(false)
     if (err) return setError(err)
@@ -71,6 +75,16 @@ export default function PrestarModal({ tallero, talleros, parcial: parcialInicia
           <label>
             Se lo lleva (colegio o cliente) *
             <input type="text" className="input" value={externa} onChange={(e) => setExterna(e.target.value)} autoFocus />
+          </label>
+        </div>
+        <div className="form-row">
+          <label>
+            Teléfono del cliente
+            <input type="tel" className="input" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Para localizarlo si hay un problema" />
+          </label>
+          <label>
+            Dinero que deja ($)
+            <input type="number" min="0" step="0.01" className="input" value={deposito} onChange={(e) => setDeposito(e.target.value)} placeholder="0.00 (opcional)" />
           </label>
         </div>
         <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

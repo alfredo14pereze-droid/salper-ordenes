@@ -32,9 +32,14 @@ export default function TalleroCard({ t, canLoan, canManage, onPrestar, onPresta
           <p className="tallero-card__meta">
             Con <b>{t.prestado_a}</b> desde {fmtFecha(t.prestado_desde)}
             {t.tallas_prestadas ? ` · Parcial: ${t.tallas_prestadas}` : ''}
+            {t.prestado_telefono ? ` · Tel. ${t.prestado_telefono}` : ''}
+            {t.prestado_deposito > 0 ? ` · Dejó $${Number(t.prestado_deposito).toLocaleString('es-MX')}` : ''}
           </p>
         )}
         <div className="tallero-card__actions">
+          <Link to={`/talleros/${t.id}`} className="btn btn--ghost btn--small">
+            Historial
+          </Link>
           {canLoan && t.estado_uso === 'disponible' && (
             <button type="button" className="btn btn--primary btn--small" onClick={() => onPrestar(t)}>
               Prestar

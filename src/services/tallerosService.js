@@ -128,7 +128,7 @@ export async function darDeBajaTallero(id) {
   return supabase.rpc('mt_dar_de_baja', { p_id: id }).single()
 }
 
-export async function prestarTallero({ id, personaEquipo, personaExterna, ordenId, notas, tallasPrestadas }) {
+export async function prestarTallero({ id, personaEquipo, personaExterna, ordenId, notas, tallasPrestadas, telefono, deposito }) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
   return supabase
@@ -139,11 +139,13 @@ export async function prestarTallero({ id, personaEquipo, personaExterna, ordenI
       p_orden_id: ordenId || null,
       p_notas: notas || null,
       p_tallas_prestadas: tallasPrestadas || null,
+      p_telefono: telefono || null,
+      p_deposito: deposito > 0 ? deposito : null,
     })
     .single()
 }
 
-export async function devolverTallero({ id, personaExterna, personaEquipo, notas, estadoContenido, tallasFaltantes }) {
+export async function devolverTallero({ id, personaExterna, personaEquipo, notas, estadoContenido, tallasFaltantes, depositoDevuelto }) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
   return supabase
@@ -154,6 +156,7 @@ export async function devolverTallero({ id, personaExterna, personaEquipo, notas
       p_notas: notas || null,
       p_estado_contenido: estadoContenido || null,
       p_tallas_faltantes: tallasFaltantes || null,
+      p_deposito_devuelto: depositoDevuelto > 0 ? depositoDevuelto : null,
     })
     .single()
 }

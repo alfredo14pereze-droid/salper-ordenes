@@ -13,6 +13,7 @@ export default function DevolverModal({ tallero, talleros, onClose, onDone }) {
   const [equipo, setEquipo] = useState(profile?.full_name || '')
   const [externa, setExterna] = useState(tallero?.prestado_a || '')
   const [notas, setNotas] = useState('')
+  const [devuelto, setDevuelto] = useState(tallero?.prestado_deposito ? String(tallero.prestado_deposito) : '')
   const [contenido, setContenido] = useState(tallero?.estado_contenido || 'completo')
   const [faltantes, setFaltantes] = useState(tallero?.tallas_faltantes || '')
   const [saving, setSaving] = useState(false)
@@ -22,6 +23,7 @@ export default function DevolverModal({ tallero, talleros, onClose, onDone }) {
     setId(nextId)
     const t = prestados.find((x) => x.id === nextId)
     if (t) {
+      setDevuelto(t.prestado_deposito ? String(t.prestado_deposito) : '')
       setExterna(t.prestado_a || '')
       setContenido(t.estado_contenido)
       setFaltantes(t.tallas_faltantes || '')
@@ -39,6 +41,7 @@ export default function DevolverModal({ tallero, talleros, onClose, onDone }) {
       notas: notas.trim(),
       estadoContenido: contenido,
       tallasFaltantes: contenido === 'incompleto' ? faltantes.trim() : '',
+      depositoDevuelto: Number(devuelto) || 0,
     })
     setSaving(false)
     if (err) return setError(err)
@@ -94,6 +97,12 @@ export default function DevolverModal({ tallero, talleros, onClose, onDone }) {
             </label>
           )}
         </div>
+        {(actual?.prestado_deposito > 0 || tallero?.prestado_deposito > 0) && (
+          <label>
+            Dinero que se le devuelve ($) <small>(dejó ${Number((actual || tallero).prestado_deposito).toLocaleString('es-MX')})</small>
+            <input type="number" min="0" step="0.01" className="input" value={devuelto} onChange={(e) => setDevuelto(e.target.value)} />
+          </label>
+        )}
         <label>
           Notas
           <input type="text" className="input" value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Opcional" />

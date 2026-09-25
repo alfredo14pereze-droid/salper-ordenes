@@ -3581,3 +3581,20 @@ notas ni talleros.
 - Menú: "Dashboard producción" y "Admin producción" (admins). Fuera de
   alcance (sin tocar): foto del papelito con Claude Vision, ligar registros a
   órdenes, avance a media semana para cada operadora, COSTEO/ORDEN PROD.
+
+### V71 — Talleros: historial visible, teléfono del cliente y dinero que deja
+
+Pedido: historial por tallero (quién lo prestó, a quién y cuándo, para saber a
+quién preguntar si hay un problema) + campo de teléfono del cliente + campo por
+si deja dinero. `supabase/schema_v71_talleros_contacto_deposito.sql` (aplicado
+2026-09-25): columnas `prestado_telefono`/`prestado_deposito` en
+`mt_contenedores` y `telefono`/`deposito` en `mt_movimientos`; `mt_prestar`
+(+`p_telefono`, `p_deposito`) y `mt_devolver` (+`p_deposito_devuelto`) con DROP
+de las firmas anteriores; una sola versión de cada una, anon sin acceso.
+Frontend: modal Prestar con "Teléfono del cliente" y "Dinero que deja ($)"
+(opcionales); Devolver con "Dinero que se le devuelve" (prellenado con lo que
+dejó); tarjeta y detalle muestran "Tel." y "Dejó $"; el detalle ahora trae una
+TABLA "Historial de préstamos" (fecha, movimiento, quién lo prestó/recibió,
+cliente, teléfono, dinero, detalle) y las tarjetas tienen botón "Historial".
+Aviso: talleros lo ven todos los roles con sesión salvo `tienda` y
+`captura_produccion` (fábrica incluida), así que teléfono y dinero también.

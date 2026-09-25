@@ -82,8 +82,17 @@ function TalleroDetail() {
             <>
               <dt>Lo tiene</dt>
               <dd>
-                {tallero.prestado_a} (prestó {tallero.prestado_por}, {fmtFecha(tallero.prestado_desde)})
+                <b>{tallero.prestado_a}</b> (prestó {tallero.prestado_por}, {fmtFecha(tallero.prestado_desde)})
                 {tallero.tallas_prestadas ? ` — solo tallas: ${tallero.tallas_prestadas}` : ''}
+              </dd>
+            </>
+          )}
+          {tallero.estado_uso === 'prestado' && (tallero.prestado_telefono || tallero.prestado_deposito > 0) && (
+            <>
+              <dt>Contacto y dinero</dt>
+              <dd>
+                {tallero.prestado_telefono ? `Tel. ${tallero.prestado_telefono}` : 'Sin teléfono'}
+                {tallero.prestado_deposito > 0 ? ` · Dejó $${Number(tallero.prestado_deposito).toLocaleString('es-MX')}` : ''}
               </dd>
             </>
           )}
@@ -126,25 +135,49 @@ function TalleroDetail() {
       {actionError && <p className="form-error">{actionError.message}</p>}
 
       <h3 className="section-title" style={{ fontSize: 16 }}>
-        Historial
+        Historial de préstamos
       </h3>
+      <p className="template-hint">Quién lo prestó, a quién y cuándo — para saber a quién preguntar si hay un problema.</p>
       {movimientos.length === 0 ? (
         <p className="template-hint">Sin movimientos todavía.</p>
       ) : (
-        <ul className="tallero-timeline">
-          {movimientos.map((m) => (
-            <li key={m.id}>
-              <b>{TIPO_LABEL[m.tipo] || m.tipo}</b> · {fmtFecha(m.fecha)}
-              <div className="template-hint">
-                {m.tipo === 'prestamo' && `${m.persona_equipo} lo prestó a ${m.persona_externa}${m.tallas ? ` (parcial: ${m.tallas})` : ''}`}
-                {m.tipo === 'devolucion' && `${m.persona_externa ? `${m.persona_externa} lo devolvió; ` : ''}lo recibió ${m.persona_equipo}${m.tallas ? ` (tallas: ${m.tallas})` : ''}`}
-                {m.tipo === 'ajuste' && `${m.estado_anterior} → ${m.estado_nuevo}`}
-                {m.orders?.order_number ? ` · Orden #${m.orders.order_number}` : ''}
-                {m.notas ? ` · ${m.notas}` : ''}
-              </div>
-            </li>
-          ))}
-        </ul>
+        <div className="revision__tabla-wrap">
+          <table className="simple-table tallero-historial">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Movimiento</th>
+                <th>Lo prestó / recibió</th>
+                <th>Cliente</th>
+                <th>Teléfono</th>
+                <th>Dinero</th>
+                <th>Detalle</th>
+              </tr>
+            </thead>
+            <tbody>
+              {movimientos.map((m) => (
+                <tr key={m.id}>
+                  <td>{fmtFecha(m.fecha)}</td>
+                  <td>
+                    <b>{TIPO_LABEL[m.tipo] || m.tipo}</b>
+                  </td>
+                  <td>{m.persona_equipo || '—'}</td>
+                  <td>{m.persona_externa || (m.tipo === 'ajuste' ? '' : '—')}</td>
+                  <td>{m.telefono || '—'}</td>
+                  <td>
+                    {m.deposito > 0 ? `${m.tipo === 'devolucion' ? 'Devuelto ' : 'Dejó '}$${Number(m.deposito).toLocaleString('es-MX')}` : '—'}
+                  </td>
+                  <td>
+                    {m.tipo === 'ajuste' && `${m.estado_anterior} → ${m.estado_nuevo}`}
+                    {m.tallas ? `${m.tipo === 'prestamo' ? 'Parcial: ' : 'Tallas: '}${m.tallas}` : ''}
+                    {m.orders?.order_number ? ` Orden #${m.orders.order_number}` : ''}
+                    {m.notas ? ` ${m.notas}` : ''}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {(modal === 'prestar' || modal === 'prestar-parcial') && (
