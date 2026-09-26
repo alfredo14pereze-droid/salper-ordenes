@@ -337,6 +337,27 @@ export function canEditRazones(role) {
   return role === 'admin_general' || role === 'admin_tienda' || role === 'ventas' || role === 'contabilidad'
 }
 
+// V78 — Pendientes tienda <-> fábrica: espejo de pf_es_tienda / pf_es_fabrica /
+// pf_puede_ver en Supabase (el servidor valida cada transición).
+const PF_TIENDA = ['ventas', 'contabilidad', 'admin_tienda', 'tienda', 'admin_general']
+const PF_FABRICA = ['corte', 'bordado', 'sublimado', 'produccion', 'terminado', 'admin_fabrica', 'admin_general']
+
+export function pfEsTienda(role) {
+  return PF_TIENDA.includes(role)
+}
+
+export function pfEsFabrica(role) {
+  return PF_FABRICA.includes(role)
+}
+
+export function canViewPendientes(role) {
+  return !!role && role !== 'captura_produccion'
+}
+
+export function canManageTiposPendiente(role) {
+  return role === 'admin_general' || role === 'admin_tienda' || role === 'admin_fabrica'
+}
+
 export const ROLE_LABELS = {
   ventas: 'Ventas',
   contabilidad: 'Contabilidad',

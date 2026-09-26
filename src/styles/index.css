@@ -2808,3 +2808,39 @@ h4 {
 
 .order-form label.fin-check { display: flex; flex-direction: row; align-items: center; gap: 8px; text-align: left; }
 .order-form label.fin-check input[type='checkbox'] { flex: 0 0 auto; width: auto; }
+
+/* V78 — Pendientes tienda <-> fábrica (móvil primero) */
+.pf-modo { display: flex; gap: 8px; }
+.pf-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+.pf-tab { flex: 0 0 auto; padding: 10px 14px; border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-surface); font-weight: 600; cursor: pointer; white-space: nowrap; min-height: 44px; }
+.pf-tab--on { background: var(--color-black); color: var(--color-amber); border-color: var(--color-black); }
+.pf-tab__n { display: inline-block; min-width: 20px; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: rgba(127, 127, 127, 0.2); text-align: center; font-size: 12px; }
+.pf-filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.pf-filtros__fecha { display: grid; gap: 2px; font-size: 12px; color: var(--color-text-muted); }
+.pf-selall { display: flex; gap: 8px; align-items: center; font-weight: 600; min-height: 32px; }
+.pf-list { display: grid; gap: 10px; padding-bottom: 80px; }
+.pf-card { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; padding: 12px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.pf-card:not(:has(.pf-card__check)) { grid-template-columns: 1fr; }
+.pf-card--rojo { border-color: var(--color-danger); background: var(--color-danger-soft); }
+.pf-card--amarillo { border-color: var(--color-amber-strong); background: var(--color-orange-soft); }
+.pf-card--problema { border-style: dashed; border-color: var(--color-danger); }
+.pf-card--cerrado { opacity: 0.7; }
+.pf-card__check { display: flex; align-items: center; min-width: 44px; min-height: 44px; justify-content: center; }
+.pf-card__check input { width: 22px; height: 22px; }
+.pf-card__top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pf-card__folio { font-weight: 800; font-size: 1.05em; color: inherit; text-decoration: none; }
+.pf-card__qty { font-weight: 700; }
+.pf-card__desc { display: block; margin: 6px 0; color: inherit; text-decoration: none; }
+.pf-card__meta { display: flex; gap: 4px 12px; flex-wrap: wrap; font-size: 13px; color: var(--color-text-muted); }
+.pf-due--rojo { color: var(--color-danger); font-weight: 700; }
+.pf-due--amarillo { color: var(--color-warning); font-weight: 700; }
+.pf-alerta { margin: 6px 0 0; color: var(--color-danger); font-weight: 700; font-size: 13px; }
+.pf-alerta--banner { padding: 8px 12px; background: var(--color-danger-soft); border-radius: var(--radius-md); }
+.pf-card__btn { grid-column: 1 / -1; min-height: 48px; font-size: 16px; }
+.pf-big { min-height: 48px; font-size: 16px; }
+.pf-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 150; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--color-surface); border-top: 1px solid var(--color-border); box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12); font-weight: 700; }
+.pf-bar .btn { min-height: 48px; font-size: 16px; }
+.pf-hist { margin: 0; padding-left: 18px; display: grid; gap: 10px; }
+.pf-hist__meta { color: var(--color-text-muted); font-size: 13px; }
+.pf-hist__nota { font-style: italic; margin-top: 2px; }
+@media (min-width: 721px) { .pf-card { grid-template-columns: auto 1fr auto; } .pf-card:not(:has(.pf-card__check)) { grid-template-columns: 1fr auto; } .pf-card__btn { grid-column: auto; align-self: center; } .pf-bar { left: 240px; } }

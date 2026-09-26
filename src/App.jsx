@@ -11,7 +11,8 @@ import NewOrderPage from './pages/NewOrderPage'
 import OrderDetailPage from './pages/OrderDetailPage'
 import CalendarPage from './pages/CalendarPage'
 import AnnouncementsPage from './pages/AnnouncementsPage'
-import PendingItemsPage from './pages/PendingItemsPage'
+import PendientesPage from './pages/PendientesPage'
+import PendienteDetailPage from './pages/PendienteDetailPage'
 import UsersPage from './pages/UsersPage'
 import PedidosTiendaPage from './pages/PedidosTiendaPage'
 import NewPedidoTiendaPage from './pages/NewPedidoTiendaPage'
@@ -89,7 +90,8 @@ function AuthGate() {
           <Route path="/orden/:id" element={<OrderDetailPage />} />
           <Route path="/calendario" element={<CalendarPage />} />
           <Route path="/anuncios" element={<AnnouncementsPage />} />
-          <Route path="/pendientes" element={<PendingItemsPage />} />
+          <Route path="/pendientes" element={<PendientesPage />} />
+          <Route path="/pendientes/:id" element={<PendienteDetailPage />} />
           <Route path="/usuarios" element={<UsersPage />} />
           <Route path="/catalogos" element={<CatalogosPage />} />
           <Route path="/control-rapido" element={<ControlRapidoPage />} />

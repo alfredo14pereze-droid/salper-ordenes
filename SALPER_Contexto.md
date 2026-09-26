@@ -3696,3 +3696,30 @@ Simulación con roles (transacción revertida): producción no ve/edita nada; 3 
 sociales con una sola predeterminada; 15 pzs Playera $180+$25 y 10 Short $100 = $4,075;
 con factura+IVA incluido → subtotal 3,512.93, IVA 562.07; "más IVA" → total 4,727; anticipo
 $1,000 → saldo 3,075 / 3,727; candado bloquea "Falta precio en: Short"; orden vieja pasa.
+
+
+### V78 — Pendientes tienda ↔ fábrica (reemplaza el módulo de Pendientes viejo)
+
+`supabase/schema_v78_pendientes_tienda_fabrica.sql` (aplicado 2026-09-26, todo aditivo,
+prefijo `pf_`). La tabla vieja `pending_items` (0 filas) y sus 2 funciones quedan intactas,
+sin uso (se pueden borrar más adelante); se quitó su código del frontend. Tablas:
+`pf_tipos_trabajo` (catálogo editable: Arreglo, Bordado, Ajuste, Sublimado, Otro),
+`pf_pendientes` (folio `P-0001` de la secuencia `pf_folio_seq`, nunca se reutiliza;
+descripción, tipo, cantidad, fotos jsonb en el bucket order-photos/pendientes, fecha
+requerida obligatoria, cliente y orden opcionales, `estado_desde`), `pf_historial`
+(quién/rol/cuándo/nota). Estados: enviado_a_fabrica → recibido_en_fabrica ("Por hacer") →
+**listo_para_regresar** (estado intermedio agregado) → enviado_a_tienda → recibido_en_tienda;
+`con_problema` desde cualquier estado con nota obligatoria, y `pf_resolver_problema`
+regresa al estado previo. Roles tienda: ventas, contabilidad, admin_tienda, tienda; fábrica:
+corte, bordado, sublimado, produccion, terminado, admin_fabrica; admin_general todo; ver:
+todos menos captura_produccion. RPCs: `pf_crear`, `pf_editar` (solo antes de que fábrica
+reciba), `pf_cambiar_estado`, `pf_cambiar_estado_lote` (aplica a los válidos y reporta
+omitidos), `pf_resolver_problema`, `pf_guardar_tipo`. Realtime en `pf_pendientes`.
+Frontend: `/pendientes` (bandejas por rol, filtros tipo/cliente/fechas, buscador de folio,
+selección múltiple con barra fija "Confirmar (N)", botón grande de un toque por tarjeta,
+rojo si enviado a fábrica y sin recibir >1 día o vence hoy/vencido, amarillo ≤2 días),
+`/pendientes/:id` (historial, problema/resolver, etiqueta PDF 80×50 mm con vista previa).
+Simulación con roles (revertida): 3 pendientes de tienda → fábrica recibe en lote → uno
+con problema (sin nota bloqueado) y resuelto → listo → enviado → tienda cierra en lote;
+historial de 7 pasos con usuario y rol; captura_produccion ve 0. El contador de folios se
+reinició a P-0001 tras la simulación.

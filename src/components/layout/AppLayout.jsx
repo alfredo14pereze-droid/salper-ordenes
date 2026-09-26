@@ -15,6 +15,7 @@ import {
   canViewProduccionMontos,
   canViewPedidosTienda,
   canViewEstadisticas,
+  canViewPendientes,
   hasRestrictedNav,
   isTiendaBasica,
   ROLE_LABELS,
@@ -77,7 +78,8 @@ export default function AppLayout({ children }) {
     // V72 — estadísticas de producción (admin_general / admin_fabrica).
     { to: '/estadisticas-produccion', label: 'Estadísticas de producción', show: canViewProduccionMontos(role) },
     { to: '/calendario', label: 'Calendario', show: !restricted && !tiendaBasica },
-    { to: '/pendientes', label: 'Pendientes', show: !restricted },
+    // V78 — pendientes tienda <-> fábrica: los roles de fábrica también lo ven.
+    { to: '/pendientes', label: 'Pendientes', show: canViewPendientes(role) },
     { to: '/anuncios', label: 'Anuncios', show: !restricted && !tiendaBasica },
     // Módulo independiente de órdenes, sin modo invitado — solo aparece
     // con sesión (ver canViewPedidosTienda). V31: apagado en producción
