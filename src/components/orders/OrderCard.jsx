@@ -36,7 +36,7 @@ export default function OrderCard({ order, orderType }) {
     // indicador de "bien" (verde), no de urgencia.
     cardClass += ' order-card--good'
     dueClass += ' order-card__due--good'
-    dueLabel = '✓ Completada'
+    dueLabel = '✓ Entregada'
   } else if (days < 0) {
     cardClass += ' order-card--overdue'
     dueClass += ' order-card__due--overdue'

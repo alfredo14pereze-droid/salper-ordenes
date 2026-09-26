@@ -40,7 +40,7 @@ export const STATUSES = [
   { key: 'bordado', label: 'Bordado', color: '#158a76', textColor: '#ffffff' },
   { key: 'en_terminado', label: 'En terminado', color: '#ddd0f5', textColor: '#16130f' },
   { key: 'terminado', label: 'Terminado', color: '#7c4dc4', textColor: '#ffffff' },
-  { key: 'completado', label: 'Completado', color: '#2f8f4e', textColor: '#ffffff' },
+  { key: 'completado', label: 'Entregada', color: '#2f8f4e', textColor: '#ffffff' },
 ]
 
 export const STATUS_KEYS = STATUSES.map((s) => s.key)
@@ -58,7 +58,7 @@ export const STATUS_GROUPS = [
   { key: 'produccion', label: 'Costura', keys: ['en_produccion', 'produccion'] },
   { key: 'bordado', label: 'Bordado', keys: ['en_bordado', 'bordado'] },
   { key: 'terminado', label: 'Terminado', keys: ['en_terminado', 'terminado'] },
-  { key: 'completado', label: 'Completado', keys: ['completado'] },
+  { key: 'completado', label: 'Entregada', keys: ['completado'] },
 ]
 
 // Etapas paralelas (V23, ver supabase/schema_v23_etapas_paralelas.sql) —
@@ -78,7 +78,7 @@ export const ETAPA_LABELS = {
 export const ETAPA_ESTADO_LABELS = {
   pendiente: 'Pendiente',
   en_proceso: 'En proceso',
-  completado: 'Completado',
+  completado: 'Entregada',
 }
 
 // Colores del estado de una etapa individual (para el badge en

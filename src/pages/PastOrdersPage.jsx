@@ -4,7 +4,7 @@ import { useOrderTypes } from '../hooks/useOrderTypes'
 import OrderCard from '../components/orders/OrderCard'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 
-// Órdenes ya completadas — nunca se borran, solo se sacan de "Todas las
+// Órdenes ya entregadas — nunca se borran, solo se sacan de "Todas las
 // órdenes" del Dashboard (ver DashboardPage.jsx) para que no se mezclen
 // con lo que sigue en proceso. Aquí sigue estando toda la información:
 // prendas, fotos, documentos, historial, PDF — nada cambia salvo dónde se
@@ -43,7 +43,7 @@ export default function PastOrdersPage() {
         <h2 className="section-title">Órdenes pasadas</h2>
         <span className="section-count">{filteredOrders.length} de {pastOrders.length}</span>
       </div>
-      <p className="page-subtitle">Órdenes ya completadas — se archivan aquí, nunca se borran.</p>
+      <p className="page-subtitle">Órdenes ya entregadas — se archivan aquí, nunca se borran.</p>
 
       <div className="order-filters">
         <div className="order-filters__group">
@@ -76,7 +76,7 @@ export default function PastOrdersPage() {
 
       {filteredOrders.length === 0 ? (
         <EmptyState>
-          {pastOrders.length === 0 ? 'Todavía no hay órdenes completadas.' : 'No hay órdenes que coincidan con estos filtros.'}
+          {pastOrders.length === 0 ? 'Todavía no hay órdenes entregadas.' : 'No hay órdenes que coincidan con estos filtros.'}
         </EmptyState>
       ) : (
         <div className="order-grid">

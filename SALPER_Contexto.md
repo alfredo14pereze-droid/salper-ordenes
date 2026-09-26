@@ -3653,3 +3653,15 @@ sesión una vez porque no comparte sesión con Safari. `vercel.json`: sw.js/mani
 Antes "Órdenes de producción". Cambiado en: `<title>` (index.html), subtítulo del
 encabezado (AppLayout), login y descripción del manifest PWA. No se tocaron repo,
 URL, tablas ni rutas; "órdenes de producción" sigue como nombre del módulo de órdenes.
+
+
+### V76 — "Entregada" y "Lista para entregar"
+
+Sin cambios de base de datos: el estado final sigue siendo la clave `completado`
+(ya era un paso manual, solo `admin_fabrica`/`admin_general`), ahora con etiqueta
+**"Entregada"**; al confirmarla pasa a Órdenes pasadas. Botón "Confirmar entrega al
+cliente" con `window.confirm`. Cuando `status === 'terminado'` (todas las etapas
+listas) se muestra la insignia verde "✓ Lista para entregar" (`StatusBadge`, así
+sale en tarjetas y detalle) y un aviso en la tarjeta de estado; la orden sigue en el
+Dashboard hasta confirmar la entrega. Textos "completadas" → "entregadas" en Órdenes
+pasadas y Estadísticas (las estadísticas de tiempo miden hasta la entrega).

@@ -41,9 +41,21 @@ export default function StatusChanger({ order, onUpdated }) {
     onUpdated?.()
   }
 
+  // Entregada = la orden se cierra y pasa a Órdenes pasadas. Se pide confirmar
+  // para que nadie la cierre por accidente.
+  function handleDeliver() {
+    if (!window.confirm('¿Confirmas que esta orden ya se entregó al cliente? Pasará a Órdenes pasadas.')) return
+    handleChange('completado')
+  }
+
   return (
     <div className="status-changer">
       <h3 className="section-title section-title--small">Estado de la orden</h3>
+      {order.status === 'terminado' && (
+        <p className="ready-note">
+          ✓ Lista para entregar. Cuando se entregue al cliente, confirma la entrega para cerrarla.
+        </p>
+      )}
 
       <textarea
         className="input"
@@ -60,8 +72,8 @@ export default function StatusChanger({ order, onUpdated }) {
           </button>
         )}
         {canComplete && (
-          <button type="button" className="btn btn--primary" disabled={saving} onClick={() => handleChange('completado')}>
-            {saving ? 'Guardando…' : 'Marcar como completada'}
+          <button type="button" className="btn btn--primary" disabled={saving} onClick={handleDeliver}>
+            {saving ? 'Guardando…' : 'Confirmar entrega al cliente'}
           </button>
         )}
       </div>

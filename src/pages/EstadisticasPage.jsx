@@ -72,7 +72,7 @@ function EstadisticasPageContent() {
   if (error) return <ErrorState error={error} onRetry={refresh} />
 
   const onTimeHint =
-    stats.totalCompleted > 0 ? `${stats.onTimeCount} de ${stats.totalCompleted} completadas` : 'Sin órdenes completadas todavía'
+    stats.totalCompleted > 0 ? `${stats.onTimeCount} de ${stats.totalCompleted} entregadas` : 'Sin órdenes entregadas todavía'
 
   const overrunHint =
     stats.avgOverrunDays === null
@@ -95,7 +95,7 @@ function EstadisticasPageContent() {
       </p>
 
       <div className="stats-grid">
-        <StatCard label="Órdenes completadas" value={stats.totalCompleted} hint="con datos suficientes para medir" />
+        <StatCard label="Órdenes entregadas" value={stats.totalCompleted} hint="con datos suficientes para medir" />
         <StatCard
           label="Entregadas a tiempo"
           value={stats.onTimePct === null ? '—' : `${stats.onTimePct}%`}
@@ -160,14 +160,14 @@ function EstadisticasPageContent() {
           <h2 className="section-title">Desglose por tipo de orden</h2>
         </div>
         {stats.typeBreakdown.length === 0 ? (
-          <EmptyState>Todavía no hay órdenes completadas para desglosar por tipo.</EmptyState>
+          <EmptyState>Todavía no hay órdenes entregadas para desglosar por tipo.</EmptyState>
         ) : (
           <div className="table-scroll">
             <table className="stats-table">
               <thead>
                 <tr>
                   <th>Tipo</th>
-                  <th>Completadas</th>
+                  <th>Entregadas</th>
                   <th>% a tiempo</th>
                   <th>Promedio días</th>
                 </tr>
@@ -190,7 +190,7 @@ function EstadisticasPageContent() {
       {stats.monthlyTrend.length > 0 && (
         <section className="dashboard-all-orders">
           <div className="section-header">
-            <h2 className="section-title">Tendencia mensual (completadas)</h2>
+            <h2 className="section-title">Tendencia mensual (entregadas)</h2>
           </div>
           <div className="month-bars">
             {stats.monthlyTrend.map((m) => (
