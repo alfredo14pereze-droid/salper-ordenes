@@ -33,7 +33,7 @@ const SELECT = '*, tipo:pf_tipos_trabajo(nombre), cliente:clientes(nombre), orde
 export async function fetchPendientes() {
   const { error } = ensureClient()
   if (error) return { data: null, error }
-  return supabase.from('pf_pendientes').select(SELECT).order('fecha_requerida', { ascending: true }).order('created_at', { ascending: true })
+  return supabase.from('pf_pendientes').select(SELECT).order('created_at', { ascending: true })
 }
 
 export async function fetchPendiente(id) {
@@ -161,7 +161,8 @@ export function sinRecibirAlerta(p) {
 }
 
 export function urgenciaFecha(p) {
-  if (p.estado === 'recibido_en_tienda') return null
+  // Ya no se captura fecha de regreso (V82); solo hay urgencia en pendientes viejos que sí la traen.
+  if (p.estado === 'recibido_en_tienda' || !p.fecha_requerida) return null
   const d = diasParaFecha(p.fecha_requerida)
   if (d <= 0) return { nivel: 'rojo', label: d < 0 ? `Vencido hace ${-d} d` : 'Para hoy' }
   if (d <= 2) return { nivel: 'amarillo', label: d === 1 ? 'Para mañana' : `En ${d} días` }

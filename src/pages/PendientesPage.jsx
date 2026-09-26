@@ -63,8 +63,9 @@ export default function PendientesPage() {
       if (fPara === 'cliente' && !p.es_para_cliente) return false
       if (fPara === 'tienda' && p.es_para_cliente) return false
       if (fCliente && !`${p.cliente_nombre || ''} ${p.cliente_telefono || ''}`.toLowerCase().includes(fCliente.trim().toLowerCase())) return false
-      if (fDesde && p.fecha_requerida < fDesde) return false
-      if (fHasta && p.fecha_requerida > fHasta) return false
+      const creado = (p.created_at || '').slice(0, 10)
+      if (fDesde && creado < fDesde) return false
+      if (fHasta && creado > fHasta) return false
       if (q && !p.folio.toLowerCase().replace('p-', '').replace(/^0+/, '').includes(q.replace(/^0+/, ''))) return false
       return true
     })
@@ -184,7 +185,7 @@ export default function PendientesPage() {
         </select>
         <input className="input" placeholder="Cliente (nombre o teléfono)" value={fCliente} onChange={(e) => setFCliente(e.target.value)} />
         <label className="pf-filtros__fecha">
-          Regresa desde
+          Enviado desde
           <input type="date" className="input" value={fDesde} onChange={(e) => setFDesde(e.target.value)} />
         </label>
         <label className="pf-filtros__fecha">

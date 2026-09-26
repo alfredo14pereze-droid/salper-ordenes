@@ -3756,3 +3756,15 @@ solo si es para un cliente. Mismas firmas que V80 (`create or replace`). El form
 muestra siempre (fuera del bloque del cliente); tarjeta, detalle y etiqueta las muestran
 siempre. Simulación revertida: sin prenda/talla se bloquea aunque sea de tienda; sin teléfono
 se bloquea si es de cliente.
+
+
+### V82 — Pendientes: sin fecha de regreso, prenda abierta, solo Arreglo y Bordado
+
+`supabase/schema_v82_pendientes_sin_fecha_tipos.sql` (aplicado 2026-09-26): `fecha_requerida`
+ya no es obligatoria (se quitó del formulario; `pf_crear`/`pf_editar` sin ese chequeo). Las
+alertas de urgencia por fecha desaparecen para pendientes nuevos (siguen si un pendiente
+viejo la trae); la alerta roja de "enviado a fábrica y sin recibir >1 día" se mantiene. El
+filtro de fechas ahora es por fecha de envío (creación). "Tipo de prenda" es texto libre
+(sin sugerencias). Tipos de trabajo: solo Arreglo y Bordado activos; Ajuste, Sublimado y
+Otro quedaron desactivados (no borrados; reactivables en "Tipos de trabajo"). Etiqueta:
+muestra "Enviado el" cuando no hay fecha de regreso.

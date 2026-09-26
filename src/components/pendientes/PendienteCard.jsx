@@ -45,10 +45,14 @@ export default function PendienteCard({ p, puedeActuar, selected, onToggle, onCo
             <span>Se queda en la tienda</span>
           )}
           {p.orden?.order_number && <span>Orden #{p.orden.order_number}</span>}
-          <span className={'pf-due' + (urg?.nivel ? ` pf-due--${urg.nivel}` : '')}>
-            Regresa {formatDate(p.fecha_requerida)}
-            {urg ? ` · ${urg.label}` : ''}
-          </span>
+          {p.fecha_requerida ? (
+            <span className={'pf-due' + (urg?.nivel ? ` pf-due--${urg.nivel}` : '')}>
+              Regresa {formatDate(p.fecha_requerida)}
+              {urg ? ` · ${urg.label}` : ''}
+            </span>
+          ) : (
+            <span>Enviado {formatDate(p.created_at)}</span>
+          )}
         </div>
         {alerta && <p className="pf-alerta">⚠ Enviado a fábrica y sin recibir desde hace más de 1 día</p>}
         {p.estado === 'con_problema' && <p className="pf-card__meta">Estaba en: {ESTADOS[p.estado_previo]?.label}</p>}

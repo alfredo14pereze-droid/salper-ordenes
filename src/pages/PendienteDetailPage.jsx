@@ -109,10 +109,12 @@ export default function PendienteDetailPage() {
               Orden: <Link to={`/orden/${p.order_id}`}>#{p.orden.order_number}</Link>
             </span>
           )}
-          <span className={'pf-due' + (urg?.nivel ? ` pf-due--${urg.nivel}` : '')}>
-            Regresa {formatDate(p.fecha_requerida)}
-            {urg ? ` · ${urg.label}` : ''}
-          </span>
+          {p.fecha_requerida && (
+            <span className={'pf-due' + (urg?.nivel ? ` pf-due--${urg.nivel}` : '')}>
+              Regresa {formatDate(p.fecha_requerida)}
+              {urg ? ` · ${urg.label}` : ''}
+            </span>
+          )}
           <span>Creó: {p.creado_por_nombre || '—'} · {formatDateTime(p.created_at)}</span>
         </div>
         {p.fotos?.length > 0 && (

@@ -4,14 +4,6 @@ import { fetchClientes } from '../../services/clientesService'
 import { fetchOrders } from '../../services/ordersService'
 import { crearPendiente, editarPendiente, fetchTipos, uploadPendientePhoto } from '../../services/pendientesService'
 
-const PRENDAS_COMUNES = ['Playera', 'Short', 'Chamarra', 'Sudadera', 'Pantalonera', 'Pantalón', 'Falda', 'Camisa', 'Suéter', 'Vestido', 'Otro']
-
-function manana() {
-  const d = new Date()
-  d.setDate(d.getDate() + 1)
-  return d.toLocaleDateString('en-CA')
-}
-
 // Alta y edición de un pendiente (modal). En edición solo se llega mientras
 // fábrica no lo ha recibido (el servidor lo vuelve a validar).
 export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
@@ -22,7 +14,6 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
   const [descripcion, setDescripcion] = useState(pendiente?.descripcion || '')
   const [tipoId, setTipoId] = useState(pendiente?.tipo_id || '')
   const [cantidad, setCantidad] = useState(pendiente?.cantidad ?? 1)
-  const [fecha, setFecha] = useState(pendiente?.fecha_requerida || manana())
   const [esCliente, setEsCliente] = useState(!!pendiente?.es_para_cliente)
   const [clienteNombre, setClienteNombre] = useState(pendiente?.cliente_nombre || '')
   const [clienteTel, setClienteTel] = useState(pendiente?.cliente_telefono || '')
@@ -58,7 +49,7 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
       descripcion: descripcion.trim(),
       tipoId,
       cantidad: Number(cantidad),
-      fechaRequerida: fecha,
+      fechaRequerida: null,
       // Si el nombre coincide con un cliente del catálogo, se liga (sirve para reportes);
       // si no, es un cliente incidental y solo se guarda el nombre.
       clienteId: esCliente ? clientes.find((c) => c.nombre.trim().toLowerCase() === clienteNombre.trim().toLowerCase())?.id || null : null,
@@ -113,22 +104,13 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
           <div className="form-row">
             <label>
               Tipo de prenda *
-              <input className="input" list="pf-prendas-lista" value={prenda} onChange={(e) => setPrenda(e.target.value)} required placeholder="Ej. Chamarra" />
-              <datalist id="pf-prendas-lista">
-                {PRENDAS_COMUNES.map((g) => (
-                  <option key={g} value={g} />
-                ))}
-              </datalist>
+              <input className="input" value={prenda} onChange={(e) => setPrenda(e.target.value)} required placeholder="Ej. Chamarra azul" />
             </label>
             <label>
               Talla *
               <input className="input" value={talla} onChange={(e) => setTalla(e.target.value)} required placeholder="Ej. M, 30, CH" />
             </label>
           </div>
-          <label>
-            Se necesita de regreso el *
-            <input type="date" className="input" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
-          </label>
           <div>
             <span className="pf-label">¿Es para un cliente?</span>
             <div className="pf-modo">

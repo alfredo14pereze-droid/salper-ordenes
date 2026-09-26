@@ -42,8 +42,8 @@ export default function PendienteEtiquetaPdf({ p }) {
             <Text style={styles.value}>{corta(`${p.prenda || ''} · ${p.talla || ''}`, 20)}</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={styles.label}>Regresa el</Text>
-            <Text style={styles.value}>{fecha(p.fecha_requerida)}</Text>
+            <Text style={styles.label}>{p.fecha_requerida ? 'Regresa el' : 'Enviado el'}</Text>
+            <Text style={styles.value}>{fecha((p.fecha_requerida || p.created_at || '').slice(0, 10))}</Text>
           </View>
         </View>
       </Page>
