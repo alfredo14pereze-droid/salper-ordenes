@@ -22,7 +22,7 @@ export default defineConfig({
         id: './',
         name: 'SALPER',
         short_name: 'SALPER',
-        description: 'Sistema de órdenes y producción de SALPER',
+        description: 'SALPER · Sistema Operativo',
         lang: 'es',
         display: 'standalone',
         start_url: './#/',

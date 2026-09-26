@@ -128,7 +128,7 @@ export default function AppLayout({ children }) {
       <aside className={'app-sidebar' + (sidebarOpen ? ' app-sidebar--open' : '')}>
         <div className="app-sidebar__brand">
           <Logo />
-          <span className="app-header__subtitle">Órdenes de producción</span>
+          <span className="app-header__subtitle">Sistema Operativo</span>
         </div>
 
         <nav className="app-nav">

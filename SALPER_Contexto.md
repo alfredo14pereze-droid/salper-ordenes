@@ -3646,3 +3646,10 @@ botón Instalar con `beforeinstallprompt` (capturado en `lib/pwaInstall.js`), pa
 Safari para iPhone/iPad (avisa si no es Safari), "Ya tienes la app instalada". Login
 email+contraseña en localStorage: funciona en la app instalada; en iPhone se inicia
 sesión una vez porque no comparte sesión con Safari. `vercel.json`: sw.js/manifest sin caché.
+
+
+### V75 — Nombre visible: "SALPER · Sistema Operativo"
+
+Antes "Órdenes de producción". Cambiado en: `<title>` (index.html), subtítulo del
+encabezado (AppLayout), login y descripción del manifest PWA. No se tocaron repo,
+URL, tablas ni rutas; "órdenes de producción" sigue como nombre del módulo de órdenes.

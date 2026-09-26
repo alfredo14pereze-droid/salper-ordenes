@@ -44,7 +44,7 @@ export default function LoginPage() {
       <div className="login-card">
         <div className="login-card__brand">
           <Logo />
-          <span className="app-header__subtitle">Órdenes de producción</span>
+          <span className="app-header__subtitle">Sistema Operativo</span>
         </div>
 
         <form onSubmit={handleSubmit} className="order-form">
