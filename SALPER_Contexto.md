@@ -3723,3 +3723,13 @@ Simulación con roles (revertida): 3 pendientes de tienda → fábrica recibe en
 con problema (sin nota bloqueado) y resuelto → listo → enviado → tienda cierra en lote;
 historial de 7 pasos con usuario y rol; captura_produccion ve 0. El contador de folios se
 reinició a P-0001 tras la simulación.
+
+
+### V79 — Roles `lectura` y `tienda` ya se pueden asignar + edge function al día
+
+`supabase/schema_v79_roles_lectura_tienda.sql` (aplicado 2026-09-26): `profiles_role_check`
+solo aceptaba 11 roles; `lectura` y `tienda` existían en código desde V30 pero la base los
+rechazaba. Ahora acepta los 13 (solo amplía; nadie cambia de rol). La edge function
+`admin-create-user` desplegada tampoco traía `captura_produccion` en `VALID_ROLES`
+(estaba solo en el repo); se desplegó la versión del repo (idéntica salvo esa línea,
+verificado por hash), así que ya se puede crear a Juanis con ese rol.
