@@ -93,7 +93,15 @@ export default function PendienteDetailPage() {
       <section className="card">
         <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{p.descripcion}</p>
         <div className="pf-card__meta" style={{ marginTop: 10 }}>
-          {p.cliente?.nombre && <span>Cliente: {p.cliente.nombre}</span>}
+          {p.es_para_cliente ? (
+            <>
+              <span>Cliente: {p.cliente_nombre}</span>
+              <span>Teléfono: {p.cliente_telefono}</span>
+              <span>Prenda: {p.prenda} · Talla {p.talla}</span>
+            </>
+          ) : (
+            <span>Se queda en la tienda (sin cliente)</span>
+          )}
           {p.orden?.order_number && (
             <span>
               Orden: <Link to={`/orden/${p.order_id}`}>#{p.orden.order_number}</Link>

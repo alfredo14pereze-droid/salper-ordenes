@@ -4,6 +4,8 @@ import { fetchClientes } from '../../services/clientesService'
 import { fetchOrders } from '../../services/ordersService'
 import { crearPendiente, editarPendiente, fetchTipos, uploadPendientePhoto } from '../../services/pendientesService'
 
+const PRENDAS_COMUNES = ['Playera', 'Short', 'Chamarra', 'Sudadera', 'Pantalonera', 'Pantalón', 'Falda', 'Camisa', 'Suéter', 'Vestido', 'Otro']
+
 function manana() {
   const d = new Date()
   d.setDate(d.getDate() + 1)
@@ -21,7 +23,11 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
   const [tipoId, setTipoId] = useState(pendiente?.tipo_id || '')
   const [cantidad, setCantidad] = useState(pendiente?.cantidad ?? 1)
   const [fecha, setFecha] = useState(pendiente?.fecha_requerida || manana())
-  const [clienteId, setClienteId] = useState(pendiente?.cliente_id || '')
+  const [esCliente, setEsCliente] = useState(!!pendiente?.es_para_cliente)
+  const [clienteNombre, setClienteNombre] = useState(pendiente?.cliente_nombre || '')
+  const [clienteTel, setClienteTel] = useState(pendiente?.cliente_telefono || '')
+  const [prenda, setPrenda] = useState(pendiente?.prenda || '')
+  const [talla, setTalla] = useState(pendiente?.talla || '')
   const [orderId, setOrderId] = useState(pendiente?.order_id || '')
   const [fotosGuardadas, setFotosGuardadas] = useState(pendiente?.fotos || [])
   const [files, setFiles] = useState([])
@@ -53,7 +59,14 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
       tipoId,
       cantidad: Number(cantidad),
       fechaRequerida: fecha,
-      clienteId,
+      // Si el nombre coincide con un cliente del catálogo, se liga (sirve para reportes);
+      // si no, es un cliente incidental y solo se guarda el nombre.
+      clienteId: esCliente ? clientes.find((c) => c.nombre.trim().toLowerCase() === clienteNombre.trim().toLowerCase())?.id || null : null,
+      esParaCliente: esCliente,
+      clienteNombre: clienteNombre.trim(),
+      clienteTelefono: clienteTel.trim(),
+      prenda: prenda.trim(),
+      talla: talla.trim(),
       orderId,
       fotos: [...fotosGuardadas, ...nuevas],
     }
@@ -101,30 +114,62 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
             Se necesita de regreso el *
             <input type="date" className="input" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
           </label>
-          <div className="form-row">
-            <label>
-              Cliente (opcional)
-              <select className="input" value={clienteId} onChange={(e) => setClienteId(e.target.value)}>
-                <option value="">Sin cliente</option>
-                {clientes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nombre}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Orden relacionada (opcional)
-              <select className="input" value={orderId} onChange={(e) => setOrderId(e.target.value)}>
-                <option value="">Ninguna</option>
-                {ordenes.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    #{o.order_number} · {o.client_name}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <div>
+            <span className="pf-label">¿Es para un cliente?</span>
+            <div className="pf-modo">
+              <button type="button" className={'btn ' + (!esCliente ? 'btn--primary' : 'btn--ghost')} onClick={() => setEsCliente(false)}>
+                No, se queda en la tienda
+              </button>
+              <button type="button" className={'btn ' + (esCliente ? 'btn--primary' : 'btn--ghost')} onClick={() => setEsCliente(true)}>
+                Sí, es de un cliente
+              </button>
+            </div>
           </div>
+          {esCliente && (
+            <div className="pf-cliente">
+              <div className="form-row">
+                <label>
+                  Nombre del cliente *
+                  <input className="input" list="pf-clientes-lista" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} required />
+                  <datalist id="pf-clientes-lista">
+                    {clientes.map((c) => (
+                      <option key={c.id} value={c.nombre} />
+                    ))}
+                  </datalist>
+                </label>
+                <label>
+                  Teléfono *
+                  <input type="tel" className="input" value={clienteTel} onChange={(e) => setClienteTel(e.target.value)} required inputMode="tel" />
+                </label>
+              </div>
+              <div className="form-row">
+                <label>
+                  Tipo de prenda *
+                  <input className="input" list="pf-prendas-lista" value={prenda} onChange={(e) => setPrenda(e.target.value)} required placeholder="Ej. Chamarra" />
+                  <datalist id="pf-prendas-lista">
+                    {PRENDAS_COMUNES.map((g) => (
+                      <option key={g} value={g} />
+                    ))}
+                  </datalist>
+                </label>
+                <label>
+                  Talla *
+                  <input className="input" value={talla} onChange={(e) => setTalla(e.target.value)} required placeholder="Ej. M, 30, CH" />
+                </label>
+              </div>
+            </div>
+          )}
+          <label>
+            Orden relacionada (opcional)
+            <select className="input" value={orderId} onChange={(e) => setOrderId(e.target.value)}>
+              <option value="">Ninguna</option>
+              {ordenes.map((o) => (
+                <option key={o.id} value={o.id}>
+                  #{o.order_number} · {o.client_name}
+                </option>
+              ))}
+            </select>
+          </label>
           {fotosGuardadas.length > 0 && (
             <div className="photo-picker__grid">
               {fotosGuardadas.map((f, i) => (

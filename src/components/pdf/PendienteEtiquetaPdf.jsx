@@ -33,8 +33,13 @@ export default function PendienteEtiquetaPdf({ p }) {
         <Text style={styles.desc}>{corta(p.descripcion)}</Text>
         <View style={styles.row}>
           <View>
-            <Text style={styles.label}>Cliente</Text>
-            <Text style={styles.value}>{p.cliente?.nombre ? corta(p.cliente.nombre, 26) : '—'}</Text>
+            <Text style={styles.label}>{p.es_para_cliente ? 'Cliente' : 'Uso'}</Text>
+            <Text style={styles.value}>{p.es_para_cliente ? corta(p.cliente_nombre || '', 24) : 'Se queda en tienda'}</Text>
+            {p.es_para_cliente && (
+              <Text style={{ fontSize: 8 }}>
+                {corta(`${p.prenda || ''} · T ${p.talla || ''}`, 26)} · {p.cliente_telefono}
+              </Text>
+            )}
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={styles.label}>Regresa el</Text>

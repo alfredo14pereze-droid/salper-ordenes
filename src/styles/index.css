@@ -2844,3 +2844,6 @@ h4 {
 .pf-hist__meta { color: var(--color-text-muted); font-size: 13px; }
 .pf-hist__nota { font-style: italic; margin-top: 2px; }
 @media (min-width: 721px) { .pf-card { grid-template-columns: auto 1fr auto; } .pf-card:not(:has(.pf-card__check)) { grid-template-columns: 1fr auto; } .pf-card__btn { grid-column: auto; align-self: center; } .pf-bar { left: 240px; } }
+
+.pf-label { display: block; font-weight: 600; margin-bottom: 6px; }
+.pf-cliente { display: grid; gap: 10px; padding: 12px; border: 1px dashed var(--color-border); border-radius: var(--radius-md); background: var(--color-bg); }

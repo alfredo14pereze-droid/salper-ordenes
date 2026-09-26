@@ -3733,3 +3733,16 @@ rechazaba. Ahora acepta los 13 (solo amplía; nadie cambia de rol). La edge func
 `admin-create-user` desplegada tampoco traía `captura_produccion` en `VALID_ROLES`
 (estaba solo en el repo); se desplegó la versión del repo (idéntica salvo esa línea,
 verificado por hash), así que ya se puede crear a Juanis con ese rol.
+
+
+### V80 — Pendientes: "¿es para un cliente?"
+
+`supabase/schema_v80_pendientes_para_cliente.sql` (aplicado 2026-09-26): `pf_pendientes`
+gana `es_para_cliente`, `cliente_nombre`, `cliente_telefono`, `prenda`, `talla`. Si es para un
+cliente, `pf_crear`/`pf_editar` (firma nueva, DROP de la anterior) exigen nombre, teléfono,
+tipo de prenda y talla; si no, se guardan en null ("se queda en la tienda"). El nombre se
+liga a `cliente_id` solo si coincide con un cliente del catálogo; si no, es incidental.
+Formulario con botones "No, se queda en la tienda" / "Sí, es de un cliente"; tarjeta, detalle
+y etiqueta muestran los datos; el filtro de cliente ahora es por nombre/teléfono más un
+selector "solo de clientes / solo de la tienda". Simulación revertida: sin teléfono o sin
+talla se bloquea; para tienda queda todo en null; editar de cliente a tienda limpia los campos.

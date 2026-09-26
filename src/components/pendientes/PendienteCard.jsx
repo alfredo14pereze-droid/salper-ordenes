@@ -34,7 +34,13 @@ export default function PendienteCard({ p, puedeActuar, selected, onToggle, onCo
           {p.descripcion}
         </Link>
         <div className="pf-card__meta">
-          {p.cliente?.nombre && <span>{p.cliente.nombre}</span>}
+          {p.es_para_cliente ? (
+            <span>
+              👤 {p.cliente_nombre} · {p.cliente_telefono} · {p.prenda} talla {p.talla}
+            </span>
+          ) : (
+            <span>Se queda en la tienda</span>
+          )}
           {p.orden?.order_number && <span>Orden #{p.orden.order_number}</span>}
           <span className={'pf-due' + (urg?.nivel ? ` pf-due--${urg.nivel}` : '')}>
             Regresa {formatDate(p.fecha_requerida)}

@@ -4,7 +4,6 @@ import PendienteCard from '../components/pendientes/PendienteCard'
 import PendienteForm from '../components/pendientes/PendienteForm'
 import TiposTrabajoModal from '../components/pendientes/TiposTrabajoModal'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
-import { fetchClientes } from '../services/clientesService'
 import { fetchTipos, cambiarEstado, cambiarEstadoLote, SIGUIENTE, sinRecibirAlerta } from '../services/pendientesService'
 import { useAuth } from '../contexts/AuthContext'
 import { pfEsTienda, pfEsFabrica, canManageTiposPendiente } from '../utils/permissions'
@@ -35,9 +34,9 @@ export default function PendientesPage() {
   const bandejas = BANDEJAS[modo]
   const [tab, setTab] = useState(bandejas[0].key)
   const [tipos, setTipos] = useState([])
-  const [clientes, setClientes] = useState([])
   const [fTipo, setFTipo] = useState('')
   const [fCliente, setFCliente] = useState('')
+  const [fPara, setFPara] = useState('')
   const [fDesde, setFDesde] = useState('')
   const [fHasta, setFHasta] = useState('')
   const [buscar, setBuscar] = useState('')
@@ -49,7 +48,6 @@ export default function PendientesPage() {
 
   useEffect(() => {
     fetchTipos({ soloActivos: false }).then(({ data }) => setTipos(data || []))
-    fetchClientes().then(({ data }) => setClientes(data || []))
   }, [showTipos])
 
   useEffect(() => {
@@ -62,13 +60,15 @@ export default function PendientesPage() {
     const q = buscar.trim().toLowerCase().replace(/^p-?/, '')
     return items.filter((p) => {
       if (fTipo && p.tipo_id !== fTipo) return false
-      if (fCliente && p.cliente_id !== fCliente) return false
+      if (fPara === 'cliente' && !p.es_para_cliente) return false
+      if (fPara === 'tienda' && p.es_para_cliente) return false
+      if (fCliente && !`${p.cliente_nombre || ''} ${p.cliente_telefono || ''}`.toLowerCase().includes(fCliente.trim().toLowerCase())) return false
       if (fDesde && p.fecha_requerida < fDesde) return false
       if (fHasta && p.fecha_requerida > fHasta) return false
       if (q && !p.folio.toLowerCase().replace('p-', '').replace(/^0+/, '').includes(q.replace(/^0+/, ''))) return false
       return true
     })
-  }, [items, fTipo, fCliente, fDesde, fHasta, buscar])
+  }, [items, fTipo, fCliente, fPara, fDesde, fHasta, buscar])
 
   const actual = bandejas.find((b) => b.key === tab) || bandejas[0]
   const lista = filtrados.filter((p) => actual.estados.includes(p.estado))
@@ -177,14 +177,12 @@ export default function PendientesPage() {
             </option>
           ))}
         </select>
-        <select className="input" value={fCliente} onChange={(e) => setFCliente(e.target.value)}>
-          <option value="">Todos los clientes</option>
-          {clientes.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.nombre}
-            </option>
-          ))}
+        <select className="input" value={fPara} onChange={(e) => setFPara(e.target.value)}>
+          <option value="">Cliente y tienda</option>
+          <option value="cliente">Solo de clientes</option>
+          <option value="tienda">Solo de la tienda</option>
         </select>
+        <input className="input" placeholder="Cliente (nombre o teléfono)" value={fCliente} onChange={(e) => setFCliente(e.target.value)} />
         <label className="pf-filtros__fecha">
           Regresa desde
           <input type="date" className="input" value={fDesde} onChange={(e) => setFDesde(e.target.value)} />
