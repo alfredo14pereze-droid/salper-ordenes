@@ -259,12 +259,12 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
       {conSugerencia && !readOnly && <p className="page-subtitle">Los precios sugeridos no se guardan hasta que pulses "Guardar precios y facturación".</p>}
 
       <div className="order-form" style={{ marginTop: 12 }}>
-        <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <label className="fin-check">
           <input type="checkbox" checked={requiere} disabled={readOnly || sinCliente} onChange={(e) => handleRequiere(e.target.checked)} />
           <strong>¿Requiere factura?</strong>
         </label>
         {sinCliente && <p className="page-subtitle">Para facturar, la orden debe ser de un cliente del catálogo (esta tiene un cliente capturado a mano).</p>}
-        <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <label className="fin-check">
           <input type="checkbox" checked={incluyeIva} disabled={readOnly} onChange={(e) => { setIncluyeIva(e.target.checked); setDirty(true) }} />
           Los precios ya incluyen IVA <span className="page-subtitle">(si no, se les suma 16% cuando hay factura)</span>
         </label>

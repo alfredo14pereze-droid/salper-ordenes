@@ -2805,3 +2805,6 @@ h4 {
 .fin-missing { margin: 10px 0 0; padding: 8px 12px; background: var(--color-orange-soft); color: var(--color-warning); border-radius: var(--radius-md); font-weight: 600; }
 .fin-ok { margin: 10px 0 0; padding: 8px 12px; background: var(--color-good-soft); color: var(--color-good); border-radius: var(--radius-md); font-weight: 600; }
 @media (max-width: 720px) { .precio-table, .precio-table tbody, .precio-table tr, .precio-table td { display: block; width: 100%; } .precio-table thead { display: none; } }
+
+.order-form label.fin-check { display: flex; flex-direction: row; align-items: center; gap: 8px; text-align: left; }
+.order-form label.fin-check input[type='checkbox'] { flex: 0 0 auto; width: auto; }

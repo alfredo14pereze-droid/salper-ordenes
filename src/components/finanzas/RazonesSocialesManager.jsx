@@ -152,7 +152,7 @@ export default function RazonesSocialesManager({ clienteId, onSaved, startNew = 
               <input type="email" className="input" value={form.correo} onChange={(e) => set('correo', e.target.value)} />
             </label>
           </div>
-          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <label className="fin-check">
             <input type="checkbox" checked={form.predeterminada} onChange={(e) => set('predeterminada', e.target.checked)} />
             Razón social predeterminada de este cliente
           </label>
