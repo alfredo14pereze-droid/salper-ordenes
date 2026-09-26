@@ -322,6 +322,21 @@ export function canCapturarProduccion(role) {
   return role === 'admin_general' || role === 'admin_fabrica' || role === 'captura_produccion'
 }
 
+// V77 — precios, totales, facturación y razones sociales: espejo de
+// fin_puede_ver / fin_puede_editar / fin_puede_editar_razones en Supabase.
+// Producción, corte, bordado, etc. no ven nada de esto.
+export function canViewFinanzas(role) {
+  return ['admin_general', 'admin_tienda', 'admin_fabrica', 'ventas', 'contabilidad'].includes(role)
+}
+
+export function canEditFinanzas(role) {
+  return role === 'admin_general' || role === 'admin_tienda' || role === 'ventas'
+}
+
+export function canEditRazones(role) {
+  return role === 'admin_general' || role === 'admin_tienda' || role === 'ventas' || role === 'contabilidad'
+}
+
 export const ROLE_LABELS = {
   ventas: 'Ventas',
   contabilidad: 'Contabilidad',

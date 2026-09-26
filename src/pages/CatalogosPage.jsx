@@ -7,7 +7,9 @@ import {
   canCreateTela,
   canCreateProducto,
   canViewCatalogos,
+  canViewFinanzas,
 } from '../utils/permissions'
+import RazonesSocialesManager from '../components/finanzas/RazonesSocialesManager'
 import { PROVEEDORES_HABILITADO } from '../utils/featureFlags'
 import { Loading, ErrorState } from '../components/common/States'
 import { useFileDrop } from '../hooks/useFileDrop'
@@ -198,6 +200,24 @@ function AddClienteForm({ onCreated }) {
         </button>
       </div>
     </form>
+  )
+}
+
+// V77 — razones sociales (datos fiscales) del cliente, plegable dentro de la
+// fila del cliente. Solo lo montan los roles que ven dinero.
+function ClienteRazonesSociales({ cliente }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div style={{ marginTop: 8 }}>
+      <button type="button" className="btn btn--ghost btn--small" onClick={() => setOpen((v) => !v)}>
+        {open ? 'Ocultar razones sociales' : 'Razones sociales (facturación)'}
+      </button>
+      {open && (
+        <div style={{ marginTop: 8 }}>
+          <RazonesSocialesManager clienteId={cliente.id} />
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -643,7 +663,16 @@ function CatalogosPageContent() {
         }
         addForm={showAddCliente ? (onCreated) => <AddClienteForm onCreated={onCreated} /> : undefined}
         canDelete={canDelete}
-        renderExtra={showAddCliente ? (cliente, load) => <ClienteTipoOrdenEditor cliente={cliente} onSaved={load} /> : undefined}
+        renderExtra={
+          showAddCliente || canViewFinanzas(role)
+            ? (cliente, load) => (
+                <>
+                  {showAddCliente && <ClienteTipoOrdenEditor cliente={cliente} onSaved={load} />}
+                  {canViewFinanzas(role) && <ClienteRazonesSociales cliente={cliente} />}
+                </>
+              )
+            : undefined
+        }
       />
       <CatalogSection
         title="Telas"

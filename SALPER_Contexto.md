@@ -3665,3 +3665,34 @@ listas) se muestra la insignia verde "✓ Lista para entregar" (`StatusBadge`, a
 sale en tarjetas y detalle) y un aviso en la tarjeta de estado; la orden sigue en el
 Dashboard hasta confirmar la entrega. Textos "completadas" → "entregadas" en Órdenes
 pasadas y Estadísticas (las estadísticas de tiempo miden hasta la entrega).
+
+
+### V77 — Precios y facturación por orden
+
+`supabase/schema_v77_precios_facturacion.sql` (aplicado 2026-09-26, todo aditivo salvo el
+parche del candado y la política de `anticipos`). Tablas: `cliente_razones_sociales`
+(varias por cliente, una predeterminada), `orden_precios` (por prenda: `item_index` +
+snapshot de `prenda`, precio unitario, extras `[{concepto,monto}]` por pieza),
+`orden_facturacion` (requiere factura, `precios_incluyen_iva` default true, razón social
+elegida + `fiscal_snapshot`), `fin_config` (`candado_desde`). Los precios NO van en
+`orders.items` (lo lee cualquier rol): RLS solo para `fin_puede_ver()` = admin_general,
+admin_tienda, admin_fabrica, ventas, contabilidad. Editan precios/facturación:
+admin_general, admin_tienda, ventas (`fin_puede_editar`); razones sociales: + contabilidad.
+Todo el cálculo en Supabase: `orden_totales` (subtotal, IVA, total, anticipos, saldo,
+faltantes), `orden_faltantes`, `ultimo_precio_cliente_prenda`, `orden_resumen_entrega`.
+IVA: sin factura total = capturado; factura + precios con IVA → total = capturado y se
+desglosa /1.16; factura + "más IVA" → +16%. Anticipos: se reusa la tabla `anticipos` (V16);
+su lectura ahora también es solo `fin_puede_ver()` (antes cualquier rol con sesión).
+`orders.total_orden` (V42, total manual) sigue como respaldo de órdenes viejas.
+Candado: `update_order_status` (parche sobre la definición viva) llama a
+`fin_validar_entrega` al pasar a `completado`: exige precio en toda prenda con piezas y
+razón social si pide factura; solo para órdenes creadas desde `candado_desde`
+(las anteriores no se bloquean). Si las prendas cambian de posición/nombre después de
+fijar precios, esa prenda cuenta como "sin precio". Frontend: `OrderFacturacionCard`
+(precios, extras, sugerencia del último precio del cliente, switch de factura, razón
+social con alta sin salir de la orden, totales, "Resumen de entrega" con vista previa/PDF
+`EntregaResumenPdf`), `RazonesSocialesManager` (también en Catálogos > Clientes).
+Simulación con roles (transacción revertida): producción no ve/edita nada; 3 razones
+sociales con una sola predeterminada; 15 pzs Playera $180+$25 y 10 Short $100 = $4,075;
+con factura+IVA incluido → subtotal 3,512.93, IVA 562.07; "más IVA" → total 4,727; anticipo
+$1,000 → saldo 3,075 / 3,727; candado bloquea "Falta precio en: Short"; orden vieja pasa.

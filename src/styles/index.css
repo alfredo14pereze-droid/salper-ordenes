@@ -2784,3 +2784,24 @@ h4 {
   border-radius: var(--radius-md);
   font-weight: 600;
 }
+
+/* V77 — precios, facturación y razones sociales */
+.razones { display: grid; gap: 10px; }
+.razon-row { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.razon-row__meta { color: var(--color-text-muted); font-size: 13px; margin-top: 2px; }
+.razon-row__actions { display: flex; gap: 6px; flex-shrink: 0; }
+.razon-form { padding: 12px; border: 1px dashed var(--color-border); border-radius: var(--radius-md); }
+.precio-table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+.precio-table th { text-align: left; font-size: 12px; color: var(--color-text-muted); font-weight: 600; padding: 4px 6px; }
+.precio-table td { padding: 6px; vertical-align: top; border-top: 1px solid var(--color-border); }
+.precio-table input.input { width: 100%; min-width: 80px; }
+.precio-extras { display: grid; gap: 4px; }
+.precio-extra { display: grid; grid-template-columns: 1fr 90px auto; gap: 4px; }
+.precio-suggested { font-size: 11px; color: var(--color-info); }
+.totales-box { margin-top: 12px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg); display: grid; gap: 4px; max-width: 380px; margin-left: auto; }
+.totales-box__row { display: flex; justify-content: space-between; gap: 16px; font-variant-numeric: tabular-nums; }
+.totales-box__row--total { font-weight: 800; font-size: 1.05em; border-top: 1px solid var(--color-border); padding-top: 6px; }
+.totales-box__row--saldo { font-weight: 700; }
+.fin-missing { margin: 10px 0 0; padding: 8px 12px; background: var(--color-orange-soft); color: var(--color-warning); border-radius: var(--radius-md); font-weight: 600; }
+.fin-ok { margin: 10px 0 0; padding: 8px 12px; background: var(--color-good-soft); color: var(--color-good); border-radius: var(--radius-md); font-weight: 600; }
+@media (max-width: 720px) { .precio-table, .precio-table tbody, .precio-table tr, .precio-table td { display: block; width: 100%; } .precio-table thead { display: none; } }

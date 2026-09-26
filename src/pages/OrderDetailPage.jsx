@@ -10,6 +10,7 @@ import PhotoGallery from '../components/orders/PhotoGallery'
 import OrderItemsCard from '../components/orders/OrderItemsCard'
 import OrderDocumentsCard from '../components/orders/OrderDocumentsCard'
 import OrderPaymentsCard from '../components/orders/OrderPaymentsCard'
+import OrderFacturacionCard from '../components/orders/OrderFacturacionCard'
 import OrderDetailsCard from '../components/orders/OrderDetailsCard'
 import OrderNotesCard from '../components/orders/OrderNotesCard'
 import OrderReconfirmBanner from '../components/orders/OrderReconfirmBanner'
@@ -28,7 +29,7 @@ import {
   remisionPdfFileName,
 } from '../utils/generateOrderPdf'
 import { useAuth } from '../contexts/AuthContext'
-import { canViewRemision, canManageSurtido, canChangeStatus, canSetEstimatedDays, canViewEtapas } from '../utils/permissions'
+import { canViewRemision, canManageSurtido, canChangeStatus, canSetEstimatedDays, canViewEtapas, canViewFinanzas } from '../utils/permissions'
 
 export default function OrderDetailPage() {
   const { user, role } = useAuth()
@@ -201,7 +202,13 @@ export default function OrderDetailPage() {
           </section>
         )}
 
-        {user && (
+        {user && canViewFinanzas(role) && (
+          <section className="card">
+            <OrderFacturacionCard order={order} onUpdated={refresh} />
+          </section>
+        )}
+
+        {user && canViewFinanzas(role) && (
           <section className="card">
             {location.state?.anticipoError && (
               <p className="form-error">
