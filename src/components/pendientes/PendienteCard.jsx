@@ -34,9 +34,12 @@ export default function PendienteCard({ p, puedeActuar, selected, onToggle, onCo
           {p.descripcion}
         </Link>
         <div className="pf-card__meta">
+          <span>
+            {p.prenda} · talla {p.talla}
+          </span>
           {p.es_para_cliente ? (
             <span>
-              👤 {p.cliente_nombre} · {p.cliente_telefono} · {p.prenda} talla {p.talla}
+              👤 {p.cliente_nombre} · {p.cliente_telefono}
             </span>
           ) : (
             <span>Se queda en la tienda</span>

@@ -110,6 +110,21 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
               <input type="number" min="1" className="input" value={cantidad} onChange={(e) => setCantidad(e.target.value)} required inputMode="numeric" />
             </label>
           </div>
+          <div className="form-row">
+            <label>
+              Tipo de prenda *
+              <input className="input" list="pf-prendas-lista" value={prenda} onChange={(e) => setPrenda(e.target.value)} required placeholder="Ej. Chamarra" />
+              <datalist id="pf-prendas-lista">
+                {PRENDAS_COMUNES.map((g) => (
+                  <option key={g} value={g} />
+                ))}
+              </datalist>
+            </label>
+            <label>
+              Talla *
+              <input className="input" value={talla} onChange={(e) => setTalla(e.target.value)} required placeholder="Ej. M, 30, CH" />
+            </label>
+          </div>
           <label>
             Se necesita de regreso el *
             <input type="date" className="input" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
@@ -140,21 +155,6 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
                 <label>
                   Teléfono *
                   <input type="tel" className="input" value={clienteTel} onChange={(e) => setClienteTel(e.target.value)} required inputMode="tel" />
-                </label>
-              </div>
-              <div className="form-row">
-                <label>
-                  Tipo de prenda *
-                  <input className="input" list="pf-prendas-lista" value={prenda} onChange={(e) => setPrenda(e.target.value)} required placeholder="Ej. Chamarra" />
-                  <datalist id="pf-prendas-lista">
-                    {PRENDAS_COMUNES.map((g) => (
-                      <option key={g} value={g} />
-                    ))}
-                  </datalist>
-                </label>
-                <label>
-                  Talla *
-                  <input className="input" value={talla} onChange={(e) => setTalla(e.target.value)} required placeholder="Ej. M, 30, CH" />
                 </label>
               </div>
             </div>

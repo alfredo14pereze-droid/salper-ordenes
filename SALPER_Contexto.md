@@ -3746,3 +3746,13 @@ Formulario con botones "No, se queda en la tienda" / "Sí, es de un cliente"; ta
 y etiqueta muestran los datos; el filtro de cliente ahora es por nombre/teléfono más un
 selector "solo de clientes / solo de la tienda". Simulación revertida: sin teléfono o sin
 talla se bloquea; para tienda queda todo en null; editar de cliente a tienda limpia los campos.
+
+
+### V81 — Pendientes: prenda y talla siempre obligatorias
+
+`supabase/schema_v81_pendientes_prenda_talla_siempre.sql` (aplicado 2026-09-26): tipo de
+prenda y talla se piden en TODO pendiente (para cliente o para la tienda); nombre y teléfono
+solo si es para un cliente. Mismas firmas que V80 (`create or replace`). El formulario las
+muestra siempre (fuera del bloque del cliente); tarjeta, detalle y etiqueta las muestran
+siempre. Simulación revertida: sin prenda/talla se bloquea aunque sea de tienda; sin teléfono
+se bloquea si es de cliente.
