@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { usePendientes } from '../hooks/usePendientes'
 import PendienteCard from '../components/pendientes/PendienteCard'
 import PendienteForm from '../components/pendientes/PendienteForm'
 import TiposTrabajoModal from '../components/pendientes/TiposTrabajoModal'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
-import { fetchTipos, cambiarEstado, cambiarEstadoLote, SIGUIENTE, sinRecibirAlerta } from '../services/pendientesService'
+import { cambiarEstado, cambiarEstadoLote, SIGUIENTE, sinRecibirAlerta } from '../services/pendientesService'
 import { useAuth } from '../contexts/AuthContext'
 import { pfEsTienda, pfEsFabrica, canManageTiposPendiente } from '../utils/permissions'
 
 // Bandejas por rol (V78). tienda: lo que mandó y espera; fábrica: lo que le toca.
+// V85 — sin filtros ni buscador: no son tantos pendientes a la vez como para
+// necesitarlos; las bandejas ya bastan para ubicar cada uno.
 const BANDEJAS = {
   tienda: [
     { key: 'camino', label: 'En camino a fábrica', estados: ['enviado_a_fabrica'] },
@@ -33,13 +35,6 @@ export default function PendientesPage() {
   const [modo, setModo] = useState(soloFabrica ? 'fabrica' : 'tienda')
   const bandejas = BANDEJAS[modo]
   const [tab, setTab] = useState(bandejas[0].key)
-  const [tipos, setTipos] = useState([])
-  const [fTipo, setFTipo] = useState('')
-  const [fCliente, setFCliente] = useState('')
-  const [fPara, setFPara] = useState('')
-  const [fDesde, setFDesde] = useState('')
-  const [fHasta, setFHasta] = useState('')
-  const [buscar, setBuscar] = useState('')
   const [seleccion, setSeleccion] = useState(new Set())
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(null)
@@ -47,34 +42,15 @@ export default function PendientesPage() {
   const [showTipos, setShowTipos] = useState(false)
 
   useEffect(() => {
-    fetchTipos({ soloActivos: false }).then(({ data }) => setTipos(data || []))
-  }, [showTipos])
-
-  useEffect(() => {
     setTab(BANDEJAS[modo][0].key)
     setSeleccion(new Set())
   }, [modo])
   useEffect(() => setSeleccion(new Set()), [tab])
 
-  const filtrados = useMemo(() => {
-    const q = buscar.trim().toLowerCase().replace(/^p-?/, '')
-    return items.filter((p) => {
-      if (fTipo && p.tipo_id !== fTipo) return false
-      if (fPara === 'cliente' && !p.es_para_cliente) return false
-      if (fPara === 'tienda' && p.es_para_cliente) return false
-      if (fCliente && !`${p.cliente_nombre || ''} ${p.cliente_telefono || ''}`.toLowerCase().includes(fCliente.trim().toLowerCase())) return false
-      const creado = (p.created_at || '').slice(0, 10)
-      if (fDesde && creado < fDesde) return false
-      if (fHasta && creado > fHasta) return false
-      if (q && !p.folio.toLowerCase().replace('p-', '').replace(/^0+/, '').includes(q.replace(/^0+/, ''))) return false
-      return true
-    })
-  }, [items, fTipo, fCliente, fPara, fDesde, fHasta, buscar])
-
   const actual = bandejas.find((b) => b.key === tab) || bandejas[0]
-  const lista = filtrados.filter((p) => actual.estados.includes(p.estado))
-  const cuenta = (b) => filtrados.filter((p) => b.estados.includes(p.estado)).length
-  const alertas = filtrados.filter(sinRecibirAlerta).length
+  const lista = items.filter((p) => actual.estados.includes(p.estado))
+  const cuenta = (b) => items.filter((p) => b.estados.includes(p.estado)).length
+  const alertas = items.filter(sinRecibirAlerta).length
 
   function puedeActuar(p) {
     const sig = SIGUIENTE[p.estado]
@@ -166,32 +142,6 @@ export default function PendientesPage() {
             {b.label} <span className="pf-tab__n">{cuenta(b)}</span>
           </button>
         ))}
-      </div>
-
-      <div className="pf-filtros">
-        <input className="input" placeholder="Buscar folio (P-0001)" value={buscar} onChange={(e) => setBuscar(e.target.value)} />
-        <select className="input" value={fTipo} onChange={(e) => setFTipo(e.target.value)}>
-          <option value="">Todos los tipos</option>
-          {tipos.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.nombre}
-            </option>
-          ))}
-        </select>
-        <select className="input" value={fPara} onChange={(e) => setFPara(e.target.value)}>
-          <option value="">Cliente y tienda</option>
-          <option value="cliente">Solo de clientes</option>
-          <option value="tienda">Solo de la tienda</option>
-        </select>
-        <input className="input" placeholder="Cliente (nombre o teléfono)" value={fCliente} onChange={(e) => setFCliente(e.target.value)} />
-        <label className="pf-filtros__fecha">
-          Enviado desde
-          <input type="date" className="input" value={fDesde} onChange={(e) => setFDesde(e.target.value)} />
-        </label>
-        <label className="pf-filtros__fecha">
-          hasta
-          <input type="date" className="input" value={fHasta} onChange={(e) => setFHasta(e.target.value)} />
-        </label>
       </div>
 
       {seleccionables.length > 1 && (

@@ -3797,3 +3797,12 @@ confirmar/marcar problema) usaba la clase `page-subtitle`, que trae un margen ne
 pensado solo para ir pegada debajo de un `<h2>` — se cambió a `pantone-hint` (mismo tono,
 sin ese margen), que es la clase que ya se usaba en otras partes del sistema para este
 mismo caso.
+
+
+### V85 — Pendientes: sin filtros ni buscador
+
+Se quitó todo el bloque de filtros (buscar folio, tipo, cliente/tienda, cliente por nombre
+o teléfono, rango de fechas) de `/pendientes` — con pocos pendientes a la vez no hacía
+falta, y quedaba encima de las bandejas. Las bandejas (En camino a fábrica / En fábrica /
+etc.) se quedan igual: son las colas de trabajo, no un filtro de búsqueda. Solo cambio de
+frontend, sin tocar Supabase.

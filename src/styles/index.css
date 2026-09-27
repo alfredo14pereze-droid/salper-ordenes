@@ -2815,8 +2815,6 @@ h4 {
 .pf-tab { flex: 0 0 auto; padding: 10px 14px; border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-surface); font-weight: 600; cursor: pointer; white-space: nowrap; min-height: 44px; }
 .pf-tab--on { background: var(--color-black); color: var(--color-amber); border-color: var(--color-black); }
 .pf-tab__n { display: inline-block; min-width: 20px; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: rgba(127, 127, 127, 0.2); text-align: center; font-size: 12px; }
-.pf-filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
-.pf-filtros__fecha { display: grid; gap: 2px; font-size: 12px; color: var(--color-text-muted); }
 .pf-selall { display: flex; gap: 8px; align-items: center; font-weight: 600; min-height: 32px; }
 .pf-list { display: grid; gap: 10px; padding-bottom: 80px; }
 .pf-card { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; padding: 12px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
