@@ -48,6 +48,7 @@ const VIEW_AS_ROLES = [
   'produccion',
   'terminado',
   'admin_fabrica',
+  'admin_fabrica_lectura',
   'lectura',
   'tienda',
   'captura_produccion',

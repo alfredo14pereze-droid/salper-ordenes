@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchReglas, guardarRegla } from '../../services/produccionService'
+import { useAuth } from '../../contexts/AuthContext'
+import { esFabricaSoloLectura } from '../../utils/permissions'
 
 const TIPOS = [
   { key: 'meta', titulo: 'Bono por meta', desde: 'Valor generado desde ($)', nota: 'Se toma la fila con el mayor "desde" que no pase del valor generado de la semana.' },
@@ -8,6 +10,8 @@ const TIPOS = [
 ]
 
 export default function ReglasAdmin() {
+  const { role } = useAuth()
+  const soloLectura = esFabricaSoloLectura(role)
   const [reglas, setReglas] = useState([])
   const [error, setError] = useState(null)
   const [nuevo, setNuevo] = useState({ tipo: null, desde: '', bono: '' })
@@ -58,29 +62,31 @@ export default function ReglasAdmin() {
                 .map((r) => (
                   <tr key={r.id} className={r.activa ? '' : 'mt-catalogo__item--off'}>
                     <td>
-                      <input className="input input--small" type="number" defaultValue={r.desde} onBlur={(e) => Number(e.target.value) !== Number(r.desde) && guardar(r, { desde: Number(e.target.value) })} />
+                      <input className="input input--small" type="number" defaultValue={r.desde} onBlur={(e) => Number(e.target.value) !== Number(r.desde) && guardar(r, { desde: Number(e.target.value) })} disabled={soloLectura} />
                     </td>
                     <td>
-                      <input className="input input--small" type="number" defaultValue={r.bono} onBlur={(e) => Number(e.target.value) !== Number(r.bono) && guardar(r, { bono: Number(e.target.value) })} />
+                      <input className="input input--small" type="number" defaultValue={r.bono} onBlur={(e) => Number(e.target.value) !== Number(r.bono) && guardar(r, { bono: Number(e.target.value) })} disabled={soloLectura} />
                     </td>
                     <td>
-                      <input type="checkbox" checked={r.activa} onChange={(e) => guardar(r, { activa: e.target.checked })} />
+                      <input type="checkbox" checked={r.activa} onChange={(e) => guardar(r, { activa: e.target.checked })} disabled={soloLectura} />
                     </td>
                   </tr>
                 ))}
-              <tr>
-                <td>
-                  <input className="input input--small" type="number" placeholder="desde" value={nuevo.tipo === t.key ? nuevo.desde : ''} onChange={(e) => setNuevo({ tipo: t.key, desde: e.target.value, bono: nuevo.tipo === t.key ? nuevo.bono : '' })} />
-                </td>
-                <td>
-                  <input className="input input--small" type="number" placeholder="bono" value={nuevo.tipo === t.key ? nuevo.bono : ''} onChange={(e) => setNuevo({ tipo: t.key, desde: nuevo.tipo === t.key ? nuevo.desde : '', bono: e.target.value })} />
-                </td>
-                <td>
-                  <button type="button" className="btn btn--secondary btn--small" disabled={nuevo.tipo !== t.key || nuevo.desde === '' || nuevo.bono === ''} onClick={() => agregar(t.key)}>
-                    + Agregar
-                  </button>
-                </td>
-              </tr>
+              {!soloLectura && (
+                <tr>
+                  <td>
+                    <input className="input input--small" type="number" placeholder="desde" value={nuevo.tipo === t.key ? nuevo.desde : ''} onChange={(e) => setNuevo({ tipo: t.key, desde: e.target.value, bono: nuevo.tipo === t.key ? nuevo.bono : '' })} />
+                  </td>
+                  <td>
+                    <input className="input input--small" type="number" placeholder="bono" value={nuevo.tipo === t.key ? nuevo.bono : ''} onChange={(e) => setNuevo({ tipo: t.key, desde: nuevo.tipo === t.key ? nuevo.desde : '', bono: e.target.value })} />
+                  </td>
+                  <td>
+                    <button type="button" className="btn btn--secondary btn--small" disabled={nuevo.tipo !== t.key || nuevo.desde === '' || nuevo.bono === ''} onClick={() => agregar(t.key)}>
+                      + Agregar
+                    </button>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

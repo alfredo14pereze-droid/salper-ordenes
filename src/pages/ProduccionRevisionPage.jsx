@@ -2,7 +2,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import RequireRole from '../components/common/RequireRole'
 import { Loading, ErrorState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
-import { canViewProduccionMontos } from '../utils/permissions'
+import { canViewProduccionMontos, esFabricaSoloLectura } from '../utils/permissions'
 import {
   listarSemanas,
   revisionSemana,
@@ -33,6 +33,7 @@ const ESTADO = { abierta: 'Abierta', en_revision: 'En revisión', aprobada: 'Apr
 function Revision() {
   const { role } = useAuth()
   const esGeneral = role === 'admin_general'
+  const soloLectura = esFabricaSoloLectura(role)
   const [semanas, setSemanas] = useState([])
   const [semanaId, setSemanaId] = useState(null)
   const [filas, setFilas] = useState([])
@@ -139,7 +140,7 @@ function Revision() {
         </label>
         <span className={`badge revision__estado revision__estado--${semana.estado}`}>{ESTADO[semana.estado]}</span>
         <div className="revision__acciones">
-          {semana.estado === 'abierta' && (
+          {!soloLectura && semana.estado === 'abierta' && (
             <button
               type="button"
               className="btn btn--secondary"
@@ -149,7 +150,7 @@ function Revision() {
               Pasar a revisión
             </button>
           )}
-          {semana.estado === 'en_revision' && (
+          {!soloLectura && semana.estado === 'en_revision' && (
             <button
               type="button"
               className="btn btn--primary"
@@ -159,7 +160,7 @@ function Revision() {
               Aprobar semana
             </button>
           )}
-          {semana.estado === 'aprobada' && !semana.importada && esGeneral && (
+          {!soloLectura && semana.estado === 'aprobada' && !semana.importada && esGeneral && (
             <button type="button" className="btn btn--ghost" disabled={busy} onClick={reabrir}>
               Reabrir…
             </button>

@@ -91,7 +91,7 @@ export function canChangeStatus(role) {
 // arriba — pedido explícito del usuario de quitarlo ahí por ser ruido
 // visual. admin_general lo sigue viendo (ve todo el sistema).
 export function canViewEtapas(role) {
-  return FABRICA_ETAPA_ROLES.includes(role) || role === 'admin_fabrica' || role === 'admin_general'
+  return FABRICA_ETAPA_ROLES.includes(role) || role === 'admin_fabrica' || role === 'admin_general' || role === 'admin_fabrica_lectura'
 }
 
 // V38 — "Confirmar cambios": una orden ya confirmada que se editó
@@ -163,7 +163,7 @@ export function canCreateProducto(role) {
 // tenga ninguno de esos permisos ni siquiera llega a la pantalla
 // (RequireRole en CatalogosPage.jsx).
 export function canViewCatalogos(role) {
-  return canCreateCliente(role) || canCreateTela(role) || canCreateProducto(role) || canManageCatalogs(role)
+  return canCreateCliente(role) || canCreateTela(role) || canCreateProducto(role) || canManageCatalogs(role) || role === 'admin_fabrica_lectura'
 }
 
 // Bordado condicional por prenda (V25): subir/borrar fotos en
@@ -180,6 +180,13 @@ export function canManageBordado(role) {
 // cliente, fechas, tipo, cantidades pedidas, ni otras etapas).
 export function canManageSurtido(role) {
   return role === 'terminado' || role === 'admin_fabrica' || role === 'admin_general'
+}
+
+// V88 — admin_fabrica_lectura: ve la tarjeta de "Cantidad surtida" (mismo
+// criterio que quien la administra), pero canManageSurtido sigue sin
+// incluirlo, así que dentro de la tarjeta se le muestra de solo lectura.
+export function canViewSurtido(role) {
+  return canManageSurtido(role) || role === 'admin_fabrica_lectura'
 }
 
 // Remisión (V26): visible/descargable por ambos dominios — tienda
@@ -217,7 +224,7 @@ export function canViewPedidosTienda(role) {
 // explícito del usuario: solo los 3 roles "admin_*" (general, tienda,
 // fábrica) — ni ventas/contabilidad ni ningún rol de etapa de fábrica.
 export function canViewEstadisticas(role) {
-  return role === 'admin_general' || role === 'admin_tienda' || role === 'admin_fabrica'
+  return role === 'admin_general' || role === 'admin_tienda' || role === 'admin_fabrica' || role === 'admin_fabrica_lectura'
 }
 
 // Los 5 roles de etapa de fábrica solo necesitan ver Dashboard y Resumen
@@ -245,7 +252,7 @@ export function isTiendaBasica(role) {
 // NADA; 'tienda' tampoco participa de esto) hizo falta ponerles uno.
 // V66 — 'captura_produccion' (Juanis) tampoco escribe nada fuera de la captura
 // de producción: solo consulta órdenes.
-const SIN_ESCRITURA_GENERAL = ['lectura', 'tienda', 'captura_produccion']
+const SIN_ESCRITURA_GENERAL = ['lectura', 'tienda', 'captura_produccion', 'admin_fabrica_lectura']
 
 export function canManageAnnouncements(role) {
   return !!role && !SIN_ESCRITURA_GENERAL.includes(role)
@@ -314,8 +321,13 @@ export function isCapturaProduccion(role) {
   return role === 'captura_produccion'
 }
 
+// V88 — admin_fabrica_lectura entra a Dashboard/Revisión/Admin/Estadísticas de
+// producción como solo lectura: ninguna de esas pantallas usa esta función
+// para decidir si guardar/aprobar/cerrar (eso lo valida el servidor con
+// prod_puede_ver_montos(), que NO incluye este rol) — aquí solo se decide si
+// se abre la pantalla.
 export function canViewProduccionMontos(role) {
-  return role === 'admin_general' || role === 'admin_fabrica'
+  return role === 'admin_general' || role === 'admin_fabrica' || role === 'admin_fabrica_lectura'
 }
 
 export function canCapturarProduccion(role) {
@@ -326,7 +338,7 @@ export function canCapturarProduccion(role) {
 // fin_puede_ver / fin_puede_editar / fin_puede_editar_razones en Supabase.
 // Producción, corte, bordado, etc. no ven nada de esto.
 export function canViewFinanzas(role) {
-  return ['admin_general', 'admin_tienda', 'admin_fabrica', 'ventas', 'contabilidad'].includes(role)
+  return ['admin_general', 'admin_tienda', 'admin_fabrica', 'ventas', 'contabilidad', 'admin_fabrica_lectura'].includes(role)
 }
 
 export function canEditFinanzas(role) {
@@ -358,6 +370,20 @@ export function canManageTiposPendiente(role) {
   return role === 'admin_general' || role === 'admin_tienda' || role === 'admin_fabrica'
 }
 
+// V88 — admin_fabrica_lectura: ve todo lo que ve admin_fabrica (Dashboard,
+// Estadísticas, Estadísticas de producción, Dashboard/Revisión/Admin de
+// producción, Talleros, Pendientes, precios/facturación, etc.), pero no
+// puede escribir nada — no está en NINGUNA función de arriba que autorice un
+// cambio (confirmar/completar orden, avanzar etapa, editar surtido/bordado,
+// aprobar/cerrar semana, guardar catálogos de producción, editar precios,
+// confirmar pendientes, anuncios, fotos, notas). Espejo exacto del lado del
+// servidor (ver supabase/schema_v88_admin_fabrica_lectura.sql). No entra a
+// "Producción" (captura diaria, /produccion/captura): es una pantalla de
+// captura pura, sin nada que valga la pena ver de solo lectura ahí.
+export function esFabricaSoloLectura(role) {
+  return role === 'admin_fabrica_lectura'
+}
+
 export const ROLE_LABELS = {
   ventas: 'Ventas',
   contabilidad: 'Contabilidad',
@@ -368,6 +394,7 @@ export const ROLE_LABELS = {
   produccion: 'Costura',
   terminado: 'Terminado',
   admin_fabrica: 'Admin (Fábrica)',
+  admin_fabrica_lectura: 'Admin (Fábrica) — solo lectura',
   admin_general: 'Administrador general',
   lectura: 'Solo lectura',
   tienda: 'Tienda (básico)',

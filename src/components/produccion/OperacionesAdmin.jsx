@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Modal from '../talleros/Modal'
 import { fetchOperacionesTodas, guardarOperacion } from '../../services/produccionService'
+import { useAuth } from '../../contexts/AuthContext'
+import { esFabricaSoloLectura } from '../../utils/permissions'
 import {
   centena,
   sugerirFolioPrendaExistente,
@@ -15,6 +17,8 @@ const NUEVA = '__nueva__'
 // V70 — Catálogo de operaciones. Los folios se organizan por centenas según la prenda: al dar de alta se
 // sugiere el siguiente folio libre; las operaciones NUNCA se borran (solo se desactivan) y un folio jamás se reutiliza.
 export default function OperacionesAdmin() {
+  const { role } = useAuth()
+  const soloLectura = esFabricaSoloLectura(role)
   const [ops, setOps] = useState([])
   const [error, setError] = useState(null)
   const [fPrenda, setFPrenda] = useState('')
@@ -70,9 +74,11 @@ export default function OperacionesAdmin() {
           <button type="button" className="btn btn--ghost btn--small" onClick={() => setVerCentenas((v) => !v)}>
             {verCentenas ? 'Ocultar' : 'Folios libres por centena'}
           </button>
-          <button type="button" className="btn btn--secondary btn--small" onClick={() => setAlta({ prendaSel: fPrenda || '', prendaNueva: '', folio: '', parte: '', operacion: '', segundos: '' })}>
-            + Nueva operación
-          </button>
+          {!soloLectura && (
+            <button type="button" className="btn btn--secondary btn--small" onClick={() => setAlta({ prendaSel: fPrenda || '', prendaNueva: '', folio: '', parte: '', operacion: '', segundos: '' })}>
+              + Nueva operación
+            </button>
+          )}
         </div>
       </div>
       {error && <p className="form-error">{error}</p>}
@@ -133,12 +139,16 @@ export default function OperacionesAdmin() {
                 <td>{o.segundos}</td>
                 <td>{o.activa ? 'Activa' : 'Inactiva'}</td>
                 <td style={{ whiteSpace: 'nowrap' }}>
-                  <button type="button" className="btn btn--ghost btn--small" onClick={() => setEdit({ ...o, segundos: String(o.segundos) })}>
-                    Editar
-                  </button>{' '}
-                  <button type="button" className="btn btn--ghost btn--small" onClick={() => toggleActiva(o)}>
-                    {o.activa ? 'Desactivar' : 'Activar'}
-                  </button>
+                  {!soloLectura && (
+                    <>
+                      <button type="button" className="btn btn--ghost btn--small" onClick={() => setEdit({ ...o, segundos: String(o.segundos) })}>
+                        Editar
+                      </button>{' '}
+                      <button type="button" className="btn btn--ghost btn--small" onClick={() => toggleActiva(o)}>
+                        {o.activa ? 'Desactivar' : 'Activar'}
+                      </button>
+                    </>
+                  )}
                 </td>
               </tr>
             ))}

@@ -33,6 +33,7 @@ const VALID_ROLES = [
   'admin_general',
   'lectura', 'tienda',
   'captura_produccion',
+  'admin_fabrica_lectura',
 ]
 
 // Orígenes permitidos: el dominio de producción, cualquier preview de

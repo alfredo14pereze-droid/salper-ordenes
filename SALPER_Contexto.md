@@ -3815,3 +3815,49 @@ Se quitó de la pantalla toda la parte de "con problema": la bandeja en ambas vi
 rojo en tarjeta y detalle. Ningún pendiente real estaba en ese estado (se verificó antes de
 tocar nada). Solo frontend: el estado `con_problema` y `pf_resolver_problema` se quedan en
 Supabase sin usarse (no se borró nada de la base), por si se necesita revertir esto después.
+
+
+### V88 — Nuevo rol "Admin (Fábrica) — solo lectura" (para el papá del usuario)
+
+`supabase/schema_v88_admin_fabrica_lectura.sql` (aplicado 2026-09-27): rol nuevo
+`admin_fabrica_lectura` que ve todo lo que ve admin_fabrica, sin poder escribir nada.
+Regla de diseño: **nunca** se agregó el rol nuevo a una función de escritura.
+
+- `profiles_role_check` y `admin_update_user_role` (esta última también le faltaban
+  'lectura'/'tienda' desde V30 — se corrigió de paso) amplían su lista.
+- Producción: `prod_puede_ver_montos()`/`prod_puede_capturar()` (guardan lectura Y
+  escritura a la vez) se dejan intactas; se crean `prod_puede_ver_lectura()` /
+  `prod_puede_ver_captura()` nuevas, y SOLO las funciones 100% de lectura
+  (`prod_calcular_premios`, `prod_revision_semana`, `prod_listar_semanas`,
+  `prod_historial_valores`, `prod_stats_*`, `prod_listar_registros`,
+  `prod_resumen_captura`) y las policies de SELECT de `prod_config`/`reglas_premios`/
+  `registros`/`valor_semana`/`premios_semana`/`operaciones`/`operadoras`/`semanas` se
+  parchan (vía `pg_get_functiondef` + reemplazo de texto sobre la definición viva,
+  mismo método que V66b) para usarlas. Ninguna función que guarda/aprueba/cierra/borra
+  se tocó.
+- `fin_puede_ver()` (V77, 100% lectura) se amplía directo.
+- Se cerraron 6 candados tipo "denylist" que de otro modo habrían dejado escribir al
+  rol nuevo por omisión (no estaba en la lista = pasa): `create_announcement`,
+  `delete_announcement`, `add_order_photos`, `remove_order_photo`,
+  `set_order_notas_internas`, `update_pending_item_status` (este último, del módulo
+  viejo de pendientes, ya sin uso).
+- Frontend (`src/utils/permissions.js`): `canViewEtapas`, `canViewEstadisticas`,
+  `canViewProduccionMontos`, `canViewFinanzas`, `canViewCatalogos` amplían para
+  incluirlo; `SIN_ESCRITURA_GENERAL` lo agrega (anuncios/fotos/notas quedan
+  bloqueadas); `canViewSurtido` (nueva) abre la tarjeta de "Cantidad surtida" con
+  `canManageSurtido` decidiendo adentro si se ve editable o de solo lectura.
+  `esFabricaSoloLectura(role)` es el helper para "ocúltame los controles de escribir,
+  déjame ver todo". `ProduccionRevisionPage` esconde los 3 botones de acción; las 4
+  pantallas de "Admin producción" (`OperacionesAdmin`/`OperadorasAdmin`/`ReglasAdmin`/
+  `ConfigAdmin`) esconden altas/ediciones y deshabilitan checkboxes/inputs, dejando
+  las tablas visibles. `PendientesPage` lo trata como dominio "fábrica" solo para
+  elegir la bandeja por default (no para poder confirmar nada).
+- **Excluido a propósito:** `/produccion/captura` (captura diaria) sigue oculto para
+  este rol — es una pantalla de captura pura, sin valor real en solo lectura; si se
+  quiere después, se puede agregar con el mismo patrón.
+- Simulación con roles (revertida): 12 lecturas distintas (órdenes, stats de
+  producción, catálogos de producción, precios/facturación, anticipos, pendientes)
+  funcionaron; 14 intentos de escritura (cambiar estado de orden, aprobar/cerrar
+  semana, guardar config/regla/operadora, capturar registro, precios, razón social,
+  anuncio, foto, nota interna, confirmar pendiente, cambiar su propio rol, crear tela)
+  quedaron bloqueados; admin_general sí pudo asignarle el rol nuevo a un usuario.

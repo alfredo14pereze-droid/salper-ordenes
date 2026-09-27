@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import Modal from '../talleros/Modal'
 import { fetchOperadorasTodas, guardarOperadora } from '../../services/produccionService'
+import { useAuth } from '../../contexts/AuthContext'
+import { esFabricaSoloLectura } from '../../utils/permissions'
 
 const VACIA = { id: null, folioEmpleado: '', numero: '', nombre: '', puesto: 'COSTURA', participa: true, activo: true }
 
 export default function OperadorasAdmin() {
+  const { role } = useAuth()
+  const soloLectura = esFabricaSoloLectura(role)
   const [lista, setLista] = useState([])
   const [form, setForm] = useState(null)
   const [error, setError] = useState(null)
@@ -41,9 +45,11 @@ export default function OperadorasAdmin() {
 
   return (
     <div>
-      <button type="button" className="btn btn--secondary btn--small" onClick={() => setForm({ ...VACIA })}>
-        + Nueva operadora
-      </button>
+      {!soloLectura && (
+        <button type="button" className="btn btn--secondary btn--small" onClick={() => setForm({ ...VACIA })}>
+          + Nueva operadora
+        </button>
+      )}
       {error && <p className="form-error">{error}</p>}
       <div className="revision__tabla-wrap" style={{ marginTop: 10 }}>
         <table className="simple-table">
@@ -66,15 +72,17 @@ export default function OperadorasAdmin() {
                 <td>{o.folio_empleado}</td>
                 <td>{o.puesto || '—'}</td>
                 <td>
-                  <input type="checkbox" checked={o.participa_bonos} onChange={() => toggle(o, 'participa')} />
+                  <input type="checkbox" checked={o.participa_bonos} onChange={() => toggle(o, 'participa')} disabled={soloLectura} />
                 </td>
                 <td>
-                  <input type="checkbox" checked={o.activo} onChange={() => toggle(o, 'activo')} />
+                  <input type="checkbox" checked={o.activo} onChange={() => toggle(o, 'activo')} disabled={soloLectura} />
                 </td>
                 <td>
-                  <button type="button" className="btn btn--ghost btn--small" onClick={() => setForm({ id: o.id, folioEmpleado: o.folio_empleado, numero: o.numero_operadora ?? '', nombre: o.nombre, puesto: o.puesto || '', participa: o.participa_bonos, activo: o.activo })}>
-                    Editar
-                  </button>
+                  {!soloLectura && (
+                    <button type="button" className="btn btn--ghost btn--small" onClick={() => setForm({ id: o.id, folioEmpleado: o.folio_empleado, numero: o.numero_operadora ?? '', nombre: o.nombre, puesto: o.puesto || '', participa: o.participa_bonos, activo: o.activo })}>
+                      Editar
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

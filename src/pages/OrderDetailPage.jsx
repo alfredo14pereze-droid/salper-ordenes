@@ -29,7 +29,7 @@ import {
   remisionPdfFileName,
 } from '../utils/generateOrderPdf'
 import { useAuth } from '../contexts/AuthContext'
-import { canViewRemision, canManageSurtido, canChangeStatus, canSetEstimatedDays, canViewEtapas, canViewFinanzas } from '../utils/permissions'
+import { canViewRemision, canViewSurtido, canChangeStatus, canSetEstimatedDays, canViewEtapas, canViewFinanzas } from '../utils/permissions'
 
 export default function OrderDetailPage() {
   const { user, role } = useAuth()
@@ -234,9 +234,12 @@ export default function OrderDetailPage() {
             solo consulta la orden (comparación pedido/surtido por cada
             talla de cada prenda) y además no es información que le sirva a
             nadie fuera de terminado — pedido explícito del usuario: que
-            solo terminado (y admin_fabrica/admin_general, mismo criterio
-            que canManageSurtido) puedan siquiera VERLA, no solo editarla. */}
-        {order.items?.length > 0 && canManageSurtido(role) && (
+            solo terminado (y admin_fabrica/admin_general) puedan siquiera
+            VERLA, no solo editarla. V88 — canViewSurtido abre la tarjeta
+            también a admin_fabrica_lectura; adentro, OrderSurtidoCard sigue
+            usando canManageSurtido (que no lo incluye) para decidir si las
+            celdas son editables o de solo lectura. */}
+        {order.items?.length > 0 && canViewSurtido(role) && (
           <section className="card">
             <OrderSurtidoCard order={order} onUpdated={refresh} />
           </section>

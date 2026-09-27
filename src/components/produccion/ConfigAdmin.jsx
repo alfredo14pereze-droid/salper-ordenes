@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { fetchConfig, guardarConfig } from '../../services/produccionService'
+import { useAuth } from '../../contexts/AuthContext'
+import { esFabricaSoloLectura } from '../../utils/permissions'
 
 export default function ConfigAdmin() {
+  const { role } = useAuth()
+  const soloLectura = esFabricaSoloLectura(role)
   const [precio, setPrecio] = useState('')
   const [segundos, setSegundos] = useState('')
   const [msg, setMsg] = useState(null)
@@ -28,20 +32,22 @@ export default function ConfigAdmin() {
     <form className="order-form card" onSubmit={guardar} style={{ maxWidth: 480 }}>
       <label>
         Precio por segundo ($)
-        <input className="input" type="number" step="0.001" min="0" value={precio} onChange={(e) => setPrecio(e.target.value)} />
+        <input className="input" type="number" step="0.001" min="0" value={precio} onChange={(e) => setPrecio(e.target.value)} disabled={soloLectura} />
       </label>
       <label>
         Segundos trabajados por jornada
-        <input className="input" type="number" step="1" min="1" value={segundos} onChange={(e) => setSegundos(e.target.value)} />
+        <input className="input" type="number" step="1" min="1" value={segundos} onChange={(e) => setSegundos(e.target.value)} disabled={soloLectura} />
       </label>
       <p className="template-hint">Los segundos de jornada sirven para calcular las piezas esperadas por día (aviso de captura).</p>
       {error && <p className="form-error">{error}</p>}
       {msg && <p className="captura__flash">{msg}</p>}
-      <div className="order-form__actions">
-        <button type="submit" className="btn btn--primary">
-          Guardar
-        </button>
-      </div>
+      {!soloLectura && (
+        <div className="order-form__actions">
+          <button type="submit" className="btn btn--primary">
+            Guardar
+          </button>
+        </div>
+      )}
     </form>
   )
 }

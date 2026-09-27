@@ -6,7 +6,7 @@ import TiposTrabajoModal from '../components/pendientes/TiposTrabajoModal'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { cambiarEstado, cambiarEstadoLote, SIGUIENTE, sinRecibirAlerta } from '../services/pendientesService'
 import { useAuth } from '../contexts/AuthContext'
-import { pfEsTienda, pfEsFabrica, canManageTiposPendiente } from '../utils/permissions'
+import { pfEsTienda, pfEsFabrica, canManageTiposPendiente, esFabricaSoloLectura } from '../utils/permissions'
 
 // Bandejas por rol (V78). tienda: lo que mandó y espera; fábrica: lo que le toca.
 // V85 — sin filtros ni buscador: no son tantos pendientes a la vez como para
@@ -29,7 +29,10 @@ const BANDEJAS = {
 export default function PendientesPage() {
   const { role } = useAuth()
   const { items, loading, error, refresh } = usePendientes()
-  const soloFabrica = pfEsFabrica(role) && !pfEsTienda(role)
+  // admin_fabrica_lectura no aparece en pfEsFabrica (esa gobierna quién puede
+  // confirmar), pero para elegir la bandeja por default debe comportarse
+  // igual que admin_fabrica: fábrica es su dominio.
+  const soloFabrica = (pfEsFabrica(role) || esFabricaSoloLectura(role)) && !pfEsTienda(role)
   const [modo, setModo] = useState(soloFabrica ? 'fabrica' : 'tienda')
   const bandejas = BANDEJAS[modo]
   const [tab, setTab] = useState(bandejas[0].key)
