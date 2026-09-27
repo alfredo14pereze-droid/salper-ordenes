@@ -3768,3 +3768,17 @@ filtro de fechas ahora es por fecha de envío (creación). "Tipo de prenda" es t
 (sin sugerencias). Tipos de trabajo: solo Arreglo y Bordado activos; Ajuste, Sublimado y
 Otro quedaron desactivados (no borrados; reactivables en "Tipos de trabajo"). Etiqueta:
 muestra "Enviado el" cuando no hay fecha de regreso.
+
+
+### V83 — Pendientes: sin orden relacionada, inventariado siempre, pagado por cliente
+
+`supabase/schema_v83_pendientes_inventariado_pagado.sql` (aplicado 2026-09-27): se quita
+`order_id` (columna dropeada; nunca se usó) y el selector "Orden relacionada" del
+formulario. Se agregan `inventariado` (SIEMPRE obligatorio, explícito true/false, mismo
+criterio que el módulo viejo de "Orden de reparación") y `pagado` (obligatorio solo si
+`es_para_cliente`; null si no). `pf_crear`/`pf_editar`: DROP + recreate con la firma nueva.
+Formulario: botones "Inventariado / No inventariado" (siempre visibles) y "Pagado / No
+pagado" (solo dentro del bloque de cliente). Tarjeta y detalle muestran ambos.
+Limpieza de datos: se borró **P-0001** (era prueba); **P-0002** (Claudia Puentes, real) se
+marcó **pagado**; **P-0003** (real, sin cliente) se dejó igual. El folio P-0001 no se
+reutiliza (mismo criterio que folios de orden); el siguiente pendiente nuevo será P-0004.

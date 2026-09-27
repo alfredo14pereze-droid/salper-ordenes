@@ -28,7 +28,7 @@ export const SIGUIENTE = {
   enviado_a_tienda: { next: 'recibido_en_tienda', label: 'Confirmar recibido', quien: 'tienda' },
 }
 
-const SELECT = '*, tipo:pf_tipos_trabajo(nombre), cliente:clientes(nombre), orden:orders(order_number)'
+const SELECT = '*, tipo:pf_tipos_trabajo(nombre), cliente:clientes(nombre)'
 
 export async function fetchPendientes() {
   const { error } = ensureClient()
@@ -77,7 +77,7 @@ export async function uploadPendientePhoto(file) {
   return { data: { path, url: data.publicUrl }, error: null }
 }
 
-export async function crearPendiente({ descripcion, tipoId, cantidad, fechaRequerida, clienteId, orderId, fotos, esParaCliente, clienteNombre, clienteTelefono, prenda, talla }) {
+export async function crearPendiente({ descripcion, tipoId, cantidad, fechaRequerida, clienteId, fotos, esParaCliente, clienteNombre, clienteTelefono, prenda, talla, inventariado, pagado }) {
   const { error } = ensureClient()
   if (error) return { data: null, error }
   return supabase
@@ -87,18 +87,19 @@ export async function crearPendiente({ descripcion, tipoId, cantidad, fechaReque
       p_cantidad: cantidad,
       p_fecha_requerida: fechaRequerida,
       p_cliente_id: clienteId || null,
-      p_order_id: orderId || null,
       p_fotos: fotos || [],
       p_es_para_cliente: !!esParaCliente,
       p_cliente_nombre: clienteNombre || null,
       p_cliente_telefono: clienteTelefono || null,
       p_prenda: prenda || null,
       p_talla: talla || null,
+      p_inventariado: inventariado,
+      p_pagado: esParaCliente ? pagado : null,
     })
     .single()
 }
 
-export async function editarPendiente({ id, descripcion, tipoId, cantidad, fechaRequerida, clienteId, orderId, fotos, esParaCliente, clienteNombre, clienteTelefono, prenda, talla }) {
+export async function editarPendiente({ id, descripcion, tipoId, cantidad, fechaRequerida, clienteId, fotos, esParaCliente, clienteNombre, clienteTelefono, prenda, talla, inventariado, pagado }) {
   const { error } = ensureClient()
   if (error) return { data: null, error }
   return supabase
@@ -109,13 +110,14 @@ export async function editarPendiente({ id, descripcion, tipoId, cantidad, fecha
       p_cantidad: cantidad,
       p_fecha_requerida: fechaRequerida,
       p_cliente_id: clienteId || null,
-      p_order_id: orderId || null,
       p_fotos: fotos || [],
       p_es_para_cliente: !!esParaCliente,
       p_cliente_nombre: clienteNombre || null,
       p_cliente_telefono: clienteTelefono || null,
       p_prenda: prenda || null,
       p_talla: talla || null,
+      p_inventariado: inventariado,
+      p_pagado: esParaCliente ? pagado : null,
     })
     .single()
 }

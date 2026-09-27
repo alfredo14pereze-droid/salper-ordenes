@@ -37,6 +37,8 @@ export default function PendienteCard({ p, puedeActuar, selected, onToggle, onCo
           <span>
             {p.prenda} · talla {p.talla}
           </span>
+          <span>{p.inventariado === null ? 'Inventariado: —' : p.inventariado ? 'Inventariado' : 'No inventariado'}</span>
+          {p.es_para_cliente && <span>{p.pagado ? '💰 Pagado' : 'No pagado'}</span>}
           {p.es_para_cliente ? (
             <span>
               👤 {p.cliente_nombre} · {p.cliente_telefono}
@@ -44,7 +46,6 @@ export default function PendienteCard({ p, puedeActuar, selected, onToggle, onCo
           ) : (
             <span>Se queda en la tienda</span>
           )}
-          {p.orden?.order_number && <span>Orden #{p.orden.order_number}</span>}
           {p.fecha_requerida ? (
             <span className={'pf-due' + (urg?.nivel ? ` pf-due--${urg.nivel}` : '')}>
               Regresa {formatDate(p.fecha_requerida)}

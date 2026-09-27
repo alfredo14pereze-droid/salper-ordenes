@@ -96,6 +96,8 @@ export default function PendienteDetailPage() {
           <span>
             Prenda: {p.prenda} · Talla {p.talla}
           </span>
+          <span>{p.inventariado === null ? 'Inventariado: —' : p.inventariado ? 'Inventariado' : 'No inventariado'}</span>
+          {p.es_para_cliente && <span>{p.pagado ? '💰 Pagado' : 'No pagado'}</span>}
           {p.es_para_cliente ? (
             <>
               <span>Cliente: {p.cliente_nombre}</span>
@@ -103,11 +105,6 @@ export default function PendienteDetailPage() {
             </>
           ) : (
             <span>Se queda en la tienda (sin cliente)</span>
-          )}
-          {p.orden?.order_number && (
-            <span>
-              Orden: <Link to={`/orden/${p.order_id}`}>#{p.orden.order_number}</Link>
-            </span>
           )}
           {p.fecha_requerida && (
             <span className={'pf-due' + (urg?.nivel ? ` pf-due--${urg.nivel}` : '')}>

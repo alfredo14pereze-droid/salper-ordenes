@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import PhotoPicker from '../orders/PhotoPicker'
 import { fetchClientes } from '../../services/clientesService'
-import { fetchOrders } from '../../services/ordersService'
 import { crearPendiente, editarPendiente, fetchTipos, uploadPendientePhoto } from '../../services/pendientesService'
 
 // Alta y edición de un pendiente (modal). En edición solo se llega mientras
@@ -10,7 +9,6 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
   const editing = !!pendiente
   const [tipos, setTipos] = useState([])
   const [clientes, setClientes] = useState([])
-  const [ordenes, setOrdenes] = useState([])
   const [descripcion, setDescripcion] = useState(pendiente?.descripcion || '')
   const [tipoId, setTipoId] = useState(pendiente?.tipo_id || '')
   const [cantidad, setCantidad] = useState(pendiente?.cantidad ?? 1)
@@ -19,7 +17,8 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
   const [clienteTel, setClienteTel] = useState(pendiente?.cliente_telefono || '')
   const [prenda, setPrenda] = useState(pendiente?.prenda || '')
   const [talla, setTalla] = useState(pendiente?.talla || '')
-  const [orderId, setOrderId] = useState(pendiente?.order_id || '')
+  const [inventariado, setInventariado] = useState(pendiente?.inventariado ?? null)
+  const [pagado, setPagado] = useState(pendiente?.pagado ?? null)
   const [fotosGuardadas, setFotosGuardadas] = useState(pendiente?.fotos || [])
   const [files, setFiles] = useState([])
   const [saving, setSaving] = useState(false)
@@ -28,11 +27,18 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
   useEffect(() => {
     fetchTipos().then(({ data }) => setTipos(data || []))
     fetchClientes().then(({ data }) => setClientes(data || []))
-    fetchOrders().then(({ data }) => setOrdenes((data || []).filter((o) => o.status !== 'completado' && !o.cancelled_at)))
   }, [])
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (inventariado === null) {
+      setError(new Error('Indica si ya quedó inventariado o no.'))
+      return
+    }
+    if (esCliente && pagado === null) {
+      setError(new Error('Indica si el cliente ya pagó o no.'))
+      return
+    }
     setSaving(true)
     setError(null)
     const nuevas = []
@@ -58,7 +64,8 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
       clienteTelefono: clienteTel.trim(),
       prenda: prenda.trim(),
       talla: talla.trim(),
-      orderId,
+      inventariado,
+      pagado,
       fotos: [...fotosGuardadas, ...nuevas],
     }
     const { data, error: saveErr } = editing ? await editarPendiente({ id: pendiente.id, ...payload }) : await crearPendiente(payload)
@@ -111,6 +118,19 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
               <input className="input" value={talla} onChange={(e) => setTalla(e.target.value)} required placeholder="Ej. M, 30, CH" />
             </label>
           </div>
+
+          <div>
+            <span className="pf-label">¿Ya quedó inventariado? *</span>
+            <div className="pf-modo">
+              <button type="button" className={'btn ' + (inventariado === true ? 'btn--primary' : 'btn--ghost')} onClick={() => setInventariado(true)}>
+                Inventariado
+              </button>
+              <button type="button" className={'btn ' + (inventariado === false ? 'btn--primary' : 'btn--ghost')} onClick={() => setInventariado(false)}>
+                No inventariado
+              </button>
+            </div>
+          </div>
+
           <div>
             <span className="pf-label">¿Es para un cliente?</span>
             <div className="pf-modo">
@@ -139,19 +159,19 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
                   <input type="tel" className="input" value={clienteTel} onChange={(e) => setClienteTel(e.target.value)} required inputMode="tel" />
                 </label>
               </div>
+              <div>
+                <span className="pf-label">¿Ya está pagado? *</span>
+                <div className="pf-modo">
+                  <button type="button" className={'btn ' + (pagado === true ? 'btn--primary' : 'btn--ghost')} onClick={() => setPagado(true)}>
+                    Pagado
+                  </button>
+                  <button type="button" className={'btn ' + (pagado === false ? 'btn--primary' : 'btn--ghost')} onClick={() => setPagado(false)}>
+                    No pagado
+                  </button>
+                </div>
+              </div>
             </div>
           )}
-          <label>
-            Orden relacionada (opcional)
-            <select className="input" value={orderId} onChange={(e) => setOrderId(e.target.value)}>
-              <option value="">Ninguna</option>
-              {ordenes.map((o) => (
-                <option key={o.id} value={o.id}>
-                  #{o.order_number} · {o.client_name}
-                </option>
-              ))}
-            </select>
-          </label>
           {fotosGuardadas.length > 0 && (
             <div className="photo-picker__grid">
               {fotosGuardadas.map((f, i) => (
