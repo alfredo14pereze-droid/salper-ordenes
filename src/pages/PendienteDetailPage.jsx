@@ -96,8 +96,11 @@ export default function PendienteDetailPage() {
           <span>
             Prenda: {p.prenda} · Talla {p.talla}
           </span>
-          <span>{p.inventariado === null ? 'Inventariado: —' : p.inventariado ? 'Inventariado' : 'No inventariado'}</span>
-          {p.es_para_cliente && <span>{p.pagado ? '💰 Pagado' : 'No pagado'}</span>}
+          {p.es_para_cliente ? (
+            <span>{p.pagado ? '💰 Pagado' : 'No pagado'}</span>
+          ) : (
+            <span>{p.inventariado === null ? 'Inventariado: —' : p.inventariado ? 'Inventariado' : 'No inventariado'}</span>
+          )}
           {p.es_para_cliente ? (
             <>
               <span>Cliente: {p.cliente_nombre}</span>
@@ -128,7 +131,7 @@ export default function PendienteDetailPage() {
       {(puedeSig || puedeProblema || puedeResolver) && (
         <section className="card order-form">
           <label>
-            Nota {p.estado !== 'con_problema' && <span className="page-subtitle">(opcional; obligatoria para marcar un problema)</span>}
+            Nota {p.estado !== 'con_problema' && <span className="pantone-hint">(opcional; obligatoria para marcar un problema)</span>}
             <textarea className="input" rows={2} value={nota} onChange={(e) => setNota(e.target.value)} />
           </label>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

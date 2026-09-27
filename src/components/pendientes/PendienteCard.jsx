@@ -37,8 +37,11 @@ export default function PendienteCard({ p, puedeActuar, selected, onToggle, onCo
           <span>
             {p.prenda} · talla {p.talla}
           </span>
-          <span>{p.inventariado === null ? 'Inventariado: —' : p.inventariado ? 'Inventariado' : 'No inventariado'}</span>
-          {p.es_para_cliente && <span>{p.pagado ? '💰 Pagado' : 'No pagado'}</span>}
+          {p.es_para_cliente ? (
+            <span>{p.pagado ? '💰 Pagado' : 'No pagado'}</span>
+          ) : (
+            <span>{p.inventariado === null ? 'Inventariado: —' : p.inventariado ? 'Inventariado' : 'No inventariado'}</span>
+          )}
           {p.es_para_cliente ? (
             <span>
               👤 {p.cliente_nombre} · {p.cliente_telefono}

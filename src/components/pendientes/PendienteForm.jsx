@@ -31,7 +31,7 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (inventariado === null) {
+    if (!esCliente && inventariado === null) {
       setError(new Error('Indica si ya quedó inventariado o no.'))
       return
     }
@@ -64,8 +64,8 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
       clienteTelefono: clienteTel.trim(),
       prenda: prenda.trim(),
       talla: talla.trim(),
-      inventariado,
-      pagado,
+      inventariado: esCliente ? null : inventariado,
+      pagado: esCliente ? pagado : null,
       fotos: [...fotosGuardadas, ...nuevas],
     }
     const { data, error: saveErr } = editing ? await editarPendiente({ id: pendiente.id, ...payload }) : await crearPendiente(payload)
@@ -120,18 +120,6 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
           </div>
 
           <div>
-            <span className="pf-label">¿Ya quedó inventariado? *</span>
-            <div className="pf-modo">
-              <button type="button" className={'btn ' + (inventariado === true ? 'btn--primary' : 'btn--ghost')} onClick={() => setInventariado(true)}>
-                Inventariado
-              </button>
-              <button type="button" className={'btn ' + (inventariado === false ? 'btn--primary' : 'btn--ghost')} onClick={() => setInventariado(false)}>
-                No inventariado
-              </button>
-            </div>
-          </div>
-
-          <div>
             <span className="pf-label">¿Es para un cliente?</span>
             <div className="pf-modo">
               <button type="button" className={'btn ' + (!esCliente ? 'btn--primary' : 'btn--ghost')} onClick={() => setEsCliente(false)}>
@@ -169,6 +157,19 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
                     No pagado
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+          {!esCliente && (
+            <div>
+              <span className="pf-label">¿Ya quedó inventariado? *</span>
+              <div className="pf-modo">
+                <button type="button" className={'btn ' + (inventariado === true ? 'btn--primary' : 'btn--ghost')} onClick={() => setInventariado(true)}>
+                  Inventariado
+                </button>
+                <button type="button" className={'btn ' + (inventariado === false ? 'btn--primary' : 'btn--ghost')} onClick={() => setInventariado(false)}>
+                  No inventariado
+                </button>
               </div>
             </div>
           )}

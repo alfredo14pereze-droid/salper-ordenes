@@ -3782,3 +3782,18 @@ pagado" (solo dentro del bloque de cliente). Tarjeta y detalle muestran ambos.
 Limpieza de datos: se borró **P-0001** (era prueba); **P-0002** (Claudia Puentes, real) se
 marcó **pagado**; **P-0003** (real, sin cliente) se dejó igual. El folio P-0001 no se
 reutiliza (mismo criterio que folios de orden); el siguiente pendiente nuevo será P-0004.
+
+
+### V84 — Pendientes: nota sin traslape + "inventariado" solo si se queda en tienda
+
+`supabase/schema_v84_pendientes_inventariado_solo_tienda.sql` (aplicado 2026-09-27):
+`pf_crear`/`pf_editar` ya no exigen `inventariado` cuando el pendiente es para un cliente
+(se guarda en null, igual que `pagado` cuando no lo es); solo es obligatorio cuando se
+queda en la tienda. P-0002 (Claudia Puentes) se limpió su `inventariado` a null. Formulario:
+el botón "Inventariado / No inventariado" ahora solo aparece cuando NO es para un cliente
+(en ese caso se ve "Pagado / No pagado" en su lugar); tarjeta y detalle muestran uno u otro
+según corresponda. Además, arreglado un traslape visual: el aviso junto a "Nota" (en
+confirmar/marcar problema) usaba la clase `page-subtitle`, que trae un margen negativo
+pensado solo para ir pegada debajo de un `<h2>` — se cambió a `pantone-hint` (mismo tono,
+sin ese margen), que es la clase que ya se usaba en otras partes del sistema para este
+mismo caso.
