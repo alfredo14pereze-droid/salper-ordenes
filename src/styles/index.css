@@ -2821,7 +2821,6 @@ h4 {
 .pf-card:not(:has(.pf-card__check)) { grid-template-columns: 1fr; }
 .pf-card--rojo { border-color: var(--color-danger); background: var(--color-danger-soft); }
 .pf-card--amarillo { border-color: var(--color-amber-strong); background: var(--color-orange-soft); }
-.pf-card--problema { border-style: dashed; border-color: var(--color-danger); }
 .pf-card--cerrado { opacity: 0.7; }
 .pf-card__check { display: flex; align-items: center; min-width: 44px; min-height: 44px; justify-content: center; }
 .pf-card__check input { width: 22px; height: 22px; }

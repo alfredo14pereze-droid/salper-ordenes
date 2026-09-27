@@ -3806,3 +3806,12 @@ o teléfono, rango de fechas) de `/pendientes` — con pocos pendientes a la vez
 falta, y quedaba encima de las bandejas. Las bandejas (En camino a fábrica / En fábrica /
 etc.) se quedan igual: son las colas de trabajo, no un filtro de búsqueda. Solo cambio de
 frontend, sin tocar Supabase.
+
+
+### V86 — Pendientes: se quita "con problema"
+
+Se quitó de la pantalla toda la parte de "con problema": la bandeja en ambas vistas
+(tienda/fábrica), el botón "Marcar con problema", "Resolver problema" y la insignia/borde
+rojo en tarjeta y detalle. Ningún pendiente real estaba en ese estado (se verificó antes de
+tocar nada). Solo frontend: el estado `con_problema` y `pf_resolver_problema` se quedan en
+Supabase sin usarse (no se borró nada de la base), por si se necesita revertir esto después.

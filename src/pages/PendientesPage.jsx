@@ -16,14 +16,12 @@ const BANDEJAS = {
     { key: 'camino', label: 'En camino a fábrica', estados: ['enviado_a_fabrica'] },
     { key: 'fabrica', label: 'En fábrica', estados: ['recibido_en_fabrica', 'listo_para_regresar'] },
     { key: 'regreso', label: 'De regreso — por recibir', estados: ['enviado_a_tienda'] },
-    { key: 'problema', label: 'Con problema', estados: ['con_problema'] },
     { key: 'cerrados', label: 'Cerrados', estados: ['recibido_en_tienda'] },
   ],
   fabrica: [
     { key: 'recibir', label: 'Por recibir', estados: ['enviado_a_fabrica'] },
     { key: 'hacer', label: 'Por hacer', estados: ['recibido_en_fabrica'] },
     { key: 'listo', label: 'Listo para regresar', estados: ['listo_para_regresar'] },
-    { key: 'problema', label: 'Con problema', estados: ['con_problema'] },
     { key: 'enviados', label: 'Enviados a tienda', estados: ['enviado_a_tienda', 'recibido_en_tienda'] },
   ],
 }

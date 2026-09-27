@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ESTADOS, SIGUIENTE, sinRecibirAlerta, urgenciaFecha } from '../../services/pendientesService'
+import { SIGUIENTE, sinRecibirAlerta, urgenciaFecha } from '../../services/pendientesService'
 import { formatDate } from '../../utils/dates'
 
 // Tarjeta de un pendiente. Móvil primero: el botón de confirmar es grande y de
@@ -11,7 +11,6 @@ export default function PendienteCard({ p, puedeActuar, selected, onToggle, onCo
   let cls = 'pf-card'
   if (alerta || urg?.nivel === 'rojo') cls += ' pf-card--rojo'
   else if (urg?.nivel === 'amarillo') cls += ' pf-card--amarillo'
-  if (p.estado === 'con_problema') cls += ' pf-card--problema'
   if (p.estado === 'recibido_en_tienda') cls += ' pf-card--cerrado'
 
   return (
@@ -28,7 +27,6 @@ export default function PendienteCard({ p, puedeActuar, selected, onToggle, onCo
           </Link>
           <span className="badge badge--outline">{p.tipo?.nombre}</span>
           <span className="pf-card__qty">× {p.cantidad}</span>
-          {p.estado === 'con_problema' && <span className="badge badge--danger">Con problema</span>}
         </div>
         <Link to={`/pendientes/${p.id}`} className="pf-card__desc">
           {p.descripcion}
@@ -59,7 +57,6 @@ export default function PendienteCard({ p, puedeActuar, selected, onToggle, onCo
           )}
         </div>
         {alerta && <p className="pf-alerta">⚠ Enviado a fábrica y sin recibir desde hace más de 1 día</p>}
-        {p.estado === 'con_problema' && <p className="pf-card__meta">Estaba en: {ESTADOS[p.estado_previo]?.label}</p>}
       </div>
       {puedeActuar && sig && (
         <button type="button" className="btn btn--primary pf-card__btn" disabled={busy} onClick={() => onConfirm(p)}>

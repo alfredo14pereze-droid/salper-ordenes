@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { fetchPendiente, fetchHistorial, cambiarEstado, resolverProblema, ESTADOS, SIGUIENTE, sinRecibirAlerta, urgenciaFecha } from '../services/pendientesService'
+import { fetchPendiente, fetchHistorial, cambiarEstado, ESTADOS, SIGUIENTE, sinRecibirAlerta, urgenciaFecha } from '../services/pendientesService'
 import PendienteForm from '../components/pendientes/PendienteForm'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import { buildEtiquetaBlob, etiquetaFileName } from '../utils/generatePendientePdf'
@@ -59,8 +59,6 @@ export default function PendienteDetailPage() {
 
   const sig = SIGUIENTE[p.estado]
   const puedeSig = sig && (sig.quien === 'fabrica' ? pfEsFabrica(role) : pfEsTienda(role))
-  const puedeProblema = (pfEsTienda(role) || pfEsFabrica(role)) && p.estado !== 'con_problema'
-  const puedeResolver = (pfEsTienda(role) || pfEsFabrica(role)) && p.estado === 'con_problema'
   const puedeEditar = pfEsTienda(role) && (p.estado === 'enviado_a_fabrica' || role === 'admin_general')
   const urg = urgenciaFecha(p)
 
@@ -77,7 +75,7 @@ export default function PendienteDetailPage() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span className={'badge ' + (p.estado === 'con_problema' ? 'badge--danger' : 'badge--status')}>{ESTADOS[p.estado].label}</span>
+          <span className="badge badge--status">{ESTADOS[p.estado].label}</span>
           <button type="button" className="btn btn--secondary" onClick={etiqueta}>
             Imprimir etiqueta
           </button>
@@ -128,28 +126,16 @@ export default function PendienteDetailPage() {
         )}
       </section>
 
-      {(puedeSig || puedeProblema || puedeResolver) && (
+      {puedeSig && (
         <section className="card order-form">
           <label>
-            Nota {p.estado !== 'con_problema' && <span className="pantone-hint">(opcional; obligatoria para marcar un problema)</span>}
+            Nota <span className="pantone-hint">(opcional)</span>
             <textarea className="input" rows={2} value={nota} onChange={(e) => setNota(e.target.value)} />
           </label>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {puedeSig && (
-              <button type="button" className="btn btn--primary pf-big" disabled={busy} onClick={() => run(() => cambiarEstado(p.id, sig.next, nota))}>
-                {sig.label}
-              </button>
-            )}
-            {puedeResolver && (
-              <button type="button" className="btn btn--primary pf-big" disabled={busy} onClick={() => run(() => resolverProblema(p.id, nota))}>
-                Resolver problema
-              </button>
-            )}
-            {puedeProblema && (
-              <button type="button" className="btn btn--ghost" disabled={busy || !nota.trim()} onClick={() => run(() => cambiarEstado(p.id, 'con_problema', nota))}>
-                Marcar con problema
-              </button>
-            )}
+            <button type="button" className="btn btn--primary pf-big" disabled={busy} onClick={() => run(() => cambiarEstado(p.id, sig.next, nota))}>
+              {sig.label}
+            </button>
           </div>
           {actionError && <p className="form-error">{actionError.message}</p>}
         </section>
