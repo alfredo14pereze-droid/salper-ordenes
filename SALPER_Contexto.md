@@ -3861,3 +3861,52 @@ Regla de diseño: **nunca** se agregó el rol nuevo a una función de escritura.
   semana, guardar config/regla/operadora, capturar registro, precios, razón social,
   anuncio, foto, nota interna, confirmar pendiente, cambiar su propio rol, crear tela)
   quedaron bloqueados; admin_general sí pudo asignarle el rol nuevo a un usuario.
+
+
+### V89 — Módulo de Inventario (artículos por fuera de Microsip) — SQL aplicado
+
+`supabase/schema_v89_inventario.sql` (aplicado 2026-09-28). No existía un "Inventario de
+Tela" previo en el proyecto; se reusó el patrón de Talleros (catálogo + bitácora de
+movimientos + folio de secuencia que nunca se reutiliza). Todo NUEVO, prefijo `inv_`.
+
+- **Modo prueba (punto D):** `inv_acceso_beta` (una fila, tu usuario por correo) +
+  `inv_tiene_acceso()`, usado por TODAS las policies/RPCs. RLS habilitado en la tabla
+  misma sin ninguna policy de SELECT (ni tú puedes leerla directo — solo la consulta la
+  función security definer). Abrir el módulo a más gente después = agregar filas ahí, o
+  cambiar `inv_tiene_acceso()` para que también mire el rol.
+- **Roles** (aplican encima del modo prueba): `inv_puede_ver()` = admin_general,
+  admin_tienda, admin_fabrica (fábrica: solo ve). `inv_puede_mover()` = admin_tienda,
+  admin_general (movimientos, conteos, traspasos). `inv_puede_editar()` = igual a
+  `inv_puede_mover()` (catálogos).
+- **Catálogos:** `inv_ubicaciones` (Bodega tercer piso, Tienda), `inv_secciones`,
+  `inv_tallas` (37 tallas, columna `orden` con el esquema de grupos: infantil con hueco
+  para TALL/(NN), letra, pantalón, "Sin talla" al final), `inv_motivos` (6 editables +
+  3 de sistema: Conteo inicial, Conteo físico, Traspaso — no editables desde la UI).
+- **`inv_articulos`:** sección + prenda + talla + mínimo opcional + activo. Sin columna de
+  ubicación propia — la existencia es por (artículo, ubicación), siempre
+  `SUM(inv_movimientos.cantidad)`, nunca un número guardado.
+- **`inv_movimientos`:** bitácora append-only, cantidad firmada.
+- **`inv_traspasos`/`inv_traspaso_lineas`:** folio T-0001 (secuencia, nunca se reutiliza).
+  `inv_crear_traspaso` crea salida+entrada de cada línea en una sola función = una
+  transacción (todo o nada); valida que no se traspase más de lo que hay en origen.
+  `estado` ya listo para 'en_transito' (hoy solo 'aplicado').
+- **`inv_conteos`/`inv_conteo_lineas`:** `inv_crear_conteo` guarda una foto de la
+  existencia de hoy por sección+ubicación (para imprimir); `inv_confirmar_conteo` crea un
+  ajuste solo donde hay diferencia.
+- Simulación con roles (revertida): ventas no ve nada (ni filas ni `inv_acceso_beta`
+  directo — "permission denied"); admin_fabrica ve existencias pero no puede mover ni
+  editar; admin_tienda mueve, transfiere (folio T-0001, matemática correcta en origen y
+  destino) y hace conteos; una venta que excede existencia se bloquea; un traspaso que
+  excede existencia no crea ninguna fila (todo o nada); un conteo con +2 de diferencia
+  ajusta correctamente.
+- Bug atrapado por Supabase antes de aplicar: `inv_acceso_beta` se creaba sin RLS —
+  corregido (RLS habilitado, sin policy de SELECT para nadie, incluido tu propio usuario).
+
+`scripts/import_inventario.py` (nuevo, corre local, no toca la base): lee
+`scripts/data/inventario-tercer-piso.csv` (gitignorado), corrige
+"Quirurjico"/"Quirurjio" → "Quirúrgico" (en sección y en prenda), quita el prefijo "T.",
+une "N/A"/"Sin Talla" en "Sin talla", imprime el resumen por sección antes de escribir, y
+genera `scripts/data/import_inventario.sql` (gitignorado, idempotente, avisa si ya hay
+movimientos de "Conteo inicial" en vez de duplicar). Resumen real: 465 artículos, 15
+secciones, 3,224 piezas totales — **SQL generado, todavía sin aplicar** (pendiente de tu
+confirmación final antes de insertarlo).
