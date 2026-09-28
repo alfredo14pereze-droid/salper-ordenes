@@ -16,6 +16,8 @@ import {
   canViewPedidosTienda,
   canViewEstadisticas,
   canViewPendientes,
+  canViewInventario,
+  isInventarioBetaUser,
   hasRestrictedNav,
   isTiendaBasica,
   ROLE_LABELS,
@@ -100,6 +102,9 @@ export default function AppLayout({ children }) {
     { to: '/produccion/admin', label: 'Admin producción', show: canViewProduccionMontos(role) },
     // V63 — visible también para fábrica (ver canViewTalleros).
     { to: '/talleros', label: 'Talleros', show: canViewTalleros(role) },
+    // V89 — Inventario en modo prueba: oculto para todos menos tu cuenta,
+    // además del candado de rol (ver isInventarioBetaUser).
+    { to: '/inventario', label: 'Inventario', show: canViewInventario(role) && isInventarioBetaUser(user) },
     { to: '/catalogos', label: 'Catálogos', show: canViewCatalogos(role) },
     // V57 — beta oculta: solo admin_general (ver canManagePedidosColegio).
     { to: '/pedidos-colegio', label: 'Pedidos Colegio', show: canManagePedidosColegio(role) },

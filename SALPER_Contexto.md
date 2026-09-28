@@ -3936,3 +3936,51 @@ exactamente con el resumen de `import_inventario.py` y con el Google Sheet origi
 
 Pendiente: todo el frontend del módulo (pantalla principal, historial, conteo físico,
 traspasos, administración de catálogos) — por ahora solo existen schema + datos.
+
+### V91 — Inventario: primer draft del frontend completo
+
+Todo NUEVO, sin tocar ningún módulo existente. `src/services/inventarioService.js`
+(lectura directa de catálogos + RPCs de V89/V90, escritura siempre por RPC) y
+`src/hooks/useInventario.js` (catálogos + existencias por sección). Rutas nuevas bajo
+`/inventario`, `/inventario/traspasos`, `/inventario/conteos`, `/inventario/admin`;
+un solo link en el nav ("Inventario"), visible solo si `canViewInventario(role) &&
+isInventarioBetaUser(user)` (mismo candado del modo prueba, espejo del servidor —
+`RequireInventarioAccess` lo repite como defensa en profundidad si alguien entra
+directo por URL).
+
+- **Pantalla principal** (`InventarioPage.jsx`): secciones como pestañas
+  (`.type-tabs`, reusado de tipos de orden), prendas agrupadas por talla (orden del
+  catálogo) en tarjetas por prenda con "chips" por talla — cada chip muestra la
+  existencia (roja si está bajo el mínimo) y botones +/− grandes que abren
+  `MovimientoModal` (cantidad default 1, motivo, ubicación, nota). Toggle
+  Total/por-ubicación y buscador por prenda. Click en el valor abre
+  `HistorialModal` (usuario/fecha/motivo/nota/folio de traspaso si aplica).
+- **Traspasos** (`InventarioTraspasosPage.jsx` + `TraspasoFormModal.jsx`): buscador
+  por folio, alta con buscador de artículo global (todas las secciones) + líneas +
+  cantidad, aviso si excede existencia en origen (el servidor igual valida
+  todo-o-nada). Al confirmar se genera el PDF del vale (`InventarioTraspasoPdf.jsx`,
+  mismo estilo que `RemisionPdf.jsx`) con `PdfPreviewModal` — mismo patrón que el
+  resto de los PDFs de SALPER.
+- **Conteos físicos** (`InventarioConteosPage.jsx` + `ConteoCapturaModal.jsx`):
+  "Nuevo conteo" pide sección+ubicación, llama `inv_crear_conteo` (toma la foto de
+  existencia de hoy) y abre de inmediato el PDF para imprimir
+  (`InventarioConteoPdf.jsx`, columna "Conteo" en blanco). La captura muestra
+  Sistema vs. un input de Conteo por línea (en rojo si difiere) y al confirmar solo
+  manda las líneas sí capturadas — `inv_confirmar_conteo` ajusta nada más donde hay
+  diferencia. Un conteo ya confirmado se abre en solo lectura.
+- **Administración** (`InventarioAdminPage.jsx`, exclusivo de quien puede editar):
+  4 pestañas (Secciones/Ubicaciones/Motivos/Artículos). Nunca hay borrado real —
+  ninguno de los RPC de V89 lo expone — "eliminar" siempre es desactivar
+  (`activa`/`activo`), así que un artículo con movimientos no se puede perder. Los 3
+  motivos de sistema (Conteo inicial/Conteo físico/Traspaso) se muestran aparte,
+  sin edición (el RPC los bloquea igual del lado del servidor).
+
+Sin SQL nuevo — V89/V90 ya traían todos los RPC de lectura/escritura necesarios;
+`fetchArticulosAdmin` es la única lectura directa nueva (tabla `inv_articulos`, para
+que Administración también vea los artículos desactivados, a diferencia de
+`inv_existencias()` que solo trae los activos).
+
+Verificado: `npm run build` sin errores; no se pudo probar en vivo con sesión real
+dentro de esta sesión (el módulo exige tu correo exacto — no hay credenciales para
+iniciar sesión desde aquí). Pendiente que confirmes en el navegador: crear un
+movimiento, un traspaso y un conteo con datos reales.

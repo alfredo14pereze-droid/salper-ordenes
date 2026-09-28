@@ -28,6 +28,10 @@ import ProduccionDashboardPage from './pages/ProduccionDashboardPage'
 import ProduccionAdminPage from './pages/ProduccionAdminPage'
 import EstadisticasProduccionPage from './pages/EstadisticasProduccionPage'
 import TalleroDetailPage from './pages/TalleroDetailPage'
+import InventarioPage from './pages/InventarioPage'
+import InventarioTraspasosPage from './pages/InventarioTraspasosPage'
+import InventarioConteosPage from './pages/InventarioConteosPage'
+import InventarioAdminPage from './pages/InventarioAdminPage'
 import NewPedidoColegioPage from './pages/NewPedidoColegioPage'
 import PedidoColegioDetailPage from './pages/PedidoColegioDetailPage'
 import FeatureDisabledPage from './components/common/FeatureDisabledPage'
@@ -105,6 +109,12 @@ function AuthGate() {
           <Route path="/estadisticas-produccion" element={<EstadisticasProduccionPage />} />
           <Route path="/talleros" element={<TallerosPage />} />
           <Route path="/talleros/:id" element={<TalleroDetailPage />} />
+          {/* V89 — Inventario (beta, oculto en el menú salvo para tu cuenta —
+              ver RequireInventarioAccess). */}
+          <Route path="/inventario" element={<InventarioPage />} />
+          <Route path="/inventario/traspasos" element={<InventarioTraspasosPage />} />
+          <Route path="/inventario/conteos" element={<InventarioConteosPage />} />
+          <Route path="/inventario/admin" element={<InventarioAdminPage />} />
           <Route path="/pedidos-colegio" element={<PedidosColegioPage />} />
           <Route path="/pedidos-colegio/nuevo" element={<NewPedidoColegioPage />} />
           <Route path="/pedidos-colegio/:id" element={<PedidoColegioDetailPage />} />

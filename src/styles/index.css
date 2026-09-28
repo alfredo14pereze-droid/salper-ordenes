@@ -2844,3 +2844,138 @@ h4 {
 
 .pf-label { display: block; font-weight: 600; margin-bottom: 6px; }
 .pf-cliente { display: grid; gap: 10px; padding: 12px; border: 1px dashed var(--color-border); border-radius: var(--radius-md); background: var(--color-bg); }
+
+/* ---------- V89 — Inventario (artículos por fuera de Microsip) ---------- */
+.inv-toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.inv-toolbar .input {
+  max-width: 320px;
+}
+.inv-prenda-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.inv-prenda-card {
+  padding: 12px 14px;
+}
+.inv-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+.inv-chip {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-bg);
+}
+.inv-chip--low {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+.inv-chip__main {
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 10px;
+  min-width: 64px;
+  font-family: inherit;
+}
+.inv-chip__talla {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+.inv-chip__valor {
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+.inv-chip--low .inv-chip__valor {
+  color: var(--color-danger);
+}
+.inv-chip__minimo {
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+.inv-chip__actions {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--color-border);
+}
+.inv-chip__btn {
+  flex: 1;
+  border: none;
+  background: var(--color-surface);
+  cursor: pointer;
+  min-width: 40px;
+  min-height: 24px;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-text);
+}
+.inv-chip__btn:first-child {
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-danger);
+}
+.inv-chip__btn:last-child {
+  color: var(--color-good);
+}
+.inv-chip__btn:hover {
+  background: var(--color-bg);
+}
+.inv-search-results {
+  list-style: none;
+  margin: -4px 0 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.inv-search-results li button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: var(--color-surface);
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 13.5px;
+  border-bottom: 1px solid var(--color-border);
+}
+.inv-search-results li:last-child button {
+  border-bottom: none;
+}
+.inv-search-results li button:hover {
+  background: var(--color-bg);
+}
+@media (max-width: 720px) {
+  .inv-toolbar .input {
+    max-width: none;
+  }
+  .inv-chip__main {
+    min-width: 56px;
+    padding: 8px;
+  }
+  .inv-chip__btn {
+    min-width: 44px;
+    min-height: 32px;
+  }
+}

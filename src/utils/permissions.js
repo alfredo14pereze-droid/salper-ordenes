@@ -384,6 +384,38 @@ export function esFabricaSoloLectura(role) {
   return role === 'admin_fabrica_lectura'
 }
 
+// V89 — Inventario (artículos por fuera de Microsip), en modo prueba:
+// espejo de inv_puede_ver()/inv_puede_mover()/inv_puede_editar() en
+// supabase/schema_v89_inventario.sql. Ver: solo los 3 roles admin
+// (admin_fabrica solo consulta). Mover/editar (movimientos, traspasos,
+// conteos, catálogos): admin_tienda/admin_general.
+//
+// Además del rol, el módulo está oculto para TODOS menos tu cuenta
+// (petición explícita: "solo quiero que lo vean los admin" + modo prueba
+// restringido a un correo). El candado real es del servidor — RLS
+// gateado por inv_acceso_beta / inv_tiene_acceso(), verificado en cada
+// policy y RPC — esto de aquí solo evita que el link aparezca en el menú
+// para otra cuenta admin mientras se prueba. Abrir el módulo a más gente
+// después: quitar isInventarioBetaUser() del nav (o agregar más correos a
+// inv_acceso_beta y ampliar este chequeo) sin tocar nada más.
+export const INVENTARIO_BETA_EMAIL = 'alfredo14pereze@gmail.com'
+
+export function isInventarioBetaUser(user) {
+  return !!user?.email && user.email.toLowerCase() === INVENTARIO_BETA_EMAIL
+}
+
+export function canViewInventario(role) {
+  return role === 'admin_general' || role === 'admin_tienda' || role === 'admin_fabrica'
+}
+
+export function canMoverInventario(role) {
+  return role === 'admin_tienda' || role === 'admin_general'
+}
+
+export function canEditarInventario(role) {
+  return canMoverInventario(role)
+}
+
 export const ROLE_LABELS = {
   ventas: 'Ventas',
   contabilidad: 'Contabilidad',
