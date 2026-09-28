@@ -3908,5 +3908,31 @@ movimientos + folio de secuencia que nunca se reutiliza). Todo NUEVO, prefijo `i
 une "N/A"/"Sin Talla" en "Sin talla", imprime el resumen por sección antes de escribir, y
 genera `scripts/data/import_inventario.sql` (gitignorado, idempotente, avisa si ya hay
 movimientos de "Conteo inicial" en vez de duplicar). Resumen real: 465 artículos, 15
-secciones, 3,224 piezas totales — **SQL generado, todavía sin aplicar** (pendiente de tu
-confirmación final antes de insertarlo).
+secciones, 3,224 piezas totales.
+
+### V90 — Inventario: importación inicial aplicada (465 artículos, 3,224 piezas)
+
+Pegar los 465 bloques de SQL generados por V89 (~360KB) resultó poco práctico en el editor
+de Supabase, así que `supabase/schema_v90_inventario_importar_rpc.sql` agrega
+`inv_importar_inicial(p_filas jsonb)`: recibe un arreglo JSON compacto
+`[{seccion, prenda, talla, piezas}, ...]` y hace del lado del servidor lo mismo que hacía
+el SQL generado (crear sección/artículo si no existen; insertar el movimiento de "Conteo
+inicial" solo si todavía no hay ninguno con ese motivo — correrlo dos veces no duplica).
+Mismo candado que el resto del módulo (`inv_puede_editar()`). `scripts/import_inventario.py`
+se reescribió para generar una sola llamada a esta función en vez de los bloques repetidos
+(42KB en vez de 360KB).
+
+Ajuste encontrado al aplicar: varias filas reales del CSV traen `piezas: 0` (el artículo
+existe en el Sheet pero hoy no tiene existencia). `inv_movimientos.cantidad` tiene
+`check (cantidad <> 0)`, así que la función crea el artículo de todas formas pero omite el
+movimiento cuando piezas=0 (la existencia igual queda en 0 vía `SUM`).
+
+Aplicado 2026-09-28: se impersonó a un usuario `admin_general` desde el SQL Editor
+(`set_config('request.jwt.claim.sub', ...)` + `set local role authenticated`, el patrón ya
+usado en este proyecto para acciones administrativas puntuales desde ahí, ya que el editor
+no tiene `auth.uid()` por defecto). Resultado verificado con SELECT directo: 15 secciones,
+465 artículos, 449 movimientos (465 − 16 filas con piezas=0), 3,224 piezas — coincide
+exactamente con el resumen de `import_inventario.py` y con el Google Sheet original.
+
+Pendiente: todo el frontend del módulo (pantalla principal, historial, conteo físico,
+traspasos, administración de catálogos) — por ahora solo existen schema + datos.
