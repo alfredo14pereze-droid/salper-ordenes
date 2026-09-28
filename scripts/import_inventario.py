@@ -22,11 +22,12 @@ Limpieza:
 Cada existencia inicial entra como UN movimiento tipo='conteo', motivo
 'Conteo inicial', en la ubicación "Bodega (tercer piso)".
 
-IDEMPOTENTE: usa nombres únicos (sección/prenda+talla) con
-`on conflict do nothing` para el catálogo; los movimientos de conteo inicial
-llevan una nota fija que el script puede usar para no duplicar si se corre
-dos veces sobre una base que ya tiene esos artículos (se detecta antes de
-generar el INSERT de movimientos, avisando en el resumen).
+En vez de generar 465 bloques de SQL repetidos (~360KB, incómodo de pegar),
+genera UNA sola llamada a la función public.inv_importar_inicial(jsonb)
+(V90) con los datos en un arreglo JSON compacto — la función hace el mismo
+trabajo idempotente del lado del servidor (crea sección/artículo si no
+existen; el movimiento de conteo inicial solo se inserta si todavía no hay
+ninguno con ese motivo, así que correrlo dos veces no duplica).
 
 Antes de escribir el .sql, imprime el resumen por sección (artículos y
 piezas) para revisar contra el Google Sheet.
@@ -34,6 +35,7 @@ piezas) para revisar contra el Google Sheet.
 Uso:  python3 scripts/import_inventario.py
 """
 import csv
+import json
 import os
 import re
 import sys
@@ -129,59 +131,27 @@ def main():
     print()
     print(f"Tallas distintas usadas ({len(tallas_usadas)}): {', '.join(tallas_usadas)}")
 
-    # --- SQL ---
-    lines = []
-    lines.append("-- Generado por scripts/import_inventario.py — NO se aplicó solo. Pégalo")
-    lines.append("-- completo en el SQL Editor de Supabase una sola vez (es idempotente: se")
-    lines.append("-- puede volver a correr sin duplicar catálogo; los movimientos de conteo")
-    lines.append("-- inicial sí se duplicarían si se corre dos veces con artículos ya cargados")
-    lines.append("-- — por eso el resumen de abajo avisa si ya hay artículos.")
-    lines.append("")
-    lines.append("do $$")
-    lines.append("declare v_seccion_id uuid; v_talla_id uuid; v_articulo_id uuid; v_motivo_id uuid; v_ubicacion_id uuid;")
-    lines.append("        v_ya_importado boolean;")
-    lines.append("begin")
-    lines.append("  select id into v_motivo_id from public.inv_motivos where nombre = 'Conteo inicial' and sistema;")
-    lines.append("  select id into v_ubicacion_id from public.inv_ubicaciones where nombre = 'Bodega (tercer piso)';")
-    lines.append("  select exists (select 1 from public.inv_movimientos where motivo_id = v_motivo_id) into v_ya_importado;")
-    lines.append("  if v_ya_importado then")
-    lines.append("    raise notice 'Ya existen movimientos de Conteo inicial — no se insertan de nuevo (corre esto en una base limpia, o borra esos movimientos primero).';")
-    lines.append("  end if;")
-    lines.append("")
-
-    for seccion in secciones_orden:
-        lines.append(f"  -- Sección: {seccion}")
-        lines.append(f"  insert into public.inv_secciones (nombre) values ({q(seccion)}) on conflict do nothing;")
-        lines.append(f"  select id into v_seccion_id from public.inv_secciones where lower(btrim(nombre)) = lower(btrim({q(seccion)}));")
-        lines.append("")
-        for (s, prenda, talla), piezas in articulos.items():
-            if s != seccion:
-                continue
-            lines.append(f"  select id into v_talla_id from public.inv_tallas where lower(btrim(nombre)) = lower(btrim({q(talla)}));")
-            lines.append(f"  if v_talla_id is null then raise exception 'Talla no encontrada en el catálogo: %', {q(talla)}; end if;")
-            lines.append(
-                f"  insert into public.inv_articulos (seccion_id, prenda, talla_id) values (v_seccion_id, {q(prenda)}, v_talla_id) "
-                f"on conflict do nothing;"
-            )
-            lines.append(
-                f"  select id into v_articulo_id from public.inv_articulos where seccion_id = v_seccion_id "
-                f"and lower(btrim(prenda)) = lower(btrim({q(prenda)})) and talla_id = v_talla_id;"
-            )
-            lines.append(
-                f"  if not v_ya_importado then insert into public.inv_movimientos "
-                f"(articulo_id, ubicacion_id, tipo, cantidad, motivo_id, nota) values "
-                f"(v_articulo_id, v_ubicacion_id, 'conteo', {piezas}, v_motivo_id, 'Importación inicial desde Google Sheet'); end if;"
-            )
-            lines.append("")
-
-    lines.append("end $$;")
-    sql = "\n".join(lines) + "\n"
+    # --- SQL: una sola llamada a inv_importar_inicial(jsonb) (V90) ---
+    filas = [
+        {"seccion": seccion, "prenda": prenda, "talla": talla, "piezas": piezas}
+        for (seccion, prenda, talla), piezas in articulos.items()
+    ]
+    payload = json.dumps(filas, ensure_ascii=False)
+    sql = (
+        "-- Generado por scripts/import_inventario.py — NO se aplicó solo. Pégalo\n"
+        "-- completo en el SQL Editor de Supabase una sola vez. Llama a\n"
+        "-- inv_importar_inicial (V90), que es idempotente del lado del servidor:\n"
+        "-- correrlo dos veces no duplica secciones/artículos ni el conteo inicial.\n"
+        "select public.inv_importar_inicial(\n"
+        f"  {q(payload)}::jsonb\n"
+        ");\n"
+    )
 
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
         f.write(sql)
     print()
-    print(f"SQL escrito en {OUT} ({len(sql)} caracteres). Revisa el resumen de arriba antes de aplicarlo.")
+    print(f"SQL escrito en {OUT} ({len(sql)} caracteres, {len(filas)} filas). Revisa el resumen de arriba antes de aplicarlo.")
 
 
 if __name__ == "__main__":

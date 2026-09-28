@@ -37,7 +37,10 @@ begin
     select id into v_articulo_id from public.inv_articulos
      where seccion_id = v_seccion_id and lower(btrim(prenda)) = lower(btrim(fila->>'prenda')) and talla_id = v_talla_id;
 
-    if not v_ya_importado then
+    -- Piezas en 0 (el artículo existe en el Sheet pero hoy no tiene existencia):
+    -- se crea el artículo igual, pero sin movimiento — un movimiento de 0 no
+    -- pasa el check (cantidad <> 0) y tampoco cambiaría nada la existencia.
+    if not v_ya_importado and (fila->>'piezas')::integer <> 0 then
       insert into public.inv_movimientos (articulo_id, ubicacion_id, tipo, cantidad, motivo_id, nota)
       values (v_articulo_id, v_ubicacion_id, 'conteo', (fila->>'piezas')::integer, v_motivo_id, 'Importación inicial desde Google Sheet');
       v_movimientos := v_movimientos + 1;
