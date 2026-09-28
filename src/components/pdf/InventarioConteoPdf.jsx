@@ -1,5 +1,6 @@
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
 import logo from '../../assets/salper-logo.png'
+import { formatTalla } from '../../utils/inventarioTallas'
 
 // Hoja de conteo físico imprimible (V89): Prenda/Talla/Sistema/Conteo(en
 // blanco, para llenar a mano). Mismo estilo visual que RemisionPdf.jsx.
@@ -88,7 +89,7 @@ export default function InventarioConteoPdf({ seccionNombre, ubicacionNombre, fe
             {lineas.map((l, i) => (
               <View key={l.linea_id || i} style={[styles.tableRow, i === lineas.length - 1 && styles.tableRow_last]}>
                 <Text style={styles.cellPrenda}>{l.prenda}</Text>
-                <Text style={styles.cellTalla}>{l.talla}</Text>
+                <Text style={styles.cellTalla}>{formatTalla(l.talla)}</Text>
                 <Text style={styles.cellSistema}>{l.sistema}</Text>
                 <Text style={styles.cellConteo}> </Text>
               </View>

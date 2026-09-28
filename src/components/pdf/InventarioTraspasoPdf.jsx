@@ -1,5 +1,6 @@
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
 import logo from '../../assets/salper-logo.png'
+import { formatTalla } from '../../utils/inventarioTallas'
 
 // Vale de traspaso de inventario (V89, addendum C). Mismo estilo visual que
 // RemisionPdf.jsx.
@@ -106,7 +107,7 @@ export default function InventarioTraspasoPdf({ traspaso, origenNombre, destinoN
             {lineas.map((l, i) => (
               <View key={l.articuloId || i} style={[styles.tableRow, i === lineas.length - 1 && styles.tableRow_last]}>
                 <Text style={styles.cellPrenda}>{l.prenda}</Text>
-                <Text style={styles.cellTalla}>{l.talla}</Text>
+                <Text style={styles.cellTalla}>{formatTalla(l.talla)}</Text>
                 <Text style={styles.cellCantidad}>{l.cantidad}</Text>
               </View>
             ))}

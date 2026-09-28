@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Modal from '../talleros/Modal'
 import { Loading, ErrorState } from '../common/States'
 import { fetchConteoLineas, confirmarConteo } from '../../services/inventarioService'
+import { formatTalla } from '../../utils/inventarioTallas'
 
 // Captura de un conteo físico ya impreso (V89): muestra Sistema vs Conteo
 // (input) por línea; al confirmar solo se mandan las líneas que sí se
@@ -87,7 +88,7 @@ export default function ConteoCapturaModal({ conteo, seccionNombre, ubicacionNom
                   return (
                     <tr key={l.linea_id}>
                       <td>{l.prenda}</td>
-                      <td>{l.talla}</td>
+                      <td>{formatTalla(l.talla)}</td>
                       <td>{l.sistema}</td>
                       <td>
                         {readOnly ? (

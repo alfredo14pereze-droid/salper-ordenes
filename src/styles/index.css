@@ -2863,13 +2863,49 @@ h4 {
   gap: 10px;
 }
 .inv-prenda-card {
-  padding: 12px 14px;
+  padding: 10px 14px;
+}
+/* V92 — cada prenda es una lista desplegable (acordeón): el header entero
+   es el botón que abre/cierra, para no tener que scrollear secciones con
+   muchas prendas. */
+.inv-prenda-card__header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 2px 0;
+  text-align: left;
+  font-family: inherit;
+}
+.inv-prenda-card__chevron {
+  display: inline-block;
+  color: var(--color-text-muted);
+  transition: transform 0.15s ease;
+  font-size: 12px;
+}
+.inv-prenda-card__chevron--open {
+  transform: rotate(90deg);
+}
+.inv-prenda-card__nombre {
+  flex: 1;
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--color-text);
+}
+.inv-prenda-card__total {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 .inv-chip-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 6px;
+  margin-top: 10px;
 }
 .inv-chip {
   display: flex;
@@ -2883,6 +2919,10 @@ h4 {
   border-color: var(--color-danger);
   background: var(--color-danger-soft);
 }
+.inv-chip--virtual {
+  border-style: dashed;
+  opacity: 0.85;
+}
 .inv-chip__main {
   border: none;
   background: none;
@@ -2893,6 +2933,9 @@ h4 {
   padding: 6px 10px;
   min-width: 64px;
   font-family: inherit;
+}
+.inv-chip--virtual .inv-chip__main {
+  cursor: default;
 }
 .inv-chip__talla {
   font-size: 12px;

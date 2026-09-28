@@ -1,11 +1,20 @@
 import { useState } from 'react'
 import Modal from '../talleros/Modal'
-import { registrarMovimiento } from '../../services/inventarioService'
+import { registrarMovimiento, guardarArticulo } from '../../services/inventarioService'
+import { formatTalla } from '../../utils/inventarioTallas'
 
 // Modal rápido de +/- (V89, punto de la pantalla principal): cantidad
 // default 1, motivo obligatorio, ubicación editable (default la vista
 // activa), nota opcional. `tipo` ('entrada' | 'salida') lo decide el botón
 // que se apretó, no se elige aquí.
+//
+// V92 — `articulo` puede ser "virtual" (talla que el colegio no tenía
+// dada de alta todavía, rellenada por fillTallaGaps en InventarioPage:
+// articuloId es null). En ese caso, antes de registrar el movimiento se
+// da de alta el artículo real (existencia 0) y se usa su id — así una
+// talla que hoy no existe en el catálogo pasa a existir en cuanto se le
+// hace el primer movimiento, sin que el usuario tenga que ir a
+// Administración primero.
 export default function MovimientoModal({ articulo, tipo, ubicaciones, motivos, defaultUbicacionId, onClose, onDone }) {
   const [ubicacionId, setUbicacionId] = useState(defaultUbicacionId || ubicaciones[0]?.id || '')
   const [cantidad, setCantidad] = useState(1)
@@ -22,8 +31,26 @@ export default function MovimientoModal({ articulo, tipo, ubicaciones, motivos, 
     if (!ubicacionId || !motivoId || !cantidad || cantidad <= 0) return
     setSaving(true)
     setError(null)
+
+    let articuloId = articulo.articuloId
+    if (!articuloId) {
+      const { data: nuevo, error: createErr } = await guardarArticulo({
+        id: null,
+        seccionId: articulo.seccionId,
+        prenda: articulo.prenda,
+        tallaId: articulo.tallaId,
+        minimo: null,
+        activo: true,
+      })
+      if (createErr) {
+        setSaving(false)
+        return setError(createErr)
+      }
+      articuloId = nuevo.id
+    }
+
     const { error: err } = await registrarMovimiento({
-      articuloId: articulo.articuloId,
+      articuloId,
       ubicacionId,
       tipo,
       cantidad: Number(cantidad),
@@ -36,7 +63,7 @@ export default function MovimientoModal({ articulo, tipo, ubicaciones, motivos, 
   }
 
   return (
-    <Modal title={`${titulo} · ${articulo.prenda} (${articulo.talla})`} onClose={onClose}>
+    <Modal title={`${titulo} · ${articulo.prenda} (${formatTalla(articulo.talla)})`} onClose={onClose}>
       <form className="order-form" onSubmit={handleSubmit}>
         <div className="form-row">
           <label>

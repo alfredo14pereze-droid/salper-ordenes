@@ -3984,3 +3984,44 @@ Verificado: `npm run build` sin errores; no se pudo probar en vivo con sesión r
 dentro de esta sesión (el módulo exige tu correo exacto — no hay credenciales para
 iniciar sesión desde aquí). Pendiente que confirmes en el navegador: crear un
 movimiento, un traspaso y un conteo con datos reales.
+
+### V92 — Inventario: tallas completas, reporte por colegio, prefijo "T." y acordeón
+
+Cuatro ajustes a la pantalla principal, todos pedidos después de ver el primer draft:
+
+- **Tallas completas por prenda ("que no haya, diga 0")**: `fillTallaGaps()` en
+  `InventarioPage.jsx` agrega "chips virtuales" (existencia 0, sin fila real en
+  `inv_articulos` todavía) para las tallas del catálogo que faltan ENTRE la más chica
+  y la más grande que esa prenda ya tiene en ese colegio. Es "por familia" —
+  infantil/letra/pantalón/sin-talla, mismos cortes de `orden` que sembró V89 — nunca
+  mezcla familias (ej. no le pone tallas de pantalón 28-44 a una playera que solo usa
+  infantil, aunque el orden numérico quede "cerca"), y no ofrece variantes TALL/(NN)
+  a menos que la prenda ya las use. Verificado contra datos reales de producción
+  (Echavarria/Instituto Tricio/Quirúrgico Dama) antes de aplicar — la primera versión
+  (rellenar todo el rango sin agrupar por familia) sí mezclaba letra/pantalón
+  incorrectamente y se descartó. El artículo real (`inv_articulos`) se crea recién al
+  primer movimiento sobre un chip virtual (`MovimientoModal` llama `guardarArticulo`
+  antes de `registrarMovimiento` si `articuloId` viene null) — no antes, no hay
+  alta masiva ni SQL nuevo.
+- **Reporte por colegio** (`ReporteModal.jsx` + `InventarioReportePdf.jsx` +
+  `generateInventarioReportePdf.jsx`): botón "Reporte" en la pantalla principal, para
+  el colegio activo. Elige alcance — una ubicación específica, "Consolidado (total)"
+  o "Consolidado detallando almacenes" (columna por ubicación + total) — y prenda
+  (todas o una). Usa los mismos datos ya cargados en pantalla (incluidas las tallas
+  rellenadas), sin pedir nada nuevo al servidor.
+- **Prefijo "T." en tallas numéricas** (`src/utils/inventarioTallas.js`,
+  `formatTalla()`): "10" se muestra "T.10" en toda la UI y los PDFs (chips, modales,
+  Administración, traspasos, conteos, reportes) para no confundirla con una
+  cantidad. Solo tallas puramente numéricas (incluye pantalón 28-44 y variantes TALL/
+  "(NN)"); las de letra (XS…5XL) y "Sin talla" se quedan igual. Es solo
+  presentación — `inv_tallas.nombre` en la base sigue sin el prefijo.
+- **Prendas como acordeón**: cada prenda es ahora un header clicable (colapsado por
+  defecto) en vez de una tarjeta siempre expandida — para colegios con muchas prendas
+  (Instituto Tricio tiene ~20+) no hay que scrollear todo para llegar a una de más
+  abajo. La llave de "abierto/cerrado" incluye la sección (`${seccionId}:${prenda}`),
+  no solo el nombre de la prenda — varios colegios repiten nombres de prenda (Falda,
+  Pantalon…) y sin eso abrir una en un colegio la dejaba abierta también en otro.
+
+Sin SQL nuevo. Verificado con `npm run build` y una simulación en Node del algoritmo
+de `fillTallaGaps` contra 6 casos reales de producción (incluidos los 2 que la
+primera versión rellenaba mal) antes de dar el cambio por bueno.

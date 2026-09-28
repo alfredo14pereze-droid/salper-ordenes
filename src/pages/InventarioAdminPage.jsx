@@ -12,6 +12,7 @@ import {
   guardarMotivo,
   guardarArticulo,
 } from '../services/inventarioService'
+import { formatTalla } from '../utils/inventarioTallas'
 
 // V89 — Administración de catálogos de Inventario: alta/edición/baja
 // (siempre "desactivar", nunca borrar — no hay RPC de delete para ninguno
@@ -240,7 +241,7 @@ function ArticuloRow({ articulo, secciones, tallas, onSaved }) {
             <select className="input input--small" value={tallaId} onChange={(e) => setTallaId(e.target.value)}>
               {tallas.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.nombre}
+                  {formatTalla(t.nombre)}
                 </option>
               ))}
             </select>
@@ -255,7 +256,7 @@ function ArticuloRow({ articulo, secciones, tallas, onSaved }) {
           </div>
         ) : (
           <span className="document-row__label" style={{ opacity: articulo.activo ? 1 : 0.5 }}>
-            {articulo.prenda} · {articulo.inv_tallas?.nombre} {articulo.minimo != null && `· mín. ${articulo.minimo}`}
+            {articulo.prenda} · {formatTalla(articulo.inv_tallas?.nombre)} {articulo.minimo != null && `· mín. ${articulo.minimo}`}
             {!articulo.activo && ' (inactivo)'}
           </span>
         )}
@@ -322,7 +323,7 @@ function AddArticulo({ seccionId, tallas, onCreated }) {
       <select className="input" value={tallaId} onChange={(e) => setTallaId(e.target.value)}>
         {tallas.map((t) => (
           <option key={t.id} value={t.id}>
-            {t.nombre}
+            {formatTalla(t.nombre)}
           </option>
         ))}
       </select>

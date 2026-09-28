@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Modal from '../talleros/Modal'
 import { Loading } from '../common/States'
 import { fetchExistencias, crearTraspaso } from '../../services/inventarioService'
+import { formatTalla } from '../../utils/inventarioTallas'
 
 // Alta de traspaso (V89, addendum C): origen/destino + varias líneas
 // (artículo + cantidad), todo o nada del lado del servidor. El buscador de
@@ -143,7 +144,7 @@ export default function TraspasoFormModal({ ubicaciones, secciones, onClose, onD
             {resultados.map((a) => (
               <li key={a.articuloId}>
                 <button type="button" onClick={() => addLinea(a)}>
-                  {a.prenda} · {a.talla} · {seccionNombre(a.seccionId)}
+                  {a.prenda} · {formatTalla(a.talla)} · {seccionNombre(a.seccionId)}
                   <span className="pantone-hint" style={{ marginLeft: 6 }}>
                     (hay {a.porUbicacion[origenId] ?? 0} en origen)
                   </span>
@@ -159,7 +160,7 @@ export default function TraspasoFormModal({ ubicaciones, secciones, onClose, onD
               <div key={l.articuloId} className="document-row">
                 <div>
                   <span className="document-row__label">
-                    {l.prenda} · {l.talla} · {l.seccion}
+                    {l.prenda} · {formatTalla(l.talla)} · {l.seccion}
                   </span>
                   <p className="pantone-hint" style={{ margin: '2px 0 0' }}>
                     Hay {l.existenciaOrigen} en origen

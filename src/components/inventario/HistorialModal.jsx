@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Modal from '../talleros/Modal'
 import { Loading, ErrorState } from '../common/States'
 import { fetchHistorialArticulo } from '../../services/inventarioService'
+import { formatTalla } from '../../utils/inventarioTallas'
 
 function formatFecha(value) {
   if (!value) return '—'
@@ -32,7 +33,7 @@ export default function HistorialModal({ articulo, onClose }) {
   }, [articulo.articuloId])
 
   return (
-    <Modal title={`Historial · ${articulo.prenda} (${articulo.talla})`} onClose={onClose}>
+    <Modal title={`Historial · ${articulo.prenda} (${formatTalla(articulo.talla)})`} onClose={onClose}>
       {loading && <Loading label="Cargando historial…" />}
       {error && <ErrorState error={error} />}
       {!loading && !error && movimientos.length === 0 && <p className="page-subtitle">Sin movimientos todavía.</p>}
