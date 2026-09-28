@@ -189,15 +189,20 @@ function InventarioContent() {
     refreshExistencias()
   }
 
-  async function handleGenerarReporte({ modo, ubicacionSeleccionada, prendaFiltro }) {
+  async function handleGenerarReporte({ modo, ubicacionSeleccionada, prendasFiltro }) {
     setShowReporte(false)
     let grupoFilas = gruposTodos
-    if (prendaFiltro) grupoFilas = grupoFilas.filter((g) => g.prenda === prendaFiltro)
+    if (prendasFiltro) grupoFilas = grupoFilas.filter((g) => prendasFiltro.includes(g.prenda))
     const filasReporte = grupoFilas.flatMap((g) => g.items)
     const fecha = new Date().toISOString()
+    const subtitulo = !prendasFiltro
+      ? 'Todas las prendas'
+      : prendasFiltro.length === 1
+        ? prendasFiltro[0]
+        : `${prendasFiltro.length} prendas: ${prendasFiltro.join(', ')}`
     const blob = await buildReporteBlob({
       seccionNombre: seccionActivaNombre,
-      prendaFiltro,
+      subtitulo,
       fecha,
       filas: filasReporte,
       modo,
@@ -205,7 +210,7 @@ function InventarioContent() {
       ubicacionSeleccionada,
     })
     setPdfBlob(blob)
-    setPdfName(reporteFileName(seccionActivaNombre, prendaFiltro, fecha))
+    setPdfName(reporteFileName(seccionActivaNombre, prendasFiltro, fecha))
   }
 
   if (loadingCatalogos) return <Loading label="Cargando inventario…" />

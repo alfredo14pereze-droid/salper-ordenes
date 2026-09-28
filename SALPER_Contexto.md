@@ -4025,3 +4025,36 @@ Cuatro ajustes a la pantalla principal, todos pedidos después de ver el primer 
 Sin SQL nuevo. Verificado con `npm run build` y una simulación en Node del algoritmo
 de `fillTallaGaps` contra 6 casos reales de producción (incluidos los 2 que la
 primera versión rellenaba mal) antes de dar el cambio por bueno.
+
+### V93 — Reporte con checks de prendas + paleta viva en Estadísticas
+
+Dos ajustes, sin SQL:
+
+- **Reporte con selección libre de prendas**: `ReporteModal.jsx` cambió de un select
+  de una sola prenda a "Todas las prendas" (checkbox) + una lista de checks — se
+  puede pedir el reporte de cualquier combinación (una, dos, tres… o todas).
+  `handleGenerarReporte` en `InventarioPage.jsx` recibe `prendasFiltro` (arreglo o
+  `null`) en vez de un solo nombre; `InventarioReportePdf.jsx` ya no arma el
+  subtítulo internamente (antes solo sabía "una prenda o todas") — ahora lo recibe
+  ya armado (`subtitulo`) desde `generateInventarioReportePdf.jsx`, que sí sabe
+  listar varios nombres o abreviar a "N prendas".
+- **Paleta viva en las 2 pantallas de Estadísticas** (Estadísticas y Estadísticas de
+  producción): pedido explícito del usuario — "colores más vivos… que las gráficas
+  no tengan negros". Se agregaron 6 tokens nuevos en `:root`
+  (`--color-chart-blue/pink/green/purple/red/teal`), a propósito **distintos** de
+  `--color-danger`/`--color-good` (que siguen siendo exclusivos de
+  atrasado/completado — la regla de identidad visual de SALPER de solo usar
+  rojo/verde para esos dos estados sigue intacta fuera de estas 2 pantallas). Se
+  usaron para: las barras de `.stage-bar-row__fill` (Tiempo promedio por etapa /
+  Distribución por bono meta) ahora rotan un color distinto por fila en vez de un
+  solo naranja; `.month-bar__fill` (Tendencia mensual) pasó de ámbar a azul vivo; el
+  borde bajo el encabezado de `.stats-table` pasó de negro a azul vivo; y en las
+  gráficas SVG de producción (`StatsCharts.jsx`, clases `.pstat-*`) la barra "Valor
+  generado" pasó de **negro** a azul vivo, "Premios" de ámbar a rosa vivo, y la
+  línea de "Premios sobre valor generado" de naranja a morado vivo (para
+  diferenciarla de las barras). El rayado ámbar de "semana preliminar" se dejó
+  igual (es un indicador de estado, no una serie de datos).
+
+No se pudo verificar visualmente con sesión real (no hay credenciales de la app
+disponibles en esta sesión, igual que en V91/V92) — verificado solo con
+`npm run build`.

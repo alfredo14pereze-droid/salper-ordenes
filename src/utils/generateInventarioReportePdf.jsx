@@ -1,11 +1,11 @@
 import { pdf } from '@react-pdf/renderer'
 import InventarioReportePdf from '../components/pdf/InventarioReportePdf'
 
-export async function buildReporteBlob({ seccionNombre, prendaFiltro, fecha, filas, modo, ubicaciones, ubicacionSeleccionada }) {
+export async function buildReporteBlob({ seccionNombre, subtitulo, fecha, filas, modo, ubicaciones, ubicacionSeleccionada }) {
   return pdf(
     <InventarioReportePdf
       seccionNombre={seccionNombre}
-      prendaFiltro={prendaFiltro}
+      subtitulo={subtitulo}
       fecha={fecha}
       filas={filas}
       modo={modo}
@@ -15,9 +15,14 @@ export async function buildReporteBlob({ seccionNombre, prendaFiltro, fecha, fil
   ).toBlob()
 }
 
-export function reporteFileName(seccionNombre, prendaFiltro, fecha) {
+// prendasFiltro: null (todas), o el arreglo de nombres elegidos con checks.
+export function reporteFileName(seccionNombre, prendasFiltro, fecha) {
   const d = new Date(fecha)
   const stamp = Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10)
-  const base = `Reporte-${seccionNombre}${prendaFiltro ? `-${prendaFiltro}` : ''}-${stamp}`
+  let sufijo = ''
+  if (prendasFiltro) {
+    sufijo = prendasFiltro.length === 1 ? `-${prendasFiltro[0]}` : `-${prendasFiltro.length}-prendas`
+  }
+  const base = `Reporte-${seccionNombre}${sufijo}-${stamp}`
   return `${base.replace(/\s+/g, '-')}.pdf`
 }

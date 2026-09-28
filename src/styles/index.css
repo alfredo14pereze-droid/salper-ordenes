@@ -33,6 +33,20 @@
   --color-info: #1d5f99;
   --color-info-soft: #e2eef7;
 
+  /* V93 — paleta viva SOLO para series de gráficas en Estadísticas /
+     Estadísticas de producción (.stage-bar-row__fill, .month-bar__fill,
+     .pstat-*): pedido explícito del usuario ("colores más vivos... que
+     las gráficas no tengan negros"), a propósito distinta del
+     rojo/verde de estado (--color-danger/--color-good) para no
+     confundir "categoría en una gráfica" con "atrasado/completado" —
+     nunca se usa esta paleta fuera de esas dos pantallas.  */
+  --color-chart-blue: #2f6fed;
+  --color-chart-pink: #e0328c;
+  --color-chart-green: #15b371;
+  --color-chart-purple: #7c3aed;
+  --color-chart-red: #e0293e;
+  --color-chart-teal: #0ea5b7;
+
   --radius-sm: 6px;
   --radius-md: 10px;
   --shadow-sm: 0 1px 2px rgba(20, 15, 5, 0.06);
@@ -1551,9 +1565,17 @@ h4 {
 
 .stage-bar-row__fill {
   height: 100%;
-  background: var(--color-orange);
+  background: var(--color-chart-blue);
   border-radius: 999px;
 }
+/* V93 — cada barra de la lista (etapa, o categoría de distribución) rota
+   por un color vivo distinto, en vez de un solo tono repetido. */
+.stage-bars > .stage-bar-row:nth-child(6n+1) .stage-bar-row__fill { background: var(--color-chart-blue); }
+.stage-bars > .stage-bar-row:nth-child(6n+2) .stage-bar-row__fill { background: var(--color-chart-pink); }
+.stage-bars > .stage-bar-row:nth-child(6n+3) .stage-bar-row__fill { background: var(--color-chart-green); }
+.stage-bars > .stage-bar-row:nth-child(6n+4) .stage-bar-row__fill { background: var(--color-chart-purple); }
+.stage-bars > .stage-bar-row:nth-child(6n+5) .stage-bar-row__fill { background: var(--color-chart-red); }
+.stage-bars > .stage-bar-row:nth-child(6n+6) .stage-bar-row__fill { background: var(--color-chart-teal); }
 
 .stage-bar-row__value {
   font-size: 13px;
@@ -1579,7 +1601,7 @@ h4 {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  border-bottom: 2px solid var(--color-black);
+  border-bottom: 2px solid var(--color-chart-blue);
 }
 
 .stats-table td {
@@ -1617,7 +1639,7 @@ h4 {
 
 .month-bar__fill {
   width: 100%;
-  background: var(--color-amber-strong);
+  background: var(--color-chart-blue);
   border-radius: 4px 4px 0 0;
   min-height: 4px;
 }
@@ -2667,10 +2689,10 @@ h4 {
   fill: var(--color-text);
 }
 .pstat-bar {
-  fill: var(--color-black);
+  fill: var(--color-chart-blue);
 }
 .pstat-bar2 {
-  fill: var(--color-amber-strong);
+  fill: var(--color-chart-pink);
 }
 .pstat-bar--prelim,
 .pstat-bar2--prelim {
@@ -2680,11 +2702,11 @@ h4 {
 }
 .pstat-line {
   fill: none;
-  stroke: var(--color-orange);
+  stroke: var(--color-chart-purple);
   stroke-width: 2.5;
 }
 .pstat-punto {
-  fill: var(--color-orange);
+  fill: var(--color-chart-purple);
   stroke: var(--color-surface);
   stroke-width: 2;
 }
@@ -2710,10 +2732,10 @@ h4 {
   vertical-align: -1px;
 }
 .pstat-dot--valor {
-  background: var(--color-black);
+  background: var(--color-chart-blue);
 }
 .pstat-dot--premios {
-  background: var(--color-amber-strong);
+  background: var(--color-chart-pink);
 }
 .pstat-dot--prelim {
   background: repeating-linear-gradient(45deg, var(--color-amber), var(--color-amber) 2px, var(--color-surface) 2px, var(--color-surface) 4px);
@@ -3008,6 +3030,16 @@ h4 {
 }
 .inv-search-results li button:hover {
   background: var(--color-bg);
+}
+.inv-reporte-prendas {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
 }
 @media (max-width: 720px) {
   .inv-toolbar .input {

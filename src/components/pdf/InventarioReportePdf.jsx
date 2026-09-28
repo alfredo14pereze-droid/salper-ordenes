@@ -76,11 +76,10 @@ function buildColumnas(modo, ubicaciones, ubicacionSeleccionada) {
   return [{ label: 'Total', get: (f) => f.total, total: true }]
 }
 
-export default function InventarioReportePdf({ seccionNombre, prendaFiltro, fecha, filas, modo, ubicaciones, ubicacionSeleccionada }) {
+export default function InventarioReportePdf({ seccionNombre, subtitulo, fecha, filas, modo, ubicaciones, ubicacionSeleccionada }) {
   const columnas = buildColumnas(modo, ubicaciones, ubicacionSeleccionada)
   const colPct = 100 - 30 - 15 // resto después de Prenda (30%) y Talla (15%)
   const eachPct = colPct / columnas.length
-  const subtitulo = prendaFiltro ? prendaFiltro : 'Todas las prendas'
 
   return (
     <Document title={`Reporte de inventario ${seccionNombre} · SALPER`}>
