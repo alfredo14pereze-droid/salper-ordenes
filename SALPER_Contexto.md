@@ -4115,3 +4115,35 @@ verificado con hash y con SELECTs directos después de correrlo).
 - No se tocó `pf_cambiar_estado_lote` (confirmación en bloque): "entregado" es
   deliberadamente una acción de un solo pendiente a la vez (con su propio campo
   opcional de "quién recogió"), no se agregó a la lógica de lote.
+
+### V95 — Inventario: se abre por rol (ya no es "modo prueba")
+
+`supabase/schema_v95_inventario_roles.sql` (aplicado 2026-09-28, verificado con
+hash y con la tabla de roles simulada). Pedido explícito del usuario: "agregues ya
+el módulo de inventarios a las vistas de todos... tienda básico pueda cambiar el
+inventario, y que los admins y ventas tengan acceso para verlo".
+
+- `inv_puede_ver()`: ahora también `ventas` y `tienda` (antes solo los 3 admin).
+- `inv_puede_mover()` (movimientos, traspasos, conteos): ahora también `tienda`
+  (antes solo `admin_tienda`/`admin_general`). `ventas` y `admin_fabrica` se
+  quedan en solo lectura.
+- `inv_puede_editar()` (Administración: catálogos de secciones/ubicaciones/
+  motivos/artículos): **decisión propia, no explícita en el pedido** — se dejó
+  igual que antes (`admin_tienda`/`admin_general`), ya NO como alias de
+  "mover" — `tienda` puede cambiar existencias pero no administrar catálogos.
+  Los admins conservan su capacidad de mover (el mensaje del usuario podía leerse
+  como "los admins solo ven", pero eso hubiera sido un downgrade de algo ya
+  construido y probado en V91-V93 sin que lo pidiera explícitamente — se avisó
+  al usuario de esta interpretación).
+- Se quitó por completo el candado de "modo prueba" (`isInventarioBetaUser` /
+  `INVENTARIO_BETA_EMAIL` en el frontend, y la dependencia de
+  `inv_tiene_acceso()` en las 3 funciones de permiso del lado del servidor). La
+  tabla `inv_acceso_beta` y la función `inv_tiene_acceso()` se quedan en la base
+  sin uso (no se borraron — mismo criterio que `con_problema` en V86).
+- Frontend: `permissions.js` (`canViewInventario`/`canMoverInventario`/
+  `canEditarInventario` actualizados), `AppLayout.jsx` (el link ya no depende del
+  correo), `RequireInventarioAccess.jsx` (defensa en profundidad, solo por rol).
+
+Pendiente: confirmar con un usuario real de rol `tienda` o `ventas` (al aplicar
+el cambio se confirmó que hoy no hay ningún usuario con rol `tienda` dado de
+alta; no se revisó `ventas`) que la pantalla se ve y actúa como se espera.

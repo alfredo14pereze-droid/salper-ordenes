@@ -391,36 +391,34 @@ export function esFabricaSoloLectura(role) {
   return role === 'admin_fabrica_lectura'
 }
 
-// V89 — Inventario (artículos por fuera de Microsip), en modo prueba:
-// espejo de inv_puede_ver()/inv_puede_mover()/inv_puede_editar() en
-// supabase/schema_v89_inventario.sql. Ver: solo los 3 roles admin
-// (admin_fabrica solo consulta). Mover/editar (movimientos, traspasos,
-// conteos, catálogos): admin_tienda/admin_general.
-//
-// Además del rol, el módulo está oculto para TODOS menos tu cuenta
-// (petición explícita: "solo quiero que lo vean los admin" + modo prueba
-// restringido a un correo). El candado real es del servidor — RLS
-// gateado por inv_acceso_beta / inv_tiene_acceso(), verificado en cada
-// policy y RPC — esto de aquí solo evita que el link aparezca en el menú
-// para otra cuenta admin mientras se prueba. Abrir el módulo a más gente
-// después: quitar isInventarioBetaUser() del nav (o agregar más correos a
-// inv_acceso_beta y ampliar este chequeo) sin tocar nada más.
-export const INVENTARIO_BETA_EMAIL = 'alfredo14pereze@gmail.com'
-
-export function isInventarioBetaUser(user) {
-  return !!user?.email && user.email.toLowerCase() === INVENTARIO_BETA_EMAIL
-}
-
+// V89/V95 — Inventario (artículos por fuera de Microsip): espejo de
+// inv_puede_ver()/inv_puede_mover()/inv_puede_editar() en
+// supabase/schema_v89_inventario.sql / schema_v95_inventario_roles.sql.
+// V89 lo dejó en "modo prueba" (oculto salvo para una cuenta, ver
+// isInventarioBetaUser en el historial de git) mientras se probaba; V95 lo
+// abrió de verdad por rol, a pedido explícito del usuario:
+//   Ver:    admin_general, admin_tienda, admin_fabrica, ventas, tienda.
+//   Mover (movimientos, traspasos, conteos): admin_tienda, admin_general,
+//     tienda (el rol básico de tienda ya puede "cambiar" el inventario, no
+//     solo verlo). admin_fabrica y ventas se quedan en solo lectura.
+//   Editar (catálogos: secciones/ubicaciones/motivos/artículos en
+//     Administración): admin_tienda, admin_general — a propósito NO
+//     incluye a `tienda`, que ya no es un alias de "mover" (antes sí lo
+//     era, cuando ambos grupos coincidían).
+// El candado real sigue siendo el servidor (RLS en cada policy y RPC) —
+// esto solo decide qué se muestra. inv_acceso_beta/inv_tiene_acceso()
+// quedan en la base sin uso (no se borraron), por si se necesita algo así
+// de nuevo más adelante.
 export function canViewInventario(role) {
-  return role === 'admin_general' || role === 'admin_tienda' || role === 'admin_fabrica'
+  return role === 'admin_general' || role === 'admin_tienda' || role === 'admin_fabrica' || role === 'ventas' || role === 'tienda'
 }
 
 export function canMoverInventario(role) {
-  return role === 'admin_tienda' || role === 'admin_general'
+  return role === 'admin_tienda' || role === 'admin_general' || role === 'tienda'
 }
 
 export function canEditarInventario(role) {
-  return canMoverInventario(role)
+  return role === 'admin_tienda' || role === 'admin_general'
 }
 
 export const ROLE_LABELS = {
