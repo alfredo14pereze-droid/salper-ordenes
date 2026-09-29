@@ -17,6 +17,7 @@ import {
   canViewEstadisticas,
   canViewPendientes,
   canViewInventario,
+  canGestionarInventarioTela,
   hasRestrictedNav,
   isTiendaBasica,
   puedeVerComoOtroRol,
@@ -115,6 +116,8 @@ export default function AppLayout({ children }) {
     { to: '/talleros', label: 'Talleros', show: canViewTalleros(role) },
     // V95 — Inventario ya abierto por rol (ver canViewInventario).
     { to: '/inventario', label: 'Inventario', show: canViewInventario(role) },
+    // V100 — Entrada/Ajuste de tela, exclusivo admin_fabrica/admin_general.
+    { to: '/inventario-tela', label: 'Inventario de tela', show: canGestionarInventarioTela(role) },
     { to: '/catalogos', label: 'Catálogos', show: canViewCatalogos(role) },
     // V57 — beta oculta: solo admin_general (ver canManagePedidosColegio).
     { to: '/pedidos-colegio', label: 'Pedidos Colegio', show: canManagePedidosColegio(role) },

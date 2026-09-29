@@ -4294,3 +4294,78 @@ traiga el form (vacío al crear), y el RPC simplemente lo ignora en ese caso.
 `npm run build` limpio. Sin poder probar con sesión real en este entorno
 (sin credenciales de login) — igual que el resto de los cambios de esta
 sesión, verificación visual pendiente del lado del usuario.
+
+### V100 — Inventario de tela (Fase 2, Parte 2)
+
+Pedido del usuario, con plan mostrado y confirmado antes de aplicar
+("PARTE 2 — INVENTARIO DE TELA", con diagnóstico previo obligatorio).
+
+**Diagnóstico (antes de tocar nada)**: `telas` (V12) era un catálogo
+mínimo (id/nombre/nombre_normalizado/created_at) sin unidad de medida y
+**sin relación real con `proveedores`** — `proveedores` (V19) pertenece al
+módulo de Pedidos a Proveedor (compras de tienda), que además está
+**apagado en producción** (`PROVEEDORES_HABILITADO = false`). Se confirmó
+con el usuario dejar telas y proveedores desacoplados por ahora (la nota
+libre de "Entrada de tela" cubre "número de factura del proveedor"), y que
+`super_admin` (rol pedido, no existe) se traduce a `admin_general`.
+
+**Esquema (`schema_v100_inventario_tela.sql`, aplicado en vivo)**:
+- `telas.unidad` (nullable, `check in ('metro','kilo')`). `create_tela`
+  gana `p_unidad` opcional (con su `drop function` de la firma vieja —
+  gotcha de siempre). `update_tela(p_id, p_nombre, p_unidad)` nueva — antes
+  no existía NINGUNA edición de tela, solo alta/baja.
+- `movimientos_tela` (`tela_id`, `tipo` `entrada`/`consumo_corte`/`ajuste`,
+  `cantidad`, `unidad`, `orden_id` nullable, `usuario_id`, `fecha`, `nota`).
+  **Criterio de signo elegido** (documentado en el header del archivo):
+  `cantidad` siempre lleva el signo real del efecto — `entrada` siempre +,
+  `consumo_corte` siempre −, `ajuste` puede ser + o − según el conteo
+  físico. Así `inventario_actual` es una suma simple sin `CASE`.
+  `consumo_corte` no se genera todavía en esta Parte 2 — la tabla ya queda
+  lista para que la Parte 3 inserte ahí desde el placeholder "Reporte de
+  consumo" que ya existe en `EstacionOrderPage.jsx` (rol `corte`, desde
+  V96/V97).
+- `v_inventario_telas` — vista, `sum(cantidad)` por tela, lectura tan
+  abierta como `telas` (anon + authenticated).
+- `registrar_entrada_tela`/`registrar_ajuste_tela` — RPCs exclusivos
+  `admin_fabrica`/`admin_general` (pedido explícito). Ambos exigen que la
+  tela ya tenga `unidad` definida. La de ajuste exige `nota` no vacía y
+  `cantidad <> 0`; la de entrada exige `cantidad > 0`.
+- `get_tela_delete_impact`/`delete_tela` extendidas para también
+  contar/bloquear por `movimientos_tela` (antes solo avisaban de
+  `productos`) — una tela con historial de movimientos ya no se puede
+  eliminar. Cambia el tipo de retorno de `get_tela_delete_impact`, así que
+  también necesitó `drop function`.
+- `v_movimientos_tela` (agregada aparte, ya con el esquema anterior
+  corriendo) — `movimientos_tela.usuario_id` apunta a `auth.users`, no a
+  `profiles` (mismo patrón que `orden_etapas.responsable_id` ya usaba), y
+  `profiles` tiene RLS (solo tu propio perfil, o `admin_general` ve
+  todos) — así que un embed de PostgREST no habría resuelto el nombre para
+  el resto de los roles. Esta vista corre con los privilegios de quien la
+  creó (no `security_invoker`), así que sí puede leer todos los `profiles`
+  y expone **solo** `full_name` — nada más sensible del perfil.
+
+**Frontend**:
+- `src/pages/InventarioTelaPage.jsx` (nuevo, ruta `/inventario-tela`,
+  nav "Inventario de tela") — formularios de Entrada y Ajuste + una tabla
+  de referencia con el inventario actual de cada tela. Exclusivo
+  `admin_fabrica`/`admin_general` (`canGestionarInventarioTela`, nueva en
+  `permissions.js`). Nombrada distinto del módulo "Inventario" de prendas
+  (V91+) para no confundirlos.
+- `CatalogosPage.jsx`, sección Telas: cada fila gana un editor de unidad
+  inline (mismo patrón que `ClienteTipoOrdenEditor`), la línea
+  "Inventario: X · Comprometido: 0 · Disponible: X" (comprometido queda en
+  0 hasta la Parte 3), y un botón "Ver historial" que carga
+  `movimientos_tela` de esa tela bajo demanda. Visible a quien ya ve
+  Catálogos hoy (`ventas`/`admin_fabrica`/`admin_general`/
+  `admin_fabrica_lectura`) — sin candado nuevo, es solo lectura salvo la
+  unidad (que ya usa el mismo permiso que dar de alta telas).
+
+`npm run build` limpio. Verificado sin sesión real (no hay credenciales en
+este entorno): `/inventario-tela` y `/catalogos` cargan sin errores de
+consola ni del servidor de desarrollo en modo invitado (piden login, igual
+que Catálogos ya hacía antes de este cambio — no es una regresión).
+Verificación visual con datos reales pendiente del lado del usuario.
+
+**Pendiente para la Parte 3**: conectar "comprometido" a órdenes reales, y
+generar movimientos `consumo_corte` automáticos desde el "Reporte de
+consumo" de `corte` en `EstacionOrderPage.jsx`.

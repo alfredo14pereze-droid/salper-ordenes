@@ -171,6 +171,15 @@ export function canViewCatalogos(role) {
   return canCreateCliente(role) || canCreateTela(role) || canCreateProducto(role) || canManageCatalogs(role) || role === 'admin_fabrica_lectura'
 }
 
+// V100 — Inventario de tela: registrar entradas/ajustes es exclusivo de
+// administrador de fábrica y administrador general (pedido del usuario;
+// "super_admin" no existe como rol, se usa admin_general). El inventario
+// calculado (columnas nuevas en Catálogos) es visible a quien ya ve
+// Catálogos hoy — no necesita este candado aparte.
+export function canGestionarInventarioTela(role) {
+  return role === 'admin_fabrica' || role === 'admin_general'
+}
+
 // Bordado condicional por prenda (V25): subir/borrar fotos en
 // orden_bordados es exclusivo de bordado + admin_fabrica/admin_general —
 // no de ventas/admin_tienda, que sí deciden CUÁLES prendas llevan bordado

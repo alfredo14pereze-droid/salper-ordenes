@@ -16,11 +16,21 @@ export async function fetchTelas() {
 
 // "Crear o reusar" — ver create_tela en supabase/schema_v12_catalogos.sql.
 // Si ya existe una tela con ese nombre (normalizado), regresa la existente.
-export async function createTela(nombre) {
+// unidad (V100, opcional): 'metro' | 'kilo'.
+export async function createTela(nombre, unidad = null) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
 
-  return supabase.rpc('create_tela', { p_nombre: nombre }).single()
+  return supabase.rpc('create_tela', { p_nombre: nombre, p_unidad: unidad }).single()
+}
+
+// V100 — antes no existía ninguna edición de tela (solo alta/baja);
+// se agregó para poder ponerle unidad a las que ya existían.
+export async function updateTela(id, nombre, unidad) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('update_tela', { p_id: id, p_nombre: nombre, p_unidad: unidad }).single()
 }
 
 // Hard-delete (V24) — exclusivo admin_general. productos.tela_id tiene ON

@@ -21,7 +21,8 @@ import {
   deleteCliente,
   setClienteTipoOrden,
 } from '../services/clientesService'
-import { fetchTelas, createTela, getTelaDeleteImpact, deleteTela } from '../services/telasService'
+import { fetchTelas, createTela, updateTela, getTelaDeleteImpact, deleteTela } from '../services/telasService'
+import { fetchInventarioTelas, fetchMovimientosPorTela } from '../services/movimientosTelaService'
 import {
   fetchProductosByCliente,
   createProducto,
@@ -334,6 +335,146 @@ function AddTelaForm({ onCreated }) {
   )
 }
 
+// V100 — unidad de medida de la tela (metro/kilo). Antes no existía ninguna
+// edición de tela, solo alta/baja — se agrega inline, mismo patrón que
+// ClienteTipoOrdenEditor.
+function TelaUnidadEditor({ tela, canEdit, onSaved }) {
+  const [editing, setEditing] = useState(false)
+  const [unidad, setUnidad] = useState(tela.unidad || '')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  async function handleSave() {
+    setSaving(true)
+    setError(null)
+    const { error: err } = await updateTela(tela.id, tela.nombre, unidad || null)
+    setSaving(false)
+    if (err) {
+      setError(err)
+      return
+    }
+    setEditing(false)
+    onSaved?.()
+  }
+
+  if (!editing) {
+    return (
+      <p className="pantone-hint" style={{ marginTop: 2 }}>
+        Unidad: {tela.unidad || 'sin definir'}
+        {canEdit && (
+          <>
+            {' '}
+            <button type="button" className="btn btn--ghost btn--small" onClick={() => setEditing(true)}>
+              Editar unidad
+            </button>
+          </>
+        )}
+      </p>
+    )
+  }
+
+  return (
+    <div style={{ marginTop: 4, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      <select className="input" value={unidad} onChange={(e) => setUnidad(e.target.value)} style={{ width: 'auto' }}>
+        <option value="">Sin definir</option>
+        <option value="metro">Metro</option>
+        <option value="kilo">Kilo</option>
+      </select>
+      <button type="button" className="btn btn--primary btn--small" onClick={handleSave} disabled={saving}>
+        {saving ? 'Guardando…' : 'Guardar'}
+      </button>
+      <button type="button" className="btn btn--ghost btn--small" onClick={() => setEditing(false)} disabled={saving}>
+        Cancelar
+      </button>
+      {error && <p className="form-error">{error.message}</p>}
+    </div>
+  )
+}
+
+// V100 — inventario_actual siempre viene de v_inventario_telas (suma de
+// movimientos, nunca un número editable). "Comprometido" queda en 0 hasta
+// que se conecte con órdenes en la Parte 3.
+function TelaInventarioInfo({ inv }) {
+  if (!inv) return null
+  return (
+    <p className="pantone-hint" style={{ marginTop: 2 }}>
+      Inventario: {inv.inventario_actual} {inv.unidad || ''} · Comprometido: 0 · Disponible: {inv.inventario_actual} {inv.unidad || ''}
+    </p>
+  )
+}
+
+const MOVIMIENTO_TIPO_LABELS = { entrada: 'Entrada', consumo_corte: 'Consumo (corte)', ajuste: 'Ajuste' }
+
+function TelaHistorial({ telaId }) {
+  const [open, setOpen] = useState(false)
+  const [items, setItems] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  async function toggle() {
+    if (open) {
+      setOpen(false)
+      return
+    }
+    setOpen(true)
+    if (items) return
+    setLoading(true)
+    const { data, error: err } = await fetchMovimientosPorTela(telaId)
+    setLoading(false)
+    if (err) {
+      setError(err)
+      return
+    }
+    setItems(data || [])
+  }
+
+  return (
+    <div style={{ marginTop: 6 }}>
+      <button type="button" className="btn btn--ghost btn--small" onClick={toggle}>
+        {open ? 'Ocultar historial' : 'Ver historial'}
+      </button>
+      {open && (
+        <div style={{ marginTop: 6 }}>
+          {loading && <Loading label="Cargando…" />}
+          {error && <p className="form-error">{error.message}</p>}
+          {items && items.length === 0 && <p className="page-subtitle">Sin movimientos todavía.</p>}
+          {items && items.length > 0 && (
+            <div className="revision__tabla-wrap">
+              <table className="simple-table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Cantidad</th>
+                    <th>Usuario</th>
+                    <th>Orden</th>
+                    <th>Nota</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((m) => (
+                    <tr key={m.id}>
+                      <td>{new Date(m.fecha).toLocaleString('es-MX')}</td>
+                      <td>{MOVIMIENTO_TIPO_LABELS[m.tipo] || m.tipo}</td>
+                      <td>
+                        {m.cantidad > 0 ? '+' : ''}
+                        {m.cantidad} {m.unidad}
+                      </td>
+                      <td>{m.usuario_nombre || '—'}</td>
+                      <td>{m.orden_id || '—'}</td>
+                      <td>{m.nota || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function CatalogSection({ title, fetchFn, deleteFn, impactFn, impactLabel, addForm, canDelete = true, renderExtra }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -634,6 +775,19 @@ function CatalogosPageContent() {
   const showAddCliente = canCreateCliente(role)
   const showAddTela = canCreateTela(role)
 
+  // V100 — inventario_actual por tela (suma de movimientos), cargado aparte
+  // del catálogo mismo para no acoplar CatalogSection a inventario.
+  const [inventarioMap, setInventarioMap] = useState({})
+  const loadInventario = useCallback(async () => {
+    const { data } = await fetchInventarioTelas()
+    const map = {}
+    for (const row of data || []) map[row.tela_id] = row
+    setInventarioMap(map)
+  }, [])
+  useEffect(() => {
+    loadInventario()
+  }, [loadInventario])
+
   return (
     <div className="page page--narrow">
       <h2 className="section-title">Catálogos</h2>
@@ -679,9 +833,25 @@ function CatalogosPageContent() {
         fetchFn={fetchTelas}
         deleteFn={deleteTela}
         impactFn={getTelaDeleteImpact}
-        impactLabel={(i) => `${i.productos_count} producto(s) perderán esta referencia (no se borran).`}
+        impactLabel={(i) =>
+          `${i.productos_count} producto(s) perderán esta referencia (no se borran). ${i.movimientos_count > 0 ? 'Tiene movimientos de inventario registrados: no se puede eliminar.' : ''}`
+        }
         addForm={showAddTela ? (onCreated) => <AddTelaForm onCreated={onCreated} /> : undefined}
         canDelete={canDelete}
+        renderExtra={(tela, load) => (
+          <>
+            <TelaUnidadEditor
+              tela={tela}
+              canEdit={showAddTela}
+              onSaved={() => {
+                load()
+                loadInventario()
+              }}
+            />
+            <TelaInventarioInfo inv={inventarioMap[tela.id]} />
+            <TelaHistorial telaId={tela.id} />
+          </>
+        )}
       />
       <ProductosSection canAdd={canCreateProducto(role)} canDelete={canDelete} />
     </div>
