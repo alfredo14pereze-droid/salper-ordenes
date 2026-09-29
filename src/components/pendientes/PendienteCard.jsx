@@ -1,17 +1,25 @@
 import { Link } from 'react-router-dom'
-import { SIGUIENTE, sinRecibirAlerta, urgenciaFecha } from '../../services/pendientesService'
-import { formatDate } from '../../utils/dates'
+import { SIGUIENTE, sinRecibirAlerta, urgenciaFecha, diasEsperandoEntrega } from '../../services/pendientesService'
+import { formatDate, formatDateTime } from '../../utils/dates'
 
 // Tarjeta de un pendiente. Móvil primero: el botón de confirmar es grande y de
 // un solo toque; la casilla permite confirmar varios en bloque.
-export default function PendienteCard({ p, puedeActuar, selected, onToggle, onConfirm, busy }) {
+//
+// V94 — un pendiente de cliente ya no se pinta como "cerrado" al llegar a
+// recibido_en_tienda (todavía falta entregarlo): eso se resalta en rojo
+// pasados 7 días esperando (misma señal visual que sinRecibirAlerta), y solo
+// se dimea con pf-card--cerrado cuando de verdad terminó (entregado, o
+// recibido_en_tienda de un pendiente que se queda en la tienda).
+export default function PendienteCard({ p, puedeActuar, puedeEntregar, selected, onToggle, onConfirm, onEntregar, busy }) {
   const sig = SIGUIENTE[p.estado]
   const urg = urgenciaFecha(p)
   const alerta = sinRecibirAlerta(p)
+  const diasEsperando = diasEsperandoEntrega(p)
+  const esperandoMucho = diasEsperando !== null && diasEsperando > 7
   let cls = 'pf-card'
-  if (alerta || urg?.nivel === 'rojo') cls += ' pf-card--rojo'
+  if (alerta || urg?.nivel === 'rojo' || esperandoMucho) cls += ' pf-card--rojo'
   else if (urg?.nivel === 'amarillo') cls += ' pf-card--amarillo'
-  if (p.estado === 'recibido_en_tienda') cls += ' pf-card--cerrado'
+  if (p.estado === 'entregado' || (p.estado === 'recibido_en_tienda' && !p.es_para_cliente)) cls += ' pf-card--cerrado'
 
   return (
     <article className={cls}>
@@ -55,12 +63,28 @@ export default function PendienteCard({ p, puedeActuar, selected, onToggle, onCo
           ) : (
             <span>Enviado {formatDate(p.created_at)}</span>
           )}
+          {diasEsperando !== null && (
+            <span className={esperandoMucho ? 'pf-due pf-due--rojo' : undefined}>
+              Lleva {diasEsperando} día{diasEsperando === 1 ? '' : 's'} esperando
+            </span>
+          )}
+          {p.estado === 'entregado' && (
+            <span className="badge badge--status-entregado">
+              Entregado {formatDateTime(p.entregado_en)}
+              {p.recogio && ` · ${p.recogio}`}
+            </span>
+          )}
         </div>
         {alerta && <p className="pf-alerta">⚠ Enviado a fábrica y sin recibir desde hace más de 1 día</p>}
       </div>
       {puedeActuar && sig && (
         <button type="button" className="btn btn--primary pf-card__btn" disabled={busy} onClick={() => onConfirm(p)}>
           {sig.label}
+        </button>
+      )}
+      {puedeEntregar && p.estado === 'recibido_en_tienda' && p.es_para_cliente && (
+        <button type="button" className="btn btn--primary pf-card__btn" disabled={busy} onClick={() => onEntregar(p)}>
+          Marcar como entregado
         </button>
       )}
     </article>

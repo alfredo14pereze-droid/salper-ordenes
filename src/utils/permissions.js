@@ -370,6 +370,13 @@ export function canManageTiposPendiente(role) {
   return role === 'admin_general' || role === 'admin_tienda' || role === 'admin_fabrica'
 }
 
+// V94 — "Marcar como entregado" (pendientes de cliente, tras recibido_en_tienda):
+// espejo de pf_puede_entregar(). Más angosto que pfEsTienda() a propósito — el
+// usuario pidió explícitamente excluir contabilidad y el rol básico `tienda`.
+export function canMarcarEntregado(role) {
+  return role === 'ventas' || role === 'admin_tienda' || role === 'admin_general'
+}
+
 // V88 — admin_fabrica_lectura: ve todo lo que ve admin_fabrica (Dashboard,
 // Estadísticas, Estadísticas de producción, Dashboard/Revisión/Admin de
 // producción, Talleros, Pendientes, precios/facturación, etc.), pero no

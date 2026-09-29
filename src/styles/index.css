@@ -428,6 +428,14 @@ h4 {
   color: #ffffff;
 }
 
+/* V94 — "Entregado" (pendientes de cliente): mismo verde de "terminado de
+   verdad" que badge--status-good, con su propia clase por si más adelante
+   se quiere distinguir. */
+.badge--status-entregado {
+  background: var(--color-good);
+  color: #ffffff;
+}
+
 .badge--outline {
   color: var(--color-orange-strong);
   background: var(--color-orange-soft);

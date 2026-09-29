@@ -4058,3 +4058,60 @@ Dos ajustes, sin SQL:
 No se pudo verificar visualmente con sesión real (no hay credenciales de la app
 disponibles en esta sesión, igual que en V91/V92) — verificado solo con
 `npm run build`.
+
+### V94 — Pendientes: estado "entregado" (solo pendientes de cliente)
+
+`supabase/schema_v94_pendientes_entregado.sql` (aplicado 2026-09-28, aditivo,
+verificado con hash y con SELECTs directos después de correrlo).
+
+**Qué se agregó:**
+- 4 columnas nullable en `pf_pendientes`: `entregado_en`, `entregado_por` (FK
+  `profiles`), `entregado_por_nombre` (snapshot, mismo patrón que
+  `creado_por_nombre`/`cambiado_por_nombre` — no estaba en el pedido original pero
+  es el criterio que ya usa toda la tabla, así que se agregó para no romper la
+  convención), `recogio` (texto libre).
+- `'entregado'` se agregó al check constraint de `estado` (`pf_pendientes_estado_check`,
+  drop + recreate con el mismo nombre).
+- RPC nuevo `pf_marcar_entregado(p_id, p_recogio)`: exige `pf_puede_entregar()`
+  (ver permisos abajo), que el pendiente sea `es_para_cliente = true` y que esté en
+  `recibido_en_tienda`; pasa a `entregado`, llena los 4 campos nuevos y
+  `cerrado_en`, e inserta su fila en `pf_historial` (mismo mecanismo de siempre —
+  el historial de "Entregado" sale gratis, sin pantalla nueva).
+- `pf_aplicar`/`pf_resolver_problema`: `cerrado_en` ya NO se llena en
+  `recibido_en_tienda` cuando `es_para_cliente = true` (se queda `null` hasta
+  `pf_marcar_entregado`); para pendientes que se quedan en la tienda, sigue
+  llenándose exactamente igual que antes.
+
+**Qué se decidió:**
+- Permiso propio y más angosto: `pf_puede_entregar()` = `ventas, admin_tienda,
+  admin_general` — a propósito NO incluye `contabilidad` ni el rol básico `tienda`
+  (que sí están en `pf_es_tienda()`, usado por el resto del flujo). Pedido
+  explícito del usuario.
+- Frontend (`permissions.js`: `canMarcarEntregado`; `pendientesService.js`:
+  `marcarEntregado`, `diasEsperandoEntrega`; `PendientesPage.jsx`,
+  `PendienteCard.jsx`, `PendienteDetailPage.jsx`, `EntregarModal.jsx` nuevo):
+  - Bandeja "Cerrados" (tienda) se partió en dos: **"Por entregar"**
+    (`recibido_en_tienda` + `es_para_cliente`, ordenada por `estado_desde`
+    ascendente — reusa esa columna, no hace falta una nueva para "antigüedad") y
+    **"Cerrados"** (lo que de verdad terminó: no-cliente en `recibido_en_tienda`, o
+    cualquiera en `entregado`). La tarjeta ya no se pinta "cerrada" (opacidad) para
+    un pendiente de cliente que todavía no se entrega; se resalta en rojo pasados
+    7 días esperando (mismo estilo que la alerta de ">1 día sin recibir" que ya
+    existía).
+  - Botón grande "Marcar como entregado" (solo si `canMarcarEntregado` y el
+    pendiente aplica) abre `EntregarModal` — un campo opcional "¿Quién recogió?"
+    y confirmar, nada más obligatorio.
+  - Badge `badge--status-entregado`: mismo verde que ya usa "Completado" en
+    órdenes (criterio ya establecido de "verde = terminado de verdad").
+  - Bandeja "Enviados a tienda" de fábrica ahora también incluye `entregado`
+    (solo lectura, fábrica no actúa sobre ese estado).
+
+**Qué quedó pendiente:**
+- Verificación en vivo con datos reales (no hay credenciales de la app en esta
+  sesión) — falta que el usuario confirme: marcar un pendiente de cliente real
+  como entregado, revisar que aparece en "Cerrados" y con el badge/hora/usuario
+  correctos, y que uno de tienda (sin cliente) se sigue cerrando igual que
+  siempre en "recibido_en_tienda".
+- No se tocó `pf_cambiar_estado_lote` (confirmación en bloque): "entregado" es
+  deliberadamente una acción de un solo pendiente a la vez (con su propio campo
+  opcional de "quién recogió"), no se agregó a la lógica de lote.

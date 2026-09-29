@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { fetchPendiente, fetchHistorial, cambiarEstado, ESTADOS, SIGUIENTE, sinRecibirAlerta, urgenciaFecha } from '../services/pendientesService'
+import { fetchPendiente, fetchHistorial, cambiarEstado, ESTADOS, SIGUIENTE, sinRecibirAlerta, urgenciaFecha, diasEsperandoEntrega } from '../services/pendientesService'
 import PendienteForm from '../components/pendientes/PendienteForm'
+import EntregarModal from '../components/pendientes/EntregarModal'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import { buildEtiquetaBlob, etiquetaFileName } from '../utils/generatePendientePdf'
 import { Loading, ErrorState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
-import { pfEsTienda, pfEsFabrica } from '../utils/permissions'
+import { pfEsTienda, pfEsFabrica, canMarcarEntregado } from '../utils/permissions'
 import { formatDate, formatDateTime } from '../utils/dates'
 
 export default function PendienteDetailPage() {
@@ -21,6 +22,7 @@ export default function PendienteDetailPage() {
   const [actionError, setActionError] = useState(null)
   const [edit, setEdit] = useState(false)
   const [preview, setPreview] = useState(null)
+  const [entregando, setEntregando] = useState(false)
 
   const load = useCallback(async () => {
     const [a, b] = await Promise.all([fetchPendiente(id), fetchHistorial(id)])
@@ -61,6 +63,8 @@ export default function PendienteDetailPage() {
   const puedeSig = sig && (sig.quien === 'fabrica' ? pfEsFabrica(role) : pfEsTienda(role))
   const puedeEditar = pfEsTienda(role) && (p.estado === 'enviado_a_fabrica' || role === 'admin_general')
   const urg = urgenciaFecha(p)
+  const puedeEntregar = canMarcarEntregado(role) && p.estado === 'recibido_en_tienda' && p.es_para_cliente
+  const diasEsperando = diasEsperandoEntrega(p)
 
   return (
     <div className="page page--narrow">
@@ -75,7 +79,7 @@ export default function PendienteDetailPage() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span className="badge badge--status">{ESTADOS[p.estado].label}</span>
+          <span className={'badge ' + (p.estado === 'entregado' ? 'badge--status-entregado' : 'badge--status')}>{ESTADOS[p.estado].label}</span>
           <button type="button" className="btn btn--secondary" onClick={etiqueta}>
             Imprimir etiqueta
           </button>
@@ -114,6 +118,17 @@ export default function PendienteDetailPage() {
             </span>
           )}
           <span>Creó: {p.creado_por_nombre || '—'} · {formatDateTime(p.created_at)}</span>
+          {diasEsperando !== null && (
+            <span className={diasEsperando > 7 ? 'pf-due pf-due--rojo' : undefined}>
+              Lleva {diasEsperando} día{diasEsperando === 1 ? '' : 's'} esperando entrega
+            </span>
+          )}
+          {p.entregado_en && (
+            <span>
+              Entregado: {formatDateTime(p.entregado_en)} · {p.entregado_por_nombre || '—'}
+              {p.recogio && ` · Recogió: ${p.recogio}`}
+            </span>
+          )}
         </div>
         {p.fotos?.length > 0 && (
           <div className="photo-picker__grid" style={{ marginTop: 10 }}>
@@ -138,6 +153,14 @@ export default function PendienteDetailPage() {
             </button>
           </div>
           {actionError && <p className="form-error">{actionError.message}</p>}
+        </section>
+      )}
+
+      {puedeEntregar && (
+        <section className="card">
+          <button type="button" className="btn btn--primary pf-big" onClick={() => setEntregando(true)}>
+            Marcar como entregado
+          </button>
         </section>
       )}
 
@@ -169,6 +192,16 @@ export default function PendienteDetailPage() {
         />
       )}
       {preview && <PdfPreviewModal blob={preview.blob} fileName={preview.fileName} onClose={() => setPreview(null)} />}
+      {entregando && (
+        <EntregarModal
+          pendiente={p}
+          onClose={() => setEntregando(false)}
+          onDone={() => {
+            setEntregando(false)
+            load()
+          }}
+        />
+      )}
     </div>
   )
 }

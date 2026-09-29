@@ -18,6 +18,9 @@ export const ESTADOS = {
   enviado_a_tienda: { label: 'Enviado a tienda', short: 'De regreso a tienda' },
   recibido_en_tienda: { label: 'Recibido en tienda', short: 'Cerrado' },
   con_problema: { label: 'Con problema', short: 'Con problema' },
+  // V94 — solo pendientes de cliente pasan por aquí (ver pf_marcar_entregado);
+  // los que se quedan en la tienda siguen cerrando en recibido_en_tienda.
+  entregado: { label: 'Entregado', short: 'Entregado' },
 }
 
 // Siguiente paso de cada estado y quién lo confirma (espejo de pf_aplicar).
@@ -140,6 +143,14 @@ export async function cambiarEstadoLote(ids, nuevo, nota) {
   return supabase.rpc('pf_cambiar_estado_lote', { p_ids: ids, p_nuevo: nuevo, p_nota: nota || null })
 }
 
+// V94 — marcar la entrega a un cliente (solo pendientes es_para_cliente, solo
+// desde recibido_en_tienda; el servidor valida todo). `recogio` es opcional.
+export async function marcarEntregado(id, recogio) {
+  const { error } = ensureClient()
+  if (error) return { data: null, error }
+  return supabase.rpc('pf_marcar_entregado', { p_id: id, p_recogio: recogio || null }).single()
+}
+
 export function subscribeToPendientes(onChange) {
   if (!supabase) return () => {}
   const channel = supabase
@@ -160,6 +171,14 @@ export function diasParaFecha(fechaStr) {
 // Enviado a fábrica y sin recibir después de 1 día.
 export function sinRecibirAlerta(p) {
   return p.estado === 'enviado_a_fabrica' && Date.now() - new Date(p.estado_desde).getTime() > 24 * 3600 * 1000
+}
+
+// V94 — días esperando entrega (solo tiene sentido en recibido_en_tienda +
+// es_para_cliente, que es justo cuando estado_desde marca "desde cuándo está
+// listo para entregar"). Se resalta a partir de 7 días.
+export function diasEsperandoEntrega(p) {
+  if (p.estado !== 'recibido_en_tienda' || !p.es_para_cliente) return null
+  return Math.floor((Date.now() - new Date(p.estado_desde).getTime()) / (24 * 3600 * 1000))
 }
 
 export function urgenciaFecha(p) {

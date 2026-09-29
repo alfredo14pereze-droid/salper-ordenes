@@ -3,26 +3,38 @@ import { usePendientes } from '../hooks/usePendientes'
 import PendienteCard from '../components/pendientes/PendienteCard'
 import PendienteForm from '../components/pendientes/PendienteForm'
 import TiposTrabajoModal from '../components/pendientes/TiposTrabajoModal'
+import EntregarModal from '../components/pendientes/EntregarModal'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { cambiarEstado, cambiarEstadoLote, SIGUIENTE, sinRecibirAlerta } from '../services/pendientesService'
 import { useAuth } from '../contexts/AuthContext'
-import { pfEsTienda, pfEsFabrica, canManageTiposPendiente, esFabricaSoloLectura } from '../utils/permissions'
+import { pfEsTienda, pfEsFabrica, canManageTiposPendiente, canMarcarEntregado, esFabricaSoloLectura } from '../utils/permissions'
 
 // Bandejas por rol (V78). tienda: lo que mandó y espera; fábrica: lo que le toca.
 // V85 — sin filtros ni buscador: no son tantos pendientes a la vez como para
 // necesitarlos; las bandejas ya bastan para ubicar cada uno.
+// V94 — "Cerrados" se partió en dos: los de cliente que ya llegaron a
+// recibido_en_tienda todavía no están cerrados de verdad (falta
+// entregarlos), así que viven en "Por entregar" hasta que pasan por
+// pf_marcar_entregado. `filtro` es un predicado extra sobre el mismo
+// estado (ambas bandejas comparten recibido_en_tienda).
 const BANDEJAS = {
   tienda: [
     { key: 'camino', label: 'En camino a fábrica', estados: ['enviado_a_fabrica'] },
     { key: 'fabrica', label: 'En fábrica', estados: ['recibido_en_fabrica', 'listo_para_regresar'] },
     { key: 'regreso', label: 'De regreso — por recibir', estados: ['enviado_a_tienda'] },
-    { key: 'cerrados', label: 'Cerrados', estados: ['recibido_en_tienda'] },
+    { key: 'entregar', label: 'Por entregar', estados: ['recibido_en_tienda'], filtro: (p) => p.es_para_cliente, ordenAntiguedad: true },
+    {
+      key: 'cerrados',
+      label: 'Cerrados',
+      estados: ['recibido_en_tienda', 'entregado'],
+      filtro: (p) => !p.es_para_cliente || p.estado === 'entregado',
+    },
   ],
   fabrica: [
     { key: 'recibir', label: 'Por recibir', estados: ['enviado_a_fabrica'] },
     { key: 'hacer', label: 'Por hacer', estados: ['recibido_en_fabrica'] },
     { key: 'listo', label: 'Listo para regresar', estados: ['listo_para_regresar'] },
-    { key: 'enviados', label: 'Enviados a tienda', estados: ['enviado_a_tienda', 'recibido_en_tienda'] },
+    { key: 'enviados', label: 'Enviados a tienda', estados: ['enviado_a_tienda', 'recibido_en_tienda', 'entregado'] },
   ],
 }
 
@@ -41,6 +53,8 @@ export default function PendientesPage() {
   const [msg, setMsg] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [showTipos, setShowTipos] = useState(false)
+  const [entregando, setEntregando] = useState(null)
+  const puedeEntregar = canMarcarEntregado(role)
 
   useEffect(() => {
     setTab(BANDEJAS[modo][0].key)
@@ -49,8 +63,14 @@ export default function PendientesPage() {
   useEffect(() => setSeleccion(new Set()), [tab])
 
   const actual = bandejas.find((b) => b.key === tab) || bandejas[0]
-  const lista = items.filter((p) => actual.estados.includes(p.estado))
-  const cuenta = (b) => items.filter((p) => b.estados.includes(p.estado)).length
+  function filtrarBandeja(b) {
+    return items.filter((p) => b.estados.includes(p.estado) && (!b.filtro || b.filtro(p)))
+  }
+  const lista = filtrarBandeja(actual)
+  if (actual.ordenAntiguedad) {
+    lista.sort((a, b) => new Date(a.estado_desde) - new Date(b.estado_desde))
+  }
+  const cuenta = (b) => filtrarBandeja(b).length
   const alertas = items.filter(sinRecibirAlerta).length
 
   function puedeActuar(p) {
@@ -163,7 +183,17 @@ export default function PendientesPage() {
       ) : (
         <div className="pf-list">
           {lista.map((p) => (
-            <PendienteCard key={p.id} p={p} puedeActuar={puedeActuar(p)} selected={seleccion.has(p.id)} onToggle={toggle} onConfirm={confirmarUno} busy={busy} />
+            <PendienteCard
+              key={p.id}
+              p={p}
+              puedeActuar={puedeActuar(p)}
+              puedeEntregar={puedeEntregar}
+              selected={seleccion.has(p.id)}
+              onToggle={toggle}
+              onConfirm={confirmarUno}
+              onEntregar={setEntregando}
+              busy={busy}
+            />
           ))}
         </div>
       )}
@@ -188,6 +218,17 @@ export default function PendientesPage() {
         />
       )}
       {showTipos && <TiposTrabajoModal onClose={() => setShowTipos(false)} />}
+      {entregando && (
+        <EntregarModal
+          pendiente={entregando}
+          onClose={() => setEntregando(null)}
+          onDone={() => {
+            setMsg({ text: `${entregando.folio}: entregado.` })
+            setEntregando(null)
+            refresh()
+          }}
+        />
+      )}
     </div>
   )
 }
