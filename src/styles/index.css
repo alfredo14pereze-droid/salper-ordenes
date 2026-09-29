@@ -3071,6 +3071,23 @@ h4 {
   display: flex;
   justify-content: space-between;
 }
+.estacion-nav {
+  display: flex;
+  gap: 8px;
+}
+.estacion-nav__link {
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--color-text-muted);
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+}
+.estacion-nav__link--active {
+  background: var(--color-amber);
+  color: var(--color-black);
+}
 .estacion-page {
   max-width: 480px;
   margin: 0 auto;
@@ -3149,6 +3166,13 @@ h4 {
   min-height: 56px;
   font-size: 18px;
   width: 100%;
+}
+.estacion-acciones {
+  display: flex;
+  gap: 10px;
+}
+.estacion-acciones .estacion-btn {
+  flex: 1;
 }
 .estacion-order__listo {
   text-align: center;

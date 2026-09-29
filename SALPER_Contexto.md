@@ -4206,3 +4206,23 @@ Pendiente: verificación visual con sesión real (no hay credenciales de la app
 en esta sesión, mismo motivo que V91-V95) — falta confirmar con cada uno de
 los 5 roles (o simulándolos vía "Ver como" desde admin_fabrica) que la lista,
 el detalle y el botón de acción se ven y actúan como se espera.
+
+### V97 — Estación: 2 botones + nav mínimo (bug real encontrado con captura de pantalla)
+
+El usuario mandó una captura real "viendo como Bordado" — el shell de estación
+(V96) no tenía NINGÚN link, ni siquiera de vuelta a "Siguientes órdenes". Si
+alguien caía en `/pendientes` (ruta que estos roles sí pueden ver desde V78) y
+ahí cambiaba a "Ver como" una estación, se quedaba varado sin forma de volver
+— eso es lo que se veía en la captura, no una pantalla vacía. Dos arreglos:
+
+- `AppLayout.jsx`: el topbar de estación ahora lleva 2 links, "Órdenes" (→ `/`)
+  y "Pendientes" (→ `/pendientes`, solo si `canViewPendientes(role)` — ya lo
+  era desde V78). Sigue sin sidebar completo ni ChatWidget.
+- `EstacionOrderPage.jsx`: el botón único que hacía las 2 transiciones en un
+  tap se reemplazó por 2 botones explícitos, **"En progreso"** y
+  **"Finalizado"** (pedido explícito del usuario) — cada uno llama
+  `update_orden_etapa` directo con su estado (`en_proceso`/`completado`); el
+  que ya está activo se resalta. `vistasPorRol.js` perdió el campo
+  `accionLabel` (ya no hace falta, los 5 roles usan el mismo par de botones).
+
+Sigue sin poder verificarse con sesión real en esta sesión.

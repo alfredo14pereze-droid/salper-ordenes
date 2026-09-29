@@ -125,15 +125,28 @@ export default function AppLayout({ children }) {
     setSidebarOpen(false)
   }
 
-  // V96 — shell mínimo para las vistas de estación: sin sidebar, sin nav,
-  // sin ChatWidget. El banner de "Ver como" se conserva (es la única forma
-  // de que admin_fabrica regrese a su vista completa mientras prueba una
-  // estación).
+  // V96/V97 — shell mínimo para las vistas de estación: sin sidebar
+  // completo ni ChatWidget, pero SÍ con 2 links ("Órdenes" y "Pendientes"
+  // — este último ya era parte de su trabajo desde V78) para no dejar a
+  // alguien varado en una pantalla sin forma de volver a la lista de
+  // órdenes. El banner de "Ver como" se conserva — es la única forma de
+  // que admin_fabrica regrese a su vista completa mientras prueba una
+  // estación.
   if (esEstacion) {
     return (
       <div className="app-shell app-shell--estacion">
         <div className="app-topbar app-topbar--estacion">
           <Logo />
+          <nav className="estacion-nav">
+            <NavLink to="/" end className={({ isActive }) => 'estacion-nav__link' + (isActive ? ' estacion-nav__link--active' : '')}>
+              Órdenes
+            </NavLink>
+            {canViewPendientes(role) && (
+              <NavLink to="/pendientes" className={({ isActive }) => 'estacion-nav__link' + (isActive ? ' estacion-nav__link--active' : '')}>
+                Pendientes
+              </NavLink>
+            )}
+          </nav>
           {user && (
             <button type="button" className="btn btn--ghost btn--small" onClick={signOut}>
               Cerrar sesión

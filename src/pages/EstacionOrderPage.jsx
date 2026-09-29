@@ -26,10 +26,11 @@ function PrendaResumen({ item }) {
   )
 }
 
-// V96 — vista de estación (Parte 1): folio, cliente, prenda+tela+color,
-// tallas y UN botón — la acción de mi etapa (o "Confirmar" si la orden
-// todavía no arranca). Nada de precios/saldos/PDFs/facturación — eso
-// vive en OrderDetailPage.jsx, que es donde llegan los demás roles.
+// V96/V97 — vista de estación (Parte 1): folio, cliente, prenda+tela+color,
+// tallas, y dos botones — "En progreso" / "Finalizado" (pendiente ->
+// en_proceso -> completado en orden_etapas) — o "Confirmar" si la orden
+// todavía no arranca. Nada de precios/saldos/PDFs/facturación — eso vive
+// en OrderDetailPage.jsx, que es donde llegan los demás roles.
 export default function EstacionOrderPage() {
   const { id } = useParams()
   const { role } = useAuth()
@@ -55,7 +56,8 @@ export default function EstacionOrderPage() {
   if (!order) return <ErrorState error={new Error('Esta orden no existe.')} />
 
   const miEtapa = etapas.find((e) => e.etapa === estacion?.etapa)
-  const yaTerminada = miEtapa?.estado === 'completado'
+  const enProceso = miEtapa?.estado === 'en_proceso'
+  const terminada = miEtapa?.estado === 'completado'
 
   async function refresh() {
     await Promise.all([refreshOrder(), loadEtapas()])
@@ -70,23 +72,12 @@ export default function EstacionOrderPage() {
     refresh()
   }
 
-  async function handleAccion() {
+  async function handleCambiarEtapa(nuevoEstado) {
     setBusy(true)
     setError(null)
-    // Un solo tap hace las dos transiciones (pendiente -> en_proceso ->
-    // completado) para que iniciado_en/completado_en queden completos,
-    // igual que si alguien hubiera dado los 2 pasos por separado en la
-    // vista completa (OrderEtapasCard).
-    if (miEtapa?.estado === 'pendiente') {
-      const { error: err1 } = await updateOrdenEtapa(order.id, estacion.etapa, 'en_proceso')
-      if (err1) {
-        setBusy(false)
-        return setError(err1)
-      }
-    }
-    const { error: err2 } = await updateOrdenEtapa(order.id, estacion.etapa, 'completado')
+    const { error: err } = await updateOrdenEtapa(order.id, estacion.etapa, nuevoEstado)
     setBusy(false)
-    if (err2) return setError(err2)
+    if (err) return setError(err)
     refresh()
   }
 
@@ -118,13 +109,27 @@ export default function EstacionOrderPage() {
         <button type="button" className="btn btn--primary estacion-btn" disabled={busy} onClick={handleConfirmar}>
           {busy ? 'Guardando…' : 'Confirmar'}
         </button>
-      ) : yaTerminada ? (
-        <p className="estacion-order__listo">✓ Ya terminaste tu parte de esta orden</p>
       ) : (
-        <button type="button" className="btn btn--primary estacion-btn" disabled={busy} onClick={handleAccion}>
-          {busy ? 'Guardando…' : estacion?.accionLabel || 'Listo'}
-        </button>
+        <div className="estacion-acciones">
+          <button
+            type="button"
+            className={'btn estacion-btn' + (enProceso || terminada ? ' btn--primary' : ' btn--secondary')}
+            disabled={busy}
+            onClick={() => handleCambiarEtapa('en_proceso')}
+          >
+            En progreso
+          </button>
+          <button
+            type="button"
+            className={'btn estacion-btn' + (terminada ? ' btn--primary' : ' btn--secondary')}
+            disabled={busy}
+            onClick={() => handleCambiarEtapa('completado')}
+          >
+            Finalizado
+          </button>
+        </div>
       )}
+      {terminada && <p className="estacion-order__listo">✓ Ya terminaste tu parte de esta orden</p>}
     </div>
   )
 }
