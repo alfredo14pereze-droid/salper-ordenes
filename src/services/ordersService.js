@@ -333,11 +333,20 @@ export async function setItemSurtido(orderId, itemIndex, talla, cantidadSurtida,
 // el dashboard/calendario se actualicen solos cuando alguien más mueve una
 // orden (sin tener que refrescar la página). Devuelve una función para
 // cancelar la suscripción.
+//
+// V96/V97 — bug real encontrado: el nombre del canal era fijo
+// ('orders-realtime'), así que si dos hooks independientes lo llamaban al
+// mismo tiempo en la misma pantalla (useOrders + useAllOrdenEtapas, que
+// EstacionHomePage.jsx sí hace), el cliente de Supabase regresaba el MISMO
+// canal ya suscrito y el segundo `.on(...)` reventaba con "cannot add
+// postgres_changes callbacks... after subscribe()". Nombre único por
+// llamada = cada quien tiene su propio canal, sin importar cuántas
+// pantallas se suscriban a la vez.
 export function subscribeToOrderChanges(onChange) {
   if (!supabase) return () => {}
 
   const channel = supabase
-    .channel('orders-realtime')
+    .channel(`orders-realtime-${crypto.randomUUID()}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'order_status_history' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'orden_etapas' }, onChange)

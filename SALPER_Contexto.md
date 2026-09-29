@@ -4226,3 +4226,42 @@ ahí cambiaba a "Ver como" una estación, se quedaba varado sin forma de volver
   `accionLabel` (ya no hace falta, los 5 roles usan el mismo par de botones).
 
 Sigue sin poder verificarse con sesión real en esta sesión.
+
+### V98 — Bug de realtime + Pendientes recortado por estación
+
+Segunda captura de pantalla real del usuario ("viendo como Costura"): pantalla
+en rojo, `ErrorBoundary` mostrando "cannot add `postgres_changes` callbacks
+for realtime:orders-realtime after `subscribe()`".
+
+**Causa encontrada**: `subscribeToOrderChanges()` (`ordersService.js`) usaba
+un nombre de canal FIJO (`'orders-realtime'`). `EstacionHomePage.jsx` llama
+DOS hooks que cada uno se suscribe por su cuenta (`useOrders` +
+`useAllOrdenEtapas`, nuevo de V96) — el cliente de Supabase regresa el MISMO
+canal (ya suscrito) para el segundo, y agregarle un `.on(...)` después de
+`subscribe()` revienta. Nadie más en el código llamaba 2 hooks así a la vez
+en la misma pantalla, por eso no había aparecido antes. **Arreglo**: nombre de
+canal único por llamada (`orders-realtime-${crypto.randomUUID()}`). Se aplicó
+el mismo arreglo preventivo a `subscribeToPendientes()`
+(`pendientesService.js`), que tenía el mismo patrón aunque todavía no lo
+hubiera disparado.
+
+**Pendientes recortado por estación** (pedido explícito del usuario, en el
+mismo mensaje): antes de esto, CUALQUIER rol con sesión (salvo
+`captura_produccion`) veía Pendientes completo.
+- `terminado`: sigue viendo TODO — las 4 bandejas de siempre
+  (`pendientesCompleto` en `vistasPorRol.js`).
+- `bordado`/`produccion` (costura): pantalla nueva y mucho más chica
+  (`EstacionPendientesPage.jsx`) — solo su lista de "por hacer"
+  (`recibido_en_fabrica`) YA filtrada a su tipo de trabajo
+  (`pendientesTipo: 'Bordado'`/`'Arreglo'` — los únicos 2 tipos activos desde
+  V82), un botón "Marcar listo" por tarjeta, sin bandejas ni selección
+  múltiple. Reusa `usePendientes()`/`cambiarEstado()`/`SIGUIENTE` tal cual,
+  cero RPC nuevo.
+- `corte`/`sublimado`: sin acceso — no existe un tipo de trabajo "Corte" ni
+  "Sublimado" en Pendientes, así que no tenían nada que filtrar de todos
+  modos. `canViewPendientes()` ahora regresa `false` para estos 2 (antes
+  regresaba `true` para cualquier rol de fábrica), así que el link
+  desaparece del nav Y la ruta `/pendientes` bloquea con `RequireRole` si
+  entran directo por URL.
+
+Sin cambios de esquema en ninguno de los 2 arreglos.

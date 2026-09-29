@@ -1,15 +1,25 @@
 // V96/V97 — Vistas de estación para fábrica (Parte 1). Un solo lugar que
-// define, por rol de etapa, su etapa en orden_etapas y si lleva el
-// placeholder de consumo — para no regar `if (role === 'corte') ...
-// else if (role === 'bordado') ...` por todo el código. Los 5 roles
-// usan el mismo par de botones ("En progreso" / "Finalizado" — ver
-// EstacionOrderPage.jsx), así que no hace falta un label por rol.
+// define, por rol de etapa, su etapa en orden_etapas, si lleva el
+// placeholder de consumo, y su acceso a Pendientes — para no regar
+// `if (role === 'corte') ... else if (role === 'bordado') ...` por todo
+// el código. Los 5 roles usan el mismo par de botones ("En progreso" /
+// "Finalizado" — ver EstacionOrderPage.jsx), así que no hace falta un
+// label por rol.
+//
+// Pendientes (V97, pedido explícito del usuario): terminado ve TODO
+// (mismas 4 bandejas de siempre, sin restricción — `pendientesCompleto`).
+// bordado y produccion (costura) solo ven su lista de "por hacer" ya
+// filtrada al tipo de trabajo que les toca (`pendientesTipo`, debe
+// coincidir con el nombre en `pf_tipos_trabajo` — hoy solo existen
+// "Arreglo" y "Bordado" activos, ver V82). corte y sublimado no tienen
+// tipo de trabajo propio en Pendientes — se quedan sin acceso (ni
+// `pendientesTipo` ni `pendientesCompleto`).
 export const ESTACIONES = {
   corte: { etapa: 'corte', consumoPlaceholder: true },
-  bordado: { etapa: 'bordado' },
+  bordado: { etapa: 'bordado', pendientesTipo: 'Bordado' },
   sublimado: { etapa: 'sublimado' },
-  produccion: { etapa: 'produccion' },
-  terminado: { etapa: 'terminado' },
+  produccion: { etapa: 'produccion', pendientesTipo: 'Arreglo' },
+  terminado: { etapa: 'terminado', pendientesCompleto: true },
 }
 
 export function esRolDeEstacion(role) {

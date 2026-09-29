@@ -153,8 +153,11 @@ export async function marcarEntregado(id, recogio) {
 
 export function subscribeToPendientes(onChange) {
   if (!supabase) return () => {}
+  // V97 — mismo canal único por llamada que subscribeToOrderChanges (ver
+  // ordersService.js): un nombre fijo revienta si dos hooks se suscriben a
+  // la vez en la misma pantalla.
   const channel = supabase
-    .channel('pf-pendientes-realtime')
+    .channel(`pf-pendientes-realtime-${crypto.randomUUID()}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'pf_pendientes' }, onChange)
     .subscribe()
   return () => supabase.removeChannel(channel)

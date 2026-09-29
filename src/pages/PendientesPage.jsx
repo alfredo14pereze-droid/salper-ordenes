@@ -4,10 +4,13 @@ import PendienteCard from '../components/pendientes/PendienteCard'
 import PendienteForm from '../components/pendientes/PendienteForm'
 import TiposTrabajoModal from '../components/pendientes/TiposTrabajoModal'
 import EntregarModal from '../components/pendientes/EntregarModal'
+import EstacionPendientesPage from './EstacionPendientesPage'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { cambiarEstado, cambiarEstadoLote, SIGUIENTE, sinRecibirAlerta } from '../services/pendientesService'
 import { useAuth } from '../contexts/AuthContext'
-import { pfEsTienda, pfEsFabrica, canManageTiposPendiente, canMarcarEntregado, esFabricaSoloLectura } from '../utils/permissions'
+import { pfEsTienda, pfEsFabrica, canManageTiposPendiente, canMarcarEntregado, canViewPendientes, esFabricaSoloLectura } from '../utils/permissions'
+import { estacionDeRol } from '../config/vistasPorRol'
+import RequireRole from '../components/common/RequireRole'
 
 // Bandejas por rol (V78). tienda: lo que mandó y espera; fábrica: lo que le toca.
 // V85 — sin filtros ni buscador: no son tantos pendientes a la vez como para
@@ -38,7 +41,24 @@ const BANDEJAS = {
   ],
 }
 
+// V97 — bordado/producción (costura) ven una pantalla mucho más chica
+// (solo su tipo de trabajo, sin bandejas — ver EstacionPendientesPage.jsx);
+// corte/sublimado ya no tienen nada que ver aquí. terminado y todos los
+// demás roles siguen en PendientesContent, sin cambios. El branch vive en
+// este wrapper (no dentro de PendientesContent) para no romper las reglas
+// de hooks.
 export default function PendientesPage() {
+  const { role } = useAuth()
+  const estacion = estacionDeRol(role)
+  if (estacion?.pendientesTipo) return <EstacionPendientesPage tipoNombre={estacion.pendientesTipo} />
+  return (
+    <RequireRole allow={canViewPendientes}>
+      <PendientesContent />
+    </RequireRole>
+  )
+}
+
+function PendientesContent() {
   const { role } = useAuth()
   const { items, loading, error, refresh } = usePendientes()
   // admin_fabrica_lectura no aparece en pfEsFabrica (esa gobierna quién puede

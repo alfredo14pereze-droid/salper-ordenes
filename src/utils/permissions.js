@@ -1,3 +1,5 @@
+import { esRolDeEstacion, estacionDeRol } from '../config/vistasPorRol'
+
 // Reglas de permisos por rol, centralizadas en un solo lugar para que
 // los componentes no dupliquen la lógica de "quién puede qué" — cada
 // regla de aquí tiene su espejo validado del lado del servidor (ver los
@@ -365,8 +367,21 @@ export function pfEsFabrica(role) {
   return PF_FABRICA.includes(role)
 }
 
+// V97 — antes cualquier rol con sesión (salvo captura_produccion) entraba
+// a Pendientes. Los roles de estación ahora están recortados: terminado
+// sigue viendo todo (pendientesCompleto), bordado/produccion solo su tipo
+// de trabajo (pendientesTipo — ver EstacionPendientesPage.jsx), y
+// corte/sublimado ya no tienen nada que ver ahí (no existe un tipo de
+// trabajo "Corte"/"Sublimado" en Pendientes). Import perezoso de
+// vistasPorRol.js para no crear un ciclo — ese archivo no importa nada de
+// aquí.
 export function canViewPendientes(role) {
-  return !!role && role !== 'captura_produccion'
+  if (!role || role === 'captura_produccion') return false
+  if (esRolDeEstacion(role)) {
+    const est = estacionDeRol(role)
+    return !!(est?.pendientesTipo || est?.pendientesCompleto)
+  }
+  return true
 }
 
 export function canManageTiposPendiente(role) {
