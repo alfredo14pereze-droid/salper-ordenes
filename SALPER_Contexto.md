@@ -4265,3 +4265,32 @@ mismo mensaje): antes de esto, CUALQUIER rol con sesión (salvo
   entran directo por URL.
 
 Sin cambios de esquema en ninguno de los 2 arreglos.
+
+### V99 — Operadoras: folio y número consecutivos automáticos
+
+Pedido del usuario: *"Cuando agregue una persona nueva, quiero que el folio y
+el numero se pongan automaticamente, que sea el consecutivo, que no solo se
+sugiera, que se haga automaticamente."* Antes, "Nueva operadora" pedía folio
+(`EMP036` era solo un placeholder de ejemplo, no un valor calculado) y número
+como inputs manuales de texto/número.
+
+**Schema (`supabase/schema_v99_operadoras_folio_automatico.sql`, aplicado en
+vivo)**: `prod_guardar_operadora` reescrita — misma firma, sin DROP. En el
+branch de ALTA (`p_id is null`) ya NO usa lo que mande el cliente para folio/
+número: calcula `v_numero = max(numero_operadora) + 1` (avanza siempre, no
+rellena huecos de bajas) y `v_folio_empleado = 'EMP' || lpad(v_numero, 3,
+'0')` — patrón confirmado contra los datos reales (numero 1→EMP001, etc.). El
+branch de EDICIÓN (`p_id` presente) no cambia: sigue permitiendo corregir
+folio/número a mano, por si hace falta arreglar un error.
+
+**Frontend (`OperadorasAdmin.jsx`)**: en el modal, los inputs de "Folio de
+empleado"/"Número de operadora" ahora solo se muestran al EDITAR; al crear se
+reemplazan por un texto explicando que se asignan solos. El botón "Guardar"
+ya no exige `folioEmpleado` no vacío al crear (solo al editar) — antes eso
+habría bloqueado el submit en cuanto se ocultó el campo.
+`guardarOperadora()`/`produccionService.js` no cambió: sigue mandando lo que
+traiga el form (vacío al crear), y el RPC simplemente lo ignora en ese caso.
+
+`npm run build` limpio. Sin poder probar con sesión real en este entorno
+(sin credenciales de login) — igual que el resto de los cambios de esta
+sesión, verificación visual pendiente del lado del usuario.

@@ -92,16 +92,20 @@ export default function OperadorasAdmin() {
       {form && (
         <Modal title={form.id ? 'Editar operadora' : 'Nueva operadora'} onClose={() => setForm(null)}>
           <form className="order-form" onSubmit={guardar}>
-            <div className="form-row">
-              <label>
-                Folio de empleado *
-                <input className="input" value={form.folioEmpleado} onChange={(e) => setForm({ ...form, folioEmpleado: e.target.value.toUpperCase() })} placeholder="EMP036" />
-              </label>
-              <label>
-                Número de operadora
-                <input className="input" type="number" value={form.numero} onChange={(e) => setForm({ ...form, numero: e.target.value })} />
-              </label>
-            </div>
+            {form.id ? (
+              <div className="form-row">
+                <label>
+                  Folio de empleado *
+                  <input className="input" value={form.folioEmpleado} onChange={(e) => setForm({ ...form, folioEmpleado: e.target.value.toUpperCase() })} placeholder="EMP036" />
+                </label>
+                <label>
+                  Número de operadora
+                  <input className="input" type="number" value={form.numero} onChange={(e) => setForm({ ...form, numero: e.target.value })} />
+                </label>
+              </div>
+            ) : (
+              <p className="form-hint">El folio y el número se asignan automáticamente al guardar (siguiente consecutivo).</p>
+            )}
             <label>
               Nombre *
               <input className="input" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
@@ -123,7 +127,7 @@ export default function OperadorasAdmin() {
               <button type="button" className="btn btn--ghost" onClick={() => setForm(null)}>
                 Cancelar
               </button>
-              <button type="submit" className="btn btn--primary" disabled={!form.folioEmpleado.trim() || !form.nombre.trim()}>
+              <button type="submit" className="btn btn--primary" disabled={(form.id && !form.folioEmpleado.trim()) || !form.nombre.trim()}>
                 Guardar
               </button>
             </div>
