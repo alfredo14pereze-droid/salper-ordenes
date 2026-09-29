@@ -4147,3 +4147,62 @@ inventario, y que los admins y ventas tengan acceso para verlo".
 Pendiente: confirmar con un usuario real de rol `tienda` o `ventas` (al aplicar
 el cambio se confirmó que hoy no hay ningún usuario con rol `tienda` dado de
 alta; no se revisó `ventas`) que la pantalla se ve y actúa como se espera.
+
+### V96 — Vistas de estación para fábrica (Parte 1)
+
+Sin cambios de esquema — todo lee de tablas/RPCs que ya existían (`orders`,
+`orden_etapas`, `update_orden_etapa`, `update_order_status`). Objetivo: que
+corte/bordado/sublimado/producción/terminado tengan una interfaz extremadamente
+simple, con solo lo necesario para su trabajo — antes veían el mismo Dashboard/
+detalle de orden que todo el mundo, solo con el nav recortado.
+
+- **`src/config/vistasPorRol.js`** (nuevo): un solo lugar que define, por rol
+  de etapa, su `accionLabel` ("Cortado", "Bordado", "Costura lista"…) y si
+  lleva el placeholder de consumo (`corte`, único) — para no regar
+  `if (role === 'corte') ...` por el código. `esRolDeEstacion(role)` es el
+  único punto que decide "¿este rol usa la vista de estación?".
+- **Misma ruta `/` y `/orden/:id`, contenido distinto**: `DashboardPage.jsx` y
+  `OrderDetailPage.jsx` se partieron en un wrapper delgado (`if
+  (esRolDeEstacion(role)) return <Estacion...Page/>`) + su contenido de
+  siempre movido a un componente interno (`DashboardContent`/
+  `OrderDetailContent`) — el branch vive en el wrapper, nunca entre llamadas a
+  hooks del componente original, para no romper las reglas de hooks. Cualquier
+  link/QR/notificación que ya apunte a `/orden/:id` sigue funcionando igual,
+  solo cambia qué ve quién lo abre.
+- **`EstacionHomePage.jsx`** ("Siguientes órdenes"): `useOrders()` +
+  `useAllOrdenEtapas()` (hook nuevo, mismo patrón de agrupar por `order_id`
+  que ya usaba `ControlRapidoPage.jsx`) — filtra a órdenes no canceladas donde
+  mi etapa sigue en `pendiente`/`en_proceso`, ordenadas por fecha de entrega,
+  con los mismos colores de urgencia de `OrderCard.jsx` (se reusan las clases
+  `order-card--overdue/--warning` tal cual, no se inventó paleta nueva).
+  **Decisión**: una orden `en_confirmacion` también aparece aquí (sus filas de
+  `orden_etapas` ya existen desde que se crea) — se avisó al usuario en el
+  plan y se confirmó así.
+- **`EstacionOrderPage.jsx`**: por prenda, solo `garment`+`color`, `tela_nombre`
+  y tallas/cantidades (mismo formato `T.10: 4` que `OrderItemsCard.jsx`) — nada
+  de manga/cuello/vivos/fotos/precios. Un botón: "Confirmar" si la orden sigue
+  `en_confirmacion` (mismo `update_order_status` que ya podían usar estos
+  roles), o si no, el `accionLabel` de mi estación. El botón hace, en un solo
+  tap, las DOS transiciones de `orden_etapas` (`pendiente→en_proceso→completado`)
+  en vez de saltarse a `completado` directo — así `iniciado_en` queda igual de
+  completo que si alguien hubiera dado los 2 pasos por separado en
+  `OrderEtapasCard.jsx` (que sigue existiendo, solo lo ven admin_fabrica/
+  admin_general/tienda ahora). **Corte** además tiene un campo "Reporte de
+  consumo" deshabilitado ("Próximamente") — sin lógica, se conecta en la
+  Parte 4.
+- **Layout mínimo**: `AppLayout.jsx` — si `esRolDeEstacion(role)` (el rol
+  EFECTIVO, para que "Ver como" simule también el shell), se salta sidebar,
+  nav y `ChatWidget` por completo: solo una barra con el logo y "Cerrar
+  sesión". El banner de "Ver como" se conserva ahí mismo, es la única forma de
+  que admin_fabrica regrese a su vista completa mientras prueba una estación.
+- **"Ver como" (V53) se amplía a `admin_fabrica`**: antes exclusivo de
+  `admin_general`. `permissions.js` gana `puedeVerComoOtroRol(trueRole)` y
+  exporta `FABRICA_ETAPA_ROLES` (antes privado); `AuthContext.jsx` cambia sus
+  4 guardas de `trueRole === 'admin_general'` a esa función.
+  `admin_fabrica` solo puede elegir entre los 5 roles de etapa (no ventas/
+  contabilidad/etc., eso sigue siendo dominio exclusivo de admin_general).
+
+Pendiente: verificación visual con sesión real (no hay credenciales de la app
+en esta sesión, mismo motivo que V91-V95) — falta confirmar con cada uno de
+los 5 roles (o simulándolos vía "Ver como" desde admin_fabrica) que la lista,
+el detalle y el botón de acción se ven y actúan como se espera.

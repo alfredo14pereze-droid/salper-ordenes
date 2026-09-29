@@ -30,8 +30,20 @@ import {
 } from '../utils/generateOrderPdf'
 import { useAuth } from '../contexts/AuthContext'
 import { canViewRemision, canViewSurtido, canChangeStatus, canSetEstimatedDays, canViewEtapas, canViewFinanzas } from '../utils/permissions'
+import { esRolDeEstacion } from '../config/vistasPorRol'
+import EstacionOrderPage from './EstacionOrderPage'
 
+// V96 — mismo criterio que DashboardPage.jsx: los roles de etapa ven una
+// vista de estación mucho más chica, en la misma ruta /orden/:id. El
+// branch vive en este wrapper para no romper las reglas de hooks (cada
+// rama es un componente distinto con su propio set de hooks).
 export default function OrderDetailPage() {
+  const { role } = useAuth()
+  if (esRolDeEstacion(role)) return <EstacionOrderPage />
+  return <OrderDetailContent />
+}
+
+function OrderDetailContent() {
   const { user, role } = useAuth()
   const { id } = useParams()
   const location = useLocation()

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { fetchMyProfile, signIn as signInRequest, signOut as signOutRequest } from '../services/authService'
+import { puedeVerComoOtroRol, FABRICA_ETAPA_ROLES } from '../utils/permissions'
 
 const AuthContext = createContext(null)
 
@@ -84,12 +85,12 @@ export function AuthProvider({ children }) {
 
   const trueRole = profile?.role || null
 
-  // Si por lo que sea queda guardado un viewAsRole y la cuenta real ya
-  // no es admin_general (cambió de cuenta, o a esta cuenta le quitaron
-  // el rol), se limpia solo — nunca debe quedar "atorado" viendo como
-  // otro rol sin ser admin_general de verdad.
+  // Si por lo que sea queda guardado un viewAsRole y la cuenta real ya no
+  // puede "ver como" (cambió de cuenta, o a esta cuenta le quitaron el
+  // rol), se limpia solo — nunca debe quedar "atorado" viendo como otro
+  // rol sin ser admin_general/admin_fabrica de verdad.
   useEffect(() => {
-    if (trueRole !== 'admin_general' && viewAsRole) {
+    if (!puedeVerComoOtroRol(trueRole) && viewAsRole) {
       setViewAsRoleState(null)
       try {
         localStorage.removeItem(VIEW_AS_STORAGE_KEY)
@@ -99,8 +100,11 @@ export function AuthProvider({ children }) {
     }
   }, [trueRole, viewAsRole])
 
+  // V96 — admin_fabrica solo puede simular los 5 roles de etapa (probar
+  // cada estación de piso), no cualquier rol como admin_general.
   function setViewAsRole(nextRole) {
-    if (trueRole !== 'admin_general') return
+    if (!puedeVerComoOtroRol(trueRole)) return
+    if (trueRole === 'admin_fabrica' && nextRole && !FABRICA_ETAPA_ROLES.includes(nextRole)) return
     setViewAsRoleState(nextRole)
     try {
       if (nextRole) {
@@ -127,14 +131,14 @@ export function AuthProvider({ children }) {
     return signOutRequest()
   }
 
-  const effectiveRole = trueRole === 'admin_general' && viewAsRole ? viewAsRole : trueRole
+  const effectiveRole = puedeVerComoOtroRol(trueRole) && viewAsRole ? viewAsRole : trueRole
 
   const value = {
     user: session?.user || null,
     profile,
     role: effectiveRole,
     trueRole,
-    viewAsRole: trueRole === 'admin_general' ? viewAsRole : null,
+    viewAsRole: puedeVerComoOtroRol(trueRole) ? viewAsRole : null,
     setViewAsRole,
     loading,
     signIn,

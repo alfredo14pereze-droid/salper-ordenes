@@ -11,6 +11,8 @@ import AnnouncementBanner from '../components/announcements/AnnouncementBanner'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
 import { hasRestrictedNav, isTiendaBasica } from '../utils/permissions'
+import { esRolDeEstacion } from '../config/vistasPorRol'
+import EstacionHomePage from './EstacionHomePage'
 
 const emptyFilters = { types: [], statuses: [], search: '' }
 
@@ -20,7 +22,22 @@ const emptyFilters = { types: [], statuses: [], search: '' }
 // se ofrece como chip.
 const DASHBOARD_STATUS_GROUPS = STATUS_GROUPS.filter((g) => g.key !== 'completado')
 
+// V96 — los 5 roles de etapa de fábrica aterrizan en su propia vista de
+// estación ("Siguientes órdenes"), no en este Dashboard completo. Mismo
+// criterio que ya usaban hasRestrictedNav/isTiendaBasica para recortar el
+// nav, pero esta vez cambia también el CONTENIDO de la ruta "/" — sin ruta
+// nueva, para que cualquier link/QR que apunte aquí siga funcionando igual
+// para todos los roles. El branch vive en este wrapper (no dentro de
+// DashboardContent) para no romper las reglas de hooks: cada rama monta un
+// componente distinto con su propio set de hooks, en vez de un `return`
+// temprano entre llamadas a hooks del mismo componente.
 export default function DashboardPage() {
+  const { role } = useAuth()
+  if (esRolDeEstacion(role)) return <EstacionHomePage />
+  return <DashboardContent />
+}
+
+function DashboardContent() {
   const { role } = useAuth()
   const { orders, loading, error, refresh } = useOrders()
   const { typesByKey, orderTypes } = useOrderTypes()

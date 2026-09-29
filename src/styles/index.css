@@ -3062,3 +3062,98 @@ h4 {
     min-height: 32px;
   }
 }
+
+/* ---------- V96 — Vistas de estación para fábrica (Parte 1) ---------- */
+.app-shell--estacion {
+  flex-direction: column;
+}
+.app-topbar--estacion {
+  display: flex;
+  justify-content: space-between;
+}
+.estacion-page {
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+  gap: 18px;
+}
+.estacion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.estacion-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 56px;
+}
+.estacion-card__folio {
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+}
+.estacion-card__cliente {
+  font-size: 15px;
+  color: var(--color-text);
+}
+.estacion-card__prendas {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+.estacion-card__due {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+.estacion-order__folio {
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-size: 26px;
+  margin: 0;
+}
+.estacion-order__cliente {
+  font-size: 16px;
+  color: var(--color-text-muted);
+  margin: 2px 0 0;
+}
+.estacion-prenda {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+.estacion-prenda__nombre {
+  font-weight: 700;
+  font-size: 16px;
+  margin: 0 0 4px;
+}
+.estacion-prenda__detalle {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 2px 0 0;
+}
+.estacion-consumo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+.estacion-btn {
+  min-height: 56px;
+  font-size: 18px;
+  width: 100%;
+}
+.estacion-order__listo {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-good);
+  padding: 16px;
+}

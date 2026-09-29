@@ -19,8 +19,11 @@ import {
   canViewInventario,
   hasRestrictedNav,
   isTiendaBasica,
+  puedeVerComoOtroRol,
+  FABRICA_ETAPA_ROLES,
   ROLE_LABELS,
 } from '../../utils/permissions'
+import { esRolDeEstacion } from '../../config/vistasPorRol'
 import { PEDIDOS_PROVEEDOR_HABILITADO } from '../../utils/featureFlags'
 
 // V34: el nav pasó de barra horizontal arriba a menú lateral (pedido
@@ -72,6 +75,15 @@ export default function AppLayout({ children }) {
   // V66 — Juanis (captura_produccion): solo Dashboard (consultar órdenes) y,
   // desde la Fase 3, la pantalla de captura. Nada más en el menú.
   const soloCaptura = isCapturaProduccion(role)
+  // V96 — los 5 roles de etapa de fábrica (o admin_fabrica "viendo como"
+  // uno de ellos) no llevan sidebar ni chat — vista de estación, mínima
+  // de verdad. Usa `role` (el efectivo), no `trueRole`, a propósito: así
+  // admin_fabrica ve exactamente el mismo shell que vería ese rol.
+  const esEstacion = esRolDeEstacion(role)
+  // V96 — "Ver como" (V53) ya no es exclusivo de admin_general: admin_fabrica
+  // también lo tiene, pero solo para probar los 5 roles de etapa (no
+  // ventas/contabilidad/etc., eso es dominio de admin_general).
+  const opcionesVerComo = trueRole === 'admin_fabrica' ? FABRICA_ETAPA_ROLES : VIEW_AS_ROLES
 
   const navItems = [
     { to: '/', label: 'Dashboard', end: true, show: true },
@@ -111,6 +123,36 @@ export default function AppLayout({ children }) {
 
   function closeSidebar() {
     setSidebarOpen(false)
+  }
+
+  // V96 — shell mínimo para las vistas de estación: sin sidebar, sin nav,
+  // sin ChatWidget. El banner de "Ver como" se conserva (es la única forma
+  // de que admin_fabrica regrese a su vista completa mientras prueba una
+  // estación).
+  if (esEstacion) {
+    return (
+      <div className="app-shell app-shell--estacion">
+        <div className="app-topbar app-topbar--estacion">
+          <Logo />
+          {user && (
+            <button type="button" className="btn btn--ghost btn--small" onClick={signOut}>
+              Cerrar sesión
+            </button>
+          )}
+        </div>
+        <main className="app-main">
+          {viewAsRole && (
+            <div className="view-as-banner">
+              Viendo como <strong>{ROLE_LABELS[viewAsRole] || viewAsRole}</strong> — así es como se ve el sistema para ese rol.
+              <button type="button" className="btn btn--ghost btn--small" onClick={() => setViewAsRole(null)}>
+                Volver a mi vista
+              </button>
+            </div>
+          )}
+          <ErrorBoundary key={location.pathname}>{children}</ErrorBoundary>
+        </main>
+      </div>
+    )
   }
 
   return (
@@ -154,12 +196,13 @@ export default function AppLayout({ children }) {
         </nav>
 
         <div className="app-sidebar__user">
-          {/* V53 — "Ver como": exclusivo de admin_general de verdad
-              (trueRole, no `role` — si ya se está viendo como otro rol,
+          {/* V53/V96 — "Ver como": admin_general (cualquier rol) y
+              admin_fabrica (solo las 5 estaciones — ver opcionesVerComo).
+              Usa trueRole, no `role` — si ya se está viendo como otro rol,
               el selector debe seguir apareciendo para poder regresar o
-              cambiar a un tercero). Solo cambia qué se ve en pantalla —
-              el servidor sigue validando el rol real en cada RPC. */}
-          {trueRole === 'admin_general' && (
+              cambiar a un tercero. Solo cambia qué se ve en pantalla — el
+              servidor sigue validando el rol real en cada RPC. */}
+          {puedeVerComoOtroRol(trueRole) && (
             <label className="view-as-picker">
               Ver como
               <select
@@ -167,8 +210,8 @@ export default function AppLayout({ children }) {
                 value={viewAsRole || ''}
                 onChange={(e) => setViewAsRole(e.target.value || null)}
               >
-                <option value="">Mi vista (Administrador general)</option>
-                {VIEW_AS_ROLES.map((r) => (
+                <option value="">Mi vista ({ROLE_LABELS[trueRole] || trueRole})</option>
+                {opcionesVerComo.map((r) => (
                   <option key={r} value={r}>
                     {ROLE_LABELS[r]}
                   </option>

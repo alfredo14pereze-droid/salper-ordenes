@@ -21,7 +21,10 @@
 // Ver la sección "Roles y permisos" de SALPER_Contexto.md para el
 // detalle completo de la migración y sus decisiones.
 
-const FABRICA_ETAPA_ROLES = ['corte', 'bordado', 'sublimado', 'produccion', 'terminado']
+// V96 — exportado (antes privado) para que vistasPorRol.js y
+// AuthContext.jsx (extensión de "Ver como" a admin_fabrica) lo reusen sin
+// duplicar la lista.
+export const FABRICA_ETAPA_ROLES = ['corte', 'bordado', 'sublimado', 'produccion', 'terminado']
 
 export function canCreateOrder(role) {
   return role === 'ventas' || role === 'admin_tienda' || role === 'admin_general'
@@ -389,6 +392,16 @@ export function canMarcarEntregado(role) {
 // captura pura, sin nada que valga la pena ver de solo lectura ahí.
 export function esFabricaSoloLectura(role) {
   return role === 'admin_fabrica_lectura'
+}
+
+// V96 — "Ver como" (V53) se amplía de admin_general a también admin_fabrica,
+// para que pueda probar cada estación de piso sin cerrar sesión. Se usa en
+// AuthContext.jsx (guardas de setViewAsRole) y AppLayout.jsx (mostrar el
+// selector). admin_fabrica solo puede simular los 5 roles de etapa — no
+// tiene sentido que "vea como" ventas/contabilidad/tienda, eso es dominio
+// de admin_general.
+export function puedeVerComoOtroRol(trueRole) {
+  return trueRole === 'admin_general' || trueRole === 'admin_fabrica'
 }
 
 // V89/V95 — Inventario (artículos por fuera de Microsip): espejo de
