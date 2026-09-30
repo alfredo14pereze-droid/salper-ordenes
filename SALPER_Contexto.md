@@ -4776,3 +4776,49 @@ necesidad de sesión real): operadoras (35 filas, 1 página), operaciones
 (60 filas, pagina sola en 2 sin cortar ninguna fila), reglas (3 tablas,
 1 página) — los tres se ven bien, sin texto cortado ni columnas
 encimadas. `npm run build` limpio.
+
+### V110 — Corte: trazo en vez de metros a mano; Terminado: botones Correcta/Parcial
+
+Pedido del usuario a partir de dos capturas de pantalla (vista de corte y
+de terminado). Sin cambios de esquema — ninguno de los dos RPC
+(`marcar_corte`/`set_item_surtido`) cambió de firma, solo cómo el
+frontend arma los valores que les manda.
+
+**Corte** — "Tela usada" (un solo número) se reemplaza por 3 campos POR
+CADA tela de la orden: **largo del trazo**, **piezas por trazo**,
+**número de hojas**. Se calculan solos: `metros = largo × hojas`
+(eso es lo que se manda a `marcar_corte`, igual que antes — el RPC no
+supo la diferencia) y `piezas cortadas = piezas por trazo × hojas`,
+mostrado debajo de los 3 campos como referencia ("= X metros de tela ·
+Y piezas cortadas"). **Piezas cortadas es solo informativo en pantalla
+— no se guarda en ningún lado** (no hay hoy una columna para eso ni se
+pidió compararlo contra el pedido); si más adelante se quiere usar para
+algo (por ejemplo comparar contra lo pedido, como ya se hace con
+consumo estimado vs. real de tela), se puede agregar después. El botón
+"Cortado" sigue exigiendo los 3 campos llenos por cada tela antes de
+habilitarse, y la confirmación sigue mostrando los metros calculados.
+
+**Terminado** — cada renglón (talla + cantidad pedida) ya no arranca con
+un input de cantidad precargado: ahora son **dos botones**, "Correcta"
+(la cantidad real es la misma que pide la orden — un solo toque, no hay
+que escribir nada) y "Parcial" (abre un campo para escribir la cantidad
+real, de más o de menos, con el mismo color rojo/verde de siempre —
+`--color-danger`/`--color-good` — y un comentario opcional). El botón
+"Confirmar y generar reporte" ahora exige que **cada renglón tenga una
+decisión tomada** (Correcta o Parcial-con-cantidad) antes de habilitarse
+— antes bastaba con dejar todo en lo precargado sin tocar nada. Si la
+orden ya traía algo capturado (se había quedado a medias), el estado
+inicial de cada botón se infiere de `cantidad_surtida` guardada
+(coincide con lo pedido → Correcta ya marcada; si no, Parcial con el
+valor guardado).
+
+CSS nuevo: `.estacion-trazo`/`__total` (corte), `.surtido-fila`/
+`__cabeza`/`__talla`/`__cantidad`/`__botones` (terminado), con los
+botones apilándose a ancho completo en celular (`@media max-width:
+720px`) para que queden grandes y fáciles de tocar.
+
+`npm run build` limpio, verificado en el navegador sin sesión real que
+no hay errores de consola. Sin poder probar el flujo completo con una
+orden real (no hay credenciales en este entorno) — verificación visual
+con datos reales pendiente del lado del usuario, como el resto de los
+cambios de esta sesión.

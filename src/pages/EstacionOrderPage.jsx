@@ -31,19 +31,18 @@ function PrendaResumen({ item }) {
   )
 }
 
-// V102 — Parte 4: para `corte` específicamente, "Tela usada" ya no es un
-// placeholder — un campo obligatorio POR CADA tela que use la orden
-// (nunca por prenda, para mantenerlo simple), con la unidad de esa tela
-// al lado. El botón cambia de "Finalizado" a "Cortado" y pide una
-// confirmación simple antes de mandar (marcar_corte inserta el/los
-// movimiento(s) consumo_corte Y completa la etapa de corte en una sola
-// llamada). El operador no ve estimado/inventario/comparación — eso vive
-// aparte, para admin, en OrderCorteResumen.jsx dentro del detalle normal
-// de la orden.
+// V110 — Parte A: para `corte`, "Tela usada" ya no se escribe directo —
+// se captura el trazo (largo del trazo, piezas por trazo, número de
+// hojas) POR CADA tela que use la orden, y los metros/piezas se calculan
+// solos: metros = largo × hojas, piezas cortadas = piezas por trazo ×
+// hojas. Los metros calculados son los que se mandan a marcar_corte (el
+// RPC no cambió — sigue esperando {tela_id, cantidad} en metros/kilos).
+// Piezas cortadas es solo de referencia en pantalla para el operador —
+// no se guarda aparte, no hay a dónde compararla todavía.
 function TelaUsadaCorte({ order, onCortado }) {
   const telaIds = useMemo(() => [...new Set((order.items || []).map((i) => i.tela_id).filter(Boolean))], [order.items])
   const [telas, setTelas] = useState({})
-  const [cantidades, setCantidades] = useState({})
+  const [trazos, setTrazos] = useState({})
   const [confirmando, setConfirmando] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
@@ -60,12 +59,29 @@ function TelaUsadaCorte({ order, onCortado }) {
     return <p className="form-error">Esta orden no tiene ninguna tela asignada a sus prendas — avisa a tienda antes de cortar.</p>
   }
 
-  const todasCapturadas = telaIds.every((id) => Number(cantidades[id]) > 0)
+  function actualizar(telaId, campo, valor) {
+    setTrazos((prev) => ({ ...prev, [telaId]: { ...prev[telaId], [campo]: valor } }))
+  }
+
+  function metrosDe(telaId) {
+    const t = trazos[telaId] || {}
+    const largo = Number(t.largo)
+    const hojas = Number(t.hojas)
+    return largo > 0 && hojas > 0 ? largo * hojas : null
+  }
+  function piezasDe(telaId) {
+    const t = trazos[telaId] || {}
+    const piezas = Number(t.piezas)
+    const hojas = Number(t.hojas)
+    return piezas > 0 && hojas > 0 ? piezas * hojas : null
+  }
+
+  const todasCapturadas = telaIds.every((id) => metrosDe(id) != null && piezasDe(id) != null)
 
   async function handleConfirmar() {
     setBusy(true)
     setError(null)
-    const consumos = telaIds.map((tela_id) => ({ tela_id, cantidad: Number(cantidades[tela_id]) }))
+    const consumos = telaIds.map((tela_id) => ({ tela_id, cantidad: metrosDe(tela_id) }))
     const { error: err } = await marcarCorte(order.id, consumos)
     setBusy(false)
     if (err) return setError(err)
@@ -74,20 +90,64 @@ function TelaUsadaCorte({ order, onCortado }) {
 
   return (
     <div className="estacion-consumo">
-      {telaIds.map((telaId) => (
-        <label key={telaId} className="field-label" style={{ display: 'block', marginBottom: 10 }}>
-          Tela usada — {telas[telaId]?.nombre || 'Tela'} {telas[telaId]?.unidad ? `(${telas[telaId].unidad})` : ''}
-          <input
-            type="number"
-            min="0.01"
-            step="0.01"
-            className="input"
-            value={cantidades[telaId] || ''}
-            onChange={(e) => setCantidades({ ...cantidades, [telaId]: e.target.value })}
-            required
-          />
-        </label>
-      ))}
+      {telaIds.map((telaId) => {
+        const t = trazos[telaId] || {}
+        const unidad = telas[telaId]?.unidad || ''
+        const metros = metrosDe(telaId)
+        const piezas = piezasDe(telaId)
+        return (
+          <div key={telaId} className="estacion-trazo">
+            <p className="field-label">
+              {telas[telaId]?.nombre || 'Tela'} {unidad ? `(${unidad})` : ''}
+            </p>
+            <div className="form-row-3">
+              <label>
+                Largo del trazo {unidad ? `(${unidad})` : ''}
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0.01"
+                  step="0.01"
+                  className="input"
+                  value={t.largo || ''}
+                  onChange={(e) => actualizar(telaId, 'largo', e.target.value)}
+                />
+              </label>
+              <label>
+                Piezas por trazo
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  step="1"
+                  className="input"
+                  value={t.piezas || ''}
+                  onChange={(e) => actualizar(telaId, 'piezas', e.target.value)}
+                />
+              </label>
+              <label>
+                Número de hojas
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  step="1"
+                  className="input"
+                  value={t.hojas || ''}
+                  onChange={(e) => actualizar(telaId, 'hojas', e.target.value)}
+                />
+              </label>
+            </div>
+            {(metros != null || piezas != null) && (
+              <p className="estacion-trazo__total">
+                {metros != null && `= ${metros.toFixed(2)} ${unidad} de tela`}
+                {metros != null && piezas != null && ' · '}
+                {piezas != null && `${piezas} piezas cortadas`}
+              </p>
+            )}
+          </div>
+        )
+      })}
       {error && <p className="form-error">{error.message}</p>}
       {!confirmando ? (
         <button type="button" className="btn btn--primary estacion-btn" disabled={!todasCapturadas} onClick={() => setConfirmando(true)}>
@@ -97,7 +157,7 @@ function TelaUsadaCorte({ order, onCortado }) {
         <div className="estacion-acciones">
           <p>
             ¿Confirmas que se usaron{' '}
-            {telaIds.map((telaId) => `${cantidades[telaId]} ${telas[telaId]?.unidad || ''} de ${telas[telaId]?.nombre || 'tela'}`).join(', ')} y la
+            {telaIds.map((telaId) => `${metrosDe(telaId).toFixed(2)} ${telas[telaId]?.unidad || ''} de ${telas[telaId]?.nombre || 'tela'}`).join(', ')} y la
             orden está cortada?
           </p>
           <button type="button" className="btn btn--primary estacion-btn" disabled={busy} onClick={handleConfirmar}>
@@ -194,17 +254,73 @@ function EstacionFotos({ order, esBordado }) {
   )
 }
 
-// V105 — Parte A: terminado ya no usa "Finalizado" genérico — captura la
-// cantidad REAL por talla (precargada con lo pedido, el operador solo
-// corrige diferencias) y al confirmar genera la remisión (reusa
-// buildRemisionPdfBlob/RemisionPdf.jsx de Fase 2 tal cual, sin duplicar
-// lógica) y completa la etapa. Mismo criterio de color que ya usa
-// RemisionPdf.jsx (rojo si falta, verde si sobra) — mismos tokens
-// --color-danger/--color-good.
-function EstacionSurtidoTerminado({ order, onConfirmado }) {
-  const [ediciones, setEdiciones] = useState(() =>
-    (order.items || []).map((item) => (item.sizes || []).map((s) => ({ cantidad: String(s.cantidad_surtida ?? s.cantidad), comentario: s.comentario_surtido || '' })))
+// V110 — Parte A: cada renglón es dos botones — "Correcta" (la cantidad
+// real es la misma que pide la orden, un solo toque) o "Parcial" (abre un
+// campo para escribir la cantidad real, de más o de menos, con el mismo
+// color rojo/verde de siempre). Reemplaza el input "Real" que antes
+// estaba siempre abierto y precargado — ahora hay que decidir cada
+// renglón a propósito antes de poder confirmar.
+function estadoInicialFila(size) {
+  const pedida = Number(size.cantidad) || 0
+  if (size.cantidad_surtida == null) return { estado: null, cantidad: '', comentario: size.comentario_surtido || '' }
+  const surtida = Number(size.cantidad_surtida)
+  return { estado: surtida === pedida ? 'correcta' : 'parcial', cantidad: String(size.cantidad_surtida), comentario: size.comentario_surtido || '' }
+}
+
+function FilaSurtido({ size, edit, onCambiar }) {
+  const pedida = Number(size.cantidad) || 0
+  const real = edit.cantidad === '' ? null : Number(edit.cantidad)
+  const colorVar = edit.estado !== 'parcial' || real == null || real === pedida ? null : real < pedida ? 'var(--color-danger)' : 'var(--color-good)'
+
+  return (
+    <div className="surtido-fila">
+      <div className="surtido-fila__cabeza">
+        <span className="surtido-fila__talla">{conTalla(size.talla)}</span>
+        <span className="surtido-fila__cantidad">{size.cantidad}</span>
+        <div className="surtido-fila__botones">
+          <button
+            type="button"
+            className={'btn' + (edit.estado === 'correcta' ? ' btn--primary' : ' btn--secondary')}
+            onClick={() => onCambiar({ estado: 'correcta', cantidad: String(pedida), comentario: '' })}
+          >
+            Correcta
+          </button>
+          <button
+            type="button"
+            className={'btn' + (edit.estado === 'parcial' ? ' btn--primary' : ' btn--secondary')}
+            onClick={() => onCambiar({ estado: 'parcial', cantidad: edit.estado === 'parcial' ? edit.cantidad : '' })}
+          >
+            Parcial
+          </button>
+        </div>
+      </div>
+      {edit.estado === 'parcial' && (
+        <div className="form-row" style={{ marginTop: 8 }}>
+          <label>
+            Cantidad real
+            <input
+              type="number"
+              inputMode="numeric"
+              min="0"
+              className="input"
+              style={colorVar ? { borderColor: colorVar, color: colorVar, fontWeight: 700 } : undefined}
+              value={edit.cantidad}
+              onChange={(e) => onCambiar({ cantidad: e.target.value })}
+              autoFocus
+            />
+          </label>
+          <label>
+            Comentario
+            <input type="text" className="input" value={edit.comentario} onChange={(e) => onCambiar({ comentario: e.target.value })} placeholder="Opcional" />
+          </label>
+        </div>
+      )}
+    </div>
   )
+}
+
+function EstacionSurtidoTerminado({ order, onConfirmado }) {
+  const [ediciones, setEdiciones] = useState(() => (order.items || []).map((item) => (item.sizes || []).map(estadoInicialFila)))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [preview, setPreview] = useState(null)
@@ -212,6 +328,13 @@ function EstacionSurtidoTerminado({ order, onConfirmado }) {
   function actualizar(itemIndex, sizeIndex, patch) {
     setEdiciones((prev) => prev.map((filas, i) => (i !== itemIndex ? filas : filas.map((f, j) => (j !== sizeIndex ? f : { ...f, ...patch })))))
   }
+
+  const todasDecididas = order.items.every((item, itemIndex) =>
+    (item.sizes || []).every((size, sizeIndex) => {
+      const e = ediciones[itemIndex][sizeIndex]
+      return e.estado === 'correcta' || (e.estado === 'parcial' && e.cantidad !== '')
+    })
+  )
 
   async function handleConfirmar() {
     setBusy(true)
@@ -267,50 +390,18 @@ function EstacionSurtidoTerminado({ order, onConfirmado }) {
       {order.items.map((item, itemIndex) => (
         <div key={item.id || itemIndex} style={{ marginBottom: 14 }}>
           <p className="estacion-prenda__nombre">{item.garment || `Prenda ${itemIndex + 1}`}</p>
-          {(item.sizes || []).map((size, sizeIndex) => {
-            const edit = ediciones[itemIndex][sizeIndex]
-            const real = edit.cantidad === '' ? null : Number(edit.cantidad)
-            const pedida = Number(size.cantidad) || 0
-            const colorVar = real == null || real === pedida ? null : real < pedida ? 'var(--color-danger)' : 'var(--color-good)'
-            return (
-              <div key={sizeIndex} className="form-row" style={{ alignItems: 'flex-end', marginBottom: 6 }}>
-                <label style={{ maxWidth: 80 }}>
-                  Talla
-                  <input type="text" className="input" value={size.talla} disabled readOnly />
-                </label>
-                <label style={{ maxWidth: 90 }}>
-                  Pedido
-                  <input type="text" className="input" value={size.cantidad} disabled readOnly />
-                </label>
-                <label style={{ maxWidth: 110 }}>
-                  Real
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    min="0"
-                    className="input"
-                    style={colorVar ? { borderColor: colorVar, color: colorVar, fontWeight: 700 } : undefined}
-                    value={edit.cantidad}
-                    onChange={(e) => actualizar(itemIndex, sizeIndex, { cantidad: e.target.value })}
-                  />
-                </label>
-                <label style={{ flex: 1 }}>
-                  Comentario
-                  <input
-                    type="text"
-                    className="input"
-                    value={edit.comentario}
-                    onChange={(e) => actualizar(itemIndex, sizeIndex, { comentario: e.target.value })}
-                    placeholder="Opcional"
-                  />
-                </label>
-              </div>
-            )
-          })}
+          {(item.sizes || []).map((size, sizeIndex) => (
+            <FilaSurtido
+              key={sizeIndex}
+              size={size}
+              edit={ediciones[itemIndex][sizeIndex]}
+              onCambiar={(patch) => actualizar(itemIndex, sizeIndex, patch)}
+            />
+          ))}
         </div>
       ))}
       {error && <p className="form-error">{error.message}</p>}
-      <button type="button" className="btn btn--primary estacion-btn" disabled={busy} onClick={handleConfirmar}>
+      <button type="button" className="btn btn--primary estacion-btn" disabled={busy || !todasDecididas} onClick={handleConfirmar}>
         {busy ? 'Generando…' : 'Confirmar y generar reporte'}
       </button>
       {preview && <PdfPreviewModal blob={preview.blob} fileName={preview.fileName} onClose={() => setPreview(null)} />}

@@ -2135,6 +2135,13 @@ h4 {
     grid-template-columns: 1fr;
   }
 
+  .surtido-fila__cabeza {
+    flex-wrap: wrap;
+  }
+  .surtido-fila__botones {
+    width: 100%;
+  }
+
   .month-calendar__day {
     min-height: 64px;
     padding: 4px;
@@ -3226,4 +3233,45 @@ h4 {
 }
 .estacion-surtido {
   margin-top: 4px;
+}
+.estacion-trazo {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.estacion-trazo__total {
+  margin: 8px 0 0;
+  font-weight: 700;
+  font-size: 14px;
+}
+.surtido-fila {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.surtido-fila__cabeza {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.surtido-fila__talla {
+  font-weight: 700;
+  font-size: 16px;
+  min-width: 48px;
+}
+.surtido-fila__cantidad {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  min-width: 56px;
+}
+.surtido-fila__botones {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+.surtido-fila__botones .btn {
+  flex: 1;
+  min-height: 48px;
 }
