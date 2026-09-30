@@ -4369,3 +4369,89 @@ Verificación visual con datos reales pendiente del lado del usuario.
 **Pendiente para la Parte 3**: conectar "comprometido" a órdenes reales, y
 generar movimientos `consumo_corte` automáticos desde el "Reporte de
 consumo" de `corte` en `EstacionOrderPage.jsx`.
+
+### V101 — Consumos por prenda y cálculo de comprometido/disponible (Fase 2, Parte 3)
+
+Pedido del usuario, con diagnóstico y plan mostrados y confirmados antes
+de aplicar. En el camino, el usuario también resolvió por su cuenta (con
+el pasted de Parte 3+4) las dos preguntas que yo había dejado abiertas
+tras V100 (¿cómo se calcula comprometido? ¿consumo real manual o
+automático?) — este V101 sigue esa versión final, no mis propuestas
+intermedias.
+
+**Diagnóstico**: `orders.items` (JSONB) ya trae `tela_id` por prenda desde
+V12 (una orden puede usar más de una tela); `garment` es texto libre (o
+uno de 5 valores fijos de sublimación) — **no existe un catálogo formal de
+prendas**, así que `consumos_prenda.prenda` es texto normalizado, igual
+que `telas.nombre_normalizado`. Tallas también son texto libre por
+renglón. "Confirmada y no cortada" = `orders.status <> 'en_confirmacion'`
+y `cancelled_at is null` y la fila de `orden_etapas` para `etapa='corte'`
+tiene `estado <> 'completado'`.
+
+**Esquema (`schema_v101_consumos_prenda.sql`, aplicado en vivo)**:
+- `consumos_prenda` (prenda, tallas text[] nullable = promedio general,
+  consumo, unidad). `guardar_consumo_prenda`/`eliminar_consumo_prenda`
+  (exclusivo `admin_fabrica`/`admin_general`) — la validación de "una
+  misma talla no puede repetirse entre filas de la misma prenda" y "solo
+  un promedio general por prenda" vive AQUÍ (no se puede expresar con un
+  CHECK simple de Postgres, necesita comparar contra otras filas).
+- `calcular_consumo_orden(p_items jsonb) returns jsonb` — el motor de
+  cálculo: recibe el arreglo de prendas de una orden (guardada, o el
+  borrador que tienda todavía está armando en pantalla — no hace falta
+  guardar primero) y regresa consumo estimado agrupado por tela, más los
+  renglones sin consumo registrado y los renglones cuya unidad no
+  coincide con la de su tela (esos NO se suman, solo se reportan). Una
+  sola función reutilizada tanto para el preview en vivo como para el
+  cálculo de comprometido — una sola fuente de verdad.
+- `v_comprometido_telas` — agrega `calcular_consumo_orden(items)` de
+  todas las órdenes confirmadas-y-no-cortadas, sumado por tela.
+- `v_inventario_telas` se **extiende** (mismas columnas de V100 + 2
+  nuevas al final: `comprometido`/`disponible`) — `CREATE OR REPLACE VIEW`
+  permite agregar columnas sin romper nada que ya la usaba.
+- `fetch_prendas_conocidas()` — nombres de `garment` ya usados en órdenes
+  reales, solo para el aviso "prenda no encontrada" del import de CSV (no
+  hay catálogo formal de prendas contra qué validar).
+
+**Frontend**:
+- `OrderTelaResumen.jsx` (nuevo) — panel "Tela" montado dentro de
+  `OrderItemsEditor.jsx` (se ve tanto al crear como al editar una orden
+  mientras siga `en_confirmacion`): una fila POR CADA tela usada en la
+  orden (puede haber varias) con consumo estimado de esa orden (calculado
+  en vivo vía `calcular_consumo_orden`, sin guardar primero), inventario
+  actual, comprometido en otras órdenes, y disponible después de esta
+  orden. Alerta roja si el disponible sale negativo ("Falta tela: pedir
+  X"), aviso amarillo si hay renglones sin consumo o con unidad
+  distinta.
+- `canVerComprometidoTela(role)` (nueva en `permissions.js`) — oculta
+  comprometido/disponible a los 5 roles de estación de fábrica y a
+  `admin_fabrica_lectura` (pedido explícito del usuario). Se evaluó
+  aparte de `canViewCatalogos` a propósito: la audiencia del panel "Tela"
+  en una orden es `canEditOrder` (ventas/admin_tienda/admin_general), que
+  no siempre coincide con quién ve Catálogos (`admin_tienda` no ve
+  Catálogos hoy, pero sí debe ver esto). Es una capa de UX, no de
+  seguridad — igual que el resto del sistema, la vista SQL sigue con
+  lectura abierta.
+- `CatalogosPage.jsx`, Telas: comprometido/disponible ahora reales
+  (dejaron de estar fijos en 0 desde V100), ocultos con el mismo
+  candado.
+- `InventarioTelaPage.jsx`: la tabla de referencia ahora también muestra
+  comprometido/disponible reales (audiencia ya es
+  `admin_fabrica`/`admin_general`, no necesita el candado aparte).
+- `ConsumosPrendaPage.jsx` (nuevo, ruta `/consumos-prenda`, nav
+  "Consumos por prenda") — exclusivo `admin_fabrica`/`admin_general`
+  (`canGestionarConsumosPrenda`). Tabla editable (prenda, tallas
+  separadas por coma, consumo, unidad) + import de CSV con vista previa
+  de errores (tallas duplicadas, unidad inválida, prenda no reconocida)
+  antes de guardar nada — parseo de CSV escrito a mano, sin agregar
+  ninguna librería nueva. Dentro del CSV, varias tallas de un mismo
+  renglón se separan con `|` (la coma ya separa columnas).
+
+`npm run build` limpio. Verificado en el navegador sin sesión real:
+`/consumos-prenda` y `/nueva` cargan sin crash en modo invitado (piden
+login, esperado). Verificación visual con datos reales pendiente del
+lado del usuario.
+
+**Pendiente para la Parte 4**: reporte de corte real (campo "Tela usada"
+obligatorio antes de marcar "Cortado", movimiento `consumo_corte` real,
+comparación estimado vs. real) — sigue en el placeholder deshabilitado de
+`EstacionOrderPage.jsx`, todavía no implementado.

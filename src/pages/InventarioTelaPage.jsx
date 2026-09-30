@@ -188,6 +188,8 @@ function InventarioTelaContent() {
                   <th>Tela</th>
                   <th>Unidad</th>
                   <th>Inventario actual</th>
+                  <th>Comprometido</th>
+                  <th>Disponible</th>
                 </tr>
               </thead>
               <tbody>
@@ -196,6 +198,8 @@ function InventarioTelaContent() {
                     <td>{t.nombre}</td>
                     <td>{t.unidad || '—'}</td>
                     <td>{t.inventario_actual}</td>
+                    <td>{t.comprometido}</td>
+                    <td className={Number(t.disponible) < 0 ? 'form-error' : ''}>{t.disponible}</td>
                   </tr>
                 ))}
               </tbody>

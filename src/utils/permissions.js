@@ -180,6 +180,24 @@ export function canGestionarInventarioTela(role) {
   return role === 'admin_fabrica' || role === 'admin_general'
 }
 
+// V101 — Consumos por prenda (rendimientos de tela): exclusivo
+// admin_fabrica/admin_general, igual que Inventario de tela.
+export function canGestionarConsumosPrenda(role) {
+  return role === 'admin_fabrica' || role === 'admin_general'
+}
+
+// V101 — comprometido/disponible de una tela: pedido explícito del
+// usuario, "los roles de fábrica NO ven... los cálculos de comprometido y
+// disponible" — se refiere a los 5 roles de ESTACIÓN (corte/bordado/
+// sublimado/producción/terminado) y a la lectura-only de fábrica. Se
+// evalúa independiente de canViewCatalogos porque también se usa en el
+// panel "Tela" al crear/editar una orden, cuya audiencia (canEditOrder:
+// ventas/admin_tienda/admin_general) no siempre coincide con quién ve
+// Catálogos (admin_tienda no lo ve, por ejemplo, y sí debe ver esto).
+export function canVerComprometidoTela(role) {
+  return !!role && !esRolDeEstacion(role) && role !== 'admin_fabrica_lectura'
+}
+
 // Bordado condicional por prenda (V25): subir/borrar fotos en
 // orden_bordados es exclusivo de bordado + admin_fabrica/admin_general —
 // no de ventas/admin_tienda, que sí deciden CUÁLES prendas llevan bordado

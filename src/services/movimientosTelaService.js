@@ -40,3 +40,14 @@ export async function registrarAjusteTela(telaId, cantidad, nota) {
 
   return supabase.rpc('registrar_ajuste_tela', { p_tela_id: telaId, p_cantidad: cantidad, p_nota: nota }).single()
 }
+
+// V101 — motor de cálculo de consumo estimado (Parte 3). `items` es el
+// arreglo de prendas de una orden — guardada o el borrador que tienda
+// todavía está armando en pantalla, no hace falta guardar primero.
+// Regresa { por_tela: {tela_id: consumo}, sin_consumo: [...], unidad_no_coincide: [...] }.
+export async function calcularConsumoOrden(items) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('calcular_consumo_orden', { p_items: items || [] })
+}

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { GARMENT_COLORS, GARMENT_OPTIONS_SUBLIMACION, GARMENT_TOP_KEYS_SUBLIMACION, ORDER_TYPES_REQUIRING_PANTONE } from '../../lib/constants'
 import TelaSelect from './TelaSelect'
 import ProductoAutocomplete from './ProductoAutocomplete'
+import OrderTelaResumen from './OrderTelaResumen'
 
 const OTRO_COLOR = '__otro__'
 
@@ -537,6 +538,8 @@ export default function OrderItemsEditor({
         <span>Total de piezas en la orden</span>
         <b>{grandTotal}</b>
       </div>
+
+      <OrderTelaResumen items={items} />
     </div>
   )
 }

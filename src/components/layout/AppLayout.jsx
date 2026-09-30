@@ -18,6 +18,7 @@ import {
   canViewPendientes,
   canViewInventario,
   canGestionarInventarioTela,
+  canGestionarConsumosPrenda,
   hasRestrictedNav,
   isTiendaBasica,
   puedeVerComoOtroRol,
@@ -118,6 +119,8 @@ export default function AppLayout({ children }) {
     { to: '/inventario', label: 'Inventario', show: canViewInventario(role) },
     // V100 — Entrada/Ajuste de tela, exclusivo admin_fabrica/admin_general.
     { to: '/inventario-tela', label: 'Inventario de tela', show: canGestionarInventarioTela(role) },
+    // V101 — rendimientos de tela por prenda, exclusivo admin_fabrica/admin_general.
+    { to: '/consumos-prenda', label: 'Consumos por prenda', show: canGestionarConsumosPrenda(role) },
     { to: '/catalogos', label: 'Catálogos', show: canViewCatalogos(role) },
     // V57 — beta oculta: solo admin_general (ver canManagePedidosColegio).
     { to: '/pedidos-colegio', label: 'Pedidos Colegio', show: canManagePedidosColegio(role) },

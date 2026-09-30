@@ -19,6 +19,7 @@ import NewPedidoTiendaPage from './pages/NewPedidoTiendaPage'
 import PedidoTiendaDetailPage from './pages/PedidoTiendaDetailPage'
 import CatalogosPage from './pages/CatalogosPage'
 import InventarioTelaPage from './pages/InventarioTelaPage'
+import ConsumosPrendaPage from './pages/ConsumosPrendaPage'
 import ControlRapidoPage from './pages/ControlRapidoPage'
 import EstadisticasPage from './pages/EstadisticasPage'
 import PedidosColegioPage from './pages/PedidosColegioPage'
@@ -100,6 +101,7 @@ function AuthGate() {
           <Route path="/usuarios" element={<UsersPage />} />
           <Route path="/catalogos" element={<CatalogosPage />} />
           <Route path="/inventario-tela" element={<InventarioTelaPage />} />
+          <Route path="/consumos-prenda" element={<ConsumosPrendaPage />} />
           <Route path="/control-rapido" element={<ControlRapidoPage />} />
           <Route path="/estadisticas" element={<EstadisticasPage />} />
           {/* V57 — Pedidos Colegio (beta): cada página se protege sola con

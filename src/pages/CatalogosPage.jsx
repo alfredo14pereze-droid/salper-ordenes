@@ -8,6 +8,7 @@ import {
   canCreateProducto,
   canViewCatalogos,
   canViewFinanzas,
+  canVerComprometidoTela,
 } from '../utils/permissions'
 import RazonesSocialesManager from '../components/finanzas/RazonesSocialesManager'
 import { PROVEEDORES_HABILITADO } from '../utils/featureFlags'
@@ -394,11 +395,17 @@ function TelaUnidadEditor({ tela, canEdit, onSaved }) {
 // V100 — inventario_actual siempre viene de v_inventario_telas (suma de
 // movimientos, nunca un número editable). "Comprometido" queda en 0 hasta
 // que se conecte con órdenes en la Parte 3.
-function TelaInventarioInfo({ inv }) {
+function TelaInventarioInfo({ inv, verComprometido }) {
   if (!inv) return null
   return (
     <p className="pantone-hint" style={{ marginTop: 2 }}>
-      Inventario: {inv.inventario_actual} {inv.unidad || ''} · Comprometido: 0 · Disponible: {inv.inventario_actual} {inv.unidad || ''}
+      Inventario: {inv.inventario_actual} {inv.unidad || ''}
+      {verComprometido && (
+        <>
+          {' '}
+          · Comprometido: {inv.comprometido} {inv.unidad || ''} · Disponible: {inv.disponible} {inv.unidad || ''}
+        </>
+      )}
     </p>
   )
 }
@@ -848,7 +855,7 @@ function CatalogosPageContent() {
                 loadInventario()
               }}
             />
-            <TelaInventarioInfo inv={inventarioMap[tela.id]} />
+            <TelaInventarioInfo inv={inventarioMap[tela.id]} verComprometido={canVerComprometidoTela(role)} />
             <TelaHistorial telaId={tela.id} />
           </>
         )}
