@@ -4660,3 +4660,32 @@ referencia, y el flujo completo de "Confirmar y generar reporte") sigue
 pendiente del lado del usuario — es la más importante de las tres partes
 de esta sesión para probar con cuidado, por generar un documento oficial
 (remisión) y completar una etapa de producción.
+
+### V106 — Producción: el cierre es a las 11 AM del jueves (hora exacta)
+
+Afinando V104: el usuario precisó que el cierre no es "cualquier momento
+del jueves" sino específicamente **~11 AM** (la revisión para premios de
+nómina es a mediodía). V104 solo comparaba fechas (cerraba desde la
+medianoche del jueves); V106 compara fecha+hora exacta:
+`(fecha_fin + 2 días) a las 11:00, hora Torreón`. Mismo
+nombre/firma/tabla, sin tocar nada más.
+
+También se aclaró (sin cambio de código, solo explicación) una confusión
+del usuario: a qué semana entra un registro capturado "ahorita" depende
+de la **fecha que se le ponga al registro**, no del momento en que se
+captura — el sistema nunca usa "ahora" para decidir la semana de un
+registro, solo la fecha del papelito.
+
+**Pendiente, sin resolver todavía**: el usuario también describió que la
+captura de la semana NUEVA (la que ya empezó hoy miércoles) no debería
+poder empezar sino hasta el jueves por la tarde, después de la revisión
+de la semana anterior — un candado adicional, distinto del cierre, que
+bloquearía capturar fechas de la semana que apenas comienza hasta que se
+abra explícitamente. No se implementó todavía: falta confirmar si de
+verdad quiere que el sistema lo BLOQUEE (y a qué hora exacta de la tarde
+abre), o si solo estaba describiendo cómo trabajan operativamente sin
+pedir que el sistema lo imponga.
+
+Aplicado en vivo, verificado con datos reales: hoy (miércoles 30,
+10:44 am) la semana 23-29 sigue `abierta` y su `cierra_en` calculado da
+exactamente 2026-10-01 11:00:00, como se pidió.
