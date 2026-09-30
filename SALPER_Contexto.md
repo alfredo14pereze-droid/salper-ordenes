@@ -4745,3 +4745,34 @@ de guardar "ya lo vi" en ningún lado.
 `--cerrada`. Verificado en el navegador sin sesión real que no hay
 crash. Verificación con Juanis usando la pantalla real, sobre todo
 alrededor de un jueves a mediodía, pendiente del lado del usuario.
+
+### V109 — "Imprimir" en cada sección de Admin producción
+
+Pedido del usuario: un botón de imprimir PDF en cada sección de
+`ProduccionAdminPage.jsx`. Se agregó a las 3 secciones que son
+catálogos/listas — **Operaciones**, **Operadoras**, **Reglas de
+premios** — no a Configuración (son solo 2 números, no hay nada real
+que listar ahí; decisión de alcance propia, no lo pidió explícitamente
+pero tampoco aplicaba).
+
+**`ProduccionPdf.jsx`** gana 3 documentos nuevos (`CatalogoOperacionesDoc`,
+`CatalogoOperadorasDoc`, `CatalogoReglasDoc`), reusando los mismos
+estilos/colores/helpers (`money`, tokens de color) que ya traían
+`ProduccionOperadorasDoc`/`ProduccionRankingDoc` — no es una paleta
+nueva. Tablas genéricas (`colXs`/`colSm`/`colMd`/`colFlex`) en vez de un
+set de columnas por tabla. `generateProduccionPdf.jsx` gana los
+`buildCatalogoXPdfBlob` + `catalogoPdfFileName` correspondientes.
+
+**`ImprimirCatalogo.jsx`** (nuevo, compartido por las 3 secciones) —
+encapsula generar+vista previa (reusa `PdfPreviewModal` tal cual) para
+no repetir ese manejo de estado 3 veces. Cada sección imprime su
+catálogo **completo** (no el filtrado/recortado que se ve en pantalla —
+`OperacionesAdmin` limita la tabla a 300 filas visibles, pero el PDF
+lleva todas).
+
+Verificado generando los 3 PDFs con datos de prueba fuera de la app
+(misma técnica de Node+esbuild ya usada antes en esta sesión, sin
+necesidad de sesión real): operadoras (35 filas, 1 página), operaciones
+(60 filas, pagina sola en 2 sin cortar ninguna fila), reglas (3 tablas,
+1 página) — los tres se ven bien, sin texto cortado ni columnas
+encimadas. `npm run build` limpio.

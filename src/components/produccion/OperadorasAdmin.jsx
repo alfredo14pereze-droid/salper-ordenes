@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import Modal from '../talleros/Modal'
+import ImprimirCatalogo from './ImprimirCatalogo'
 import { fetchOperadorasTodas, guardarOperadora } from '../../services/produccionService'
 import { useAuth } from '../../contexts/AuthContext'
 import { esFabricaSoloLectura } from '../../utils/permissions'
+import { buildCatalogoOperadorasPdfBlob, catalogoPdfFileName } from '../../utils/generateProduccionPdf'
 
 const VACIA = { id: null, folioEmpleado: '', numero: '', nombre: '', puesto: 'COSTURA', participa: true, activo: true }
 
@@ -45,11 +47,14 @@ export default function OperadorasAdmin() {
 
   return (
     <div>
-      {!soloLectura && (
-        <button type="button" className="btn btn--secondary btn--small" onClick={() => setForm({ ...VACIA })}>
-          + Nueva operadora
-        </button>
-      )}
+      <div className="revision__acciones">
+        {!soloLectura && (
+          <button type="button" className="btn btn--secondary btn--small" onClick={() => setForm({ ...VACIA })}>
+            + Nueva operadora
+          </button>
+        )}
+        <ImprimirCatalogo label="Imprimir operadoras" build={() => buildCatalogoOperadorasPdfBlob(lista)} fileName={catalogoPdfFileName('operadoras')} />
+      </div>
       {error && <p className="form-error">{error}</p>}
       <div className="revision__tabla-wrap" style={{ marginTop: 10 }}>
         <table className="simple-table">

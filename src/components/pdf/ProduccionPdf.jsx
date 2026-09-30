@@ -42,6 +42,15 @@ const s = StyleSheet.create({
   cNombre: { flex: 1 },
   cNum: { width: 86, textAlign: 'right' },
   cNumS: { width: 48, textAlign: 'right' },
+  // V109 — catálogos (operaciones/operadoras/reglas): columnas genéricas
+  // reusadas entre las 3 tablas, en vez de definir un set por tabla.
+  colXs: { width: 40, textAlign: 'center' },
+  colSm: { width: 60, textAlign: 'center' },
+  colMd: { width: 90 },
+  colFlex: { flex: 1 },
+  catTitleBox: { backgroundColor: AMBER, paddingVertical: 4, paddingHorizontal: 12, marginTop: 6, alignSelf: 'flex-start' },
+  catTitle: { fontFamily: 'Helvetica-Bold', fontSize: 10 },
+  catGrupo: { fontFamily: 'Helvetica-Bold', fontSize: 10, marginTop: 16, marginBottom: 4 },
 })
 
 function Grafica({ serie }) {
@@ -172,6 +181,112 @@ export function ProduccionRankingDoc({ semana, filas }) {
             <Text style={s.cNum}>{f.mejora_pct == null ? 'Sin base' : `${f.mejora_pct >= 0 ? '+' : ''}${Number(f.mejora_pct).toFixed(1)}%`}</Text>
           </View>
         ))}
+      </Page>
+    </Document>
+  )
+}
+
+const hoy = () => new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })
+
+// V109 — "Imprimir" en Admin producción (Operaciones/Operadoras/Reglas de
+// premios): un catálogo imprimible por sección, tal cual está en ese
+// momento (no es un histórico ni compara semanas, a diferencia de los
+// otros 2 documentos de este archivo).
+export function CatalogoOperacionesDoc({ operaciones }) {
+  return (
+    <Document title="Catálogo de operaciones · SALPER">
+      <Page size="LETTER" style={s.page}>
+        <Text style={s.brand}>SALPER · CATÁLOGO DE OPERACIONES</Text>
+        <Text style={s.sub}>{operaciones.length} operaciones · generado el {hoy()}</Text>
+        <View style={[s.th, { marginTop: 14 }]}>
+          <Text style={[s.thT, s.colSm]}>Folio</Text>
+          <Text style={[s.thT, s.colMd]}>Prenda</Text>
+          <Text style={[s.thT, s.colFlex]}>Parte</Text>
+          <Text style={[s.thT, s.colFlex]}>Operación</Text>
+          <Text style={[s.thT, s.colXs]}>Seg.</Text>
+          <Text style={[s.thT, s.colSm]}>Estado</Text>
+        </View>
+        {operaciones.map((o) => (
+          <View key={o.folio} style={s.tr} wrap={false}>
+            <Text style={s.colSm}>{o.folio}</Text>
+            <Text style={s.colMd}>{o.prenda}</Text>
+            <Text style={s.colFlex}>{o.parte}</Text>
+            <Text style={s.colFlex}>{o.operacion}</Text>
+            <Text style={s.colXs}>{o.segundos}</Text>
+            <Text style={s.colSm}>{o.activa ? 'Activa' : 'Inactiva'}</Text>
+          </View>
+        ))}
+      </Page>
+    </Document>
+  )
+}
+
+export function CatalogoOperadorasDoc({ operadoras }) {
+  return (
+    <Document title="Catálogo de operadoras · SALPER">
+      <Page size="LETTER" style={s.page}>
+        <Text style={s.brand}>SALPER · CATÁLOGO DE OPERADORAS</Text>
+        <Text style={s.sub}>{operadoras.length} operadoras · generado el {hoy()}</Text>
+        <View style={[s.th, { marginTop: 14 }]}>
+          <Text style={[s.thT, s.colXs]}>#</Text>
+          <Text style={[s.thT, s.colFlex]}>Nombre</Text>
+          <Text style={[s.thT, s.colMd]}>Folio</Text>
+          <Text style={[s.thT, s.colMd]}>Puesto</Text>
+          <Text style={[s.thT, s.colSm]}>Bonos</Text>
+          <Text style={[s.thT, s.colSm]}>Activa</Text>
+        </View>
+        {operadoras.map((o) => (
+          <View key={o.id} style={s.tr} wrap={false}>
+            <Text style={s.colXs}>{o.numero_operadora ?? '—'}</Text>
+            <Text style={s.colFlex}>{o.nombre}</Text>
+            <Text style={s.colMd}>{o.folio_empleado}</Text>
+            <Text style={s.colMd}>{o.puesto || '—'}</Text>
+            <Text style={s.colSm}>{o.participa_bonos ? 'Sí' : 'No'}</Text>
+            <Text style={s.colSm}>{o.activo ? 'Sí' : 'No'}</Text>
+          </View>
+        ))}
+      </Page>
+    </Document>
+  )
+}
+
+const REGLA_GRUPOS = [
+  { key: 'meta', titulo: 'Bono por meta', desde: 'Valor generado desde' },
+  { key: 'lugar', titulo: 'Bono por lugar', desde: 'Lugar desde' },
+  { key: 'mejora', titulo: 'Bono por mejora', desde: 'Mejora desde (%)' },
+]
+
+export function CatalogoReglasDoc({ reglas }) {
+  return (
+    <Document title="Reglas de premios · SALPER">
+      <Page size="LETTER" style={s.page}>
+        <Text style={s.brand}>SALPER · REGLAS DE PREMIOS</Text>
+        <Text style={s.sub}>Generado el {hoy()} · montos en pesos, no confidencial para quien ya los administra</Text>
+        {REGLA_GRUPOS.map((g) => {
+          const filas = reglas.filter((r) => r.tipo === g.key).sort((a, b) => Number(a.desde) - Number(b.desde))
+          return (
+            <View key={g.key}>
+              <Text style={s.catGrupo}>{g.titulo}</Text>
+              <View style={s.th}>
+                <Text style={[s.thT, s.colFlex]}>{g.desde}</Text>
+                <Text style={[s.thT, s.colMd]}>Bono</Text>
+                <Text style={[s.thT, s.colSm]}>Activa</Text>
+              </View>
+              {filas.length === 0 && (
+                <View style={s.tr}>
+                  <Text style={s.colFlex}>Sin reglas definidas.</Text>
+                </View>
+              )}
+              {filas.map((r) => (
+                <View key={r.id} style={s.tr} wrap={false}>
+                  <Text style={s.colFlex}>{g.key === 'mejora' ? `${r.desde}%` : r.desde}</Text>
+                  <Text style={s.colMd}>{money(r.bono)}</Text>
+                  <Text style={s.colSm}>{r.activa ? 'Sí' : 'No'}</Text>
+                </View>
+              ))}
+            </View>
+          )
+        })}
       </Page>
     </Document>
   )

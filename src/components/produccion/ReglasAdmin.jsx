@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
+import ImprimirCatalogo from './ImprimirCatalogo'
 import { fetchReglas, guardarRegla } from '../../services/produccionService'
 import { useAuth } from '../../contexts/AuthContext'
 import { esFabricaSoloLectura } from '../../utils/permissions'
+import { buildCatalogoReglasPdfBlob, catalogoPdfFileName } from '../../utils/generateProduccionPdf'
 
 const TIPOS = [
   { key: 'meta', titulo: 'Bono por meta', desde: 'Valor generado desde ($)', nota: 'Se toma la fila con el mayor "desde" que no pase del valor generado de la semana.' },
@@ -42,6 +44,9 @@ export default function ReglasAdmin() {
 
   return (
     <div>
+      <div className="revision__acciones">
+        <ImprimirCatalogo label="Imprimir reglas de premios" build={() => buildCatalogoReglasPdfBlob(reglas)} fileName={catalogoPdfFileName('reglas')} />
+      </div>
       {error && <p className="form-error">{error}</p>}
       {TIPOS.map((t) => (
         <div key={t.key} className="card" style={{ marginBottom: 14 }}>

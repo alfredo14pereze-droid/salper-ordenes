@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Modal from '../talleros/Modal'
+import ImprimirCatalogo from './ImprimirCatalogo'
 import { fetchOperacionesTodas, guardarOperacion } from '../../services/produccionService'
 import { useAuth } from '../../contexts/AuthContext'
 import { esFabricaSoloLectura } from '../../utils/permissions'
+import { buildCatalogoOperacionesPdfBlob, catalogoPdfFileName } from '../../utils/generateProduccionPdf'
 import {
   centena,
   sugerirFolioPrendaExistente,
@@ -74,6 +76,7 @@ export default function OperacionesAdmin() {
           <button type="button" className="btn btn--ghost btn--small" onClick={() => setVerCentenas((v) => !v)}>
             {verCentenas ? 'Ocultar' : 'Folios libres por centena'}
           </button>
+          <ImprimirCatalogo label="Imprimir operaciones" build={() => buildCatalogoOperacionesPdfBlob(ops)} fileName={catalogoPdfFileName('operaciones')} />
           {!soloLectura && (
             <button type="button" className="btn btn--secondary btn--small" onClick={() => setAlta({ prendaSel: fPrenda || '', prendaNueva: '', folio: '', parte: '', operacion: '', segundos: '' })}>
               + Nueva operación
