@@ -4916,3 +4916,27 @@ cargan sin errores de consola nuevos. Falta crear las cuentas reales
 de los 6 operadores (el usuario las hace desde Usuarios) y, después de
 eso, validar con cada rol antes de seguir a la Parte 2 — como pide el
 propio documento ("Correr en orden... No saltarse validaciones").
+
+### V113 — Pendientes: el rol básico `tienda` también puede marcar entrega a cliente
+
+`supabase/schema_v113_pendientes_tienda_entrega.sql` (aplicado 2026-09-30,
+verificado con hash y con `select proname, count(*) ... group by proname` para
+confirmar que no quedó un overload duplicado de la función). Pedido explícito
+del usuario, revierte a propósito la exclusión que él mismo había pedido en
+V94.
+
+- Único cambio: `pf_puede_entregar()` gana `'tienda'` en su lista de roles
+  permitidos (antes solo `ventas`, `admin_tienda`, `admin_general`).
+  `contabilidad` se queda fuera, igual que antes — nunca estuvo incluida.
+- Frontend: `canMarcarEntregado()` en `permissions.js` — mismo espejo de
+  siempre. Al ser la única función que gatea el botón "Marcar como entregado"
+  en `PendientesPage.jsx`/`PendienteDetailPage.jsx`, no hizo falta tocar esos
+  componentes: el botón aparece solo en cuanto el rol pasa.
+- 100% aditivo: ninguna tabla, columna ni estado nuevo — solo se ensanchó una
+  función `security definer` ya existente.
+
+`npm run build` limpio. Verificado en modo invitado (sin sesión) que
+`/pendientes` sigue cargando sin errores de consola nuevos — no fue posible
+probar con una sesión real de rol `tienda` en este entorno (sin credenciales),
+queda pendiente que el usuario lo confirme viendo el botón "Marcar como
+entregado" en la bandeja "Por entregar" con un usuario real de ese rol.

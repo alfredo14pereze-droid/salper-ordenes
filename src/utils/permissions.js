@@ -449,10 +449,10 @@ export function canManageTiposPendiente(role) {
 }
 
 // V94 — "Marcar como entregado" (pendientes de cliente, tras recibido_en_tienda):
-// espejo de pf_puede_entregar(). Más angosto que pfEsTienda() a propósito — el
-// usuario pidió explícitamente excluir contabilidad y el rol básico `tienda`.
+// espejo de pf_puede_entregar(). V113 — el usuario pidió agregar también el rol
+// básico `tienda` (antes excluido a propósito); contabilidad se queda fuera.
 export function canMarcarEntregado(role) {
-  return role === 'ventas' || role === 'admin_tienda' || role === 'admin_general'
+  return role === 'ventas' || role === 'admin_tienda' || role === 'admin_general' || role === 'tienda'
 }
 
 // V88 — admin_fabrica_lectura: ve todo lo que ve admin_fabrica (Dashboard,
