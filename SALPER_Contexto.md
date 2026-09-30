@@ -4681,11 +4681,30 @@ captura de la semana NUEVA (la que ya empezó hoy miércoles) no debería
 poder empezar sino hasta el jueves por la tarde, después de la revisión
 de la semana anterior — un candado adicional, distinto del cierre, que
 bloquearía capturar fechas de la semana que apenas comienza hasta que se
-abra explícitamente. No se implementó todavía: falta confirmar si de
-verdad quiere que el sistema lo BLOQUEE (y a qué hora exacta de la tarde
-abre), o si solo estaba describiendo cómo trabajan operativamente sin
-pedir que el sistema lo imponga.
+abra explícitamente.
 
 Aplicado en vivo, verificado con datos reales: hoy (miércoles 30,
 10:44 am) la semana 23-29 sigue `abierta` y su `cierra_en` calculado da
 exactamente 2026-10-01 11:00:00, como se pidió.
+
+### V107 — Producción: la semana nueva no abre hasta el jueves 1:00 PM
+
+El usuario confirmó que SÍ quería que el sistema bloqueara activamente la
+captura de la semana nueva (no era solo descripción de su flujo) — y
+precisó la hora de apertura: **1:00 PM del jueves** (2 horas después del
+cierre de las 11 AM de V106, dando margen a la revisión de mediodía).
+
+**`prod_capturar_registro`** (única función tocada — editar un registro
+que ya existe no necesita este candado, la apertura ya pasó cuando se
+creó) gana una validación NUEVA, distinta del candado de "la semana ya
+cerró" (V104/V106, que mira el `estado` guardado): aquí se calcula la
+fecha de inicio de la semana de `p_fecha` y se bloquea si `hoy < (esa
+fecha + 1 día) a la 1:00 PM` — es decir, no importa el `estado` (que
+siempre nace `abierta`), se bloquea la apertura misma.
+`admin_general`/`admin_fabrica` quedan exentos (mismo criterio que ya se
+usa para corregir semanas `en_revision`).
+
+Verificado en vivo con datos reales: ahora mismo (miércoles 30, ~10:49
+am) capturar algo fechado HOY quedaría bloqueado hasta
+`2026-10-01 13:00:00` — jueves 1 PM, exacto. Capturar algo de la semana
+anterior (hasta el martes 29) sigue totalmente permitido.
