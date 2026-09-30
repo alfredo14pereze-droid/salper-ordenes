@@ -4604,3 +4604,59 @@ miércoles). Mismo nombre/firma, sin tocar tablas ni otras funciones — el
 botón manual "Cerrar semana" no cambió, sigue disponible si algún admin
 quiere cerrarla antes a propósito. Aplicado en vivo, verificado que solo
 existe una versión de la función con el cuerpo nuevo.
+
+### V105 — Vistas de fábrica: terminado real, fotos y Pendientes (Parte A)
+
+Pedido del usuario, con diagnóstico mostrado y confirmado antes de
+aplicar. Sin cambios de esquema — todo frontend.
+
+**Diagnóstico (resumen, completo en el mensaje al usuario)**: la captura
+de cantidad surtida (`OrderSurtidoCard.jsx`, permiso `canManageSurtido` ya
+incluía a `terminado`) y la remisión (`buildRemisionPdfBlob`/
+`RemisionPdf.jsx`, V26) ya existían — el problema era de enrutamiento:
+`OrderDetailPage.jsx` manda a TODO rol de estación a la vista mínima de
+Parte 1 (`EstacionOrderPage.jsx`), que nunca montaba ese componente. Las
+fotos (`order.reference_photos` / tabla `orden_bordados`) tenían el mismo
+problema — existían, pero ningún rol de estación las veía. El patrón de
+colores rojo/falta-verde/sobra que pedía el usuario **ya existía**
+también, dentro de `RemisionPdf.jsx` (`colorSurtida`) — se reusaron los
+mismos tokens (`--color-danger`/`--color-good`, iguales en hex a los que
+ya traía el PDF) en vez de inventar otros.
+
+**Cambios**:
+- `vistasPorRol.js`: `terminado` gana `surtidoFinal: true`.
+- `EstacionOrderPage.jsx`:
+  - `EstacionSurtidoTerminado` (nuevo, reemplaza el botón "Finalizado"
+    SOLO para `terminado`) — tabla Talla/Pedido/Real por prenda, "Real"
+    precargado con `cantidad_surtida` ya guardada o, si no hay, con lo
+    pedido; color en el borde/texto del input (falta/sobra, mismos
+    tokens de arriba); comentario opcional. Botón "Confirmar y generar
+    reporte": guarda todas las filas (`setItemSurtido`, reusado tal
+    cual), completa la etapa (`updateOrdenEtapa(..., 'terminado',
+    'completado')` — fecha/hora/usuario ya los captura esa función sola,
+    sin cambios), arma el PDF con los valores recién guardados (sin
+    esperar un refetch) y muestra la vista previa (`PdfPreviewModal`,
+    reusado). Una vez completada la etapa, el botón queda fijo en
+    "Reporte generado" (mismo criterio que "Cortado" de Parte 4 — evita
+    reenvíos accidentales).
+  - `EstacionFotos` (nuevo) — `bordado` ve solo `orden_bordados` agrupado
+    por prenda (ubicación + foto), con el aviso "Esta orden no tiene foto
+    de bordado" si no hay ninguna; el resto ve `order.reference_photos`.
+    Miniaturas (84×84, `object-fit: cover`) que abren en grande dentro de
+    un `Modal` genérico ya existente (`components/talleros/Modal.jsx`) —
+    nada nuevo que mantener.
+- **Pendientes**: no se tocó — ya era exactamente lo pedido (solo
+  `terminado` ve el módulo completo; `corte`/`sublimado` no lo ven en
+  absoluto; `bordado`/`producción` ven su lista filtrada). Se confirmó en
+  el diagnóstico, no había nada que cambiar.
+- **"Ver como [rol]"**: no necesitó cambio aparte — reusa la misma
+  `EstacionOrderPage.jsx`, así que hereda todo esto automáticamente.
+
+`npm run build` limpio (agregado CSS nuevo para las miniaturas:
+`.estacion-fotos`/`.estacion-foto-thumb`). Verificado en el navegador sin
+sesión real que no hay errores de consola nuevos. Verificación visual con
+datos reales (una orden con fotos de bordado, una con fotos de
+referencia, y el flujo completo de "Confirmar y generar reporte") sigue
+pendiente del lado del usuario — es la más importante de las tres partes
+de esta sesión para probar con cuidado, por generar un documento oficial
+(remisión) y completar una etapa de producción.

@@ -19,7 +19,10 @@ export const ESTACIONES = {
   bordado: { etapa: 'bordado', pendientesTipo: 'Bordado' },
   sublimado: { etapa: 'sublimado' },
   produccion: { etapa: 'produccion', pendientesTipo: 'Arreglo' },
-  terminado: { etapa: 'terminado', pendientesCompleto: true },
+  // V105 — terminado ya no usa el botón genérico "Finalizado": captura
+  // cantidades reales por talla y genera la remisión al confirmar (ver
+  // EstacionOrderPage.jsx).
+  terminado: { etapa: 'terminado', pendientesCompleto: true, surtidoFinal: true },
 }
 
 export function esRolDeEstacion(role) {
