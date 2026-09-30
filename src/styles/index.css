@@ -3191,10 +3191,8 @@ h4 {
 }
 .estacion-acciones {
   display: flex;
+  flex-direction: column;
   gap: 10px;
-}
-.estacion-acciones .estacion-btn {
-  flex: 1;
 }
 .estacion-order__listo {
   text-align: center;

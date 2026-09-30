@@ -4822,3 +4822,15 @@ no hay errores de consola. Sin poder probar el flujo completo con una
 orden real (no hay credenciales en este entorno) — verificación visual
 con datos reales pendiente del lado del usuario, como el resto de los
 cambios de esta sesión.
+
+**Corrección post-captura de pantalla**: el usuario probó V110 en el
+celular y mandó capturas — `.estacion-acciones` era `display: flex` (fila)
+con `.estacion-btn { flex: 1 }`, así que "En progreso" quedaba lado a
+lado con el bloque de corte/terminado y, al ser `align-items: stretch`
+por default, se estiraba a la altura completa de ese bloque (una columna
+negra gigante). Cambiado a `flex-direction: column` — ahora "En
+progreso" siempre queda arriba, ancho completo, y debajo el contenido
+de esa etapa (los 3 campos de corte, los botones de terminado, o
+"Finalizado" para los demás roles) — aplica a los 5 roles de estación
+por igual, no solo a corte/terminado, para mantener el mismo patrón en
+toda la pantalla.
