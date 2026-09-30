@@ -4578,3 +4578,29 @@ Reverificado con datos reales tras el arreglo: funciona.
 relajado, `prod_ranking_semana` nueva). `npm run build` limpio.
 Verificado en vivo con SQL real que ambas funciones regresan datos
 correctos y sin duplicados de firma.
+
+### V104 — Producción: el cierre automático de semana espera un día más
+
+El usuario explicó cómo trabajan de verdad: la producción de una semana
+(miércoles a martes) se sigue capturando el **miércoles siguiente** (los
+papelitos del martes se meten al sistema un día después) — la revisión
+real para definir premios de nómina es hasta el **jueves**.
+
+Esto expuso un bug real en el diseño original (V69, documentado
+literalmente como "se cierra en cuanto termina el martes"):
+`prod_cerrar_vencidas()` se dispara cada vez que un admin abre "Revisión
+producción", y cerraba cualquier semana `abierta` cuyo martes ya hubiera
+pasado — es decir, **desde el miércoles**. Si un admin abría esa pantalla
+el miércoles (por cualquier motivo, no necesariamente para esa semana en
+particular), la semana que Juanis seguía llenando se cerraba de golpe
+(`en_revision`) y ella se quedaba bloqueada — solo
+`admin_general`/`admin_fabrica` pueden capturar en una semana
+`en_revision`.
+
+**Arreglo** (`schema_v104_produccion_cierre_jueves.sql`): se movió el
+umbral un día — `prod_cerrar_vencidas()` ahora solo cierra semanas cuyo
+martes pasó hace **más de un día** (a partir del jueves, no del
+miércoles). Mismo nombre/firma, sin tocar tablas ni otras funciones — el
+botón manual "Cerrar semana" no cambió, sigue disponible si algún admin
+quiere cerrarla antes a propósito. Aplicado en vivo, verificado que solo
+existe una versión de la función con el cuerpo nuevo.
