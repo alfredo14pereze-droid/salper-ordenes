@@ -1,17 +1,21 @@
 import { useCallback, useEffect, useState } from 'react'
 import RequireRole from '../components/common/RequireRole'
-import { canGestionarInventarioTela } from '../utils/permissions'
+import { useAuth } from '../contexts/AuthContext'
+import { canGestionarInventarioTela, canRegistrarEntradaTela } from '../utils/permissions'
 import { Loading, ErrorState } from '../components/common/States'
 import { fetchTelas } from '../services/telasService'
 import { fetchInventarioTelas, registrarEntradaTela, registrarAjusteTela } from '../services/movimientosTelaService'
 
-// V100 — Entrada de tela / Ajuste de inventario. Exclusivo admin_fabrica y
-// admin_general (ver canGestionarInventarioTela). El inventario que se ve
-// aquí y en Catálogos siempre es calculado (suma de movimientos_tela) — no
-// hay ningún número editable a mano salvo a través de estos dos formularios.
+// V100 — Entrada de tela / Ajuste de inventario. admin_fabrica/
+// admin_general tienen ambos formularios. El inventario que se ve aquí y
+// en Catálogos siempre es calculado (suma de movimientos_tela) — no hay
+// ningún número editable a mano salvo a través de estos dos formularios.
+// V111 — captura_produccion (Juanis) entra también, pero SOLO ve
+// "Entrada de tela" — "Ajuste" se queda exclusivo de
+// canGestionarInventarioTela (ver EntradaForm/AjusteForm más abajo).
 export default function InventarioTelaPage() {
   return (
-    <RequireRole allow={canGestionarInventarioTela}>
+    <RequireRole allow={canRegistrarEntradaTela}>
       <InventarioTelaContent />
     </RequireRole>
   )
@@ -141,6 +145,8 @@ function AjusteForm({ telas, onDone }) {
 }
 
 function InventarioTelaContent() {
+  const { role } = useAuth()
+  const puedeAjustar = canGestionarInventarioTela(role)
   const [telas, setTelas] = useState([])
   const [inventario, setInventario] = useState([])
   const [loading, setLoading] = useState(true)
@@ -172,7 +178,7 @@ function InventarioTelaContent() {
 
       <div className="form-row" style={{ alignItems: 'flex-start' }}>
         <EntradaForm telas={telas} onDone={load} />
-        <AjusteForm telas={telas} onDone={load} />
+        {puedeAjustar && <AjusteForm telas={telas} onDone={load} />}
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>

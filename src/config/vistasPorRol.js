@@ -18,7 +18,12 @@ export const ESTACIONES = {
   corte: { etapa: 'corte', consumoPlaceholder: true },
   bordado: { etapa: 'bordado', pendientesTipo: 'Bordado' },
   sublimado: { etapa: 'sublimado' },
+  // V111 — 'produccion' (rol) queda deprecated, sin usuarios reales; el
+  // rol nuevo es 'costura' — misma etapa ('produccion', que no se
+  // renombró) y mismo pendientesTipo. Se deja la entrada 'produccion'
+  // tal cual por si alguna vez se necesita (aditivo, no se borra).
   produccion: { etapa: 'produccion', pendientesTipo: 'Arreglo' },
+  costura: { etapa: 'produccion', pendientesTipo: 'Arreglo' },
   // V105 — terminado ya no usa el botón genérico "Finalizado": captura
   // cantidades reales por talla y genera la remisión al confirmar (ver
   // EstacionOrderPage.jsx).

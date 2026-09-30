@@ -4834,3 +4834,85 @@ de esa etapa (los 3 campos de corte, los botones de terminado, o
 "Finalizado" para los demás roles) — aplica a los 5 roles de estación
 por igual, no solo a corte/terminado, para mantener el mismo patrón en
 toda la pantalla.
+
+### V111 — Roles de fábrica, Parte 1: roles, ruteo y accesos
+
+Pedido del usuario a partir de un documento de 5 partes ("Correr en
+orden: Parte 1 → validar → Parte 2 → …"). Esta entrada es **solo la
+Parte 1**; las Partes 2-5 (etapas/plantillas, detalle de corte, diseños
+de sublimación, rediseño de Pendientes) quedan pendientes, cada una con
+su propio diagnóstico+confirmación cuando se pida.
+
+**Diagnóstico mostrado y confirmado antes de aplicar** (consulté
+`profiles` en vivo): ninguno de los 6 operadores de piso del documento
+(Pancho/Toño/Carmen/Samuel/Adriana/Jackie) tiene cuenta todavía — solo
+existían 8 perfiles reales (Salva=`admin_fabrica`,
+Salvador Perez=`admin_fabrica_lectura`, Alfredo Pérez=`admin_general`,
+Juanis=`captura_produccion`, 2×`contabilidad`, 2×`ventas`). Esto cambió
+el alcance real de la Parte 1 — no hay ninguna fila de `produccion` que
+migrar a `costura`, solo hay que dejar el rol disponible para cuando se
+creen esas cuentas (el usuario las crea él mismo desde Usuarios).
+`captura_produccion` **no era nuevo** (existe desde V66) — solo se le
+amplían permisos. `super_admin` no existe — se usó `admin_general`,
+confirmado como "papá" (sin cambios, ya podía aprobar premios). Para
+Juanis, "Revisión y ranking" = solo el ranking que ya tenía desde V103
+(sin montos reales, confirmado sin cambio) e "Inventario de insumos"
+confirmado = el mismo "Inventario de tela" (V100), con otro nombre en
+el documento.
+
+**Esquema (`schema_v111_roles_fabrica_parte1.sql`, aplicado en vivo)**:
+- `profiles_role_check` gana `'costura'`. `'produccion'` se queda
+  (deprecated, sin usuarios reales) — ningún valor se borró.
+- `update_orden_etapa`: mismo cuerpo de siempre + un caso especial
+  (`costura` puede tocar la etapa `produccion`, que **no se renombró** —
+  eso sería un cambio más grande y la Parte 2 todavía no confirma la
+  secuencia final de etapas, así que no tenía sentido adivinarla ahora).
+- `registrar_entrada_tela`: se amplía a `captura_produccion` — **solo
+  entradas**; `registrar_ajuste_tela` no se tocó.
+- **Hueco encontrado de pasada** (Regla 4 del documento: permisos reales
+  en Supabase, no solo escondidos en el menú): `create_announcement`/
+  `delete_announcement` solo bloqueaban `lectura`/`tienda` del lado del
+  servidor — el cliente ya escondía el botón para `captura_produccion`/
+  `admin_fabrica_lectura` también, pero el servidor nunca lo exigía.
+  Se cerró parejo con lo que el cliente ya asumía, y se agregaron los
+  roles de estación + `costura`.
+
+**Frontend**:
+- `FABRICA_ETAPA_ROLES`/`PF_FABRICA` ganan `'costura'`; `ROLE_LABELS`
+  agrega `costura: 'Costura'` y marca `produccion: 'Costura (obsoleto —
+  usa "costura")'` para que no se vuelva a asignar por error desde
+  Usuarios. `canChangeEtapa` espeja el caso especial del RPC.
+- `vistasPorRol.js`: `costura: { etapa: 'produccion', pendientesTipo:
+  'Arreglo' }` — mismo comportamiento que `produccion` ya tenía.
+- `canRegistrarEntradaTela(role)` (nueva) = admin_fabrica/admin_general/
+  captura_produccion. `InventarioTelaPage.jsx` ahora usa esto para
+  entrar, pero el formulario de "Ajuste" se queda oculto si el rol no
+  cumple `canGestionarInventarioTela` — Juanis solo ve "Entrada de
+  tela" + el inventario de solo lectura.
+- `canManageAnnouncements` se separó de `SIN_ESCRITURA_GENERAL` (esa
+  lista también gobierna fotos de referencia, que los roles de estación
+  SÍ pueden seguir subiendo, sin cambio) — ahora excluye específicamente
+  a los 5 roles de estación + costura. Nav de Anuncios: se quitó la
+  restricción de V22 para esos roles (pedido explícito, revierte esa
+  decisión) — ven Anuncios de solo lectura.
+- Nav: se agregó el link de "Control rápido" (ya era de lectura abierta
+  desde V24, solo le faltaba aparecer en el menú — antes solo se llegaba
+  por URL directa) y "Inventario de tela" para Juanis; su lista blanca
+  (`RUTAS_CAPTURA`) se amplió para incluir ambos + Anuncios.
+- `RequireRole.jsx`: pedido de ruteo ("si entra por URL a una pantalla
+  prohibida, redirige a su pantalla de inicio") — ahora redirige a `/`
+  para los roles con un home claro (los de estación, vía
+  `esRolDeEstacion` — incluye `costura` automáticamente —, más
+  `captura_produccion`/`tienda` básica). El resto de los roles
+  (ventas/admin_*/etc., sin un solo "home" obvio) se quedan con el
+  mensaje de "no tienes permiso" de siempre.
+
+`npm run build` limpio. Verificado en vivo con SQL real: el constraint
+de roles ya acepta `costura`, y `update_orden_etapa`/
+`registrar_entrada_tela`/`create_announcement`/`delete_announcement`
+quedaron sin duplicados de firma. Verificado en el navegador sin sesión
+real que `/`, `/anuncios`, `/control-rapido` e `/inventario-tela`
+cargan sin errores de consola nuevos. Falta crear las cuentas reales
+de los 6 operadores (el usuario las hace desde Usuarios) y, después de
+eso, validar con cada rol antes de seguir a la Parte 2 — como pide el
+propio documento ("Correr en orden... No saltarse validaciones").

@@ -26,7 +26,10 @@ import { esRolDeEstacion, estacionDeRol } from '../config/vistasPorRol'
 // V96 — exportado (antes privado) para que vistasPorRol.js y
 // AuthContext.jsx (extensión de "Ver como" a admin_fabrica) lo reusen sin
 // duplicar la lista.
-export const FABRICA_ETAPA_ROLES = ['corte', 'bordado', 'sublimado', 'produccion', 'terminado']
+// V111 — agrega 'costura' (rol nuevo para Carmen). 'produccion' se deja
+// en la lista tal cual (deprecated, sin usuarios reales hoy) — no se
+// quita nada, solo se agrega.
+export const FABRICA_ETAPA_ROLES = ['corte', 'bordado', 'sublimado', 'produccion', 'terminado', 'costura']
 
 export function canCreateOrder(role) {
   return role === 'ventas' || role === 'admin_tienda' || role === 'admin_general'
@@ -113,8 +116,11 @@ export function canConfirmOrderChanges(role) {
 // orden_etapas — el nombre del rol dueño coincide 1:1 con el nombre de la
 // etapa (rol 'corte' -> etapa 'corte', etc.); admin_fabrica/admin_general
 // pueden todas. Ver update_orden_etapa en schema_v23_etapas_paralelas.sql.
+// V111 — caso especial: 'costura' toca la etapa 'produccion' (esa etapa
+// no se renombró — ver schema_v111_roles_fabrica_parte1.sql).
 export function canChangeEtapa(role, etapa) {
-  return role === etapa || role === 'admin_fabrica' || role === 'admin_general'
+  if (role === etapa || role === 'admin_fabrica' || role === 'admin_general') return true
+  return etapa === 'produccion' && role === 'costura'
 }
 
 // fabrica captura el tiempo estimado solo mientras sigue en_confirmacion;
@@ -178,6 +184,15 @@ export function canViewCatalogos(role) {
 // Catálogos hoy — no necesita este candado aparte.
 export function canGestionarInventarioTela(role) {
   return role === 'admin_fabrica' || role === 'admin_general'
+}
+
+// V111 — Juanis (captura_produccion) puede entrar a Inventario de tela
+// SOLO para registrar entradas — ajustes/salidas siguen exclusivos de
+// canGestionarInventarioTela. Entrar a la pantalla exige esto; dentro de
+// ella, el formulario de "Ajuste" se oculta si no cumple
+// canGestionarInventarioTela (ver InventarioTelaPage.jsx).
+export function canRegistrarEntradaTela(role) {
+  return canGestionarInventarioTela(role) || role === 'captura_produccion'
 }
 
 // V101 — Consumos por prenda (rendimientos de tela): exclusivo
@@ -286,8 +301,15 @@ export function isTiendaBasica(role) {
 // de producción: solo consulta órdenes.
 const SIN_ESCRITURA_GENERAL = ['lectura', 'tienda', 'captura_produccion', 'admin_fabrica_lectura']
 
+// V111 — pedido explícito: los roles de estación (y costura) ven
+// Anuncios pero de solo lectura, admin_fabrica sigue publicando. Antes
+// ni siquiera llegaban a la pantalla (V22), así que esto nunca se había
+// necesitado — se separa de SIN_ESCRITURA_GENERAL a propósito, porque
+// esa lista también gobierna canManageOrderPhotos, y los roles de
+// estación SÍ pueden seguir subiendo fotos de referencia (sin cambio).
 export function canManageAnnouncements(role) {
-  return !!role && !SIN_ESCRITURA_GENERAL.includes(role)
+  if (!role || SIN_ESCRITURA_GENERAL.includes(role)) return false
+  return !FABRICA_ETAPA_ROLES.includes(role)
 }
 
 export function canManageOrderPhotos(role) {
@@ -395,7 +417,7 @@ export function canEditRazones(role) {
 // V78 — Pendientes tienda <-> fábrica: espejo de pf_es_tienda / pf_es_fabrica /
 // pf_puede_ver en Supabase (el servidor valida cada transición).
 const PF_TIENDA = ['ventas', 'contabilidad', 'admin_tienda', 'tienda', 'admin_general']
-const PF_FABRICA = ['corte', 'bordado', 'sublimado', 'produccion', 'terminado', 'admin_fabrica', 'admin_general']
+const PF_FABRICA = ['corte', 'bordado', 'sublimado', 'produccion', 'terminado', 'costura', 'admin_fabrica', 'admin_general']
 
 export function pfEsTienda(role) {
   return PF_TIENDA.includes(role)
@@ -494,7 +516,7 @@ export const ROLE_LABELS = {
   corte: 'Corte',
   bordado: 'Bordado',
   sublimado: 'Sublimado',
-  produccion: 'Costura',
+  produccion: 'Costura (obsoleto — usa "costura")',
   terminado: 'Terminado',
   admin_fabrica: 'Admin (Fábrica)',
   admin_fabrica_lectura: 'Admin (Fábrica) — solo lectura',
@@ -502,4 +524,5 @@ export const ROLE_LABELS = {
   lectura: 'Solo lectura',
   tienda: 'Tienda (básico)',
   captura_produccion: 'Captura de costura',
+  costura: 'Costura',
 }

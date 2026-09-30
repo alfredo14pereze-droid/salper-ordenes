@@ -18,7 +18,7 @@ import {
   canViewEstadisticas,
   canViewPendientes,
   canViewInventario,
-  canGestionarInventarioTela,
+  canRegistrarEntradaTela,
   canGestionarConsumosPrenda,
   hasRestrictedNav,
   isTiendaBasica,
@@ -53,6 +53,7 @@ const VIEW_AS_ROLES = [
   'bordado',
   'sublimado',
   'produccion',
+  'costura',
   'terminado',
   'admin_fabrica',
   'admin_fabrica_lectura',
@@ -76,8 +77,11 @@ export default function AppLayout({ children }) {
   // isTiendaBasica en utils/permissions.js).
   const tiendaBasica = isTiendaBasica(role)
   // V66 — Juanis (captura_produccion): solo Dashboard (consultar órdenes) y,
-  // desde la Fase 3, la pantalla de captura. Nada más en el menú.
+  // desde la Fase 3, la pantalla de captura. V111 amplía la lista blanca:
+  // Anuncios (solo lectura), Control rápido, e Inventario de tela (solo
+  // entradas). Nada más en el menú.
   const soloCaptura = isCapturaProduccion(role)
+  const RUTAS_CAPTURA = ['/', '/anuncios', '/control-rapido', '/inventario-tela']
   // V96 — los 5 roles de etapa de fábrica (o admin_fabrica "viendo como"
   // uno de ellos) no llevan sidebar ni chat — vista de estación, mínima
   // de verdad. Usa `role` (el efectivo), no `trueRole`, a propósito: así
@@ -97,7 +101,13 @@ export default function AppLayout({ children }) {
     { to: '/calendario', label: 'Calendario', show: !restricted && !tiendaBasica },
     // V78 — pendientes tienda <-> fábrica: los roles de fábrica también lo ven.
     { to: '/pendientes', label: 'Pendientes', show: canViewPendientes(role) },
-    { to: '/anuncios', label: 'Anuncios', show: !restricted && !tiendaBasica },
+    // V24 — de solo lectura para todos, invitados incluidos; le faltaba
+    // aparecer en el menú (antes solo se llegaba por URL directa).
+    { to: '/control-rapido', label: 'Control rápido', show: true },
+    // V111 — antes oculto para los 5 roles de estación (V22); ahora lo
+    // ven de solo lectura (canManageAnnouncements ya los excluye de
+    // publicar/borrar).
+    { to: '/anuncios', label: 'Anuncios', show: !tiendaBasica },
     // Módulo independiente de órdenes, sin modo invitado — solo aparece
     // con sesión (ver canViewPedidosTienda). V31: apagado en producción
     // por ahora (PEDIDOS_PROVEEDOR_HABILITADO) — sigue completo en la
@@ -119,8 +129,10 @@ export default function AppLayout({ children }) {
     { to: '/talleros', label: 'Talleros', show: canViewTalleros(role) },
     // V95 — Inventario ya abierto por rol (ver canViewInventario).
     { to: '/inventario', label: 'Inventario', show: canViewInventario(role) },
-    // V100 — Entrada/Ajuste de tela, exclusivo admin_fabrica/admin_general.
-    { to: '/inventario-tela', label: 'Inventario de tela', show: canGestionarInventarioTela(role) },
+    // V100 — Entrada/Ajuste de tela, admin_fabrica/admin_general.
+    // V111 — también captura_produccion (Juanis), solo para entradas —
+    // dentro de la pantalla se le oculta "Ajuste" (ver InventarioTelaPage.jsx).
+    { to: '/inventario-tela', label: 'Inventario de tela', show: canRegistrarEntradaTela(role) },
     // V101 — rendimientos de tela por prenda, exclusivo admin_fabrica/admin_general.
     { to: '/consumos-prenda', label: 'Consumos por prenda', show: canGestionarConsumosPrenda(role) },
     { to: '/catalogos', label: 'Catálogos', show: canViewCatalogos(role) },
@@ -202,7 +214,7 @@ export default function AppLayout({ children }) {
 
         <nav className="app-nav">
           {navItems
-            .filter((item) => item.show && (!soloCaptura || item.to === '/' || item.to.startsWith('/produccion')))
+            .filter((item) => item.show && (!soloCaptura || RUTAS_CAPTURA.includes(item.to) || item.to.startsWith('/produccion')))
             .map((item) => (
               <NavLink
                 key={item.to}
