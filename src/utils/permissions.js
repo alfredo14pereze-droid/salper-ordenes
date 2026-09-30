@@ -366,6 +366,17 @@ export function canCapturarProduccion(role) {
   return role === 'admin_general' || role === 'admin_fabrica' || role === 'captura_produccion'
 }
 
+// V103 — pedido del usuario: Juanis (captura_produccion) ve el resultado
+// ("valor generado") de cada operadora y puede imprimir el ranking —
+// relaja, a propósito y SOLO para esto, la regla de "nunca ve montos".
+// NO le abre Revisión ni Admin de producción (siguen exclusivos de
+// canViewProduccionMontos, sin cambios) — dentro de Dashboard producción
+// tampoco ve los premios/bonos reales (eso sigue detrás de
+// prod_puede_ver_montos, ver schema_v103_produccion_ranking_captura.sql).
+export function canVerRankingProduccion(role) {
+  return canViewProduccionMontos(role) || role === 'captura_produccion'
+}
+
 // V77 — precios, totales, facturación y razones sociales: espejo de
 // fin_puede_ver / fin_puede_editar / fin_puede_editar_razones en Supabase.
 // Producción, corte, bordado, etc. no ven nada de esto.

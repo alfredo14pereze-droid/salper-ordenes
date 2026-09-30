@@ -4526,3 +4526,55 @@ de darlo por bueno en producción.
 Con esto queda completa la Fase 2 de este bloque de trabajo (Partes 1-4:
 vistas de estación, inventario de tela, consumos por prenda y comprometido,
 reporte de corte real).
+
+### V103 — Ranking de producción visible para Juanis (captura_produccion)
+
+Pedido del usuario: que Juanis (rol `captura_produccion`) pueda ver el
+resultado de cada operadora e imprimir el ranking. También preguntó cómo
+funciona el cambio de semana de producción — se le explicó (no aplica
+ningún cambio de código, solo diagnóstico): es 100% automático y sin
+cron — `prod_semana_de(fecha)` calcula la semana (miércoles-martes) de
+una fecha y crea esa fila la primera vez que alguien captura algo en
+ella; y una semana `abierta` pasa sola a `en_revision` en cuanto alguien
+abre la pantalla de Revisión y su martes ya pasó (`prod_cerrar_vencidas`,
+interna) — o con el botón manual "Cerrar semana" si se quiere antes.
+
+**Conflicto encontrado y confirmado con el usuario**: desde V66-V70,
+`captura_produccion` **nunca** ve montos en pesos — regla explícita,
+documentada, aplicada en todo el módulo. Pero el ranking que ya existía
+muestra "valor generado" en MXN por operadora. Se preguntó explícitamente
+y el usuario confirmó: sí, quiere que Juanis vea ese monto — se relaja la
+regla **a propósito y solo para esto**.
+
+**Alcance, angosto a propósito** (no fue un "abrir todo Producción"):
+- Nav: solo se abrió "Dashboard producción" (`canVerRankingProduccion` =
+  `canViewProduccionMontos` + `captura_produccion`). "Revisión
+  producción" y "Admin producción" **siguen** exclusivos
+  `admin_general`/`admin_fabrica`, sin cambios.
+- Dentro de Dashboard, "Imprimir hojas por operadora" (bulk y por fila)
+  **se oculta** para `captura_produccion` — esas hojas sí traen el
+  desglose real de bonos/premio (`bono_meta`/`bono_lugar`/`bono_mejora`/
+  `total_premio`), que no se le abrió.
+- "Imprimir ranking" pasa a usar una función nueva
+  (`prod_ranking_semana`) en vez de `prod_revision_semana` — misma
+  fuente de datos (snapshot congelado si la semana ya está aprobada, si
+  no el mismo cálculo en vivo), pero **sin las columnas de bono/premio**
+  siquiera en la respuesta de la red — no es solo ocultar en la UI.
+
+**Bug real que encontré y corregí antes de terminar**: mi primer diseño
+de `prod_ranking_semana` reusaba `prod_calcular_premios` para el cálculo
+en vivo (semana no aprobada) — pero esa función tiene su PROPIO candado
+interno hardcoded a `prod_puede_ver_montos()` (sin importar quién la
+llame ni desde dónde), así que Juanis habría sido rechazada igual para
+cualquier semana todavía no aprobada. Verificado en vivo contra la SQL
+Editor (`ERROR: No tienes permiso...`). Corregido copiando dentro de
+`prod_ranking_semana` solo las CTEs de ranking de `prod_calcular_premios`
+(sin los cross join de bonos) — `prod_calcular_premios` en sí **no se
+tocó**, sigue exclusiva admin, y `prod_ranking_semana` ya no la llama.
+Reverificado con datos reales tras el arreglo: funciona.
+
+`schema_v103_produccion_ranking_captura.sql` aplicado en vivo
+(`prod_puede_ver_ranking()`, `prod_historial_valores` con el candado
+relajado, `prod_ranking_semana` nueva). `npm run build` limpio.
+Verificado en vivo con SQL real que ambas funciones regresan datos
+correctos y sin duplicados de firma.

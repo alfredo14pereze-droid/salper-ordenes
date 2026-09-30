@@ -81,6 +81,15 @@ export async function revisionSemana(semanaId) {
   return supabase.rpc('prod_revision_semana', { p_semana_id: semanaId })
 }
 
+// V103 — mismo ranking que revisionSemana, pero SIN columnas de bono/
+// premio (para captura_produccion, que no debe verlas). El botón
+// "Imprimir ranking" usa esta, no revisionSemana.
+export async function prodRankingSemana(semanaId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_ranking_semana', { p_semana_id: semanaId })
+}
+
 export async function cerrarSemana(semanaId) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }

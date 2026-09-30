@@ -2,17 +2,21 @@ import { useEffect, useMemo, useState } from 'react'
 import RequireRole from '../components/common/RequireRole'
 import { Loading, ErrorState } from '../components/common/States'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
-import { canViewProduccionMontos } from '../utils/permissions'
-import { historialValores, fetchOperadorasTodas, revisionSemana } from '../services/produccionService'
+import { useAuth } from '../contexts/AuthContext'
+import { canVerRankingProduccion } from '../utils/permissions'
+import { historialValores, fetchOperadorasTodas, revisionSemana, prodRankingSemana } from '../services/produccionService'
 import { agruparSemanas, estadisticasOperadora, serieOperadora, UMBRAL_CAMBIO_PCT } from '../utils/produccionStats'
 import { buildProduccionOperadorasPdfBlob, buildProduccionRankingPdfBlob, produccionPdfFileName } from '../utils/generateProduccionPdf'
 
 // V70 — Dashboard de producción (admin_general / admin_fabrica): una fila por operadora con su semana
 // actual vs anterior vs promedio de las 4 anteriores, mejor semana y una clasificación simple; más los
 // imprimibles (hoja por operadora y ranking) con vista previa. "Valor generado" ≠ sueldo.
+// V103 — también captura_produccion (Juanis), pero SOLO ranking (ver
+// soloRanking más abajo): "Imprimir hojas por operadora" trae premios/
+// bonos reales y se queda oculto para ese rol.
 export default function ProduccionDashboardPage() {
   return (
-    <RequireRole allow={canViewProduccionMontos}>
+    <RequireRole allow={canVerRankingProduccion}>
       <Dashboard />
     </RequireRole>
   )
@@ -26,6 +30,8 @@ const dia = (s) => {
 const CLASE = { 'Arriba de su promedio': 'arriba', 'En su promedio': 'igual', 'Abajo de su promedio': 'abajo', 'Sin base': 'sinbase' }
 
 function Dashboard() {
+  const { role } = useAuth()
+  const soloRanking = role === 'captura_produccion'
   const [semanas, setSemanas] = useState([])
   const [operadoras, setOperadoras] = useState([])
   const [idx, setIdx] = useState(0)
@@ -58,7 +64,10 @@ function Dashboard() {
   async function imprimir(tipo, soloId) {
     setGenerando(true)
     setErrImp(null)
-    const { data: rev, error: err } = await revisionSemana(semana.id)
+    // V103 — el ranking usa una consulta SIN columnas de bono/premio
+    // (prod_ranking_semana), distinta de "hojas" (revisionSemana, que sí
+    // trae bonos reales y por eso se queda oculta para captura_produccion).
+    const { data: rev, error: err } = tipo === 'ranking' ? await prodRankingSemana(semana.id) : await revisionSemana(semana.id)
     if (err) {
       setGenerando(false)
       return setErrImp(err.message)
@@ -114,9 +123,11 @@ function Dashboard() {
           <button type="button" className="btn btn--secondary" disabled={generando} onClick={() => imprimir('ranking')}>
             Imprimir ranking
           </button>
-          <button type="button" className="btn btn--primary" disabled={generando} onClick={() => imprimir('hojas')}>
-            {generando ? 'Generando…' : 'Imprimir hojas por operadora'}
-          </button>
+          {!soloRanking && (
+            <button type="button" className="btn btn--primary" disabled={generando} onClick={() => imprimir('hojas')}>
+              {generando ? 'Generando…' : 'Imprimir hojas por operadora'}
+            </button>
+          )}
         </div>
       </div>
       {errImp && <p className="form-error">{errImp}</p>}
@@ -134,7 +145,7 @@ function Dashboard() {
               <th>Mejor semana</th>
               <th>Sem. con datos</th>
               <th>Clasificación</th>
-              <th />
+              {!soloRanking && <th />}
             </tr>
           </thead>
           <tbody>
@@ -155,11 +166,13 @@ function Dashboard() {
                 <td>
                   <span className={`badge produccion__clase produccion__clase--${CLASE[st.clasificacion]}`}>{st.clasificacion}</span>
                 </td>
-                <td>
-                  <button type="button" className="btn btn--ghost btn--small" disabled={generando} onClick={() => imprimir('hojas', op.id)}>
-                    Hoja
-                  </button>
-                </td>
+                {!soloRanking && (
+                  <td>
+                    <button type="button" className="btn btn--ghost btn--small" disabled={generando} onClick={() => imprimir('hojas', op.id)}>
+                      Hoja
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
