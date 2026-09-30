@@ -4455,3 +4455,74 @@ lado del usuario.
 obligatorio antes de marcar "Cortado", movimiento `consumo_corte` real,
 comparación estimado vs. real) — sigue en el placeholder deshabilitado de
 `EstacionOrderPage.jsx`, todavía no implementado.
+
+### V102 — Reporte de corte real y precisión de consumos (Fase 2, Parte 4)
+
+Pedido del usuario, con diagnóstico y plan mostrados y confirmados antes
+de aplicar.
+
+**Decisión de diseño que tuve que resolver y flagueé al usuario**: el
+operador de corte captura "tela usada" **por tela**, no por prenda (pidió
+mantenerlo "extremadamente simple"). Pero una tela puede repartirse entre
+varias prendas de la misma orden, y el reporte de "Precisión de consumos"
+se pide **por prenda** — no hay forma exacta de saber cuánto del real fue
+de cada prenda cuando comparten tela. Resuelto: el real se **prorratea
+proporcionalmente** entre las prendas según qué % del estimado
+representaba cada una (exacto cuando una tela la usa una sola prenda,
+aproximado cuando se comparte) — documentado explícitamente como
+aproximación en el reporte, no como medición exacta.
+
+**Esquema (`schema_v102_reporte_corte.sql`, aplicado en vivo)**:
+- `movimientos_tela` gana `consumo_estimado` y `orden_prendas_snapshot`
+  (ambas nullable, solo se llenan en `consumo_corte`) — snapshot del
+  estimado al momento del corte, para que el reporte no cambie después si
+  se editan `consumos_prenda`.
+- `calcular_consumo_detalle(p_items)` — mismo matching que ya usaba
+  `calcular_consumo_orden` (Parte 3) pero a nivel de renglón
+  (tela+prenda+talla) en vez de agregado.
+  `calcular_consumo_orden` **se reescribió** (misma firma, sin DROP) para
+  reusar esta función en vez de duplicar la lógica — el contrato de
+  salida no cambió, así que `OrderTelaResumen.jsx` (Parte 3) sigue
+  funcionando exactamente igual.
+- `marcar_corte(p_orden_id, p_consumos)` — `p_consumos` = una entrada
+  `{tela_id, cantidad}` por cada tela de la orden (todas obligatorias).
+  En una sola llamada: inserta el/los movimiento(s) `consumo_corte` (con
+  su snapshot) y completa la etapa de corte en `orden_etapas` — la orden
+  deja de "comprometer" esa tela automáticamente (ya lo resuelve el
+  filtro de `v_comprometido_telas` de la Parte 3, sin tocar nada ahí).
+  Permiso: `corte`/`admin_fabrica`/`admin_general`, igual que
+  `update_orden_etapa`.
+- `v_movimientos_tela` se extiende (2 columnas nuevas:
+  `consumo_estimado`, `tela_nombre`).
+- `v_precision_consumos` — por prenda, promedio de la diferencia
+  estimado-vs-real (prorrateada), y `alerta` cuando pasa de ±10%.
+
+**Frontend**:
+- `EstacionOrderPage.jsx`: el placeholder deshabilitado desaparece.
+  Específicamente para `corte` (los otros 4 roles de estación no cambian),
+  un campo "Tela usada" obligatorio POR CADA tela de la orden (con su
+  unidad al lado), y el botón pasa de "Finalizado" a **"Cortado"** —
+  deshabilitado hasta llenar todos los campos, con una confirmación
+  simple antes de mandar ("¿Confirmas que se usaron X…?"). El operador no
+  ve estimado, inventario, ni comparación — cero relación con
+  `OrderTelaResumen`. Una vez cortado, el botón queda fijo en "Cortado"
+  (deshabilitado) para no permitir un segundo envío accidental que
+  duplicaría el movimiento.
+- `OrderCorteResumen.jsx` (nuevo) — montado en `OrderDetailPage.jsx`,
+  exclusivo `admin_fabrica`/`admin_general`: estimado vs. real y
+  diferencia % por tela, solo aparece si la orden ya fue cortada.
+- `ConsumosPrendaPage.jsx` gana la sección "Precisión de consumos" —
+  reporte general por prenda, con el aviso de prorrateo y `alerta` cuando
+  la diferencia promedio pasa de ±10%.
+
+`npm run build` limpio. Verificado en el navegador sin sesión real:
+`/consumos-prenda` y `/` cargan sin crash en modo invitado (piden login —
+en este entorno de desarrollo local el modo invitado también pide login,
+sin relación con este cambio). Verificación visual con datos reales
+pendiente del lado del usuario — en particular, probar el flujo completo
+de "Cortado" con una orden real es lo más importante de confirmar antes
+de darlo por bueno en producción.
+
+Con esto queda completa la Fase 2 de este bloque de trabajo (Partes 1-4:
+vistas de estación, inventario de tela, consumos por prenda y comprometido,
+reporte de corte real).

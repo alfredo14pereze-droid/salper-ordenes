@@ -7,6 +7,7 @@ import {
   guardarConsumoPrenda,
   eliminarConsumoPrenda,
   fetchPrendasConocidas,
+  fetchPrecisionConsumos,
 } from '../services/consumosPrendaService'
 
 // V101 — Consumos por prenda (rendimientos de tela). Exclusivo
@@ -335,6 +336,60 @@ function ImportCsv({ existentes, onImported }) {
   )
 }
 
+// V102 — Parte 4: reporte general de precisión, por prenda. El real está
+// prorrateado cuando una tela se comparte entre varias prendas de la
+// misma orden (ver criterio en schema_v102_reporte_corte.sql) — se
+// avisa explícitamente para no confundirlo con una medición exacta.
+function PrecisionConsumos() {
+  const [items, setItems] = useState(null)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    fetchPrecisionConsumos().then(({ data, error: err }) => {
+      if (err) setError(err)
+      else setItems(data || [])
+    })
+  }, [])
+
+  return (
+    <div className="card" style={{ marginBottom: 16 }}>
+      <h3 className="section-title section-title--small">Precisión de consumos</h3>
+      <p className="form-hint">
+        Promedio de la diferencia entre lo estimado y lo real reportado por corte, por prenda. Cuando una tela se
+        reparte entre varias prendas de una misma orden, el real se prorratea según el estimado de cada una — es una
+        aproximación, no una medición exacta.
+      </p>
+      {error && <ErrorState error={error} />}
+      {items && items.length === 0 && <p className="page-subtitle">Todavía no hay órdenes cortadas con consumo comparable.</p>}
+      {items && items.length > 0 && (
+        <div className="revision__tabla-wrap">
+          <table className="simple-table">
+            <thead>
+              <tr>
+                <th>Prenda</th>
+                <th>Renglones comparados</th>
+                <th>Diferencia promedio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((i) => (
+                <tr key={i.prenda}>
+                  <td>{i.prenda}</td>
+                  <td>{i.renglones_comparados}</td>
+                  <td className={i.alerta ? 'form-error' : ''}>
+                    {i.diferencia_pct_promedio > 0 ? '+' : ''}
+                    {Number(i.diferencia_pct_promedio).toFixed(1)}%{i.alerta ? ' — revisar' : ''}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ConsumosPrendaContent() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -379,6 +434,8 @@ function ConsumosPrendaContent() {
           }}
         />
       )}
+
+      <PrecisionConsumos />
 
       <ImportCsv existentes={items} onImported={load} />
 

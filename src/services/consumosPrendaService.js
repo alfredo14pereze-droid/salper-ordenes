@@ -49,3 +49,13 @@ export async function fetchPrendasConocidas() {
 
   return supabase.rpc('fetch_prendas_conocidas')
 }
+
+// V102 — Parte 4: por prenda, promedio de la diferencia estimado-vs-real
+// (real prorrateado cuando una tela se comparte entre prendas), con
+// "alerta" si pasa de ±10%.
+export async function fetchPrecisionConsumos() {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.from('v_precision_consumos').select('*')
+}

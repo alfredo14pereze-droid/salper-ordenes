@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useOrder } from '../hooks/useOrder'
 import { fetchOrdenEtapas, updateOrdenEtapa, updateOrderStatus } from '../services/ordersService'
+import { fetchInventarioTelas, marcarCorte } from '../services/movimientosTelaService'
 import { useAuth } from '../contexts/AuthContext'
 import { estacionDeRol } from '../config/vistasPorRol'
 import { Loading, ErrorState } from '../components/common/States'
@@ -22,6 +23,87 @@ function PrendaResumen({ item }) {
       </p>
       {item.tela_nombre && <p className="estacion-prenda__detalle">Tela: {item.tela_nombre}</p>}
       <p className="estacion-prenda__detalle">{sizesText || 'Sin tallas capturadas'}</p>
+    </div>
+  )
+}
+
+// V102 — Parte 4: para `corte` específicamente, "Tela usada" ya no es un
+// placeholder — un campo obligatorio POR CADA tela que use la orden
+// (nunca por prenda, para mantenerlo simple), con la unidad de esa tela
+// al lado. El botón cambia de "Finalizado" a "Cortado" y pide una
+// confirmación simple antes de mandar (marcar_corte inserta el/los
+// movimiento(s) consumo_corte Y completa la etapa de corte en una sola
+// llamada). El operador no ve estimado/inventario/comparación — eso vive
+// aparte, para admin, en OrderCorteResumen.jsx dentro del detalle normal
+// de la orden.
+function TelaUsadaCorte({ order, onCortado }) {
+  const telaIds = useMemo(() => [...new Set((order.items || []).map((i) => i.tela_id).filter(Boolean))], [order.items])
+  const [telas, setTelas] = useState({})
+  const [cantidades, setCantidades] = useState({})
+  const [confirmando, setConfirmando] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    fetchInventarioTelas().then(({ data }) => {
+      const map = {}
+      for (const t of data || []) map[t.tela_id] = t
+      setTelas(map)
+    })
+  }, [])
+
+  if (telaIds.length === 0) {
+    return <p className="form-error">Esta orden no tiene ninguna tela asignada a sus prendas — avisa a tienda antes de cortar.</p>
+  }
+
+  const todasCapturadas = telaIds.every((id) => Number(cantidades[id]) > 0)
+
+  async function handleConfirmar() {
+    setBusy(true)
+    setError(null)
+    const consumos = telaIds.map((tela_id) => ({ tela_id, cantidad: Number(cantidades[tela_id]) }))
+    const { error: err } = await marcarCorte(order.id, consumos)
+    setBusy(false)
+    if (err) return setError(err)
+    onCortado()
+  }
+
+  return (
+    <div className="estacion-consumo">
+      {telaIds.map((telaId) => (
+        <label key={telaId} className="field-label" style={{ display: 'block', marginBottom: 10 }}>
+          Tela usada — {telas[telaId]?.nombre || 'Tela'} {telas[telaId]?.unidad ? `(${telas[telaId].unidad})` : ''}
+          <input
+            type="number"
+            min="0.01"
+            step="0.01"
+            className="input"
+            value={cantidades[telaId] || ''}
+            onChange={(e) => setCantidades({ ...cantidades, [telaId]: e.target.value })}
+            required
+          />
+        </label>
+      ))}
+      {error && <p className="form-error">{error.message}</p>}
+      {!confirmando ? (
+        <button type="button" className="btn btn--primary estacion-btn" disabled={!todasCapturadas} onClick={() => setConfirmando(true)}>
+          Cortado
+        </button>
+      ) : (
+        <div className="estacion-acciones">
+          <p>
+            ¿Confirmas que se usaron{' '}
+            {telaIds.map((telaId) => `${cantidades[telaId]} ${telas[telaId]?.unidad || ''} de ${telas[telaId]?.nombre || 'tela'}`).join(', ')} y la
+            orden está cortada?
+          </p>
+          <button type="button" className="btn btn--primary estacion-btn" disabled={busy} onClick={handleConfirmar}>
+            {busy ? 'Guardando…' : 'Sí, confirmar'}
+          </button>
+          <button type="button" className="btn btn--secondary estacion-btn" disabled={busy} onClick={() => setConfirmando(false)}>
+            Cancelar
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -96,13 +178,6 @@ export default function EstacionOrderPage() {
         ))}
       </div>
 
-      {estacion?.consumoPlaceholder && (
-        <div className="estacion-consumo">
-          <span className="field-label">Reporte de consumo</span>
-          <input type="text" className="input" placeholder="Próximamente" disabled />
-        </div>
-      )}
-
       {error && <p className="form-error">{error.message}</p>}
 
       {order.status === 'en_confirmacion' ? (
@@ -119,14 +194,24 @@ export default function EstacionOrderPage() {
           >
             En progreso
           </button>
-          <button
-            type="button"
-            className={'btn estacion-btn' + (terminada ? ' btn--primary' : ' btn--secondary')}
-            disabled={busy}
-            onClick={() => handleCambiarEtapa('completado')}
-          >
-            Finalizado
-          </button>
+          {estacion?.consumoPlaceholder ? (
+            terminada ? (
+              <button type="button" className="btn btn--primary estacion-btn" disabled>
+                Cortado
+              </button>
+            ) : (
+              <TelaUsadaCorte order={order} onCortado={refresh} />
+            )
+          ) : (
+            <button
+              type="button"
+              className={'btn estacion-btn' + (terminada ? ' btn--primary' : ' btn--secondary')}
+              disabled={busy}
+              onClick={() => handleCambiarEtapa('completado')}
+            >
+              Finalizado
+            </button>
+          )}
         </div>
       )}
       {terminada && <p className="estacion-order__listo">✓ Ya terminaste tu parte de esta orden</p>}

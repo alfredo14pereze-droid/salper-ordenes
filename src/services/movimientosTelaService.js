@@ -51,3 +51,23 @@ export async function calcularConsumoOrden(items) {
 
   return supabase.rpc('calcular_consumo_orden', { p_items: items || [] })
 }
+
+// V102 — historial de movimientos de tela de UNA orden (para el resumen
+// de corte real en el detalle de la orden).
+export async function fetchMovimientosPorOrden(ordenId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.from('v_movimientos_tela').select('*').eq('orden_id', ordenId).order('fecha', { ascending: false })
+}
+
+// V102 — "Cortado": consumos = [{ tela_id, cantidad }], una entrada por
+// cada tela que use la orden (todas obligatorias, ver marcar_corte). En
+// una sola llamada: inserta el/los movimiento(s) consumo_corte y completa
+// la etapa de corte en orden_etapas.
+export async function marcarCorte(ordenId, consumos) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('marcar_corte', { p_orden_id: ordenId, p_consumos: consumos })
+}

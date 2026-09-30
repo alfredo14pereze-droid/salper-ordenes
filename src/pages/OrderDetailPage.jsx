@@ -29,9 +29,18 @@ import {
   remisionPdfFileName,
 } from '../utils/generateOrderPdf'
 import { useAuth } from '../contexts/AuthContext'
-import { canViewRemision, canViewSurtido, canChangeStatus, canSetEstimatedDays, canViewEtapas, canViewFinanzas } from '../utils/permissions'
+import {
+  canViewRemision,
+  canViewSurtido,
+  canChangeStatus,
+  canSetEstimatedDays,
+  canViewEtapas,
+  canViewFinanzas,
+  canGestionarInventarioTela,
+} from '../utils/permissions'
 import { esRolDeEstacion } from '../config/vistasPorRol'
 import EstacionOrderPage from './EstacionOrderPage'
+import OrderCorteResumen from '../components/orders/OrderCorteResumen'
 
 // V96 — mismo criterio que DashboardPage.jsx: los roles de etapa ven una
 // vista de estación mucho más chica, en la misma ruta /orden/:id. El
@@ -235,6 +244,16 @@ function OrderDetailContent() {
         <section className="card card--placeholders">
           <OrderItemsCard order={order} onUpdated={refresh} />
         </section>
+
+        {/* V102 — Parte 4: estimado vs. real de corte, exclusivo
+            admin_fabrica/admin_general (mismo candado que Inventario de
+            tela) — el componente mismo no se muestra si la orden todavía
+            no se ha cortado. */}
+        {user && canGestionarInventarioTela(role) && (
+          <section className="card">
+            <OrderCorteResumen orderId={order.id} />
+          </section>
+        )}
 
         {order.items?.some((it) => it.lleva_bordado) && (
           <section className="card">
