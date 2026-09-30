@@ -2497,6 +2497,21 @@ h4 {
   margin: 12px 0;
   color: var(--color-text-muted);
 }
+.captura__aviso {
+  margin: -6px 0 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 14px;
+}
+.captura__aviso--espera {
+  color: var(--color-warning);
+  background: var(--color-orange-soft);
+}
+.captura__aviso--cerrada {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
 .captura__entrada {
   display: grid;
   grid-template-columns: 1fr 1fr auto;

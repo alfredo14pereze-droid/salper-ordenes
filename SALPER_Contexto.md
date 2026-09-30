@@ -4708,3 +4708,40 @@ Verificado en vivo con datos reales: ahora mismo (miércoles 30, ~10:49
 am) capturar algo fechado HOY quedaría bloqueado hasta
 `2026-10-01 13:00:00` — jueves 1 PM, exacto. Capturar algo de la semana
 anterior (hasta el martes 29) sigue totalmente permitido.
+
+### V108 — Aviso de cambio de semana en la pantalla de captura
+
+Pedido del usuario: un aviso en `ProduccionCapturaPage.jsx` (donde Juanis
+captura) para saber cuándo ya se puede empezar a subir la semana nueva.
+
+**Bug real que esto sacó a la luz**: la pantalla de captura ya calculaba
+su propio `vencida`/`puedeCapturar` del lado del cliente (para
+deshabilitar el formulario sin esperar la respuesta del servidor), pero
+con la regla VIEJA (`sem.fin < hoy` — cerraba desde que cambiaba la
+fecha, sin hora) y **sin ningún candado de apertura** — quedó
+desactualizado frente a V106/V107 (cierre 11am jueves, apertura 1pm
+jueves). Ya corregido: ahora calcula los mismos umbrales exactos que el
+servidor (`conHora(sem.ini, 1, 13)` para apertura, `conHora(sem.fin, 2,
+11)` para cierre) — mismo criterio, in-line, no una llamada a la base.
+
+**Aviso**: un reloj en vivo (`setInterval` cada 60s) recalcula esto solo,
+sin recargar la página. Dos estados nuevos, con su propio color
+(reutilizando tokens ya existentes):
+- **Todavía no abre** (ámbar, `--color-warning`): "Todavía no se abre la
+  captura de esta semana — abre el [fecha] a la [hora]. Sigue subiendo
+  la semana anterior mientras tanto." — aparece mientras la semana de la
+  fecha elegida no haya llegado a su jueves 1pm; el formulario se queda
+  deshabilitado (`admin_general`/`admin_fabrica` exentos, igual que el
+  servidor).
+- **Ya cerró** (rojo, `--color-danger`): mensaje que ya existía, sin
+  cambio de texto.
+
+El "aviso de cambio de semana" que pidió el usuario es exactamente esa
+transición: en cuanto el reloj cruza la 1pm del jueves, el aviso ámbar
+desaparece solo y la pantalla vuelve a su estado normal — sin necesidad
+de guardar "ya lo vi" en ningún lado.
+
+`npm run build` limpio. CSS nuevo: `.captura__aviso`/`--espera`/
+`--cerrada`. Verificado en el navegador sin sesión real que no hay
+crash. Verificación con Juanis usando la pantalla real, sobre todo
+alrededor de un jueves a mediodía, pendiente del lado del usuario.

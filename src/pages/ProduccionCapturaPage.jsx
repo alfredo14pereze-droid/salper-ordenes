@@ -44,6 +44,18 @@ function semanaDe(fechaStr) {
   return { ini: toStr(ini), fin: toStr(fin) }
 }
 
+// V107/V108 — mismos umbrales que el servidor (prod_capturar_registro /
+// prod_cerrar_vencidas): la semana abre el jueves siguiente a su inicio a
+// la 1pm, y cierra el jueves siguiente a su fin a las 11am.
+function conHora(fechaStr, diasMas, hora) {
+  const d = fromStr(fechaStr)
+  d.setDate(d.getDate() + diasMas)
+  d.setHours(hora, 0, 0, 0)
+  return d
+}
+const fmtHora = (d) =>
+  `${d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} a la ${d.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' })}`
+
 const ESTADO_LABEL = { abierta: 'abierta', en_revision: 'en revisión', aprobada: 'aprobada' }
 
 function Captura() {
@@ -88,12 +100,31 @@ function Captura() {
   }, [])
 
   const sem = useMemo(() => semanaDe(fecha), [fecha])
-  // Misma regla que el servidor (prod_puede_editar_semana): aprobada = nunca; admins mientras no esté
-  // aprobada; quien solo captura: solo si está abierta Y su martes no ha terminado.
+
+  // V108 — reloj en vivo: para que el aviso de "todavía no abre"/"ya
+  // cerró" aparezca solo, sin que alguien tenga que recargar la página
+  // justo cuando cruza la hora exacta (1pm/11am).
+  const [ahora, setAhora] = useState(() => new Date())
+  useEffect(() => {
+    const t = setInterval(() => setAhora(new Date()), 60000)
+    return () => clearInterval(t)
+  }, [])
+
+  const abreEn = useMemo(() => conHora(sem.ini, 1, 13), [sem.ini])
+  const cierraEn = useMemo(() => conHora(sem.fin, 2, 11), [sem.fin])
+
+  // Mismos umbrales que el servidor (prod_capturar_registro/
+  // prod_cerrar_vencidas, V106/V107): la semana de `fecha` abre el jueves
+  // después de su inicio a la 1pm, y cierra el jueves después de su fin a
+  // las 11am. `estadoBase` (columna real en la base) puede quedarse
+  // atrasado respecto a esto — el cierre real solo se "materializa" hasta
+  // que alguien abre Revisión producción — así que aquí se calcula en
+  // vivo, sin esperar a que eso pase, para avisar con tiempo.
+  const noAbierta = ahora < abreEn
   const estadoBase = semana?.estado || 'abierta'
-  const vencida = estadoBase === 'abierta' && sem.fin < hoy
+  const vencida = estadoBase === 'abierta' && ahora >= cierraEn
   const estadoSemana = vencida ? 'en_revision' : estadoBase
-  const puedeCapturar = estadoBase === 'aprobada' ? false : esAdmin ? true : estadoBase === 'abierta' && !vencida
+  const puedeCapturar = estadoBase === 'aprobada' ? false : esAdmin ? true : estadoBase === 'abierta' && !vencida && !noAbierta
 
   const refrescar = useCallback(async () => {
     const [r, s, sm] = await Promise.all([
@@ -298,8 +329,16 @@ function Captura() {
 
       <p className="captura__semana">
         Semana del {fmt(sem.ini)} al {fmt(sem.fin)} · <b>{ESTADO_LABEL[estadoSemana] || estadoSemana}</b>
-        {!puedeCapturar && ' — ya no se puede capturar en esta semana.'}
       </p>
+      {/* V108 — aviso de cambio de semana: aparece solo (el reloj en vivo
+          de arriba lo actualiza) justo cuando cruza la hora de apertura/
+          cierre, sin que nadie tenga que recargar la página. */}
+      {noAbierta && (
+        <p className="captura__aviso captura__aviso--espera">
+          Todavía no se abre la captura de esta semana — abre el {fmtHora(abreEn)}. Sigue subiendo la semana anterior mientras tanto.
+        </p>
+      )}
+      {!noAbierta && !puedeCapturar && <p className="captura__aviso captura__aviso--cerrada">Ya no se puede capturar en esta semana.</p>}
 
       {operadora && (
         <div className="captura__entrada">
