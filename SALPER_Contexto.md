@@ -5195,18 +5195,20 @@ cuenta real de rol `sublimado`: subir un diseño y marcar "Impresa".
 
 ---
 
-### V121 — Inventario: catálogo estructurado, tallas completas y búsqueda flexible (fusionado a `main` el 2026-10-01; SQL pendiente de aplicar)
+### V121 — Inventario: catálogo estructurado, tallas completas y búsqueda flexible (fusionado a `main` y SQL aplicado el 2026-10-01)
 
 **Estado:** desarrollado en la rama `inventario-catalogo` (salió de `main`,
 no de `fase-2`: `fase-2` se quedó en el 2 de septiembre, 133 commits atrás y
 sin el módulo de Inventario — confirmado con el usuario) y **fusionado a
 `main` el 2026-10-01 a pedido explícito del usuario** ("ya haz el merge, ya
-que quede en la página oficial"). Al momento del merge
-`supabase/schema_v121_inventario_catalogo.sql` **todavía NO estaba aplicado
-en Supabase** — lo corre el usuario en el SQL Editor. Mientras no se
-aplique, producción se ve como antes más el buscador flexible (ver
-"Compatibilidad"); los modelos, la entrada por cuadrícula y "Artículos sin
-clasificar" aparecen en cuanto se aplica.
+que quede en la página oficial"). `supabase/schema_v121_inventario_catalogo.sql` **se aplicó en Supabase el
+2026-10-01** desde el SQL Editor (cargado en una consulta nueva y verificado
+por hash contra el archivo de `main` antes de ejecutar; resultado "Success.
+No rows returned"). Verificación posterior con SELECT: 3 clasificaciones,
+17 tipos de prenda, 2 juegos (13 tallas), las 14 funciones nuevas sin
+overloads duplicados, RLS activo en las 6 tablas nuevas, y los 465
+artículos / 472 movimientos / 3,188 piezas intactos (0 modelos todavía:
+todos los artículos arrancan "sin clasificar").
 
 **Problema que resuelve:** artículos dados de alta con cualquier nombre
 (duplicados, nombres inconsistentes), tallas que había que crear sueltas, y
@@ -5319,8 +5321,8 @@ solo a T.10 y T.12 → las demás no se mueven; `po tri 12`, `tri polo 12`,
 `pólo TRI` en traspaso → la prenda correcta; `12` no trae otras tallas;
 traspaso mezclando artículo viejo + nuevo (folio y PDF); clasificar los
 465 de un jalón sin conflictos y sin cambiar piezas ni nombres; roles
-`tienda`/`ventas`; base sin V121. `npm run build` limpio. **Falta:** aplicar
-el SQL en Supabase y probar con sesión real.
+`tienda`/`ventas`; base sin V121. `npm run build` limpio. **Falta:** probar
+en producción con sesión real (crear un modelo, darle entrada, un traspaso).
 
 **Pendiente / no incluido:** editar un modelo ya creado (cambiar tipo o
 variante — hoy se deshace la clasificación y se vuelve a crear); alias por
