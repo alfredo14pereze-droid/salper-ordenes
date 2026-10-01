@@ -5275,6 +5275,32 @@ que evita que esto se repita.
 Pendientes de bordado) — todas consistentes con el resto del rediseño,
 sin errores de consola.
 
+### "Confirmada" deja de ser verde
+
+El usuario revisó el Preview y notó que el Calendario se veía "todo
+verde" — "Confirmada" compartía el mismo verde que "Completado" (ver la
+excepción deliberada documentada arriba), y como la mayoría de las
+órdenes visibles en un momento dado solo están "confirmadas" (apenas
+arrancando), el calendario daba la impresión falsa de que casi todo
+estaba terminado. Pidió explícitamente sacarla de esa excepción y dejó
+el color exacto a mi criterio.
+
+- `lib/constants.js`: `confirmado` pasa de verde (`#2f8f4e`, el mismo de
+  `completado`) a un gris neutro propio (`#64748b` / texto blanco) — ni
+  rojo (no es urgente) ni verde (no está terminada), igual de neutral
+  que el resto de etapas intermedias que tampoco usan rojo/verde.
+  "Por Confirmar" se queda en rojo (sin cambio, el usuario no lo
+  cuestionó). El comentario del archivo se actualizó para reflejar que
+  la excepción rojo/verde ya solo aplica a "Por Confirmar".
+- Como `StatusBadge`/`MonthCalendar`/`OrderCard` leen el color desde
+  `STATUSES` dinámicamente, el cambio se propagó solo a los tres sin
+  tocar esos componentes.
+
+`npm run build` limpio. Verificado en vivo: Calendario ya no se ve "todo
+verde" (mezcla de gris/azul/otros según la etapa real de cada orden) y
+el Dashboard muestra el badge "Confirmada" en gris, distinto de
+"Completado" (que sigue en verde).
+
 Pendiente: el usuario revisa el Preview Deployment actualizado y da el
 visto bueno explícito antes de fusionar cualquier cosa a `main` — sigue
 sin mergearse nada.

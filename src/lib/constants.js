@@ -18,18 +18,24 @@
 // `color`.
 // Excepción deliberada a la regla de rojo/verde exclusivos (ver arriba):
 // a petición explícita del usuario, "Por Confirmar" (recién creada, aún
-// sin revisar por fábrica) usa el mismo rojo de urgencia y "Confirmada"
-// el mismo verde de completado — para que salte a la vista qué orden
-// todavía necesita que fábrica la revise. El resto de las etapas se queda
-// fuera de rojo/verde, como antes.
-// V117 — rediseño visual (branch rediseno-visual, Parte 0): se probó
-// reemplazar esta paleta por la tabla "Etapas → chip" del nuevo sistema de
-// diseño, pero el usuario pidió explícitamente conservar estos colores
-// originales tal cual — el resto del rediseño (tipografía, forma de
-// tarjetas, sidebar, etc.) sí sigue aplicándose.
+// sin revisar por fábrica) usa el mismo rojo de urgencia — para que salte
+// a la vista qué orden todavía necesita que fábrica la revise.
+// V117 — rediseño visual: "Confirmada" SÍ se sacó de esta excepción —
+// antes compartía el mismo verde que "Completado", y en el Calendario
+// (donde se ven muchas órdenes a la vez, casi todas en estado
+// "Confirmada" nada más por haber arrancado) eso pintaba todo de verde y
+// daba la impresión falsa de que la producción iba muy bien, cuando
+// "confirmada" no significa "terminada". Ahora usa un gris neutro propio
+// — ni rojo (no es urgente) ni verde (no está en absoluto terminada) —
+// consistente con el resto de etapas intermedias, que tampoco usan
+// rojo/verde. El resto de la paleta se probó reemplazar por la tabla
+// "Etapas → chip" del nuevo sistema de diseño (rediseño visual, Parte 0),
+// pero el usuario pidió conservar estos colores originales — el resto
+// del rediseño (tipografía, forma de tarjetas, sidebar, etc.) sí sigue
+// aplicándose.
 export const STATUSES = [
   { key: 'en_confirmacion', label: 'Por Confirmar', color: '#c7351f', textColor: '#ffffff' },
-  { key: 'confirmado', label: 'Confirmada', color: '#2f8f4e', textColor: '#ffffff' },
+  { key: 'confirmado', label: 'Confirmada', color: '#64748b', textColor: '#ffffff' },
   { key: 'en_corte', label: 'En corte', color: '#bfe3fa', textColor: '#16130f' },
   { key: 'cortado', label: 'Cortado', color: '#1f7dc4', textColor: '#ffffff' },
   { key: 'en_sublimado', label: 'En sublimado', color: '#f8cfe3', textColor: '#16130f' },
