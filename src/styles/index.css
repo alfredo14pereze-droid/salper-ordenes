@@ -2474,9 +2474,12 @@ h4 {
 }
 
 /* V68 — Captura de producción (teclado primero). */
+/* V118 — ya no hay columna de fecha (se quitó el selector); una sola
+   columna de ancho completo para que "Operadora" ocupe todo el ancho,
+   igual que la tabla de capturado. */
 .captura__top {
   display: grid;
-  grid-template-columns: 170px 1fr;
+  grid-template-columns: 1fr;
   gap: 16px;
   align-items: start;
 }
