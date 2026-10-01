@@ -6,10 +6,12 @@ import { fetchInventarioTelas, marcarCorte } from '../services/movimientosTelaSe
 import { fetchOrdenBordados } from '../services/bordadosService'
 import { buildRemisionPdfBlob, remisionPdfFileName } from '../utils/generateOrderPdf'
 import { useAuth } from '../contexts/AuthContext'
-import { estacionDeRol } from '../config/vistasPorRol'
+import { estacionDeRol, etapasDeEstacion } from '../config/vistasPorRol'
+import { ETAPA_LABELS } from '../lib/constants'
 import { Loading, ErrorState } from '../components/common/States'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import Modal from '../components/talleros/Modal'
+import OrderDisenosCard from '../components/orders/OrderDisenosCard'
 
 const conTalla = (talla) => (talla ? `T.${talla}` : '')
 
@@ -438,9 +440,14 @@ export default function EstacionOrderPage() {
   if (errorOrder) return <ErrorState error={errorOrder} onRetry={refreshOrder} />
   if (!order) return <ErrorState error={new Error('Esta orden no existe.')} />
 
-  const miEtapa = etapas.find((e) => e.etapa === estacion?.etapa)
-  const enProceso = miEtapa?.estado === 'en_proceso'
-  const terminada = miEtapa?.estado === 'completado'
+  // V120 — una estación puede reportar más de una etapa de la misma orden
+  // (corte también reporta sublimado), y puede abrir una orden que no
+  // tiene ninguna etapa suya (sublimado sube diseños a cualquier orden):
+  // solo se pintan botones para las etapas mías que la orden sí tiene.
+  const misEtapas = etapasDeEstacion(estacion)
+    .map((nombre) => etapas.find((e) => e.etapa === nombre))
+    .filter(Boolean)
+  const todoTerminado = misEtapas.length > 0 && misEtapas.every((e) => e.estado === 'completado')
 
   async function refresh() {
     await Promise.all([refreshOrder(), loadEtapas()])
@@ -455,10 +462,10 @@ export default function EstacionOrderPage() {
     refresh()
   }
 
-  async function handleCambiarEtapa(nuevoEstado) {
+  async function handleCambiarEtapa(etapa, nuevoEstado) {
     setBusy(true)
     setError(null)
-    const { error: err } = await updateOrdenEtapa(order.id, estacion.etapa, nuevoEstado)
+    const { error: err } = await updateOrdenEtapa(order.id, etapa, nuevoEstado)
     setBusy(false)
     if (err) return setError(err)
     refresh()
@@ -467,7 +474,7 @@ export default function EstacionOrderPage() {
   return (
     <div className="page estacion-page">
       <Link to="/" className="back-link">
-        ← Siguientes órdenes
+        ← {estacion?.dashboardSublimado ? 'Órdenes de sublimado' : 'Siguientes órdenes'}
       </Link>
 
       <h2 className="estacion-order__folio">#{order.order_number}</h2>
@@ -483,49 +490,60 @@ export default function EstacionOrderPage() {
 
       {error && <p className="form-error">{error.message}</p>}
 
-      {order.status === 'en_confirmacion' ? (
-        <button type="button" className="btn btn--primary estacion-btn" disabled={busy} onClick={handleConfirmar}>
-          {busy ? 'Guardando…' : 'Confirmar'}
-        </button>
-      ) : (
-        <div className="estacion-acciones">
-          <button
-            type="button"
-            className={'btn estacion-btn' + (enProceso || terminada ? ' btn--primary' : ' btn--secondary')}
-            disabled={busy}
-            onClick={() => handleCambiarEtapa('en_proceso')}
-          >
-            En progreso
+      {estacion?.disenos && <OrderDisenosCard order={order} className="estacion-disenos" />}
+
+      {misEtapas.length > 0 &&
+        (order.status === 'en_confirmacion' ? (
+          <button type="button" className="btn btn--primary estacion-btn" disabled={busy} onClick={handleConfirmar}>
+            {busy ? 'Guardando…' : 'Confirmar'}
           </button>
-          {estacion?.consumoPlaceholder ? (
-            terminada ? (
-              <button type="button" className="btn btn--primary estacion-btn" disabled>
-                Cortado
-              </button>
-            ) : (
-              <TelaUsadaCorte order={order} onCortado={refresh} />
+        ) : (
+          misEtapas.map((et) => {
+            const enProceso = et.estado === 'en_proceso'
+            const terminada = et.estado === 'completado'
+            const esPrincipal = et.etapa === estacion.etapa
+            return (
+              <div key={et.etapa} className="estacion-acciones">
+                {misEtapas.length > 1 && <h3 className="section-title section-title--small">{ETAPA_LABELS[et.etapa] || et.etapa}</h3>}
+                <button
+                  type="button"
+                  className={'btn estacion-btn' + (enProceso || terminada ? ' btn--primary' : ' btn--secondary')}
+                  disabled={busy}
+                  onClick={() => handleCambiarEtapa(et.etapa, 'en_proceso')}
+                >
+                  En progreso
+                </button>
+                {esPrincipal && estacion.consumoPlaceholder ? (
+                  terminada ? (
+                    <button type="button" className="btn btn--primary estacion-btn" disabled>
+                      Cortado
+                    </button>
+                  ) : (
+                    <TelaUsadaCorte order={order} onCortado={refresh} />
+                  )
+                ) : esPrincipal && estacion.surtidoFinal ? (
+                  terminada ? (
+                    <button type="button" className="btn btn--primary estacion-btn" disabled>
+                      Reporte generado
+                    </button>
+                  ) : (
+                    <EstacionSurtidoTerminado order={order} onConfirmado={refresh} />
+                  )
+                ) : (
+                  <button
+                    type="button"
+                    className={'btn estacion-btn' + (terminada ? ' btn--primary' : ' btn--secondary')}
+                    disabled={busy}
+                    onClick={() => handleCambiarEtapa(et.etapa, 'completado')}
+                  >
+                    {(esPrincipal && estacion.finalLabel) || 'Finalizado'}
+                  </button>
+                )}
+              </div>
             )
-          ) : estacion?.surtidoFinal ? (
-            terminada ? (
-              <button type="button" className="btn btn--primary estacion-btn" disabled>
-                Reporte generado
-              </button>
-            ) : (
-              <EstacionSurtidoTerminado order={order} onConfirmado={refresh} />
-            )
-          ) : (
-            <button
-              type="button"
-              className={'btn estacion-btn' + (terminada ? ' btn--primary' : ' btn--secondary')}
-              disabled={busy}
-              onClick={() => handleCambiarEtapa('completado')}
-            >
-              Finalizado
-            </button>
-          )}
-        </div>
-      )}
-      {terminada && <p className="estacion-order__listo">✓ Ya terminaste tu parte de esta orden</p>}
+          })
+        ))}
+      {todoTerminado && <p className="estacion-order__listo">✓ Ya terminaste tu parte de esta orden</p>}
     </div>
   )
 }

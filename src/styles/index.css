@@ -3266,6 +3266,67 @@ h4 {
   font-weight: 700;
   font-size: 14px;
 }
+/* V120 — dashboard de sublimado y diseños de la orden. */
+.estacion-seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.estacion-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.estacion-disenos {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+.disenos-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.diseno {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 104px;
+}
+.diseno__archivo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 104px;
+  height: 104px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+.diseno__archivo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.disenos-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.disenos-form__tipos {
+  display: flex;
+  gap: 8px;
+}
+.disenos-form__tipos .btn {
+  flex: 1;
+}
 .surtido-fila {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);

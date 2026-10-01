@@ -15,9 +15,13 @@
 // tipo de trabajo propio en Pendientes — se quedan sin acceso (ni
 // `pendientesTipo` ni `pendientesCompleto`).
 export const ESTACIONES = {
-  corte: { etapa: 'corte', consumoPlaceholder: true },
+  // V120 — corte (Pancho) también reporta la etapa 'sublimado' de las
+  // órdenes de sublimación (`etapasExtra`); el rol sublimado (Samuel) pasa
+  // a la etapa nueva 'impresion', con su propio dashboard de órdenes de
+  // sublimación (`dashboardSublimado`) y la subida de diseños (`disenos`).
+  corte: { etapa: 'corte', consumoPlaceholder: true, etapasExtra: ['sublimado'] },
   bordado: { etapa: 'bordado', pendientesTipo: 'Bordado' },
-  sublimado: { etapa: 'sublimado' },
+  sublimado: { etapa: 'impresion', finalLabel: 'Impresa', dashboardSublimado: true, disenos: true },
   // V111 — 'produccion' (rol) queda deprecated, sin usuarios reales; el
   // rol nuevo es 'costura' — misma etapa ('produccion', que no se
   // renombró) y mismo pendientesTipo. Se deja la entrada 'produccion'
@@ -36,4 +40,11 @@ export function esRolDeEstacion(role) {
 
 export function estacionDeRol(role) {
   return ESTACIONES[role] || null
+}
+
+// Todas las etapas que reporta una estación, en el orden del flujo (las
+// extra van antes que la propia: sublimado va antes de corte).
+export function etapasDeEstacion(estacion) {
+  if (!estacion) return []
+  return [...(estacion.etapasExtra || []), estacion.etapa]
 }

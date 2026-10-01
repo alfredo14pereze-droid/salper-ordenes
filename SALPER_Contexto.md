@@ -5151,6 +5151,48 @@ movimientos se ve bien (estado vacío), "Esta semana" trajo 469 movimientos
 reales con el resumen (+3229 entradas / −36 salidas) y la tabla completa
 correctas.
 
+### V120 — Perfil de sublimación (Samuel): etapa Impresión + diseños
+
+`supabase/schema_v120_sublimado_impresion_disenos.sql` (aplicado
+2026-10-01 por el usuario desde el SQL Editor; verificado después con una
+consulta: 13 órdenes de sublimación recibieron `impresion` en
+`completado`, la plantilla tiene `impresion` en secuencia 0, existe
+`orden_disenos`, una sola versión de cada función y `anon` sin EXECUTE
+sobre `add_orden_diseno`). Decisiones confirmadas con el usuario: etapa
+nueva (no reusar `sublimado`), diseños sin aprobación de ventas por ahora.
+
+- **Etapa nueva `impresion`** (solo plantilla `sublimacion`, secuencia 0,
+  antes de `sublimado`). Rompe el 1:1 rol↔etapa en dos casos: `impresion`
+  la reporta el rol `sublimado` (Samuel) y `sublimado` pasa al rol `corte`
+  (Pancho). `update_orden_etapa` y `canChangeEtapa` son el espejo.
+  `orders.status` **no** ganó valores nuevos: `recompute_order_status` no
+  se tocó, así que una orden que solo lleva la impresión arrancada sigue
+  en "Confirmado"; el avance real está en `orden_etapas`.
+- **Órdenes existentes**: reciben su fila de `impresion` — `completado`
+  si la orden ya se entregó o si otra etapa ya arrancó, `pendiente` si no.
+- **Diseños**: tabla `orden_disenos` (`tipo` = `propuesta` | `final`) +
+  `add_orden_diseno` / `delete_orden_diseno` (sublimado, admin_fabrica,
+  admin_general). `propuesta` solo en órdenes de sublimación; `final` en
+  cualquiera. Archivos en el bucket `order-photos`, carpeta `disenos/`.
+  Sin flujo de aprobación todavía.
+- **Frontend**: `vistasPorRol.js` (`sublimado` → etapa `impresion`,
+  `dashboardSublimado`, `disenos`; `corte` gana `etapasExtra:
+  ['sublimado']`). `SublimadoHomePage.jsx` (nuevo): bandejas "Pendientes
+  de impresión" / "Diseño pendiente" / "Todas" + buscador de folio sobre
+  todas las órdenes. `EstacionHomePage.jsx`: una lista por etapa cuando la
+  estación reporta más de una (corte ve "Pendientes de sublimado" y
+  "Pendientes de corte"). `EstacionOrderPage.jsx`: un bloque de botones
+  por cada etapa mía que la orden tenga; botón final "Impresa" para
+  sublimado. `OrderDisenosCard.jsx` (nuevo) se usa en la vista de estación
+  y en el detalle de orden de los demás roles (solo lectura salvo admin).
+
+`npm run build` limpio. Verificado en local con "Ver como" (solo
+lectura): las pantallas de sublimado y corte cargan. Al aplicar la
+migración no había ninguna orden de sublimación activa (las 13 estaban
+entregadas), así que el dashboard de Samuel arranca vacío, y tampoco
+había usuarios con rol `sublimado` ni `corte`. Falta probar con una
+cuenta real de rol `sublimado`: subir un diseño y marcar "Impresa".
+
 ---
 
 ## Rediseño visual (branch `rediseno-visual`, en progreso)

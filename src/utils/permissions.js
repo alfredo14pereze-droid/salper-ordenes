@@ -118,9 +118,15 @@ export function canConfirmOrderChanges(role) {
 // pueden todas. Ver update_orden_etapa en schema_v23_etapas_paralelas.sql.
 // V111 — caso especial: 'costura' toca la etapa 'produccion' (esa etapa
 // no se renombró — ver schema_v111_roles_fabrica_parte1.sql).
+// V120 — dos casos más (ver schema_v120_sublimado_impresion_disenos.sql):
+// la etapa nueva 'impresion' es del rol 'sublimado', y la etapa
+// 'sublimado' pasa a ser del rol 'corte'.
 export function canChangeEtapa(role, etapa) {
-  if (role === etapa || role === 'admin_fabrica' || role === 'admin_general') return true
-  return etapa === 'produccion' && role === 'costura'
+  if (role === 'admin_fabrica' || role === 'admin_general') return true
+  if (etapa === 'impresion') return role === 'sublimado'
+  if (etapa === 'sublimado') return role === 'corte'
+  if (etapa === 'produccion') return role === 'produccion' || role === 'costura'
+  return role === etapa
 }
 
 // fabrica captura el tiempo estimado solo mientras sigue en_confirmacion;
@@ -225,6 +231,12 @@ export function canVerComprometidoTela(role) {
 // (ver canEditOrder, mismo gate que el resto de las prendas).
 export function canManageBordado(role) {
   return role === 'bordado' || role === 'admin_fabrica' || role === 'admin_general'
+}
+
+// V120 — diseños de la orden (propuestas y diseño final): los sube/borra
+// sublimado + admin_fabrica/admin_general. Cualquier sesión los ve.
+export function canManageDisenos(role) {
+  return role === 'sublimado' || role === 'admin_fabrica' || role === 'admin_general'
 }
 
 // Terminado (V26): capturar cantidad_surtida/comentario_surtido por línea
