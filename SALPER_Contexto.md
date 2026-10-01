@@ -5195,6 +5195,135 @@ cuenta real de rol `sublimado`: subir un diseño y marcar "Impresa".
 
 ---
 
+### V121 — Inventario: catálogo estructurado, tallas completas y búsqueda flexible (rama `inventario-catalogo`, SIN fusionar, SQL SIN aplicar)
+
+**Estado:** código y migración terminados en la rama `inventario-catalogo`
+(salió de `main`, no de `fase-2`: `fase-2` se quedó en el 2 de septiembre,
+133 commits atrás y sin el módulo de Inventario — confirmado con el
+usuario). **No se ha hecho merge y `supabase/schema_v121_inventario_catalogo.sql`
+todavía NO se aplica en Supabase** — lo corre el usuario cuando decida. El
+frontend de esta rama funciona con o sin la migración (ver "Compatibilidad").
+
+**Problema que resuelve:** artículos dados de alta con cualquier nombre
+(duplicados, nombres inconsistentes), tallas que había que crear sueltas, y
+un buscador de traspasos que solo comparaba texto corrido contra `prenda`
+("polo tricio 12" no encontraba nada).
+
+**Esquema (100% aditivo — no se borra/renombra nada ni cambia la firma de
+ninguna función existente):**
+
+- **"Cliente o línea" = `inv_secciones`.** Ya era exactamente eso (colegios
+  y líneas mezclados) y todas las pantallas/reportes agrupan por sección, así
+  que NO se creó un catálogo paralelo: solo gana `clasificacion_id` y
+  `cliente_id` (liga opcional y única al catálogo `clientes` de Órdenes).
+- `inv_clasificaciones` (Colegio / Empresa / Marca / Línea, ampliable),
+  `inv_tipos_prenda` (17 de semilla: los del pedido + los que ya existen en
+  el inventario real), `inv_juegos_tallas` + `inv_juego_tallas_det`
+  (semilla: "Escolar infantil" 2-16 y "Adulto" CH/M/L/XL/2XL — decisión del
+  usuario: se usan L/XL/2XL, las tallas que ya existían, NO G/XG/XXG).
+- **`inv_modelos`** = la prenda sin talla (sección + tipo de prenda +
+  variante). Único por esa combinación sin importar acentos/mayúsculas/
+  espacios (`inv_norm()`), que es el candado real contra duplicados. La
+  variante es **texto libre** (decisión del usuario), con sugerencias de las
+  ya usadas.
+- `inv_articulos.modelo_id` (nullable): **NULL = "sin clasificar"**, el
+  artículo funciona como siempre. Único parcial `(modelo_id, talla_id)`.
+- `inv_alias` (de un modelo o de un artículo; origen microsip/proveedor/
+  interno) — no existía ninguna tabla de alias antes.
+- **El nombre generado NO se guarda.** Un artículo creado desde un modelo
+  guarda en `prenda` el texto "Tipo + Variante" (ej. "Playera polo Blanca")
+  para que las pantallas ya en producción lo agrupen igual que a los viejos;
+  el nombre completo `[Tipo] [Cliente o línea] [Variante] T.[Talla]` se arma
+  al mostrarlo (`src/utils/inventarioCatalogo.js`). Las tallas de letra
+  siguen sin prefijo "T." (regla de V92).
+
+**RPCs nuevos:** `inv_guardar_clasificacion`, `inv_guardar_tipo_prenda`,
+`inv_guardar_talla` (talla nueva al catálogo general, ej. "18" con orden
+180), `inv_guardar_juego_tallas`, `inv_clasificar_seccion`,
+`inv_crear_modelo` (modelo + todas sus tallas en 0, una transacción; si ya
+existe regresa `ya_existia` sin cambiar nada; un artículo suelto con el
+mismo texto de prenda no se duplica, se vincula), `inv_modelo_agregar_talla`,
+`inv_entrada_modelo` (entrada por cuadrícula, todo o nada, solo las tallas
+capturadas), `inv_guardar_alias` / `inv_quitar_alias`,
+`inv_vincular_articulos` (clasifica artículos viejos: solo llena
+`modelo_id`, no renombra ni toca existencia), `inv_desvincular_articulos`
+(deshacer; borra el modelo si queda vacío) e `inv_catalogo()`.
+Permisos con los helpers de V95 sin tocarlos: crear modelos / catálogos /
+alias / clasificar = `inv_puede_editar()` (admin_tienda, admin_general —
+confirmado con el usuario); entrada por cuadrícula = `inv_puede_mover()`
+(incluye `tienda`).
+
+**GOTCHA encontrado — tope de 1000 filas de PostgREST:** `inv_existencias(null)`
+regresa una fila por artículo × ubicación: hoy 465 × 2 = **930**, a 35
+artículos de que Supabase (max rows = 1000 por default) empiece a cortar el
+resultado en silencio. El alta de traspaso que está en producción usa
+justo esa llamada. Por eso `inv_catalogo()` regresa **un solo JSON**
+(artículos + existencias ≠ 0 + modelos + alias), que no tiene ese tope. En
+esta rama ya nadie llama `inv_existencias(null)` salvo como respaldo.
+
+**Búsqueda flexible — en el navegador** (`src/utils/inventarioBusqueda.js`,
+componente `ArticuloBuscador.jsx`): con cientos/miles de artículos es
+instantánea (< 2 ms con los 465 reales) y da resultados en cada tecla sin
+ir al servidor; una función en Supabase solo valdría la pena arriba de
+~20 mil artículos. Reglas: tokens en cualquier orden, cada uno debe ser
+inicio de una palabra del nombre o de un alias; sin acentos/mayúsculas/
+puntuación; "T.12"/"t12" = talla 12; un token numérico se compara EXACTO
+contra la talla o contra un número completo del nombre (`12` nunca trae
+120; `2032` encuentra "Gen 2032"); primero lo que tiene existencia, luego
+mejor coincidencia. Se usa en traspasos (existencia en el origen), en la
+pantalla principal (busca en TODAS las secciones y lleva al grupo) y, para
+modelos, en "Dar entrada".
+
+**Frontend:**
+- `InventarioPage.jsx`: carga todo el catálogo una vez
+  (`useInventarioCatalogo`) y la pestaña filtra en memoria. Agrupa por
+  modelo (todas sus tallas, las que están en 0 en gris — `inv-chip--cero`)
+  y, lo no clasificado, por texto de prenda como antes. "Ver todo con
+  tallas" abre todos los grupos del cliente; filtro por clasificación sobre
+  las pestañas. Un modelo creado con el asistente muestra exactamente sus
+  tallas; uno formado al clasificar artículos viejos (sin juego) conserva
+  el relleno de huecos de V92, y una talla "hueco" que recibe su primer
+  movimiento nace ya dentro del modelo (`MovimientoModal` →
+  `inv_modelo_agregar_talla`).
+- `NuevoModeloModal.jsx`: asistente de 6 pasos (clasificación → cliente o
+  línea con buscador y "+ nuevo" en línea, sugiriendo clientes de Órdenes
+  para no duplicar → tipo de prenda → variante → juego de tallas con
+  casillas → vista previa). Avisa "Ya existe este modelo, ¿quieres usarlo?".
+- `EntradaModeloModal.jsx`: elegir modelo → cuadrícula talla | hay |
+  cantidad → Guardar; las vacías no se mandan.
+- `ModeloOpcionesModal.jsx`: talla extra, alias, deshacer clasificación.
+- `InventarioSinClasificarPage.jsx` (`/inventario/sin-clasificar`, solo
+  quien edita): por cada (sección, prenda) propone tipo + variante leyendo
+  el nombre (`sugerirClasificacion`: "Playera Polo Gen 2032" → Playera polo
+  / "Gen 2032"); se corrige y se aplica uno por uno o en grupo. Nada se
+  aplica sin confirmar.
+- `InventarioAdminPage.jsx`: pestañas nuevas Clasificaciones, Tipos de
+  prenda, Tallas y juegos; cada sección muestra su clasificación.
+
+**Compatibilidad:** si la base aún no tiene V121, `fetchCatalogo()` detecta
+que `inv_catalogo` no existe y cae a `inv_existencias(null)`: todo se ve
+"sin clasificar" como hoy y los botones nuevos no aparecen. Al revés, el
+frontend que hoy está en producción sigue funcionando con V121 aplicado
+(columnas nuevas nullable, funciones viejas intactas).
+
+**Verificado** (sin tocar Supabase): (1) las migraciones V89, V90, V95, V119
+y V121 corridas completas en un Postgres en memoria (PGlite), V121 dos veces
+(idempotente), con un escenario de punta a punta y los 3 roles; (2) las
+pantallas reales contra esa misma base en memoria, sembrada con los 465
+artículos reales: crear modelo → 8 tallas en 0; repetirlo → aviso; entrada
+solo a T.10 y T.12 → las demás no se mueven; `po tri 12`, `tri polo 12`,
+`pólo TRI` en traspaso → la prenda correcta; `12` no trae otras tallas;
+traspaso mezclando artículo viejo + nuevo (folio y PDF); clasificar los
+465 de un jalón sin conflictos y sin cambiar piezas ni nombres; roles
+`tienda`/`ventas`; base sin V121. `npm run build` limpio. **Falta:** aplicar
+el SQL en Supabase y probar con sesión real.
+
+**Pendiente / no incluido:** editar un modelo ya creado (cambiar tipo o
+variante — hoy se deshace la clasificación y se vuelve a crear); alias por
+artículo individual en la UI (el esquema ya lo soporta, la pantalla solo
+administra alias por modelo); los PDFs de traspaso/conteo siguen mostrando
+`prenda` + talla como antes.
+
 ## Rediseño visual (branch `rediseno-visual`, en progreso)
 
 Trabajo en curso, **todavía sin commit/push** al momento de escribir esto —

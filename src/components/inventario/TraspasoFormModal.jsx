@@ -1,65 +1,38 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Modal from '../talleros/Modal'
 import { Loading } from '../common/States'
-import { fetchExistencias, crearTraspaso } from '../../services/inventarioService'
-import { formatTalla } from '../../utils/inventarioTallas'
+import { crearTraspaso } from '../../services/inventarioService'
+import ArticuloBuscador from './ArticuloBuscador'
 
 // Alta de traspaso (V89, addendum C): origen/destino + varias líneas
-// (artículo + cantidad), todo o nada del lado del servidor. El buscador de
-// artículos es global (todas las secciones) — se carga una vez al abrir.
-export default function TraspasoFormModal({ ubicaciones, secciones, onClose, onDone }) {
+// (artículo + cantidad), todo o nada del lado del servidor.
+// V121 — el buscador es el flexible compartido (ArticuloBuscador): encuentra
+// "po tri 12" / "tri polo 12" sin escribir el nombre exacto, y ordena
+// primero lo que sí tiene existencia en el origen. `articulos` ya viene
+// armado del catálogo completo (useInventarioCatalogo en la página).
+export default function TraspasoFormModal({ ubicaciones, articulos, loadingArticulos, onClose, onDone }) {
   const [origenId, setOrigenId] = useState(ubicaciones[0]?.id || '')
   const [destinoId, setDestinoId] = useState(ubicaciones[1]?.id || '')
   const [nota, setNota] = useState('')
-  const [lineas, setLineas] = useState([]) // { articuloId, prenda, talla, seccion, cantidad, existenciaOrigen }
-  const [q, setQ] = useState('')
-  const [articulos, setArticulos] = useState([])
-  const [loadingArticulos, setLoadingArticulos] = useState(true)
+  const [lineas, setLineas] = useState([]) // { articuloId, nombre, prenda, talla, cantidad, existenciaOrigen }
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
-  const seccionNombre = useMemo(() => {
-    const map = new Map(secciones.map((s) => [s.id, s.nombre]))
-    return (id) => map.get(id) || ''
-  }, [secciones])
-
-  useEffect(() => {
-    fetchExistencias(null).then(({ data }) => {
-      const map = new Map()
-      for (const f of data || []) {
-        let a = map.get(f.articulo_id)
-        if (!a) {
-          a = { articuloId: f.articulo_id, prenda: f.prenda, talla: f.talla, seccionId: f.seccion_id, porUbicacion: {} }
-          map.set(f.articulo_id, a)
-        }
-        a.porUbicacion[f.ubicacion_id] = f.existencia
-      }
-      setArticulos([...map.values()])
-      setLoadingArticulos(false)
-    })
-  }, [])
-
-  const resultados = useMemo(() => {
-    const needle = q.trim().toLowerCase()
-    if (needle.length < 2) return []
-    return articulos
-      .filter((a) => a.prenda.toLowerCase().includes(needle) && !lineas.some((l) => l.articuloId === a.articuloId))
-      .slice(0, 20)
-  }, [articulos, q, lineas])
+  const existenciaEnOrigen = useCallback((a) => a.porUbicacion[origenId] ?? 0, [origenId])
+  const idsEnLineas = useMemo(() => new Set(lineas.map((l) => l.articuloId)), [lineas])
 
   function addLinea(a) {
     setLineas((cur) => [
       ...cur,
       {
         articuloId: a.articuloId,
+        nombre: a.nombre,
         prenda: a.prenda,
         talla: a.talla,
-        seccion: seccionNombre(a.seccionId),
         cantidad: 1,
         existenciaOrigen: a.porUbicacion[origenId] ?? 0,
       },
     ])
-    setQ('')
   }
 
   function removeLinea(articuloId) {
@@ -128,40 +101,25 @@ export default function TraspasoFormModal({ ubicaciones, secciones, onClose, onD
         </div>
         {origenId === destinoId && <p className="form-error">Elige un origen y un destino distintos.</p>}
 
-        <label>
-          Agregar prenda
-          <input
-            type="text"
-            className="input"
-            placeholder={loadingArticulos ? 'Cargando artículos…' : 'Escribe el nombre de la prenda…'}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
+        <div className="inv-field">
+          <span>Agregar prenda</span>
+          <ArticuloBuscador
+            articulos={articulos}
+            existencia={existenciaEnOrigen}
+            etiquetaExistencia="en origen"
+            excluirIds={idsEnLineas}
+            onSelect={addLinea}
+            placeholder={loadingArticulos ? 'Cargando artículos…' : 'Busca la prenda… (ej. po tri 12)'}
             disabled={loadingArticulos}
           />
-        </label>
-        {resultados.length > 0 && (
-          <ul className="inv-search-results">
-            {resultados.map((a) => (
-              <li key={a.articuloId}>
-                <button type="button" onClick={() => addLinea(a)}>
-                  {a.prenda} · {formatTalla(a.talla)} · {seccionNombre(a.seccionId)}
-                  <span className="pantone-hint" style={{ marginLeft: 6 }}>
-                    (hay {a.porUbicacion[origenId] ?? 0} en origen)
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+        </div>
 
         {lineas.length > 0 && (
           <div className="document-list">
             {lineas.map((l) => (
               <div key={l.articuloId} className="document-row">
                 <div>
-                  <span className="document-row__label">
-                    {l.prenda} · {formatTalla(l.talla)} · {l.seccion}
-                  </span>
+                  <span className="document-row__label">{l.nombre}</span>
                   <p className="pantone-hint" style={{ margin: '2px 0 0' }}>
                     Hay {l.existenciaOrigen} en origen
                     {Number(l.cantidad) > l.existenciaOrigen && (

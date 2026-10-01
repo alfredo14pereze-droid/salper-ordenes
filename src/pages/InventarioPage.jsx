@@ -1,48 +1,35 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import RequireInventarioAccess from '../components/common/RequireInventarioAccess'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
 import { canMoverInventario, canEditarInventario } from '../utils/permissions'
-import { useInventarioCatalogos, useInventarioExistencias } from '../hooks/useInventario'
+import { useInventarioCatalogos, useInventarioEstructura, useInventarioCatalogo } from '../hooks/useInventario'
 import { formatTalla } from '../utils/inventarioTallas'
 import MovimientoModal from '../components/inventario/MovimientoModal'
 import HistorialModal from '../components/inventario/HistorialModal'
 import ReporteModal from '../components/inventario/ReporteModal'
+import ArticuloBuscador from '../components/inventario/ArticuloBuscador'
+import EntradaModeloModal from '../components/inventario/EntradaModeloModal'
+import NuevoModeloModal from '../components/inventario/NuevoModeloModal'
+import ModeloOpcionesModal from '../components/inventario/ModeloOpcionesModal'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import { buildReporteBlob, reporteFileName } from '../utils/generateInventarioReportePdf'
 
 // V89/V92 — Inventario (artículos por fuera de Microsip), pantalla
-// principal: secciones (colegios) como pestañas, prendas como acordeón
-// (una lista desplegable por prenda, para no scrollear con secciones que
-// tienen muchas prendas), tallas completas por prenda (huecos en 0,
-// aunque no exista el artículo todavía — se crea solo hasta el primer
-// movimiento), existencia por ubicación o total, +/- rápido, buscador y
-// reporte en PDF por colegio. En modo prueba: RequireInventarioAccess ya
-// filtró rol + correo antes de llegar aquí.
-function buildArticulos(filas) {
-  const map = new Map()
-  for (const f of filas) {
-    let a = map.get(f.articulo_id)
-    if (!a) {
-      a = {
-        articuloId: f.articulo_id,
-        seccionId: f.seccion_id,
-        prenda: f.prenda,
-        tallaId: f.talla_id,
-        talla: f.talla,
-        tallaOrden: f.talla_orden,
-        minimo: f.minimo,
-        porUbicacion: {},
-        total: 0,
-      }
-      map.set(f.articulo_id, a)
-    }
-    a.porUbicacion[f.ubicacion_id] = f.existencia
-    a.total += f.existencia
-  }
-  return [...map.values()]
-}
+// principal: secciones (colegios / líneas) como pestañas, prendas como
+// acordeón, existencia por ubicación o total, +/- rápido y reporte en PDF.
+//
+// V121 — catálogo estructurado:
+//   - Se carga TODO el inventario una vez (useInventarioCatalogo) y la
+//     pestaña solo filtra en memoria; eso permite el buscador flexible
+//     global (encuentra en cualquier sección y te lleva a ella).
+//   - Los artículos que pertenecen a un MODELO se agrupan por modelo y
+//     muestran siempre todas sus tallas (las que están en 0, en gris).
+//     Desde ahí: "Dar entrada" por cuadrícula y "Opciones" (talla extra,
+//     alias).
+//   - Los artículos SIN modelo ("sin clasificar") se siguen agrupando por
+//     el texto de su prenda y rellenando huecos de talla, igual que antes.
 
 // V92 — dentro de cada prenda, rellena con "chips virtuales" (existencia
 // 0, sin fila real en inv_articulos todavía) cualquier talla del catálogo
@@ -72,7 +59,7 @@ function esTallaVariante(nombre) {
 function fillTallaGaps(items, todasLasTallas) {
   if (items.length < 2) return items
   const existentes = new Set(items.map((i) => i.tallaId))
-  const { seccionId, prenda } = items[0]
+  const { seccionId, prenda, modeloId = null } = items[0]
 
   const porFamilia = new Map()
   for (const it of items) {
@@ -97,6 +84,7 @@ function fillTallaGaps(items, todasLasTallas) {
       articuloId: null,
       seccionId,
       prenda,
+      modeloId,
       tallaId: t.id,
       talla: t.nombre,
       tallaOrden: t.orden,
@@ -110,18 +98,33 @@ function fillTallaGaps(items, todasLasTallas) {
   return [...items, ...faltantes].sort((a, b) => a.tallaOrden - b.tallaOrden)
 }
 
-function groupByPrenda(articulos, todasLasTallas) {
-  const groups = new Map()
-  for (const a of articulos) {
-    if (!groups.has(a.prenda)) groups.set(a.prenda, [])
-    groups.get(a.prenda).push(a)
+// Grupos de una sección: uno por modelo + uno por prenda sin clasificar.
+function agrupar(articulosSeccion, modelosSeccion, todasLasTallas) {
+  // Un modelo creado con el asistente trae sus tallas definidas (a propósito
+  // se le pudieron quitar algunas del juego), así que se muestra tal cual.
+  // Uno formado al clasificar artículos viejos (sin juego) conserva el
+  // relleno de huecos de V92, para no perder tallas que ya se veían en 0.
+  const grupos = modelosSeccion.map((m) => ({
+    key: `m:${m.id}`,
+    label: m.nombreCorto,
+    modelo: m,
+    items: m.juegoId ? m.articulos : fillTallaGaps(m.articulos, todasLasTallas),
+  }))
+  const sueltos = new Map()
+  for (const a of articulosSeccion) {
+    if (a.modeloId) continue
+    if (!sueltos.has(a.prenda)) sueltos.set(a.prenda, [])
+    sueltos.get(a.prenda).push(a)
   }
-  return [...groups.entries()]
-    .map(([prenda, items]) => ({
-      prenda,
+  for (const [prenda, items] of sueltos) {
+    grupos.push({
+      key: `p:${prenda}`,
+      label: prenda,
+      modelo: null,
       items: fillTallaGaps([...items].sort((x, y) => x.tallaOrden - y.tallaOrden), todasLasTallas),
-    }))
-    .sort((x, y) => x.prenda.localeCompare(y.prenda, 'es'))
+    })
+  }
+  return grupos.sort((x, y) => x.label.localeCompare(y.label, 'es'))
 }
 
 export default function InventarioPage() {
@@ -145,11 +148,25 @@ function InventarioContent() {
     error: catalogosError,
     refresh: refreshCatalogos,
   } = useInventarioCatalogos()
+  const { clasificaciones, tipos, juegos, loading: loadingEstructura, refresh: refreshEstructura } = useInventarioEstructura()
+  const {
+    articulos,
+    modelos,
+    sinV121,
+    loading: loadingExistencias,
+    error: existenciasError,
+    refresh: refreshExistencias,
+  } = useInventarioCatalogo({ secciones, tallas, ubicaciones, tipos, listo: !loadingCatalogos && !loadingEstructura })
+
   const [seccionId, setSeccionId] = useState(null)
+  const [clasificacionFiltro, setClasificacionFiltro] = useState('todas') // 'todas' | clasificacion_id | 'sin'
   const [viewMode, setViewMode] = useState('total') // 'total' | ubicacion_id
-  const [q, setQ] = useState('')
-  const [modal, setModal] = useState(null) // { kind: 'movimiento' | 'historial', articulo, tipo? }
+  // { kind: 'movimiento' | 'historial' | 'entrada' | 'nuevoModelo' | 'opciones', ... }
+  const [modal, setModal] = useState(null)
   const [abiertas, setAbiertas] = useState(() => new Set())
+  const [todoAbierto, setTodoAbierto] = useState(false)
+  const [resaltado, setResaltado] = useState(null) // articuloId al que llevó el buscador
+  const [destino, setDestino] = useState(null) // grupo al que hay que hacer scroll (buscador / modelo recién creado)
   const [showReporte, setShowReporte] = useState(false)
   const [pdfBlob, setPdfBlob] = useState(null)
   const [pdfName, setPdfName] = useState('')
@@ -157,19 +174,30 @@ function InventarioContent() {
   const seccionesActivas = useMemo(() => secciones.filter((s) => s.activa), [secciones])
   const ubicacionesActivas = useMemo(() => ubicaciones.filter((u) => u.activa), [ubicaciones])
   const motivosDisponibles = useMemo(() => motivos.filter((m) => m.activo && !m.sistema), [motivos])
+  const hayClasificadas = seccionesActivas.some((s) => s.clasificacion_id)
 
-  const seccionActivaId = seccionId ?? (loadingCatalogos ? undefined : seccionesActivas[0]?.id ?? null)
+  const seccionesVisibles = useMemo(() => {
+    if (clasificacionFiltro === 'todas') return seccionesActivas
+    if (clasificacionFiltro === 'sin') return seccionesActivas.filter((s) => !s.clasificacion_id)
+    return seccionesActivas.filter((s) => s.clasificacion_id === clasificacionFiltro)
+  }, [seccionesActivas, clasificacionFiltro])
+
+  const seccionActivaId =
+    (seccionId && seccionesVisibles.some((s) => s.id === seccionId) ? seccionId : null) ?? seccionesVisibles[0]?.id ?? null
   const seccionActivaNombre = seccionesActivas.find((s) => s.id === seccionActivaId)?.nombre || ''
 
-  const { filas, loading: loadingExistencias, error: existenciasError, refresh: refreshExistencias } = useInventarioExistencias(seccionActivaId)
+  const gruposTodos = useMemo(
+    () =>
+      agrupar(
+        articulos.filter((a) => a.seccionId === seccionActivaId),
+        modelos.filter((m) => m.seccionId === seccionActivaId),
+        tallas
+      ),
+    [articulos, modelos, seccionActivaId, tallas]
+  )
 
-  const gruposTodos = useMemo(() => groupByPrenda(buildArticulos(filas), tallas), [filas, tallas])
-
-  const grupos = useMemo(() => {
-    const needle = q.trim().toLowerCase()
-    if (!needle) return gruposTodos
-    return gruposTodos.filter((g) => g.prenda.toLowerCase().includes(needle))
-  }, [gruposTodos, q])
+  const sinClasificar = useMemo(() => articulos.filter((a) => !a.modeloId).length, [articulos])
+  const existenciaVista = useCallback((a) => (viewMode === 'total' ? a.total : a.porUbicacion[viewMode] ?? 0), [viewMode])
 
   // La llave incluye la sección: el mismo nombre de prenda se repite en
   // varios colegios (ej. "Falda", "Pantalon"), y sin esto abrir una en un
@@ -184,16 +212,38 @@ function InventarioContent() {
     })
   }
 
+  function irAGrupo(seccion, grupoKey, articuloId = null) {
+    setClasificacionFiltro('todas')
+    setSeccionId(seccion)
+    setAbiertas((cur) => new Set(cur).add(`${seccion}:${grupoKey}`))
+    setResaltado(articuloId)
+    setDestino(`${seccion}:${grupoKey}`)
+  }
+
+  useEffect(() => {
+    if (!destino) return
+    const el = document.getElementById(`inv-grupo-${destino}`)
+    if (!el) return
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    setDestino(null)
+  }, [destino, gruposTodos])
+
   function closeAndRefresh() {
     setModal(null)
     refreshExistencias()
   }
 
+  async function refreshTodo() {
+    await Promise.all([refreshCatalogos(), refreshEstructura(), refreshExistencias()])
+  }
+
   async function handleGenerarReporte({ modo, ubicacionSeleccionada, prendasFiltro }) {
     setShowReporte(false)
     let grupoFilas = gruposTodos
-    if (prendasFiltro) grupoFilas = grupoFilas.filter((g) => prendasFiltro.includes(g.prenda))
-    const filasReporte = grupoFilas.flatMap((g) => g.items)
+    if (prendasFiltro) grupoFilas = grupoFilas.filter((g) => prendasFiltro.includes(g.label))
+    // En el PDF cada fila lleva el nombre del grupo (modelo o prenda), no
+    // el texto interno de `prenda`.
+    const filasReporte = grupoFilas.flatMap((g) => g.items.map((a) => ({ ...a, prenda: g.label })))
     const fecha = new Date().toISOString()
     const subtitulo = !prendasFiltro
       ? 'Todas las prendas'
@@ -216,11 +266,24 @@ function InventarioContent() {
   if (loadingCatalogos) return <Loading label="Cargando inventario…" />
   if (catalogosError) return <ErrorState error={catalogosError} onRetry={refreshCatalogos} />
 
+  const estructuraLista = !sinV121 && !loadingExistencias
+  const modeloOpciones = modal?.kind === 'opciones' ? modelos.find((m) => m.id === modal.modeloId) : null
+
   return (
     <div className="page">
       <div className="new-order-header">
         <h2 className="section-title">Inventario</h2>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {canMover && estructuraLista && (
+            <button type="button" className="btn btn--primary btn--small" onClick={() => setModal({ kind: 'entrada', modelo: null })}>
+              Dar entrada
+            </button>
+          )}
+          {canEditar && estructuraLista && (
+            <button type="button" className="btn btn--primary btn--small" onClick={() => setModal({ kind: 'nuevoModelo' })}>
+              + Nuevo modelo
+            </button>
+          )}
           {seccionActivaId && (
             <button type="button" className="btn btn--secondary btn--small" onClick={() => setShowReporte(true)}>
               Reporte
@@ -247,30 +310,25 @@ function InventarioContent() {
         </div>
       </div>
 
+      {canEditar && estructuraLista && sinClasificar > 0 && (
+        <p className="inv-banner">
+          Hay {sinClasificar} artículos sin clasificar (siguen funcionando igual).{' '}
+          <Link to="/inventario/sin-clasificar">Clasificarlos →</Link>
+        </p>
+      )}
+
       {seccionesActivas.length === 0 ? (
         <EmptyState>Todavía no hay secciones dadas de alta.</EmptyState>
       ) : (
         <>
-          <div className="type-tabs" style={{ marginBottom: 10 }}>
-            {seccionesActivas.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                className={'type-tab' + (s.id === seccionActivaId ? ' type-tab--active' : '')}
-                onClick={() => setSeccionId(s.id)}
-              >
-                {s.nombre}
-              </button>
-            ))}
-          </div>
-
           <div className="inv-toolbar">
-            <input
-              type="search"
-              className="input"
-              placeholder="Buscar prenda…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
+            <ArticuloBuscador
+              articulos={articulos}
+              existencia={existenciaVista}
+              etiquetaExistencia="pzas"
+              onSelect={(a) => irAGrupo(a.seccionId, a.modeloId ? `m:${a.modeloId}` : `p:${a.prenda}`, a.articuloId)}
+              placeholder="Buscar en todo el inventario… (ej. po tri 12)"
+              disabled={loadingExistencias}
             />
             <div className="type-tabs">
               <button
@@ -293,85 +351,160 @@ function InventarioContent() {
             </div>
           </div>
 
+          {hayClasificadas && (
+            <div className="inv-clasif-filtro">
+              {[
+                { key: 'todas', label: 'Todos' },
+                ...clasificaciones.filter((c) => c.activa).map((c) => ({ key: c.id, label: c.nombre })),
+                { key: 'sin', label: 'Sin clasificación' },
+              ].map((c) => (
+                <button
+                  key={c.key}
+                  type="button"
+                  className={'inv-clasif-filtro__btn' + (clasificacionFiltro === c.key ? ' inv-clasif-filtro__btn--on' : '')}
+                  onClick={() => setClasificacionFiltro(c.key)}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="type-tabs" style={{ marginBottom: 10 }}>
+            {seccionesVisibles.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className={'type-tab' + (s.id === seccionActivaId ? ' type-tab--active' : '')}
+                onClick={() => setSeccionId(s.id)}
+              >
+                {s.nombre}
+              </button>
+            ))}
+          </div>
+
           {loadingExistencias && <Loading label="Cargando existencias…" />}
           {existenciasError && <ErrorState error={existenciasError} onRetry={refreshExistencias} />}
 
-          {!loadingExistencias && !existenciasError && grupos.length === 0 && (
-            <EmptyState>No hay artículos con esos filtros.</EmptyState>
+          {!loadingExistencias && !existenciasError && gruposTodos.length === 0 && (
+            <EmptyState>
+              {seccionActivaId ? 'Este cliente o línea todavía no tiene artículos.' : 'No hay clientes o líneas con esa clasificación.'}
+            </EmptyState>
           )}
 
-          {!loadingExistencias && !existenciasError && grupos.length > 0 && (
-            <div className="inv-prenda-list">
-              {grupos.map((g) => {
-                const key = `${seccionActivaId}:${g.prenda}`
-                const abierta = abiertas.has(key)
-                const totalPrenda = g.items.reduce((sum, a) => sum + a.total, 0)
-                return (
-                  <div key={g.prenda} className="card inv-prenda-card">
-                    <button
-                      type="button"
-                      className="inv-prenda-card__header"
-                      onClick={() => toggleAbierta(key)}
-                      aria-expanded={abierta}
-                    >
-                      <span className={'inv-prenda-card__chevron' + (abierta ? ' inv-prenda-card__chevron--open' : '')}>▸</span>
-                      <span className="inv-prenda-card__nombre">{g.prenda}</span>
-                      <span className="inv-prenda-card__total">{totalPrenda} pzas</span>
-                    </button>
-                    {abierta && (
-                      <div className="inv-chip-row">
-                        {g.items.map((a) => {
-                          const valor = viewMode === 'total' ? a.total : a.porUbicacion[viewMode] ?? 0
-                          const bajoMinimo = a.minimo != null && a.total < a.minimo
-                          const chipKey = a.articuloId || `${a.prenda}-${a.tallaId}`
-                          return (
-                            <div key={chipKey} className={'inv-chip' + (bajoMinimo ? ' inv-chip--low' : '') + (a.virtual ? ' inv-chip--virtual' : '')}>
-                              {a.articuloId ? (
-                                <button
-                                  type="button"
-                                  className="inv-chip__main"
-                                  onClick={() => setModal({ kind: 'historial', articulo: a })}
-                                  title="Ver historial"
-                                >
-                                  <span className="inv-chip__talla">{formatTalla(a.talla)}</span>
-                                  <span className="inv-chip__valor">{valor}</span>
-                                  {a.minimo != null && <span className="inv-chip__minimo">mín. {a.minimo}</span>}
-                                </button>
-                              ) : (
-                                <div className="inv-chip__main" title="Sin movimientos todavía">
-                                  <span className="inv-chip__talla">{formatTalla(a.talla)}</span>
-                                  <span className="inv-chip__valor">{valor}</span>
-                                </div>
-                              )}
-                              {canMover && (
-                                <div className="inv-chip__actions">
+          {!loadingExistencias && !existenciasError && gruposTodos.length > 0 && (
+            <>
+              <div className="inv-expandir">
+                <button type="button" className="btn btn--ghost btn--small" onClick={() => setTodoAbierto((v) => !v)}>
+                  {todoAbierto ? 'Contraer todo' : 'Ver todo con tallas'}
+                </button>
+              </div>
+              <div className="inv-prenda-list">
+                {gruposTodos.map((g) => {
+                  const key = `${seccionActivaId}:${g.key}`
+                  const abierta = todoAbierto || abiertas.has(key)
+                  const totalPrenda = g.items.reduce((sum, a) => sum + a.total, 0)
+                  return (
+                    <div key={g.key} id={`inv-grupo-${key}`} className="card inv-prenda-card">
+                      <button
+                        type="button"
+                        className="inv-prenda-card__header"
+                        onClick={() => toggleAbierta(key)}
+                        aria-expanded={abierta}
+                      >
+                        <span className={'inv-prenda-card__chevron' + (abierta ? ' inv-prenda-card__chevron--open' : '')}>▸</span>
+                        <span className="inv-prenda-card__nombre">
+                          {g.label}
+                          {!g.modelo && canEditar && estructuraLista && <span className="inv-prenda-card__tag">sin clasificar</span>}
+                        </span>
+                        <span className="inv-prenda-card__total">{totalPrenda} pzas</span>
+                      </button>
+                      {abierta && g.modelo && (canMover || canEditar) && (
+                        <div className="inv-modelo-acciones">
+                          {canMover && (
+                            <button
+                              type="button"
+                              className="btn btn--secondary btn--small"
+                              onClick={() => setModal({ kind: 'entrada', modelo: g.modelo })}
+                            >
+                              Dar entrada
+                            </button>
+                          )}
+                          {canEditar && (
+                            <button
+                              type="button"
+                              className="btn btn--ghost btn--small"
+                              onClick={() => setModal({ kind: 'opciones', modeloId: g.modelo.id })}
+                            >
+                              + Talla / alias
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {abierta && (
+                        <div className="inv-chip-row">
+                          {g.items.map((a) => {
+                            const valor = existenciaVista(a)
+                            const bajoMinimo = a.minimo != null && a.total < a.minimo
+                            const chipKey = a.articuloId || `${a.prenda}-${a.tallaId}`
+                            return (
+                              <div
+                                key={chipKey}
+                                className={
+                                  'inv-chip' +
+                                  (bajoMinimo ? ' inv-chip--low' : '') +
+                                  (a.virtual ? ' inv-chip--virtual' : '') +
+                                  (valor === 0 && !bajoMinimo ? ' inv-chip--cero' : '') +
+                                  (a.articuloId && a.articuloId === resaltado ? ' inv-chip--hit' : '')
+                                }
+                              >
+                                {a.articuloId ? (
                                   <button
                                     type="button"
-                                    className="inv-chip__btn"
-                                    aria-label={`Salida de ${g.prenda} ${a.talla}`}
-                                    onClick={() => setModal({ kind: 'movimiento', tipo: 'salida', articulo: a })}
+                                    className="inv-chip__main"
+                                    onClick={() => setModal({ kind: 'historial', articulo: a })}
+                                    title="Ver historial"
                                   >
-                                    −
+                                    <span className="inv-chip__talla">{formatTalla(a.talla)}</span>
+                                    <span className="inv-chip__valor">{valor}</span>
+                                    {a.minimo != null && <span className="inv-chip__minimo">mín. {a.minimo}</span>}
                                   </button>
-                                  <button
-                                    type="button"
-                                    className="inv-chip__btn"
-                                    aria-label={`Entrada de ${g.prenda} ${a.talla}`}
-                                    onClick={() => setModal({ kind: 'movimiento', tipo: 'entrada', articulo: a })}
-                                  >
-                                    +
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+                                ) : (
+                                  <div className="inv-chip__main" title="Sin movimientos todavía">
+                                    <span className="inv-chip__talla">{formatTalla(a.talla)}</span>
+                                    <span className="inv-chip__valor">{valor}</span>
+                                  </div>
+                                )}
+                                {canMover && (
+                                  <div className="inv-chip__actions">
+                                    <button
+                                      type="button"
+                                      className="inv-chip__btn"
+                                      aria-label={`Salida de ${g.label} ${a.talla}`}
+                                      onClick={() => setModal({ kind: 'movimiento', tipo: 'salida', articulo: a })}
+                                    >
+                                      −
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="inv-chip__btn"
+                                      aria-label={`Entrada de ${g.label} ${a.talla}`}
+                                      onClick={() => setModal({ kind: 'movimiento', tipo: 'entrada', articulo: a })}
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </>
           )}
         </>
       )}
@@ -388,11 +521,48 @@ function InventarioContent() {
         />
       )}
       {modal?.kind === 'historial' && <HistorialModal articulo={modal.articulo} onClose={() => setModal(null)} />}
+      {modal?.kind === 'entrada' && (
+        <EntradaModeloModal
+          modelos={modelos}
+          modeloInicial={modal.modelo}
+          ubicaciones={ubicacionesActivas}
+          motivos={motivosDisponibles}
+          defaultUbicacionId={viewMode !== 'total' ? viewMode : ubicacionesActivas[0]?.id}
+          onClose={() => setModal(null)}
+          onDone={closeAndRefresh}
+        />
+      )}
+      {modal?.kind === 'nuevoModelo' && (
+        <NuevoModeloModal
+          secciones={secciones}
+          clasificaciones={clasificaciones}
+          tipos={tipos}
+          juegos={juegos}
+          tallas={tallas}
+          modelos={modelos}
+          articulos={articulos}
+          refreshCatalogos={refreshCatalogos}
+          refreshEstructura={refreshEstructura}
+          onClose={() => setModal(null)}
+          onDone={async ({ modeloId, seccionId: seccionNueva }) => {
+            setModal(null)
+            await refreshTodo()
+            irAGrupo(seccionNueva, `m:${modeloId}`)
+          }}
+          onUsarExistente={(m) => {
+            setModal(null)
+            irAGrupo(m.seccionId, `m:${m.id}`)
+          }}
+        />
+      )}
+      {modeloOpciones && (
+        <ModeloOpcionesModal modelo={modeloOpciones} tallas={tallas} onClose={() => setModal(null)} onChanged={refreshExistencias} />
+      )}
       {showReporte && seccionActivaId && (
         <ReporteModal
           seccionNombre={seccionActivaNombre}
           ubicaciones={ubicacionesActivas}
-          prendas={gruposTodos.map((g) => g.prenda)}
+          prendas={gruposTodos.map((g) => g.label)}
           onClose={() => setShowReporte(false)}
           onGenerate={handleGenerarReporte}
         />

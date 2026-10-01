@@ -1,5 +1,16 @@
-import { useCallback, useEffect, useState } from 'react'
-import { fetchSecciones, fetchUbicaciones, fetchTallas, fetchMotivos, fetchExistencias } from '../services/inventarioService'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  fetchSecciones,
+  fetchUbicaciones,
+  fetchTallas,
+  fetchMotivos,
+  fetchExistencias,
+  fetchCatalogo,
+  fetchClasificaciones,
+  fetchTiposPrenda,
+  fetchJuegosTallas,
+} from '../services/inventarioService'
+import { buildCatalogo, catalogoDesdeExistencias } from '../utils/inventarioCatalogo'
 
 // Catálogos base del módulo (secciones/ubicaciones/tallas/motivos) — se
 // cargan una vez y se reusan en toda la pantalla principal, traspasos,
@@ -67,4 +78,73 @@ export function useInventarioExistencias(seccionId) {
   }, [load])
 
   return { filas, loading: ready ? loading : true, error, refresh: load }
+}
+
+// V121 — catálogos de la estructura nueva (clasificaciones, tipos de
+// prenda, juegos de tallas). Aparte de useInventarioCatalogos a propósito:
+// si V121 todavía no está aplicado en la base estas tablas no existen, y
+// eso no debe tumbar el resto del módulo — aquí un error solo deja las
+// listas vacías.
+export function useInventarioEstructura() {
+  const [clasificaciones, setClasificaciones] = useState([])
+  const [tipos, setTipos] = useState([])
+  const [juegos, setJuegos] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const load = useCallback(async () => {
+    const [c, t, j] = await Promise.all([fetchClasificaciones(), fetchTiposPrenda(), fetchJuegosTallas()])
+    setClasificaciones(c.data || [])
+    setTipos(t.data || [])
+    setJuegos(j.data || [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  return { clasificaciones, tipos, juegos, loading, refresh: load }
+}
+
+// V121 — todo el inventario (todas las secciones) ya armado para pantalla
+// y búsqueda: artículos con su nombre, existencia por ubicación e índice
+// de búsqueda, y modelos con sus tallas. `sinV121` = la base todavía no
+// tiene la migración; se cae a inv_existencias(null) y todo se ve como
+// "sin clasificar" (igual que antes).
+export function useInventarioCatalogo({ secciones, tallas, ubicaciones, tipos, listo }) {
+  const [raw, setRaw] = useState(null)
+  const [sinV121, setSinV121] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const load = useCallback(async () => {
+    const res = await fetchCatalogo()
+    if (res.sinV121) {
+      const { data, error: exError } = await fetchExistencias(null)
+      if (exError) setError(exError)
+      else {
+        setRaw(catalogoDesdeExistencias(data))
+        setSinV121(true)
+        setError(null)
+      }
+    } else if (res.error) {
+      setError(res.error)
+    } else {
+      setRaw(res.data || { articulos: [], existencias: [], modelos: [], alias: [] })
+      setSinV121(false)
+      setError(null)
+    }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const catalogo = useMemo(() => {
+    if (!raw || !listo) return { articulos: [], modelos: [] }
+    return buildCatalogo(raw, { secciones, tallas, ubicaciones, tipos })
+  }, [raw, listo, secciones, tallas, ubicaciones, tipos])
+
+  return { ...catalogo, sinV121, loading: loading || !listo, error, refresh: load }
 }

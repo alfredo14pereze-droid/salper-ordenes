@@ -35,6 +35,7 @@ import InventarioTraspasosPage from './pages/InventarioTraspasosPage'
 import InventarioMovimientosPage from './pages/InventarioMovimientosPage'
 import InventarioConteosPage from './pages/InventarioConteosPage'
 import InventarioAdminPage from './pages/InventarioAdminPage'
+import InventarioSinClasificarPage from './pages/InventarioSinClasificarPage'
 import NewPedidoColegioPage from './pages/NewPedidoColegioPage'
 import PedidoColegioDetailPage from './pages/PedidoColegioDetailPage'
 import FeatureDisabledPage from './components/common/FeatureDisabledPage'
@@ -121,6 +122,8 @@ function AuthGate() {
           <Route path="/inventario/movimientos" element={<InventarioMovimientosPage />} />
           <Route path="/inventario/conteos" element={<InventarioConteosPage />} />
           <Route path="/inventario/admin" element={<InventarioAdminPage />} />
+          {/* V121 — clasificar en modelos los artículos que ya existían. */}
+          <Route path="/inventario/sin-clasificar" element={<InventarioSinClasificarPage />} />
           <Route path="/pedidos-colegio" element={<PedidosColegioPage />} />
           <Route path="/pedidos-colegio/nuevo" element={<NewPedidoColegioPage />} />
           <Route path="/pedidos-colegio/:id" element={<PedidoColegioDetailPage />} />
