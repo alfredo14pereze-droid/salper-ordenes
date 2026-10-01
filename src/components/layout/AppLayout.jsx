@@ -8,7 +8,7 @@ import {
   canCreateOrder,
   canViewCatalogos,
   canManageUsers,
-  canManagePedidosColegio,
+  canViewPedidosColegio,
   canViewTalleros,
   isCapturaProduccion,
   canCapturarProduccion,
@@ -22,6 +22,7 @@ import {
   canGestionarConsumosPrenda,
   hasRestrictedNav,
   isTiendaBasica,
+  esConsultaTiendaSoloLectura,
   puedeVerComoOtroRol,
   FABRICA_ETAPA_ROLES,
   ROLE_LABELS,
@@ -60,6 +61,7 @@ const VIEW_AS_ROLES = [
   'lectura',
   'tienda',
   'captura_produccion',
+  'consulta_tienda',
 ]
 
 export default function AppLayout({ children }) {
@@ -76,6 +78,12 @@ export default function AppLayout({ children }) {
   // combina con `restricted` porque las formas no coinciden (ver
   // isTiendaBasica en utils/permissions.js).
   const tiendaBasica = isTiendaBasica(role)
+  // V116 — consulta_tienda (solo lectura de tienda): menú recortado al
+  // allow-list exacto de la Parte 1B — ni Calendario ni Anuncios están en
+  // esa lista (aunque ambos son de lectura abierta para cualquier sesión),
+  // así que se excluyen aquí a propósito para que el menú coincida con la
+  // tabla que confirmó el usuario.
+  const soloConsultaTienda = esConsultaTiendaSoloLectura(role)
   // V66 — Juanis (captura_produccion): solo Dashboard (consultar órdenes) y,
   // desde la Fase 3, la pantalla de captura. V111 amplía la lista blanca:
   // Anuncios (solo lectura), Control rápido, e Inventario de tela (solo
@@ -98,7 +106,7 @@ export default function AppLayout({ children }) {
     { to: '/estadisticas', label: 'Estadísticas', show: canViewEstadisticas(role) },
     // V72 — estadísticas de producción (admin_general / admin_fabrica).
     { to: '/estadisticas-produccion', label: 'Estadísticas de producción', show: canViewProduccionMontos(role) },
-    { to: '/calendario', label: 'Calendario', show: !restricted && !tiendaBasica },
+    { to: '/calendario', label: 'Calendario', show: !restricted && !tiendaBasica && !soloConsultaTienda },
     // V78 — pendientes tienda <-> fábrica: los roles de fábrica también lo ven.
     { to: '/pendientes', label: 'Pendientes', show: canViewPendientes(role) },
     // V24 — de solo lectura para todos, invitados incluidos; le faltaba
@@ -107,7 +115,7 @@ export default function AppLayout({ children }) {
     // V111 — antes oculto para los 5 roles de estación (V22); ahora lo
     // ven de solo lectura (canManageAnnouncements ya los excluye de
     // publicar/borrar).
-    { to: '/anuncios', label: 'Anuncios', show: !tiendaBasica },
+    { to: '/anuncios', label: 'Anuncios', show: !tiendaBasica && !soloConsultaTienda },
     // Módulo independiente de órdenes, sin modo invitado — solo aparece
     // con sesión (ver canViewPedidosTienda). V31: apagado en producción
     // por ahora (PEDIDOS_PROVEEDOR_HABILITADO) — sigue completo en la
@@ -115,7 +123,7 @@ export default function AppLayout({ children }) {
     {
       to: '/pedidos-proveedor',
       label: 'Pedidos a Proveedor',
-      show: PEDIDOS_PROVEEDOR_HABILITADO && !restricted && !tiendaBasica && canViewPedidosTienda(role),
+      show: PEDIDOS_PROVEEDOR_HABILITADO && !restricted && !tiendaBasica && !soloConsultaTienda && canViewPedidosTienda(role),
     },
     // V68 — captura de producción (Juanis + admin_general/admin_fabrica).
     { to: '/produccion/captura', label: 'Producción', show: canCapturarProduccion(role) },
@@ -136,8 +144,9 @@ export default function AppLayout({ children }) {
     // V101 — rendimientos de tela por prenda, exclusivo admin_fabrica/admin_general.
     { to: '/consumos-prenda', label: 'Consumos por prenda', show: canGestionarConsumosPrenda(role) },
     { to: '/catalogos', label: 'Catálogos', show: canViewCatalogos(role) },
-    // V57 — beta oculta: solo admin_general (ver canManagePedidosColegio).
-    { to: '/pedidos-colegio', label: 'Pedidos Colegio', show: canManagePedidosColegio(role) },
+    // V57 — beta oculta: solo admin_general. V116 — también consulta_tienda,
+    // de solo lectura (ver canViewPedidosColegio).
+    { to: '/pedidos-colegio', label: 'Pedidos Colegio', show: canViewPedidosColegio(role) },
     { to: '/usuarios', label: 'Usuarios', show: canManageUsers(role) },
   ]
 
@@ -202,6 +211,7 @@ export default function AppLayout({ children }) {
           ☰
         </button>
         <Logo />
+        {soloConsultaTienda && <span className="badge badge--outline app-header__readonly-badge">Solo lectura</span>}
       </div>
 
       {sidebarOpen && <div className="app-sidebar-overlay" onClick={closeSidebar} />}
@@ -256,6 +266,11 @@ export default function AppLayout({ children }) {
             <>
               <span className="app-header__user-name">
                 {profile?.full_name || 'Sin nombre'}
+                {/* V116 — badge naranja "Solo lectura" para consulta_tienda,
+                    pedido explícito del usuario (no existía ningún componente
+                    así antes de esto — se verificó que la referencia a "mismo
+                    que Juanis" no correspondía a nada real en el código). */}
+                {soloConsultaTienda && <span className="badge badge--outline app-header__readonly-badge">Solo lectura</span>}
                 <span className="app-header__user-role">{ROLE_LABELS[role] || role}</span>
               </span>
               <button type="button" className="btn btn--ghost btn--small" onClick={signOut}>

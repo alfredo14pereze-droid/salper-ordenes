@@ -4971,3 +4971,119 @@ Supabase sin sesión en este entorno). Pendiente que el usuario lo confirme
 con la cuenta real de Juanis: capturar en un día, cambiar el selector a otro
 día de la misma semana, y confirmar que el primer folio sigue apareciendo
 (con su fecha correcta) y se puede editar sin volver a cambiar la fecha.
+
+### V115 — Revisión de producción: buscador por operador
+
+Sin cambios de esquema. Pedido explícito del usuario: su papá revisa el
+desglose de producción y necesitaba encontrar fácil a un operador específico
+sin tener que recorrer toda la tabla.
+
+- `ProduccionRevisionPage.jsx`: input "Buscar operador" (número o nombre)
+  arriba de la tabla de detalle — filtra solo esa tabla (`filasFiltradas`,
+  client-side). Los totales de arriba (premios, personas evaluadas, valor
+  generado, comparación con semana anterior) siguen calculándose sobre la
+  semana completa, no sobre el filtro.
+- CSS nuevo (`.revision__buscador`) en `src/styles/index.css`, mismo patrón
+  visual que el resto de labels+input de la app.
+
+`npm run build` limpio.
+
+### V116 — Parte 1B: rol de consulta de tienda (`consulta_tienda`)
+
+`supabase/schema_v116_consulta_tienda.sql` (aplicado 2026-09-30, verificado
+con hash y con una query que confirma: el constraint de roles ya acepta
+`consulta_tienda`, hay exactamente 1 política SELECT en cada una de las 4
+tablas de Pedidos Colegio (sin duplicados), y `inv_puede_ver` sigue siendo
+una sola función). Rol nuevo, solo lectura, para el tío del usuario.
+
+**Diagnóstico previo a aplicar** (siguiendo la regla del usuario de mostrar
+esquema/RLS y esperar confirmación): de los 5 módulos que debía ver, solo 2
+necesitaban cambio real de RLS —
+- **Pedidos Colegio**: SELECT estaba cerrado a `admin_general` únicamente
+  (`schema_v57_pedidos_colegio.sql`) → se reemplazaron las 4 políticas para
+  incluir también `consulta_tienda`.
+- **Inventario de tienda**: `inv_puede_ver()` no lo incluía → se agregó,
+  sin tocar `inv_puede_mover()`/`inv_puede_editar()` (consulta_tienda nunca
+  mueve ni edita inventario).
+- **Talleros/Muestrarios**, **Catálogos** y **PDFs** (remisión/cotización/
+  orden de compra) ya estaban abiertos a cualquier rol autenticado desde
+  antes — no necesitaron ningún cambio de RLS.
+
+Esta app no tiene políticas de escritura por cliente en ninguna tabla — todo
+INSERT/UPDATE/DELETE pasa por RPCs `security definer` que validan el rol
+internamente — así que la regla de "solo SELECT, nada de escritura" ya se
+cumple automáticamente para cualquier rol nuevo sin necesidad de revocar nada
+ni de abrir ningún RPC de escritura para `consulta_tienda`.
+
+**Corrección a la especificación original del usuario:** la Regla 3 pedía
+"mismo componente [badge 'Solo lectura'] que Juanis" — se verificó por grep
+exhaustivo (`olo lectura`, `SoloLectura`, `solo-lectura`, `read-only`,
+`readonly`) que **no existe ningún componente así en el código**; Juanis
+(captura_produccion) nunca tuvo un badge de ese tipo. Se construyó uno nuevo
+desde cero (ver abajo) en vez de intentar reusar algo que no existía.
+
+**Frontend (`src/utils/permissions.js`):**
+- `SIN_ESCRITURA_GENERAL` gana `'consulta_tienda'` — sin esto, el rol habría
+  podido escribir anuncios, notas internas y fotos de referencia (esas tres
+  funciones usan un patrón "todos pueden excepto estos", no un allow-list).
+- `canViewPedidosColegio(role)` nueva = `canManagePedidosColegio(role) ||
+  role === 'consulta_tienda'` — el nav y las 2 páginas de Pedidos Colegio
+  usan esta para ENTRAR; `canManagePedidosColegio` (sin cambio, sigue
+  admin_general-only) sigue gateando cada botón de escritura por separado
+  dentro de esas páginas (agregar colegio, nuevo pedido, registrar/borrar
+  abono, eliminar pedido — ninguno tenía candado de rol propio porque antes
+  la pantalla completa ya era admin_general-only; con el nuevo visitante de
+  solo lectura, cada uno se envolvió en `puedeGestionar &&`).
+- `canViewCatalogos`/`canViewInventario`: se agregó `consulta_tienda`. Los
+  botones de alta/baja/mover/editar de esas pantallas ya estaban gateados
+  por funciones separadas (`canCreateCliente`, `canMoverInventario`,
+  `canEditarInventario`, etc.) que NO incluyen a este rol — no hizo falta
+  tocar ningún componente de Catálogos/Inventario más allá del acceso.
+  `Talleros` (`canViewTalleros`) y `Pendientes` (`canViewPendientes`) ya
+  admitían cualquier rol no-estación — `consulta_tienda` entró gratis, sin
+  cambio.
+- `esConsultaTiendaSoloLectura(role)` nueva — helper para el badge y el
+  recorte de nav.
+- `ROLE_LABELS.consulta_tienda = 'Consulta (Tienda) — solo lectura'`.
+
+**`AppLayout.jsx`:**
+- Nav recortado al allow-list exacto de la Parte 1B: Dashboard (siempre
+  visible), Pendientes, Control rápido (ya abierto a todos desde V24),
+  Talleros, Inventario, Catálogos, Pedidos Colegio. Se excluyen explícitamente
+  **Calendario** y **Anuncios** — aunque ambos son de lectura abierta para
+  cualquier sesión (y hasta para invitados), no estaban en la tabla de
+  "Puede ver" que confirmó el usuario, así que no aparecen en su menú (Regla
+  4: "el menú solo muestra los módulos permitidos"). El resto de los módulos
+  de fábrica ya devolvían `false` en sus propias funciones `canView*`, sin
+  necesitar ningún cambio aparte.
+- `consulta_tienda` se agregó a `VIEW_AS_ROLES` — admin_general ya puede
+  probar este rol con "Ver como", sin necesitar una cuenta real.
+- Badge naranja nuevo `<span className="badge badge--outline">Solo lectura</span>`
+  — en el topbar (junto al logo, visible en celular sin abrir el sidebar) y
+  en el pie del sidebar (junto al nombre, escritorio). CSS nuevo
+  (`.app-header__readonly-badge`) solo de márgenes — reusa `badge`/
+  `badge--outline`, que ya son el mismo ámbar/naranja usado en el resto de
+  la app.
+
+**`RequireRole.jsx`:** `consulta_tienda` se agregó a `ROLES_CON_INICIO_PROPIO`
+— URL directa a cualquier pantalla que no le toque (Producción, Revisión
+producción, Inventario de tela, Consumos por prenda, Estadísticas, Usuarios,
+`/pedidos-colegio/nuevo`) redirige a `/` en vez de mostrar "no tienes
+permiso" (Regla 4, validación "URL directa a un módulo de fábrica →
+redirige"). Calendario/Anuncios no tienen este candado — nunca lo tuvieron
+para ningún rol (son de lectura abierta hasta para invitados) y agregarlo
+solo para este rol habría sido una inconsistencia nueva, así que se dejaron
+fuera del nav pero sin bloqueo duro de URL.
+
+**Preparado para subir de permisos después (Regla 5):** todo vive en
+`permissions.js` — para darle a este usuario capacidad de editar algo más
+adelante, solo hace falta tocar la función `canX` correspondiente (o crear
+una nueva), nunca reescribir componentes.
+
+`npm run build` limpio. Verificado en modo invitado que las rutas no truenan
+(sin sesión real de `consulta_tienda` disponible en este entorno — queda
+pendiente que el usuario lo confirme con la cuenta real de su tío o con "Ver
+como consulta_tienda" desde admin_general): menú coincide con la tabla, no
+aparece ningún botón de crear/editar/eliminar/guardar en ningún módulo
+permitido, puede abrir/descargar PDFs, y URL directa a un módulo de fábrica
+redirige al dashboard.

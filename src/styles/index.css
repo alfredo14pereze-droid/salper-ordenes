@@ -1925,6 +1925,17 @@ h4 {
   letter-spacing: 0.4px;
 }
 
+/* V116 — badge "Solo lectura" (consulta_tienda): en el topbar va junto al
+   logo, en el sidebar va junto al nombre — margin chico en vez de gap para
+   no pelear con el flex-column de .app-header__user-name. */
+.app-header__readonly-badge {
+  margin: 4px 0;
+  align-self: flex-start;
+}
+.app-topbar .app-header__readonly-badge {
+  margin: 0 0 0 10px;
+}
+
 /* Rojo: solo como indicador de "necesita atención" (cancelada), igual
    que en las tarjetas atrasadas — nunca decorativo. */
 .badge--danger {
@@ -2629,6 +2640,15 @@ h4 {
 }
 .revision__tabla-wrap {
   overflow-x: auto;
+}
+.revision__buscador {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  max-width: 260px;
+  margin-bottom: 10px;
 }
 .revision__tabla td,
 .revision__tabla th {

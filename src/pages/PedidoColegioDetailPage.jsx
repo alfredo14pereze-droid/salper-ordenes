@@ -6,16 +6,19 @@ import { Loading, ErrorState } from '../components/common/States'
 import { usePedidoColegio } from '../hooks/usePedidosColegio'
 import { addAbono, deleteAbono, softDeletePedido } from '../services/pedidosColegioService'
 import { buildPedidoColegioPdfBlob, pedidoColegioPdfFileName } from '../utils/generatePedidoColegioPdf'
-import { canManagePedidosColegio } from '../utils/permissions'
+import { useAuth } from '../contexts/AuthContext'
+import { canManagePedidosColegio, canViewPedidosColegio } from '../utils/permissions'
 import { formatDate } from '../utils/dates'
 import { formatImporte, formatMonto, calcSaldo, sumAbonos } from '../utils/pedidosColegio'
 
 // V57 — detalle de un Pedido Colegio (BETA, solo admin_general): folio,
 // cliente, líneas, anticipo, abonos posteriores (con saldo en vivo) y el
-// recibo en PDF.
+// recibo en PDF. V116 — consulta_tienda también entra, de solo lectura (ver
+// canViewPedidosColegio); canManagePedidosColegio sigue gatekeeping cada
+// botón de escritura (abono, borrar abono, eliminar pedido).
 export default function PedidoColegioDetailPage() {
   return (
-    <RequireRole allow={canManagePedidosColegio}>
+    <RequireRole allow={canViewPedidosColegio}>
       <PedidoColegioDetailContent />
     </RequireRole>
   )
@@ -29,6 +32,8 @@ function todayInputValue() {
 }
 
 function PedidoColegioDetailContent() {
+  const { role } = useAuth()
+  const puedeGestionar = canManagePedidosColegio(role)
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
@@ -219,7 +224,7 @@ function PedidoColegioDetailContent() {
             <h3 className="section-title section-title--small" style={{ marginBottom: 0 }}>
               Abonos posteriores
             </h3>
-            {!eliminado && !abonoOpen && saldo > 0 && (
+            {puedeGestionar && !eliminado && !abonoOpen && saldo > 0 && (
               <button type="button" className="btn btn--secondary btn--small" onClick={() => setAbonoOpen(true)}>
                 + Registrar abono
               </button>
@@ -239,7 +244,7 @@ function PedidoColegioDetailContent() {
                       {ab.nota ? ` · ${ab.nota}` : ''}
                     </p>
                   </div>
-                  {!eliminado && (
+                  {puedeGestionar && !eliminado && (
                     <button
                       type="button"
                       className="btn btn--ghost btn--small"
@@ -298,7 +303,7 @@ function PedidoColegioDetailContent() {
           {abonoError && <p className="form-error">{abonoError.message}</p>}
         </section>
 
-        {!eliminado && (
+        {puedeGestionar && !eliminado && (
           <section className="card card--placeholders">
             {!confirmDelete ? (
               <button

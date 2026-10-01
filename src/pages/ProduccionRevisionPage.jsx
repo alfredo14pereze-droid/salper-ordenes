@@ -46,6 +46,11 @@ function Revision() {
   const [abierta, setAbierta] = useState(null) // operadora expandida
   const [registros, setRegistros] = useState([])
   const [refresco, setRefresco] = useState(0)
+  // V115 — pedido del usuario: poder buscar a un operador específico dentro
+  // de la semana (por nombre o número) sin tener que recorrer toda la tabla.
+  // Solo filtra la tabla de detalle; los totales de arriba siguen siendo los
+  // de la semana completa.
+  const [filtroOperador, setFiltroOperador] = useState('')
 
   const cargarSemanas = useCallback(async (mantener) => {
     const { data, error: err } = await listarSemanas(40)
@@ -64,6 +69,11 @@ function Revision() {
   }, [cargarSemanas])
 
   const semana = useMemo(() => semanas.find((s) => s.id === semanaId) || null, [semanas, semanaId])
+  const filasFiltradas = useMemo(() => {
+    const q = filtroOperador.trim().toLowerCase()
+    if (!q) return filas
+    return filas.filter((f) => f.nombre.toLowerCase().includes(q) || String(f.numero_operadora ?? '').includes(q))
+  }, [filas, filtroOperador])
   // Semana APROBADA inmediatamente anterior (misma regla del motor).
   const semanaAnterior = useMemo(() => {
     if (!semana) return null
@@ -204,6 +214,19 @@ function Revision() {
         <p className="template-hint">No hay datos en esta semana.</p>
       ) : (
         <div className="revision__tabla-wrap">
+          <label className="revision__buscador">
+            Buscar operador
+            <input
+              className="input"
+              type="text"
+              value={filtroOperador}
+              onChange={(e) => setFiltroOperador(e.target.value)}
+              placeholder="Número o nombre…"
+            />
+          </label>
+          {filasFiltradas.length === 0 ? (
+            <p className="template-hint">Nadie coincide con "{filtroOperador}".</p>
+          ) : (
           <table className="simple-table revision__tabla">
             <thead>
               <tr>
@@ -219,7 +242,7 @@ function Revision() {
               </tr>
             </thead>
             <tbody>
-              {filas.map((f) => (
+              {filasFiltradas.map((f) => (
                 <Fragment key={f.operadora_id}>
                   <tr className="revision__fila" onClick={() => verRegistros(f)}>
                     <td>{f.lugar}</td>
@@ -276,6 +299,7 @@ function Revision() {
               ))}
             </tbody>
           </table>
+          )}
         </div>
       )}
       {semana.notas && <p className="template-hint" style={{ whiteSpace: 'pre-line' }}>{semana.notas}</p>}

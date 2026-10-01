@@ -11,7 +11,9 @@ import { esRolDeEstacion } from '../../config/vistasPorRol'
 // Dashboard normal de solo lectura). El resto de los roles (ventas,
 // admin_*, etc.) no tienen una sola "pantalla de inicio" obvia, así que
 // se quedan con el mensaje de siempre.
-const ROLES_CON_INICIO_PROPIO = ['captura_produccion', 'tienda']
+// V116 — consulta_tienda (solo lectura de tienda): mismo trato, Dashboard
+// es su única "pantalla de inicio" obvia.
+const ROLES_CON_INICIO_PROPIO = ['captura_produccion', 'tienda', 'consulta_tienda']
 
 // Defensa en profundidad: aunque el nav ya oculta los links a los que no
 // tienes acceso, esto evita que alguien entre directo por la URL y vea

@@ -173,8 +173,14 @@ export function canCreateProducto(role) {
 // o producto) también necesita ver la pantalla para hacerlo. Quien no
 // tenga ninguno de esos permisos ni siquiera llega a la pantalla
 // (RequireRole en CatalogosPage.jsx).
+// V116 — consulta_tienda ve Catálogos (clientes/telas/productos/proveedores)
+// de solo lectura — ningún canCreate*/canManageCatalogs lo incluye, así que
+// dentro de la pantalla no aparece ningún botón de alta/baja para este rol.
 export function canViewCatalogos(role) {
-  return canCreateCliente(role) || canCreateTela(role) || canCreateProducto(role) || canManageCatalogs(role) || role === 'admin_fabrica_lectura'
+  return (
+    canCreateCliente(role) || canCreateTela(role) || canCreateProducto(role) || canManageCatalogs(role) ||
+    role === 'admin_fabrica_lectura' || role === 'consulta_tienda'
+  )
 }
 
 // V100 — Inventario de tela: registrar entradas/ajustes es exclusivo de
@@ -299,7 +305,8 @@ export function isTiendaBasica(role) {
 // NADA; 'tienda' tampoco participa de esto) hizo falta ponerles uno.
 // V66 — 'captura_produccion' (Juanis) tampoco escribe nada fuera de la captura
 // de producción: solo consulta órdenes.
-const SIN_ESCRITURA_GENERAL = ['lectura', 'tienda', 'captura_produccion', 'admin_fabrica_lectura']
+// V116 — 'consulta_tienda' (solo lectura de tienda) tampoco escribe nada.
+const SIN_ESCRITURA_GENERAL = ['lectura', 'tienda', 'captura_produccion', 'admin_fabrica_lectura', 'consulta_tienda']
 
 // V111 — pedido explícito: los roles de estación (y costura) ven
 // Anuncios pero de solo lectura, admin_fabrica sigue publicando. Antes
@@ -348,6 +355,14 @@ export function canManageOrderNotes(role) {
 // (V53) el módulo desaparece igual que para cualquier otro rol.
 export function canManagePedidosColegio(role) {
   return role === 'admin_general'
+}
+
+// V116 — consulta_tienda ve Pedidos Colegio (folios, anticipos/abonos, PDFs)
+// pero no crea/edita/elimina nada — eso se queda exclusivo de
+// canManagePedidosColegio. Espejo de la política SELECT que ahora también
+// incluye consulta_tienda (ver schema_v116_consulta_tienda.sql).
+export function canViewPedidosColegio(role) {
+  return canManagePedidosColegio(role) || role === 'consulta_tienda'
 }
 
 // V63 — Talleros (muestrarios que se prestan a clientes). Espejo de
@@ -469,6 +484,16 @@ export function esFabricaSoloLectura(role) {
   return role === 'admin_fabrica_lectura'
 }
 
+// V116 — consulta_tienda: rol de solo lectura sobre tienda (Dashboard +
+// detalle + Control rápido, Pendientes, Pedidos Colegio, Talleros,
+// Inventario de tienda, Catálogos, PDFs). No aparece en ninguna función
+// canManage*/canEdit*/canCreate* de arriba, así que ningún botón de
+// escritura se le muestra en ningún módulo — nada más hizo falta este
+// helper para el badge del header y el recorte de nav (ver AppLayout.jsx).
+export function esConsultaTiendaSoloLectura(role) {
+  return role === 'consulta_tienda'
+}
+
 // V96 — "Ver como" (V53) se amplía de admin_general a también admin_fabrica,
 // para que pueda probar cada estación de piso sin cerrar sesión. Se usa en
 // AuthContext.jsx (guardas de setViewAsRole) y AppLayout.jsx (mostrar el
@@ -497,8 +522,13 @@ export function puedeVerComoOtroRol(trueRole) {
 // esto solo decide qué se muestra. inv_acceso_beta/inv_tiene_acceso()
 // quedan en la base sin uso (no se borraron), por si se necesita algo así
 // de nuevo más adelante.
+// V116 — consulta_tienda entra en modo ver (nunca mover/editar, ver
+// canMoverInventario/canEditarInventario abajo, sin cambio).
 export function canViewInventario(role) {
-  return role === 'admin_general' || role === 'admin_tienda' || role === 'admin_fabrica' || role === 'ventas' || role === 'tienda'
+  return (
+    role === 'admin_general' || role === 'admin_tienda' || role === 'admin_fabrica' ||
+    role === 'ventas' || role === 'tienda' || role === 'consulta_tienda'
+  )
 }
 
 export function canMoverInventario(role) {
@@ -525,4 +555,5 @@ export const ROLE_LABELS = {
   tienda: 'Tienda (básico)',
   captura_produccion: 'Captura de costura',
   costura: 'Costura',
+  consulta_tienda: 'Consulta (Tienda) — solo lectura',
 }

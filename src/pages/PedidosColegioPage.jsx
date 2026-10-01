@@ -4,15 +4,19 @@ import RequireRole from '../components/common/RequireRole'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { usePedidosColegio } from '../hooks/usePedidosColegio'
 import { createColegio } from '../services/pedidosColegioService'
-import { canManagePedidosColegio } from '../utils/permissions'
+import { useAuth } from '../contexts/AuthContext'
+import { canManagePedidosColegio, canViewPedidosColegio } from '../utils/permissions'
 import { formatDate } from '../utils/dates'
 import { formatMonto, calcSaldo } from '../utils/pedidosColegio'
 
 // V57 — Pedidos Colegio (BETA, solo admin_general). Lista de colegios,
 // cada uno expandible a sus pedidos, con el saldo pendiente de cada uno.
+// V116 — consulta_tienda también entra, de solo lectura (ver
+// canViewPedidosColegio); canManagePedidosColegio sigue gatekeeping cada
+// botón de escritura dentro de PedidosColegioContent.
 export default function PedidosColegioPage() {
   return (
-    <RequireRole allow={canManagePedidosColegio}>
+    <RequireRole allow={canViewPedidosColegio}>
       <PedidosColegioContent />
     </RequireRole>
   )
@@ -83,6 +87,8 @@ function AddColegioForm({ onCreated }) {
 }
 
 function PedidosColegioContent() {
+  const { role } = useAuth()
+  const puedeGestionar = canManagePedidosColegio(role)
   const { colegios, pedidos, loading, error, refresh } = usePedidosColegio()
   const [expanded, setExpanded] = useState(() => new Set())
 
@@ -113,10 +119,10 @@ function PedidosColegioContent() {
         <h2 className="section-title">
           Pedidos Colegio <span className="badge badge--outline">Beta</span>
         </h2>
-        <AddColegioForm onCreated={refresh} />
+        {puedeGestionar && <AddColegioForm onCreated={refresh} />}
       </div>
       <p className="page-subtitle">
-        Solo visible para administrador general. Cada pedido lleva folio por colegio y su recibo en PDF.
+        Cada pedido lleva folio por colegio y su recibo en PDF.{!puedeGestionar && ' Modo solo lectura.'}
       </p>
 
       {colegios.length === 0 ? (
@@ -144,9 +150,11 @@ function PedidosColegioContent() {
                       {saldoTotal > 0 ? ` · ${formatMonto(saldoTotal)} por cobrar` : ''}
                     </span>
                   </button>
-                  <Link to={`/pedidos-colegio/nuevo?colegio=${colegio.id}`} className="btn btn--primary btn--small">
-                    + Nuevo pedido
-                  </Link>
+                  {puedeGestionar && (
+                    <Link to={`/pedidos-colegio/nuevo?colegio=${colegio.id}`} className="btn btn--primary btn--small">
+                      + Nuevo pedido
+                    </Link>
+                  )}
                 </div>
 
                 {isOpen &&
