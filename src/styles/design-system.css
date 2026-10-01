@@ -1,0 +1,416 @@
+/* =====================================================================
+   V117 — Sistema de diseño (rediseño visual, Parte 0).
+   =====================================================================
+   Todo vive bajo `.design-root` a propósito: hasta que el usuario dé su
+   visto bueno en /design, estos tokens y clases NO deben afectar ninguna
+   otra pantalla de la app (que sigue usando los tokens de index.css sin
+   tocar). Cuando se apruebe, la Parte siguiente "sube" estas reglas a
+   :root y reemplaza los componentes reales uno por uno — ver
+   SALPER_Contexto.md.
+   ===================================================================== */
+
+.design-root {
+  --ds-font-sans: 'Inter', system-ui, sans-serif;
+  --ds-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --ds-bg: #f3f4f6;
+  --ds-surface: #ffffff;
+  --ds-text: #1c2127;
+  --ds-text-muted: #6b7480;
+  --ds-border: #c9ced4;
+  --ds-divider: #e3e6ea;
+  --ds-header-bg: #1c2127;
+  --ds-header-subtitle: #aab1bb;
+  --ds-accent: #e8762c;
+  --ds-btn-primary: #1c2127;
+
+  --ds-red-bg: #fee2e2;
+  --ds-red-text: #b91c1c;
+  --ds-yellow-bg: #fef3c7;
+  --ds-yellow-text: #a16207;
+  --ds-green-bg: #dcfce7;
+  --ds-green-text: #15803d;
+  --ds-blue-bg: #dbeafe;
+  --ds-blue-text: #1d4ed8;
+  --ds-purple-bg: #ede9fe;
+  --ds-purple-text: #6d28d9;
+  --ds-indigo-bg: #e0e7ff;
+  --ds-indigo-text: #4338ca;
+  --ds-teal-bg: #ccfbf1;
+  --ds-teal-text: #0f766e;
+  --ds-pink-bg: #fce7f3;
+  --ds-pink-text: #be185d;
+  --ds-neutral-bg: #eceef1;
+  --ds-neutral-text: #4b535d;
+  --ds-green-solid: #15803d;
+
+  font-family: var(--ds-font-sans);
+  background: var(--ds-bg);
+  color: var(--ds-text);
+}
+
+.design-root * {
+  box-sizing: border-box;
+}
+
+/* ---------- Layout de la página de muestra ---------- */
+.ds-section {
+  margin: 0 0 40px;
+}
+.ds-section__title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--ds-text-muted);
+  margin: 0 0 12px;
+}
+.ds-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.ds-swatch {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--ds-divider);
+  background: var(--ds-surface);
+}
+.ds-swatch__color {
+  height: 48px;
+}
+.ds-swatch__label {
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.ds-swatch__label b {
+  display: block;
+  font-size: 13px;
+}
+.ds-swatch__label span {
+  color: var(--ds-text-muted);
+  font-family: var(--ds-font-mono);
+  font-size: 11px;
+}
+.ds-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ---------- Chips ---------- */
+.ds-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ds-chip--red {
+  background: var(--ds-red-bg);
+  color: var(--ds-red-text);
+}
+.ds-chip--yellow {
+  background: var(--ds-yellow-bg);
+  color: var(--ds-yellow-text);
+}
+.ds-chip--green {
+  background: var(--ds-green-bg);
+  color: var(--ds-green-text);
+}
+.ds-chip--blue {
+  background: var(--ds-blue-bg);
+  color: var(--ds-blue-text);
+}
+.ds-chip--purple {
+  background: var(--ds-purple-bg);
+  color: var(--ds-purple-text);
+}
+.ds-chip--indigo {
+  background: var(--ds-indigo-bg);
+  color: var(--ds-indigo-text);
+}
+.ds-chip--teal {
+  background: var(--ds-teal-bg);
+  color: var(--ds-teal-text);
+}
+.ds-chip--pink {
+  background: var(--ds-pink-bg);
+  color: var(--ds-pink-text);
+}
+.ds-chip--neutral {
+  background: var(--ds-neutral-bg);
+  color: var(--ds-neutral-text);
+}
+.ds-chip--neutral-outline {
+  background: transparent;
+  color: var(--ds-neutral-text);
+  border: 1px solid var(--ds-border);
+}
+.ds-chip--completado {
+  background: var(--ds-green-solid);
+  color: #ffffff;
+}
+
+/* ---------- AppBar ---------- */
+.ds-appbar {
+  background: var(--ds-header-bg);
+  color: #ffffff;
+  padding: 16px 20px;
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ds-appbar__title {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0;
+}
+.ds-appbar__subtitle {
+  font-size: 12px;
+  color: var(--ds-header-subtitle);
+  margin: 2px 0 0;
+}
+.ds-appbar__readonly {
+  background: var(--ds-yellow-bg);
+  color: var(--ds-yellow-text);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+/* ---------- SearchBar ---------- */
+.ds-searchbar {
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--ds-text-muted);
+}
+
+/* ---------- OrderRow ---------- */
+.ds-order-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--ds-surface);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  padding: 12px 14px;
+}
+.ds-order-row__folio {
+  font-family: var(--ds-font-mono);
+  font-weight: 700;
+  font-size: 14px;
+}
+.ds-order-row__sub {
+  font-size: 12px;
+  color: var(--ds-text-muted);
+  margin-top: 2px;
+}
+.ds-order-row__chips {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* ---------- OrderCard ---------- */
+.ds-order-card {
+  background: var(--ds-surface);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 320px;
+}
+.ds-order-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ds-order-card__folio {
+  font-family: var(--ds-font-mono);
+  font-weight: 700;
+}
+.ds-order-card__client {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+}
+.ds-order-card__meta {
+  font-size: 12px;
+  color: var(--ds-text-muted);
+}
+.ds-order-card__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* ---------- Tabs ---------- */
+.ds-tabs {
+  display: inline-flex;
+  background: var(--ds-neutral-bg);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 4px;
+}
+.ds-tab {
+  border: none;
+  background: transparent;
+  color: var(--ds-text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: var(--ds-font-sans);
+}
+.ds-tab--active {
+  background: var(--ds-accent);
+  color: #ffffff;
+}
+.ds-tab__badge {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+  font-size: 11px;
+  padding: 1px 7px;
+}
+.ds-tab--active .ds-tab__badge {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ---------- Botones ---------- */
+.ds-btn {
+  font-family: var(--ds-font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 8px;
+  min-height: 40px;
+  padding: 0 18px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.ds-btn--primary {
+  background: var(--ds-btn-primary);
+  color: #ffffff;
+}
+.ds-btn--accent {
+  background: var(--ds-accent);
+  color: #ffffff;
+}
+.ds-btn--ghost {
+  background: transparent;
+  color: var(--ds-text);
+  border: 1px solid var(--ds-border);
+}
+.ds-btn--disabled {
+  background: var(--ds-neutral-bg);
+  color: var(--ds-text-muted);
+  cursor: not-allowed;
+}
+
+/* ---------- KPI tile ---------- */
+.ds-kpi {
+  background: var(--ds-surface);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  border-top: 3px solid var(--ds-accent);
+  padding: 14px 16px;
+  min-width: 140px;
+}
+.ds-kpi__value {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.ds-kpi__label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--ds-text-muted);
+  margin-top: 4px;
+}
+
+/* ---------- Campo de formulario ---------- */
+.ds-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 280px;
+}
+.ds-field__label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--ds-text-muted);
+}
+.ds-field__input {
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: var(--ds-font-sans);
+  color: var(--ds-text);
+}
+
+/* ---------- BottomNav (preview, solo visual) ---------- */
+.ds-bottomnav {
+  display: flex;
+  background: var(--ds-surface);
+  border-top: 1px solid var(--ds-divider);
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+}
+.ds-bottomnav__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ds-text-muted);
+}
+.ds-bottomnav__item--active {
+  color: var(--ds-accent);
+}
+.ds-bottomnav__icon {
+  font-size: 18px;
+}
+
+/* ---------- Mock de AppBar + BottomNav completo (preview de celular) ---------- */
+.ds-phone-mock {
+  width: 320px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--ds-divider);
+}
+.ds-phone-mock__body {
+  background: var(--ds-bg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

@@ -539,6 +539,13 @@ export function canEditarInventario(role) {
   return role === 'admin_tienda' || role === 'admin_general'
 }
 
+// V117 — /design (Parte 0 del rediseño visual, branch rediseno-visual): el
+// documento original pedía "solo super_admin", rol que no existe en esta
+// app — se usa admin_general (el único con acceso total a ambos dominios).
+export function canViewDesignSystem(role) {
+  return role === 'admin_general'
+}
+
 export const ROLE_LABELS = {
   ventas: 'Ventas',
   contabilidad: 'Contabilidad',

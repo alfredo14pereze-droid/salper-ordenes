@@ -8,6 +8,7 @@ import {
   canCreateOrder,
   canViewCatalogos,
   canManageUsers,
+  canViewDesignSystem,
   canViewPedidosColegio,
   canViewTalleros,
   isCapturaProduccion,
@@ -84,6 +85,17 @@ export default function AppLayout({ children }) {
   // así que se excluyen aquí a propósito para que el menú coincida con la
   // tabla que confirmó el usuario.
   const soloConsultaTienda = esConsultaTiendaSoloLectura(role)
+  // V117 — rediseño visual (branch rediseno-visual): "Dónde aplicar" del
+  // documento ya cubrió Dashboard, detalle de orden y formularios uno por
+  // uno (con overrides CSS específicos para cada pantalla); este último
+  // paso ("resto de módulos") prende el shell nuevo para TODAS las rutas
+  // — los overrides ya escritos son sobre clases muy compartidas
+  // (.card/.btn*/.input/.chip*/.badge*/.order-filters*/.simple-table/
+  // sidebar/topbar/bottomnav), así que la mayoría de pantallas ya heredan
+  // el look nuevo solo con esto. Las vistas de estación (esEstacion, más
+  // abajo) y el shell de "Ver como" no se tocan — siguen su propio layout
+  // mínimo de siempre.
+  const useRediseno = true
   // V66 — Juanis (captura_produccion): solo Dashboard (consultar órdenes) y,
   // desde la Fase 3, la pantalla de captura. V111 amplía la lista blanca:
   // Anuncios (solo lectura), Control rápido, e Inventario de tela (solo
@@ -148,6 +160,9 @@ export default function AppLayout({ children }) {
     // de solo lectura (ver canViewPedidosColegio).
     { to: '/pedidos-colegio', label: 'Pedidos Colegio', show: canViewPedidosColegio(role) },
     { to: '/usuarios', label: 'Usuarios', show: canManageUsers(role) },
+    // V117 — Parte 0 del rediseño visual (branch rediseno-visual): solo
+    // admin_general, mientras se espera su visto bueno (ver canViewDesignSystem).
+    { to: '/design', label: 'Sistema de diseño', show: canViewDesignSystem(role) },
   ]
 
   function closeSidebar() {
@@ -198,7 +213,7 @@ export default function AppLayout({ children }) {
   }
 
   return (
-    <div className="app-shell">
+    <div className={'app-shell' + (useRediseno ? ' design-root' : '')}>
       {/* Barra superior — solo visible en celular (ver @media en
           index.css); en escritorio el sidebar ya está siempre abierto. */}
       <div className="app-topbar">
@@ -310,6 +325,28 @@ export default function AppLayout({ children }) {
             cambiar de ruta. */}
         <ErrorBoundary key={location.pathname}>{children}</ErrorBoundary>
       </main>
+      {/* V117 — BottomNav del rediseño (solo celular, vía @media en
+          dashboard-redesign.css) — no reemplaza el menú hamburguesa de
+          arriba, que sigue abriendo el sidebar completo; esto es solo un
+          atajo a lo más común. "Más" abre ese mismo sidebar. */}
+      {useRediseno && (
+        <nav className="app-bottomnav">
+          <NavLink to="/" end className={({ isActive }) => 'app-bottomnav__item' + (isActive ? ' app-bottomnav__item--active' : '')}>
+            <span className="app-bottomnav__icon">📋</span>
+            Órdenes
+          </NavLink>
+          {canViewPendientes(role) && (
+            <NavLink to="/pendientes" className={({ isActive }) => 'app-bottomnav__item' + (isActive ? ' app-bottomnav__item--active' : '')}>
+              <span className="app-bottomnav__icon">🔁</span>
+              Pendientes
+            </NavLink>
+          )}
+          <button type="button" className="app-bottomnav__item app-bottomnav__item--btn" onClick={() => setSidebarOpen(true)}>
+            <span className="app-bottomnav__icon">⋯</span>
+            Más
+          </button>
+        </nav>
+      )}
       {!soloCaptura && <ChatWidget />}
     </div>
   )

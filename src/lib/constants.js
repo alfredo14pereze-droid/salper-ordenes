@@ -22,6 +22,11 @@
 // el mismo verde de completado — para que salte a la vista qué orden
 // todavía necesita que fábrica la revise. El resto de las etapas se queda
 // fuera de rojo/verde, como antes.
+// V117 — rediseño visual (branch rediseno-visual, Parte 0): se probó
+// reemplazar esta paleta por la tabla "Etapas → chip" del nuevo sistema de
+// diseño, pero el usuario pidió explícitamente conservar estos colores
+// originales tal cual — el resto del rediseño (tipografía, forma de
+// tarjetas, sidebar, etc.) sí sigue aplicándose.
 export const STATUSES = [
   { key: 'en_confirmacion', label: 'Por Confirmar', color: '#c7351f', textColor: '#ffffff' },
   { key: 'confirmado', label: 'Confirmada', color: '#2f8f4e', textColor: '#ffffff' },

@@ -5087,3 +5087,160 @@ como consulta_tienda" desde admin_general): menú coincide con la tabla, no
 aparece ningún botón de crear/editar/eliminar/guardar en ningún módulo
 permitido, puede abrir/descargar PDFs, y URL directa a un módulo de fábrica
 redirige al dashboard.
+
+### V118 — Captura de producción: ya no hay selector de fecha
+
+Sin cambios de esquema. Pedido explícito del usuario: Juanis (captura_
+producción) no debía tener que pensar en fechas para capturar folios/
+piezas — "no quiero que esté batallando".
+
+- `ProduccionCapturaPage.jsx`: se quitó el `<input type="date">` de arriba.
+  En su lugar solo queda el texto "Semana del X al Y · abierta/en revisión"
+  (que ya existía desde V108) — es la única referencia temporal visible.
+- La fecha con la que se guarda cada folio ya no la elige nadie: se calcula
+  sola (`fecha`, ahora derivada en vez de estado controlado por un input).
+  Normalmente es hoy. La única excepción es el hueco entre que cierra una
+  semana (martes) y abre la siguiente (jueves 1pm) — durante esas ~1.5
+  días "hoy" ya cae en la semana nueva (que técnicamente no ha abierto)
+  pero la anterior sigue aceptando captura hasta el jueves 11am (mismo
+  criterio que ya exige el servidor en `prod_puede_editar_semana`); el
+  frontend detecta ese hueco solo (comparando la hora contra el mismo
+  umbral de apertura que ya se usaba para el aviso) y sigue fechando ahí,
+  sin preguntarle nada a Juanis.
+- La lista de "Capturado esta semana" (con columna Fecha, Editar/Borrar)
+  no cambió — sigue siendo la de V114, ya mostraba toda la semana de
+  una vez.
+- Este cambio se separó a propósito del branch `rediseno-visual` (en
+  progreso en paralelo, ver más abajo) — es una corrección funcional, no
+  visual, y el usuario quería que Juanis lo tuviera ya, sin esperar a que
+  el rediseño completo se apruebe y se fusione. Se aplicó directo sobre
+  `main` vía un worktree temporal con solo este archivo, para no arrastrar
+  nada del rediseño todavía sin aprobar.
+
+`npm run build` limpio (verificado en un worktree aislado antes de hacer
+push). Verificado en vivo con una cuenta de prueba real: el formulario de
+captura ya no pide fecha, "Semana del 23 sep al 29 sep · abierta" se ve
+correcto, y la lista de la semana sigue funcionando (folio/piezas/editar/
+borrar) exactamente igual que antes.
+
+### V119 — Inventario: reporte global de movimientos
+
+`supabase/schema_v119_inventario_reporte_movimientos.sql` (aplicado
+2026-10-01, verificado con hash y sin duplicados de función). Pedido del
+usuario: poder revisar todas las entradas/salidas/ajustes/conteos del día,
+la semana, el mes, etc. — no solo el historial de un artículo a la vez
+(`HistorialModal`, ya existía).
+
+- RPC nuevo `inv_reporte_movimientos(p_desde, p_hasta, p_seccion_id,
+  p_ubicacion_id, p_tipo)` — junta `inv_movimientos` con artículo/talla/
+  sección/ubicación/motivo/traspaso. 100% aditivo y sin abrir permisos
+  nuevos: `inv_movimientos` ya era legible por cualquiera que pase
+  `inv_puede_ver()` desde V89; esto solo lo junta y filtra servidor-side.
+- Página nueva `/inventario/movimientos` (link "Movimientos" junto a
+  "Reporte"/"Traspasos"/"Conteo físico" en Inventario, visible a
+  cualquiera que vea Inventario — no solo a quien puede mover, porque es
+  de solo lectura): atajos de rango (Hoy/Esta semana/Este mes/
+  Personalizado), filtros de tipo/sección/ubicación, resumen de
+  entradas/salidas, y tabla con fecha, prenda+talla, sección, ubicación,
+  tipo, cantidad (verde/rojo), motivo, nota (+ folio de traspaso si
+  aplica) y usuario.
+- `inventarioService.js`: `fetchReporteMovimientos()` nueva.
+
+`npm run build` limpio. Verificado en vivo con cuenta real: "Hoy" sin
+movimientos se ve bien (estado vacío), "Esta semana" trajo 469 movimientos
+reales con el resumen (+3229 entradas / −36 salidas) y la tabla completa
+correctas.
+
+---
+
+## V117 — Rediseño visual (branch `rediseno-visual`, Parte 0 completa, sin fusionar)
+
+Branch creado desde `main` (no desde `fase-2`: ese branch quedó obsoleto
+hace 127 commits — confirmado con el usuario antes de empezar). Todo el
+trabajo de esta sección vive solo en `rediseno-visual`; `main`/producción
+no se tocó para nada de esto. **No se hizo merge** — el usuario revisa el
+Preview Deployment de Vercel y decide.
+
+**Reglas seguidas** (del documento de rediseño que pasó el usuario): solo
+cambios visuales (nada de lógica ni de base de datos), tokens/componentes
+primero con visto bueno en `/design` antes de tocar el resto de la app, y
+aplicar en orden (Dashboard → detalle de orden → formularios → resto de
+módulos).
+
+### Parte 0 — Sistema de diseño
+
+- **Playwright** instalado como dev dependency. `scripts/capturas-rediseno.mjs`
+  (nuevo, reusable) toma capturas en 393×852 y 1440×900 de 5 pantallas
+  (Dashboard, detalle de orden, Nueva orden, Pendientes, Talleros), login
+  vía `.env.capturas` (gitignorado). Capturas "antes" guardadas en
+  `/capturas-rediseno/antes`, "después" en `/capturas-rediseno/despues`,
+  mismos nombres para comparar.
+- **Tokens nuevos** (`src/styles/design-system.css`) y **componentes base**
+  (`src/design/components.jsx`: Chip, EtapaChip, UrgenciaChip, AppBar,
+  SearchBar, OrderRow, OrderCard, Tabs, Button, KpiTile, FormField,
+  BottomNav) — todo bajo la clase `.design-root`, que es justo la bisagra
+  de todo este trabajo: mientras algo no lleve esa clase, no cambia nada,
+  así que se pudo ir prendiendo módulo por módulo sin arriesgar el resto.
+- **`/design`** (`src/pages/DesignSystemPage.jsx`): página de muestra con
+  tipografía (Inter + JetBrains Mono para folios, cargadas en `index.html`),
+  colores base, los 9 chips con nombre + mapeo etapa→chip + urgencia,
+  botones, KPI tile, campo de formulario, tabs, SearchBar, OrderRow,
+  OrderCard y el preview de AppBar+BottomNav (incluye variante "Solo
+  lectura"). Visible solo para `admin_general` (`canViewDesignSystem`) — el
+  documento pedía `super_admin`, rol que no existe en SALPER. El usuario
+  dio su visto bueno viendo capturas de esta página antes de seguir.
+
+### Aplicado a Dashboard, detalle de orden y formularios
+
+- `AppLayout.jsx`: `useRediseno` decide si el `<div className="app-shell">`
+  lleva también `design-root` — empezó limitado a `/` y `/orden/:id`,
+  luego `/nueva`, y al final (ver "Resto de módulos" abajo) se dejó en
+  `true` para toda la app. Sidebar oscura en escritorio (logo invertido a
+  blanco por CSS — no existe versión blanca del PNG), AppBar oscura +
+  BottomNav nuevo en celular (Órdenes/Pendientes/Más — "Más" abre el
+  mismo sidebar de siempre, no se duplicó nada). Nav activo en acento
+  naranja. Badge "Solo lectura" de consulta_tienda (V116) se ve igual en
+  ambos temas.
+- `src/styles/dashboard-redesign.css` (nuevo): overrides de clases ya
+  existentes (`.order-card`, `.badge*`, `.order-filters*`, `.chip*`,
+  `.input`, `.btn*`, `.card`, `.item-block`, `.status-stepper__label`,
+  `.order-detail__*`, etc.), todos prefijados `.design-root` — cero JSX
+  nuevo en los componentes reales salvo dos excepciones controladas:
+  - `OrderCard.jsx`: se envolvió el contenido de siempre en
+    `.order-card__full` (con `display: contents` por default — o sea,
+    efecto cero cuando no hay rediseño) y se agregó un bloque nuevo
+    `.order-card__compact` (oculto por default) con fila tipo rectángulo
+    para celular — pedido explícito del usuario tras ver el mock de
+    `/design`: folio + cliente · urgencia + prenda, chip de etapa a la
+    derecha. En celular+rediseño se invierte cuál de los dos se ve.
+  - `lib/constants.js` (`STATUSES[].color/textColor`): se probó la paleta
+    nueva de chips y el usuario pidió explícitamente **conservar los
+    colores originales** — se revirtió, documentado en el propio archivo.
+    El resto del rediseño (tipografía, forma, sombras) sí se quedó.
+- Nueva orden: `.order-form`, labels en mayúsculas, `.item-block` (prenda)
+  en gris claro — mismo patrón de overrides, sin tocar `NewOrderPage.jsx`.
+
+### Resto de módulos
+
+Una vez que los overrides de Dashboard/detalle/formularios resultaron ser
+sobre clases muy compartidas (`.card`, `.btn*`, `.input`, `.chip*`,
+`.badge*`, `.order-filters*`, `.simple-table`, sidebar/topbar/bottomnav),
+`useRediseno` se dejó en `true` para toda la app de un jalón — Pendientes,
+Talleros, Inventario (incluye el nuevo `/inventario/movimientos` de V119),
+Catálogos, Pedidos Colegio, Estadísticas, Calendario, Producción/Revisión,
+Usuarios, etc. heredaron el look nuevo sin tocar una sola línea de cada
+página. Verificado con una pasada de capturas (escritorio + celular, cuenta
+real) por cada una — sin errores de consola en ninguna. Único ajuste
+adicional: `.design-root .btn { text-decoration: none }` (las sidebar-links
+estilo botón, ej. "Movimientos"/"Traspasos", salían subrayadas por
+default del navegador — bug preexistente, no introducido por el rediseño,
+aprovechado para corregirlo de paso).
+
+Las vistas de estación (`esEstacion` — corte/bordado/sublimado/costura/
+terminado) y el shell de "Ver como" **no se tocaron a propósito** — tienen
+su propio layout mínimo desde V96/V97, fuera del alcance de este rediseño
+(la referencia del documento era la pantalla de Juanis, no las de fábrica).
+
+`npm run build` limpio en cada paso. Pendiente: push del branch y dar el
+link del Preview Deployment de Vercel para que el usuario decida si hace
+merge — sin mergear nada todavía.

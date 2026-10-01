@@ -32,11 +32,13 @@ import EstadisticasProduccionPage from './pages/EstadisticasProduccionPage'
 import TalleroDetailPage from './pages/TalleroDetailPage'
 import InventarioPage from './pages/InventarioPage'
 import InventarioTraspasosPage from './pages/InventarioTraspasosPage'
+import InventarioMovimientosPage from './pages/InventarioMovimientosPage'
 import InventarioConteosPage from './pages/InventarioConteosPage'
 import InventarioAdminPage from './pages/InventarioAdminPage'
 import NewPedidoColegioPage from './pages/NewPedidoColegioPage'
 import PedidoColegioDetailPage from './pages/PedidoColegioDetailPage'
 import FeatureDisabledPage from './components/common/FeatureDisabledPage'
+import DesignSystemPage from './pages/DesignSystemPage'
 import { isSupabaseConfigured } from './lib/supabaseClient'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { Loading } from './components/common/States'
@@ -99,6 +101,10 @@ function AuthGate() {
           <Route path="/pendientes" element={<PendientesPage />} />
           <Route path="/pendientes/:id" element={<PendienteDetailPage />} />
           <Route path="/usuarios" element={<UsersPage />} />
+          {/* V117 — Parte 0 del rediseño visual (branch rediseno-visual):
+              página de muestra de tokens/componentes, solo admin_general
+              (ver canViewDesignSystem). */}
+          <Route path="/design" element={<DesignSystemPage />} />
           <Route path="/catalogos" element={<CatalogosPage />} />
           <Route path="/inventario-tela" element={<InventarioTelaPage />} />
           <Route path="/consumos-prenda" element={<ConsumosPrendaPage />} />
@@ -117,6 +123,7 @@ function AuthGate() {
               ver RequireInventarioAccess). */}
           <Route path="/inventario" element={<InventarioPage />} />
           <Route path="/inventario/traspasos" element={<InventarioTraspasosPage />} />
+          <Route path="/inventario/movimientos" element={<InventarioMovimientosPage />} />
           <Route path="/inventario/conteos" element={<InventarioConteosPage />} />
           <Route path="/inventario/admin" element={<InventarioAdminPage />} />
           <Route path="/pedidos-colegio" element={<PedidosColegioPage />} />

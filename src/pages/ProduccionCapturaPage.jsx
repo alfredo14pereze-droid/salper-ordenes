@@ -67,7 +67,6 @@ function Captura() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
 
-  const [fecha, setFecha] = useState(hoy)
   const [operadora, setOperadora] = useState(null)
   const [query, setQuery] = useState('')
   const [idx, setIdx] = useState(0)
@@ -99,8 +98,6 @@ function Captura() {
     })
   }, [])
 
-  const sem = useMemo(() => semanaDe(fecha), [fecha])
-
   // V108 — reloj en vivo: para que el aviso de "todavía no abre"/"ya
   // cerró" aparezca solo, sin que alguien tenga que recargar la página
   // justo cuando cruza la hora exacta (1pm/11am).
@@ -109,6 +106,27 @@ function Captura() {
     const t = setInterval(() => setAhora(new Date()), 60000)
     return () => clearInterval(t)
   }, [])
+
+  // V118 — ya no hay selector de fecha (pedido explícito del usuario:
+  // Juanis no debe tener que pensar en fechas, solo capturar). `fecha` se
+  // calcula sola: normalmente es hoy. El único caso donde NO conviene que
+  // sea hoy es el hueco entre que termina una semana (martes) y se abre
+  // la siguiente (jueves 1pm) — durante ese hueco "hoy" ya cae en la
+  // semana nueva (que todavía no abre), pero la anterior sigue abierta
+  // hasta el jueves 11am (mismo criterio que el servidor, ver
+  // prod_puede_editar_semana) — así que se sigue usando esa semana
+  // anterior, sin pedirle nada a Juanis.
+  const semHoy = useMemo(() => semanaDe(hoy), [hoy])
+  const abreSemHoy = useMemo(() => conHora(semHoy.ini, 1, 13), [semHoy.ini])
+  const enGracia = ahora < abreSemHoy
+  const semAnteriorFin = useMemo(() => {
+    const d = fromStr(semHoy.ini)
+    d.setDate(d.getDate() - 1)
+    return toStr(d)
+  }, [semHoy.ini])
+  const fecha = enGracia ? semAnteriorFin : hoy
+
+  const sem = useMemo(() => semanaDe(fecha), [fecha])
 
   const abreEn = useMemo(() => conHora(sem.ini, 1, 13), [sem.ini])
   const cierraEn = useMemo(() => conHora(sem.fin, 2, 11), [sem.fin])
@@ -286,10 +304,6 @@ function Captura() {
       <h2 className="section-title">Captura de producción</h2>
 
       <div className="captura__top">
-        <label>
-          Fecha
-          <input type="date" className="input" value={fecha} max={hoy} onChange={(e) => e.target.value && setFecha(e.target.value)} />
-        </label>
         <div className="captura__op">
           <span className="field-label">Operadora</span>
           {operadora ? (

@@ -63,20 +63,41 @@ export default function OrderCard({ order, orderType }) {
 
   return (
     <article className={cardClass} onClick={() => navigate(`/orden/${order.id}`)} role="button" tabIndex={0}>
-      <div className="order-card__top">
-        <span className="order-card__number">#{order.order_number}</span>
+      {/* Vista completa — de siempre. En celular, dentro del rediseño
+          (.design-root), se oculta y se usa .order-card__compact en su
+          lugar (ver dashboard-redesign.css); en cualquier otro contexto
+          esto es lo único que se muestra, sin cambio. */}
+      <div className="order-card__full">
+        <div className="order-card__top">
+          <span className="order-card__number">#{order.order_number}</span>
+          {order.cancelled_at ? <span className="badge badge--danger">Cancelada</span> : <StatusBadge status={order.status} />}
+        </div>
+        <h3 className="order-card__client">{order.client_name}</h3>
+        {prendas && <p className="order-card__prendas">{prendas}</p>}
+        {needsReconfirm && <p className="order-card__reconfirm-notice">✎ Se modificó después de confirmarse</p>}
+        <div className="order-card__meta">
+          <TypeBadge type={orderType} />
+          <span className={dueClass}>{dueLabel}</span>
+        </div>
+        <div className="order-card__footer">
+          <span>Entrega: {formatDate(order.requested_delivery_date)}</span>
+          <span> · Creada: {formatDate(order.created_at)}</span>
+        </div>
+      </div>
+
+      {/* V117 — fila compacta tipo "rectángulo" para celular (rediseño,
+          pedido explícito del usuario): oculta salvo en .design-root +
+          celular. Folio + cliente · urgencia a la izquierda, chip de
+          estado a la derecha — mismos datos que arriba, nada nuevo. */}
+      <div className="order-card__compact">
+        <div className="order-card__compact-text">
+          <span className="order-card__number">#{order.order_number}</span>
+          <span className="order-card__compact-sub">
+            {order.client_name} · {dueLabel}
+          </span>
+          {prendas && <span className="order-card__compact-prendas">{prendas}</span>}
+        </div>
         {order.cancelled_at ? <span className="badge badge--danger">Cancelada</span> : <StatusBadge status={order.status} />}
-      </div>
-      <h3 className="order-card__client">{order.client_name}</h3>
-      {prendas && <p className="order-card__prendas">{prendas}</p>}
-      {needsReconfirm && <p className="order-card__reconfirm-notice">✎ Se modificó después de confirmarse</p>}
-      <div className="order-card__meta">
-        <TypeBadge type={orderType} />
-        <span className={dueClass}>{dueLabel}</span>
-      </div>
-      <div className="order-card__footer">
-        <span>Entrega: {formatDate(order.requested_delivery_date)}</span>
-        <span> · Creada: {formatDate(order.created_at)}</span>
       </div>
     </article>
   )

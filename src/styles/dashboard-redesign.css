@@ -1,0 +1,378 @@
+/* =====================================================================
+   V117 — Rediseño visual, Parte 0: re-skin del Dashboard de órdenes
+   (escritorio + celular). Branch rediseno-visual.
+   =====================================================================
+   TODO selector de aquí empieza con `.design-root` — son overrides que
+   solo pintan dentro de un contenedor marcado con esa clase
+   (AppLayout.jsx la agrega al <div className="app-shell"> SOLO cuando
+   `useRediseno` es true, hoy nada más para la ruta "/"). Ninguna otra
+   pantalla cambia de apariencia todavía: siguen usando las reglas de
+   index.css tal cual, sin tocar.
+
+   Reutiliza los MISMOS nombres de clase que ya usan OrderCard.jsx,
+   AppLayout.jsx, etc. — a propósito: así no hizo falta cambiar ni una
+   línea de JSX/lógica para lograr el nuevo look, solo el CSS que esas
+   clases heredan dentro de `.design-root`.
+   ===================================================================== */
+
+.design-root {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  background: #f3f4f6;
+}
+
+.design-root .app-main {
+  background: #f3f4f6;
+}
+
+/* ---------- Sidebar (escritorio) / drawer (celular) ---------- */
+.design-root .app-sidebar {
+  background: #1c2127;
+  border-right: none;
+}
+.design-root .app-header__logo-img {
+  /* Logo real es negro sobre transparente (ver Logo.jsx) — no existe
+     versión blanca todavía, así que se invierte por CSS solo aquí. */
+  filter: invert(1);
+}
+.design-root .app-sidebar .app-header__subtitle {
+  color: #aab1bb;
+}
+.design-root .app-nav__link {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  color: #aab1bb;
+  border-radius: 8px;
+}
+.design-root .app-nav__link:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+.design-root .app-nav__link--active {
+  background: #e8762c;
+  color: #ffffff;
+}
+.design-root .app-sidebar__user {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+.design-root .app-header__user-name {
+  color: #ffffff;
+}
+.design-root .app-header__user-role {
+  color: #aab1bb;
+}
+.design-root .view-as-picker {
+  color: #aab1bb;
+}
+
+/* ---------- Topbar (celular) ---------- */
+.design-root .app-topbar {
+  background: #1c2127;
+  border-bottom: none;
+}
+.design-root .app-topbar__menu-btn {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+/* ---------- BottomNav (celular, nuevo) ---------- */
+.app-bottomnav {
+  display: none;
+}
+@media (max-width: 720px) {
+  .design-root .app-main {
+    padding-bottom: 76px;
+  }
+  /* El chat flotante (z-index 40) queda por encima del BottomNav nuevo
+     (z-index 15) — se sube para no tapar "Más". */
+  .design-root .chat-widget {
+    bottom: 86px;
+  }
+  .design-root .app-bottomnav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 15;
+    background: #ffffff;
+    border-top: 1px solid #e3e6ea;
+  }
+  .design-root .app-bottomnav__item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    color: #6b7480;
+    text-decoration: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  .design-root .app-bottomnav__item--active {
+    color: #e8762c;
+  }
+  .design-root .app-bottomnav__icon {
+    font-size: 18px;
+    line-height: 1;
+  }
+}
+
+/* ---------- Títulos / secciones ---------- */
+.design-root .section-title {
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+}
+.design-root .page-subtitle,
+.design-root .section-count {
+  font-family: 'Inter', sans-serif;
+}
+
+/* ---------- OrderCard ---------- */
+.design-root .order-card {
+  background: #ffffff;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+/* Las 3 variantes de urgencia ya no pintan toda la tarjeta — el color se
+   mueve al chip de la fecha de entrega (order-card__due, ver abajo). La
+   tarjeta se queda blanca y plana en los 3 casos. */
+.design-root .order-card--overdue,
+.design-root .order-card--warning,
+.design-root .order-card--good {
+  border: none;
+  background: #ffffff;
+}
+/* needs-reconfirm sigue siendo su propia señal (azul, pedido explícito
+   previo del usuario) — se queda con el cuadro completo a propósito, no
+   es "urgencia", es "esto cambió, revísalo". */
+.design-root .order-card--needs-reconfirm {
+  border: none;
+  background: #e2eef7;
+}
+.design-root .order-card__number {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 700;
+  color: #1c2127;
+}
+.design-root .order-card__client {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+}
+.design-root .order-card__due {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 11px;
+  background: #eceef1;
+  color: #4b535d;
+}
+.design-root .order-card__due--today,
+.design-root .order-card__due--overdue {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.design-root .order-card__due--warning {
+  background: #fef3c7;
+  color: #a16207;
+}
+.design-root .order-card__due--good {
+  background: #dcfce7;
+  color: #15803d;
+}
+.design-root .order-card__footer {
+  border-top: 1px solid #e3e6ea;
+}
+
+/* ---------- Status / type badges ----------
+   StatusBadge pinta su color vía estilo inline desde lib/constants.js —
+   el usuario pidió explícitamente conservar esos colores originales (no
+   se tocan). Aquí solo se ajustan forma/tipografía, válido para cualquier
+   color que traiga. */
+.design-root .badge {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+}
+.design-root .badge--outline {
+  background: transparent;
+  border: 1px solid #c9ced4;
+  color: #4b535d;
+}
+.design-root .badge--ready {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+/* ---------- Filtros / chips de filtro ---------- */
+.design-root .order-filters {
+  background: #ffffff;
+  border: 1px solid #e3e6ea;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.design-root .order-filters__label {
+  font-family: 'Inter', sans-serif;
+}
+.design-root .chip {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  border-color: #c9ced4;
+}
+.design-root .chip--active {
+  background: #e8762c;
+  border-color: #e8762c;
+  color: #ffffff;
+}
+
+/* ---------- Inputs / botones ---------- */
+.design-root .input {
+  font-family: 'Inter', sans-serif;
+  border-color: #c9ced4;
+  border-radius: 8px;
+}
+.design-root .btn {
+  font-family: 'Inter', sans-serif;
+  border-radius: 8px;
+  min-height: 40px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.design-root .btn--primary {
+  background: #1c2127;
+  color: #ffffff;
+}
+.design-root .btn--primary:hover {
+  background: #2b3038;
+}
+.design-root .btn--ghost {
+  text-decoration: none;
+  border: 1px solid #c9ced4;
+  color: #1c2127;
+}
+
+/* ---------- Detalle de orden ---------- */
+.design-root .card {
+  background: #ffffff;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.design-root .back-link,
+.design-root .order-detail__client,
+.design-root .status-stepper__label,
+.design-root .detail-list dt,
+.design-root .detail-list dd,
+.design-root .history-list__notes,
+.design-root .history-list__date {
+  font-family: 'Inter', sans-serif;
+}
+.design-root .order-detail__number {
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+}
+.design-root .history-list__status {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+}
+
+/* ---------- Formularios (Nueva orden) ---------- */
+.design-root .order-form {
+  background: #ffffff;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.design-root .order-form label,
+.design-root .field-label {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #6b7480;
+}
+.design-root .order-form label.fin-check {
+  text-transform: none;
+  font-size: 13px;
+}
+.design-root .item-block {
+  background: #f3f4f6;
+  border: none;
+  border-radius: 10px;
+}
+.design-root .item-block__title {
+  font-family: 'Inter', sans-serif;
+}
+
+/* ---------- Grid de órdenes ---------- */
+.design-root .order-grid {
+  gap: 14px;
+}
+
+/* ---------- OrderCard: fila compacta en celular (rediseño) ----------
+   .order-card__full usa `display: contents` SIEMPRE por default — así sus
+   hijos (folio, cliente, meta, footer…) siguen actuando como hijos
+   directos del flex-column de .order-card, exactamente como antes de
+   agregar este wrapper (cero cambio de espaciado en ningún contexto).
+   .order-card__compact está oculta por default en todos lados. Solo
+   dentro de .design-root + celular se invierte cuál de las dos se ve. */
+.order-card__full {
+  display: contents;
+}
+.order-card__compact {
+  display: none;
+}
+@media (max-width: 720px) {
+  .design-root .order-card {
+    padding: 12px 14px;
+  }
+  .design-root .order-card__full {
+    display: none;
+  }
+  .design-root .order-card__compact {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .design-root .order-card__compact-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .design-root .order-card__compact .order-card__number {
+    font-size: 14px;
+  }
+  .design-root .order-card__compact-sub {
+    font-size: 12px;
+    color: #6b7480;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .design-root .order-card__compact-prendas {
+    font-size: 12px;
+    color: #1c2127;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* En la fila compacta solo cabe un chip — "Lista para entregar" se
+     queda para la vista completa (detalle de orden, escritorio). */
+  .design-root .order-card__compact .badge--ready {
+    display: none;
+  }
+}
