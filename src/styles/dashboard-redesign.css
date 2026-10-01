@@ -63,6 +63,14 @@
 .design-root .view-as-picker {
   color: #aab1bb;
 }
+.design-root .app-sidebar__signout {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+.design-root .app-sidebar__signout:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
 
 /* ---------- Topbar (celular) ---------- */
 .design-root .app-topbar {

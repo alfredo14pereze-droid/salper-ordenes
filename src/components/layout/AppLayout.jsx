@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import ErrorBoundary from '../common/ErrorBoundary'
 import Logo from './Logo'
@@ -169,6 +169,14 @@ export default function AppLayout({ children }) {
     setSidebarOpen(false)
   }
 
+  // V122 — en celular la lista del menú hace scroll por dentro (ver
+  // .app-nav en index.css): al abrirlo, que la opción activa quede a la
+  // vista aunque haya muchas (admin).
+  useEffect(() => {
+    if (!sidebarOpen) return
+    document.querySelector('.app-sidebar .app-nav__link--active')?.scrollIntoView({ block: 'nearest' })
+  }, [sidebarOpen])
+
   // V96/V97 — shell mínimo para las vistas de estación: sin sidebar
   // completo ni ChatWidget, pero SÍ con 2 links ("Órdenes" y "Pendientes"
   // — este último ya era parte de su trabajo desde V78) para no dejar a
@@ -288,7 +296,10 @@ export default function AppLayout({ children }) {
                 {soloConsultaTienda && <span className="badge badge--outline app-header__readonly-badge">Solo lectura</span>}
                 <span className="app-header__user-role">{ROLE_LABELS[role] || role}</span>
               </span>
-              <button type="button" className="btn btn--ghost btn--small" onClick={signOut}>
+              {/* V122 — botón completo y visible (antes era un link fantasma
+                  que en el sidebar oscuro casi no se veía, y en celular
+                  quedaba fuera de la pantalla — ver .app-sidebar__signout). */}
+              <button type="button" className="btn app-sidebar__signout" onClick={signOut}>
                 Cerrar sesión
               </button>
             </>

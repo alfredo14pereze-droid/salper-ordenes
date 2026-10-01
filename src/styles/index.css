@@ -158,6 +158,21 @@ h4 {
   border-top: 1px solid var(--color-border);
 }
 
+/* V122 — "Cerrar sesión": botón de verdad (ancho completo, 44px de alto
+   para el dedo), no un link subrayado. */
+.app-sidebar__signout {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+.app-sidebar__signout:hover {
+  background: var(--color-bg);
+}
+
 /* V53 — selector "Ver como" (exclusivo admin_general): mismo espacio que
    el resto del pie del sidebar, con la etiqueta chiquita arriba del
    select, como cualquier <label> del sistema. */
@@ -2175,14 +2190,47 @@ h4 {
     display: flex;
   }
 
+  /* V122 — menú en celular. Antes medía 100vh, que en iPhone es MÁS alto
+     que lo que se ve (la barra de Safari tapa la parte de abajo): el
+     nombre y "Cerrar sesión" quedaban fuera de la pantalla. Ahora mide
+     lo visible (100dvh), respeta el notch/barra de inicio, y el pie
+     (nombre + Cerrar sesión) siempre queda a la vista: si hay muchas
+     opciones, la que hace scroll es la lista, no el menú completo. Las
+     opciones se pegan abajo, junto al pie, para alcanzarlas con el pulgar
+     (el menú se abre desde "Más", que está abajo). */
   .app-sidebar {
     position: fixed;
     left: 0;
     top: 0;
     z-index: 30;
+    width: min(300px, 84vw);
+    height: 100vh;
+    height: 100dvh;
+    gap: 12px;
+    padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+    overflow: hidden;
     transform: translateX(-100%);
     transition: transform 0.2s ease;
     box-shadow: var(--shadow-md);
+  }
+
+  .app-nav {
+    min-height: 0;
+    overflow-y: auto;
+    gap: 4px;
+  }
+
+  .app-nav > :first-child {
+    margin-top: auto;
+  }
+
+  .app-nav__link {
+    padding: 12px 14px;
+    font-size: 15px;
+  }
+
+  .app-sidebar__user {
+    flex-shrink: 0;
   }
 
   .app-sidebar--open {
