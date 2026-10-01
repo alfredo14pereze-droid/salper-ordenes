@@ -5330,6 +5330,32 @@ artículo individual en la UI (el esquema ya lo soporta, la pantalla solo
 administra alias por modelo); los PDFs de traspaso/conteo siguen mostrando
 `prenda` + talla como antes.
 
+### V122 — Menú en celular: nombre y "Cerrar sesión" visibles y al alcance
+
+Reporte del usuario con captura de un iPhone (rol `tienda`): el menú
+lateral "queda raro" y no se ven ni el nombre ni el botón de cerrar sesión.
+Dos causas, ambas solo de CSS/JSX (sin SQL):
+
+- El drawer medía `100vh`, que en Safari de iPhone es más alto que lo
+  visible (la barra del navegador tapa la parte de abajo) — el pie con el
+  nombre y el botón quedaba fuera de la pantalla. Ahora en celular mide
+  `100dvh` (con `100vh` de respaldo), respeta `safe-area-inset-top/bottom`,
+  y el que hace scroll es `.app-nav`, no el menú completo: el pie siempre
+  queda a la vista aunque el rol tenga 20 opciones. Al abrir, la opción
+  activa se trae a la vista (`useEffect` en `AppLayout.jsx`).
+- "Cerrar sesión" era un `.btn--ghost`, que el rediseño pinta con texto
+  oscuro (#1c2127) — invisible sobre el sidebar oscuro. Ahora es
+  `.app-sidebar__signout`: botón de ancho completo, 44px de alto, texto
+  blanco "Cerrar sesión" (también en escritorio).
+- Alcance con el pulgar: en celular las opciones se pegan abajo, junto al
+  pie (el menú se abre desde "Más", que está abajo), y el drawer es un poco
+  más ancho (`min(300px, 84vw)`).
+
+Verificado en el entorno de prueba local a 375×812 con rol `tienda` (4
+opciones) y `admin_general` (20, con scroll interno y pie visible), y a
+1280px que el sidebar de escritorio no cambió salvo el botón. No se probó
+en un iPhone real antes de subirlo.
+
 ## V117 — Rediseño visual (branch `rediseno-visual`, fusionado a `main`)
 
 Branch creado desde `main` (no desde `fase-2`: ese branch quedó obsoleto
