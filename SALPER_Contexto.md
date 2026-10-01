@@ -5087,3 +5087,52 @@ como consulta_tienda" desde admin_general): menú coincide con la tabla, no
 aparece ningún botón de crear/editar/eliminar/guardar en ningún módulo
 permitido, puede abrir/descargar PDFs, y URL directa a un módulo de fábrica
 redirige al dashboard.
+
+### V118 — Captura de producción: ya no hay selector de fecha
+
+Sin cambios de esquema. Pedido explícito del usuario: Juanis (captura_
+producción) no debía tener que pensar en fechas para capturar folios/
+piezas — "no quiero que esté batallando".
+
+- `ProduccionCapturaPage.jsx`: se quitó el `<input type="date">` de arriba.
+  En su lugar solo queda el texto "Semana del X al Y · abierta/en revisión"
+  (que ya existía desde V108) — es la única referencia temporal visible.
+- La fecha con la que se guarda cada folio ya no la elige nadie: se calcula
+  sola (`fecha`, ahora derivada en vez de estado controlado por un input).
+  Normalmente es hoy. La única excepción es el hueco entre que cierra una
+  semana (martes) y abre la siguiente (jueves 1pm) — durante esas ~1.5
+  días "hoy" ya cae en la semana nueva (que técnicamente no ha abierto)
+  pero la anterior sigue aceptando captura hasta el jueves 11am (mismo
+  criterio que ya exige el servidor en `prod_puede_editar_semana`); el
+  frontend detecta ese hueco solo (comparando la hora contra el mismo
+  umbral de apertura que ya se usaba para el aviso) y sigue fechando ahí,
+  sin preguntarle nada a Juanis.
+- La lista de "Capturado esta semana" (con columna Fecha, Editar/Borrar)
+  no cambió — sigue siendo la de V114, ya mostraba toda la semana de
+  una vez.
+- Este cambio se separó a propósito del branch `rediseno-visual` (en
+  progreso en paralelo, ver más abajo) — es una corrección funcional, no
+  visual, y el usuario quería que Juanis lo tuviera ya, sin esperar a que
+  el rediseño completo se apruebe y se fusione. Se aplicó directo sobre
+  `main` vía un worktree temporal con solo este archivo, para no arrastrar
+  nada del rediseño todavía sin aprobar.
+
+`npm run build` limpio (verificado en un worktree aislado antes de hacer
+push). Verificado en vivo con una cuenta de prueba real: el formulario de
+captura ya no pide fecha, "Semana del 23 sep al 29 sep · abierta" se ve
+correcto, y la lista de la semana sigue funcionando (folio/piezas/editar/
+borrar) exactamente igual que antes.
+
+---
+
+## Rediseño visual (branch `rediseno-visual`, en progreso)
+
+Trabajo en curso, **todavía sin commit/push** al momento de escribir esto —
+vive solo en el working tree local del branch `rediseno-visual` (creado
+desde `main`, no desde `fase-2`: ese branch quedó obsoleto hace 127 commits,
+ver la conversación que lo confirmó). Se documentará con su propio detalle
+(V117: tokens, `/design`, Dashboard y detalle de orden ya migrados; formularios
+y resto de módulos pendientes) cuando se haga el primer commit del branch —
+por ahora que quede registrado aquí que existe y por qué `main` no lo tiene
+todavía: el usuario pidió explícitamente esperar su visto bueno antes de
+aplicar el rediseño a cada módulo, y antes de fusionar nada a `main`.
