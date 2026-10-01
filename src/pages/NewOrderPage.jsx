@@ -542,6 +542,19 @@ function NewOrderForm() {
           />
         </div>
 
+        {CAPTURA_FECHA_CREACION_HABILITADA && (
+          <label>
+            Fecha de creación (orden anterior)
+            <input
+              type="date"
+              className="input"
+              value={form.createdAt}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => updateField('createdAt', e.target.value)}
+            />
+          </label>
+        )}
+
         <label>
           Fecha de entrega *
           <input
@@ -556,19 +569,6 @@ function NewOrderForm() {
             ⚠ Fecha muy cargada: ya hay {deliveryLoad.orders} orden{deliveryLoad.orders === 1 ? '' : 'es'} y{' '}
             {deliveryLoad.pieces.toLocaleString('es-MX')} prenda{deliveryLoad.pieces === 1 ? '' : 's'} esos días.
           </p>
-        )}
-
-        {CAPTURA_FECHA_CREACION_HABILITADA && (
-          <label>
-            Fecha de creación (orden anterior)
-            <input
-              type="date"
-              className="input"
-              value={form.createdAt}
-              max={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => updateField('createdAt', e.target.value)}
-            />
-          </label>
         )}
 
         <div>
