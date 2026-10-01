@@ -178,7 +178,7 @@ export default function AppLayout({ children }) {
   // estación.
   if (esEstacion) {
     return (
-      <div className="app-shell app-shell--estacion">
+      <div className={'app-shell app-shell--estacion' + (useRediseno ? ' design-root' : '')}>
         <div className="app-topbar app-topbar--estacion">
           <Logo />
           <nav className="estacion-nav">

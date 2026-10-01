@@ -5236,11 +5236,45 @@ estilo botón, ej. "Movimientos"/"Traspasos", salían subrayadas por
 default del navegador — bug preexistente, no introducido por el rediseño,
 aprovechado para corregirlo de paso).
 
-Las vistas de estación (`esEstacion` — corte/bordado/sublimado/costura/
-terminado) y el shell de "Ver como" **no se tocaron a propósito** — tienen
-su propio layout mínimo desde V96/V97, fuera del alcance de este rediseño
-(la referencia del documento era la pantalla de Juanis, no las de fábrica).
+### Calendario y vistas de estación (pedido explícito tras revisar el Preview)
 
-`npm run build` limpio en cada paso. Pendiente: push del branch y dar el
-link del Preview Deployment de Vercel para que el usuario decida si hace
-merge — sin mergear nada todavía.
+El usuario revisó el Preview Deployment y pidió explícitamente actualizar
+dos cosas que se habían quedado con el look viejo:
+
+- **Calendario**: a diferencia del resto de módulos, `MonthCalendar.jsx`
+  tiene sus propias clases (`.month-calendar__*`, `.calendar-legend__*`)
+  que ningún override genérico tocaba — se agregaron overrides dedicados
+  (encabezado de días oscuro, celdas blancas, día "hoy" en acento
+  naranja, día saturado en ámbar, tipografía Inter). Los chips de cada
+  orden siguen usando `status.color`/`status.textColor` tal cual (colores
+  originales, sin cambio).
+- **Vistas de estación** (`esEstacion` en `AppLayout.jsx` — corte/bordado/
+  sublimado/costura/terminado): se había dejado fuera a propósito por
+  interpretar que el documento solo pedía la pantalla de Juanis; el
+  usuario aclaró que también las quería. Se agregó `design-root` a ese
+  shell separado (`app-shell--estacion`/`app-topbar--estacion`) y
+  overrides para `.estacion-nav__link` (mismo tratamiento oscuro+acento
+  que el sidebar normal), `.estacion-card`/`.estacion-order__folio`
+  (blanco, sin borde, folio en mono) y `.estacion-prenda` (gris claro,
+  como `.item-block`). El shell de "Ver como" (franja amarilla) no
+  necesitó cambio — ya usaba tokens compartidos.
+
+Durante este paso se detectó una sesión de Claude Code distinta
+trabajando en paralelo sobre el mismo working tree (archivos sin commit
+de las Partes 2-4 de roles de fábrica — `SublimadoHomePage.jsx`,
+`EstacionCard.jsx`, etc. — y un cambio de branch de `rediseno-visual` a
+`main` que no hizo este hilo). Se avisó al usuario antes de seguir; se
+resolvió solo (la otra sesión siguió en su propio worktree) y no hubo
+pérdida de nada — ver memoria del proyecto
+(`salper-ordenes-project.md`) para la convención de worktrees separados
+que evita que esto se repita.
+
+`npm run build` limpio en cada paso. Verificado en vivo: Calendario
+(escritorio) y la vista de Corte/Bordado simulada con "Ver como"
+(Siguientes órdenes, detalle de orden con el formulario de captura,
+Pendientes de bordado) — todas consistentes con el resto del rediseño,
+sin errores de consola.
+
+Pendiente: el usuario revisa el Preview Deployment actualizado y da el
+visto bueno explícito antes de fusionar cualquier cosa a `main` — sigue
+sin mergearse nada.

@@ -315,6 +315,100 @@
   font-family: 'Inter', sans-serif;
 }
 
+/* ---------- Calendario ---------- */
+.design-root .month-calendar__title {
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+.design-root .month-calendar__grid {
+  background: #e3e6ea;
+  border: none;
+  border-radius: 12px;
+}
+.design-root .month-calendar__weekday {
+  background: #1c2127;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+}
+.design-root .month-calendar__day {
+  background: #ffffff;
+}
+.design-root .month-calendar__day--muted {
+  background: #f3f4f6;
+}
+.design-root .month-calendar__day--saturated {
+  background: #fef3c7;
+  box-shadow: inset 0 0 0 2px #a16207;
+}
+.design-root .month-calendar__day-number {
+  font-family: 'Inter', sans-serif;
+}
+.design-root .month-calendar__day--today .month-calendar__day-number {
+  background: #e8762c;
+  color: #ffffff;
+}
+.design-root .month-calendar__day-badge {
+  background: #a16207;
+}
+.design-root .month-calendar__event {
+  font-family: 'Inter', sans-serif;
+  border-radius: 6px;
+}
+.design-root .calendar-legend__item {
+  font-family: 'Inter', sans-serif;
+}
+
+/* ---------- Vistas de estación (corte/bordado/sublimado/costura/terminado) ---------- */
+.design-root .app-topbar--estacion {
+  background: #1c2127;
+}
+.design-root .app-topbar--estacion .app-header__logo-img {
+  filter: invert(1);
+}
+.design-root .estacion-nav__link {
+  font-family: 'Inter', sans-serif;
+  color: #aab1bb;
+  border-radius: 8px;
+}
+.design-root .estacion-nav__link:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+.design-root .estacion-nav__link--active {
+  background: #e8762c;
+  color: #ffffff;
+}
+.design-root .app-topbar--estacion .btn--ghost {
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+.design-root .estacion-card {
+  background: #ffffff;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.design-root .estacion-card__folio,
+.design-root .estacion-order__folio {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+.design-root .estacion-card__cliente,
+.design-root .estacion-order__cliente,
+.design-root .estacion-card__prendas,
+.design-root .estacion-card__due {
+  font-family: 'Inter', sans-serif;
+}
+.design-root .estacion-prenda {
+  background: #f3f4f6;
+  border: none;
+  border-radius: 10px;
+}
+.design-root .estacion-prenda__nombre,
+.design-root .estacion-prenda__detalle {
+  font-family: 'Inter', sans-serif;
+}
+
 /* ---------- Grid de órdenes ---------- */
 .design-root .order-grid {
   gap: 14px;
