@@ -226,6 +226,9 @@ function InventarioContent() {
               Reporte
             </button>
           )}
+          <Link to="/inventario/movimientos" className="btn btn--secondary btn--small">
+            Movimientos
+          </Link>
           {canMover && (
             <Link to="/inventario/traspasos" className="btn btn--secondary btn--small">
               Traspasos

@@ -5123,6 +5123,34 @@ captura ya no pide fecha, "Semana del 23 sep al 29 sep · abierta" se ve
 correcto, y la lista de la semana sigue funcionando (folio/piezas/editar/
 borrar) exactamente igual que antes.
 
+### V119 — Inventario: reporte global de movimientos
+
+`supabase/schema_v119_inventario_reporte_movimientos.sql` (aplicado
+2026-10-01, verificado con hash y sin duplicados de función). Pedido del
+usuario: poder revisar todas las entradas/salidas/ajustes/conteos del día,
+la semana, el mes, etc. — no solo el historial de un artículo a la vez
+(`HistorialModal`, ya existía).
+
+- RPC nuevo `inv_reporte_movimientos(p_desde, p_hasta, p_seccion_id,
+  p_ubicacion_id, p_tipo)` — junta `inv_movimientos` con artículo/talla/
+  sección/ubicación/motivo/traspaso. 100% aditivo y sin abrir permisos
+  nuevos: `inv_movimientos` ya era legible por cualquiera que pase
+  `inv_puede_ver()` desde V89; esto solo lo junta y filtra servidor-side.
+- Página nueva `/inventario/movimientos` (link "Movimientos" junto a
+  "Reporte"/"Traspasos"/"Conteo físico" en Inventario, visible a
+  cualquiera que vea Inventario — no solo a quien puede mover, porque es
+  de solo lectura): atajos de rango (Hoy/Esta semana/Este mes/
+  Personalizado), filtros de tipo/sección/ubicación, resumen de
+  entradas/salidas, y tabla con fecha, prenda+talla, sección, ubicación,
+  tipo, cantidad (verde/rojo), motivo, nota (+ folio de traspaso si
+  aplica) y usuario.
+- `inventarioService.js`: `fetchReporteMovimientos()` nueva.
+
+`npm run build` limpio. Verificado en vivo con cuenta real: "Hoy" sin
+movimientos se ve bien (estado vacío), "Esta semana" trajo 469 movimientos
+reales con el resumen (+3229 entradas / −36 salidas) y la tabla completa
+correctas.
+
 ---
 
 ## Rediseño visual (branch `rediseno-visual`, en progreso)

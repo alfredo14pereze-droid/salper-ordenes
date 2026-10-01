@@ -70,6 +70,22 @@ export async function fetchHistorialArticulo(articuloId) {
   return supabase.rpc('inv_historial_articulo', { p_articulo_id: articuloId })
 }
 
+// V119 — reporte global de movimientos (todas las prendas/secciones a la
+// vez, filtrable por fecha/sección/ubicación/tipo). A diferencia de
+// fetchHistorialArticulo (un solo artículo), este es para revisar
+// actividad del día/semana/mes completos.
+export async function fetchReporteMovimientos({ desde, hasta, seccionId = null, ubicacionId = null, tipo = null }) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('inv_reporte_movimientos', {
+    p_desde: desde,
+    p_hasta: hasta,
+    p_seccion_id: seccionId,
+    p_ubicacion_id: ubicacionId,
+    p_tipo: tipo,
+  })
+}
+
 // --- Movimiento manual (+ / -) --------------------------------------------
 
 export async function registrarMovimiento({ articuloId, ubicacionId, tipo, cantidad, motivoId, nota }) {

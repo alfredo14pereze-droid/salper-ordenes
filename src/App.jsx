@@ -32,6 +32,7 @@ import EstadisticasProduccionPage from './pages/EstadisticasProduccionPage'
 import TalleroDetailPage from './pages/TalleroDetailPage'
 import InventarioPage from './pages/InventarioPage'
 import InventarioTraspasosPage from './pages/InventarioTraspasosPage'
+import InventarioMovimientosPage from './pages/InventarioMovimientosPage'
 import InventarioConteosPage from './pages/InventarioConteosPage'
 import InventarioAdminPage from './pages/InventarioAdminPage'
 import NewPedidoColegioPage from './pages/NewPedidoColegioPage'
@@ -117,6 +118,7 @@ function AuthGate() {
               ver RequireInventarioAccess). */}
           <Route path="/inventario" element={<InventarioPage />} />
           <Route path="/inventario/traspasos" element={<InventarioTraspasosPage />} />
+          <Route path="/inventario/movimientos" element={<InventarioMovimientosPage />} />
           <Route path="/inventario/conteos" element={<InventarioConteosPage />} />
           <Route path="/inventario/admin" element={<InventarioAdminPage />} />
           <Route path="/pedidos-colegio" element={<PedidosColegioPage />} />
