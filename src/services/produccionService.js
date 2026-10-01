@@ -62,6 +62,15 @@ export async function listarRegistros(fecha, operadoraId) {
   return supabase.rpc('prod_listar_registros', { p_fecha: fecha, p_operadora_id: operadoraId })
 }
 
+// V114 — igual que listarRegistros, pero trae TODA la semana de `fecha`
+// (no solo ese día): así Juanis no tiene que mover el selector de fecha
+// para editar/borrar un folio de otro día de la misma semana.
+export async function listarRegistrosSemana(fecha, operadoraId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_listar_registros_semana', { p_fecha: fecha, p_operadora_id: operadoraId })
+}
+
 export async function resumenCaptura(fecha) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }

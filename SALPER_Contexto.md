@@ -4940,3 +4940,34 @@ V94.
 probar con una sesión real de rol `tienda` en este entorno (sin credenciales),
 queda pendiente que el usuario lo confirme viendo el botón "Marcar como
 entregado" en la bandeja "Por entregar" con un usuario real de ese rol.
+
+### V114 — Captura de producción: la lista de capturado es por semana, no por día
+
+`supabase/schema_v114_produccion_lista_semana.sql` (aplicado 2026-09-30,
+verificado con hash y con `select proname, count(*) ... group by proname`).
+Pedido explícito del usuario: Juanis no debía tener que cambiar el selector de
+fecha solo para ver/editar un folio que ya había capturado otro día de la
+misma semana.
+
+- RPC nuevo `prod_listar_registros_semana(p_fecha, p_operadora_id)` — mismo
+  shape que `prod_listar_registros` pero filtra por el rango de la semana
+  (miércoles a martes) que contiene `p_fecha`, no por `fecha = p_fecha`.
+  `prod_listar_registros` (por día) se queda intacta — no se tocó ni se
+  eliminó, por si algo más la llega a necesitar.
+- Frontend (`produccionService.js`: `listarRegistrosSemana`;
+  `ProduccionCapturaPage.jsx`): la tabla de "Capturado" ahora siempre trae
+  todos los registros de la semana de la operadora elegida, sin importar qué
+  día tenga puesto el selector de fecha. Se agregó una columna **Fecha**
+  (antes no hacía falta, al ser un solo día) y el título cambió de "Capturado
+  hoy/el [fecha]" a "Capturado esta semana (del X al Y)". El selector de
+  fecha y el formulario de captura de folio/piezas no cambiaron — siguen
+  sirviendo para registrar en un día específico; solo la lista de abajo dejó
+  de depender de esa fecha para *mostrarse*. Editar/Borrar por fila: misma
+  lógica de permisos de siempre (sin cambios).
+
+`npm run build` limpio. Verificado en modo invitado que `/produccion/captura`
+sigue cargando sin errores de consola nuevos (solo los ya esperados de
+Supabase sin sesión en este entorno). Pendiente que el usuario lo confirme
+con la cuenta real de Juanis: capturar en un día, cambiar el selector a otro
+día de la misma semana, y confirmar que el primer folio sigue apareciendo
+(con su fecha correcta) y se puede editar sin volver a cambiar la fecha.

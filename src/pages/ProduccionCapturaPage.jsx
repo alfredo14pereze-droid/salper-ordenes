@@ -10,7 +10,7 @@ import {
   capturarRegistro,
   editarRegistro,
   borrarRegistro,
-  listarRegistros,
+  listarRegistrosSemana,
   resumenCaptura,
 } from '../services/produccionService'
 
@@ -128,7 +128,7 @@ function Captura() {
 
   const refrescar = useCallback(async () => {
     const [r, s, sm] = await Promise.all([
-      operadora ? listarRegistros(fecha, operadora.id) : Promise.resolve({ data: [] }),
+      operadora ? listarRegistrosSemana(fecha, operadora.id) : Promise.resolve({ data: [] }),
       resumenCaptura(fecha),
       fetchSemanaPorInicio(sem.ini),
     ])
@@ -409,7 +409,8 @@ function Captura() {
       {operadora && (
         <div className="captura__lista">
           <h3>
-            Capturado {etiquetaDia} — {operadora.nombre} ({registros.reduce((s, r) => s + r.piezas, 0)} piezas)
+            Capturado esta semana (del {fmt(sem.ini)} al {fmt(sem.fin)}) — {operadora.nombre} (
+            {registros.reduce((s, r) => s + r.piezas, 0)} piezas)
           </h3>
           {registros.length === 0 ? (
             <p className="template-hint">Nada capturado todavía.</p>
@@ -417,6 +418,7 @@ function Captura() {
             <table className="simple-table">
               <thead>
                 <tr>
+                  <th>Fecha</th>
                   <th>Folio</th>
                   <th>Operación</th>
                   <th>Piezas</th>
@@ -427,6 +429,7 @@ function Captura() {
                 {registros.map((r) =>
                   edit?.id === r.id ? (
                     <tr key={r.id}>
+                      <td>{fmt(r.fecha)}</td>
                       <td>
                         <input className="input input--small" value={edit.folio} onChange={(e) => setEdit({ ...edit, folio: e.target.value.replace(/\D/g, '') })} />
                       </td>
@@ -445,6 +448,7 @@ function Captura() {
                     </tr>
                   ) : (
                     <tr key={r.id}>
+                      <td>{fmt(r.fecha)}</td>
                       <td>{r.folio}</td>
                       <td>
                         {r.prenda} · {r.parte} · {r.operacion}
