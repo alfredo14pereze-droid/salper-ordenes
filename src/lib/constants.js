@@ -78,7 +78,11 @@ export const STATUS_GROUPS = [
 // coincide 1:1 con el rol de fábrica dueño (rol 'corte' -> etapa 'corte',
 // etc.), así que no hace falta un mapeo aparte para permisos — ver
 // canChangeEtapa en utils/permissions.js.
+// V120 — 'impresion' (solo órdenes de sublimación, va antes de sublimado)
+// es la excepción al 1:1: la reporta el rol 'sublimado', y la etapa
+// 'sublimado' la reporta el rol 'corte'.
 export const ETAPA_LABELS = {
+  impresion: 'Impresión',
   corte: 'Corte',
   sublimado: 'Sublimado',
   produccion: 'Costura',

@@ -4,7 +4,7 @@ import RequireInventarioAccess from '../components/common/RequireInventarioAcces
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
 import { canMoverInventario } from '../utils/permissions'
-import { useInventarioCatalogos } from '../hooks/useInventario'
+import { useInventarioCatalogos, useInventarioEstructura, useInventarioCatalogo } from '../hooks/useInventario'
 import { fetchTraspasos, fetchTraspasoDetalle } from '../services/inventarioService'
 import TraspasoFormModal from '../components/inventario/TraspasoFormModal'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
@@ -50,7 +50,14 @@ export default function InventarioTraspasosPage() {
 function InventarioTraspasosContent() {
   const { role } = useAuth()
   const canMover = canMoverInventario(role)
-  const { ubicaciones, secciones, loading: loadingCatalogos } = useInventarioCatalogos()
+  const { ubicaciones, secciones, tallas, loading: loadingCatalogos } = useInventarioCatalogos()
+  const { tipos, loading: loadingEstructura } = useInventarioEstructura()
+  // V121 — catálogo completo para el buscador flexible del alta de traspaso.
+  const {
+    articulos,
+    loading: loadingArticulos,
+    refresh: refreshArticulos,
+  } = useInventarioCatalogo({ secciones, tallas, ubicaciones, tipos, listo: !loadingCatalogos && !loadingEstructura })
   const { traspasos, loading, error, refresh } = useTraspasos()
   const [q, setQ] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -71,6 +78,7 @@ function InventarioTraspasosContent() {
   async function handleCreated(traspaso, lineas) {
     setShowForm(false)
     refresh()
+    refreshArticulos()
     const blob = await buildTraspasoBlob({
       traspaso,
       origenNombre: ubicacionNombre(traspaso.origen_id),
@@ -145,7 +153,13 @@ function InventarioTraspasosContent() {
       )}
 
       {showForm && !loadingCatalogos && (
-        <TraspasoFormModal ubicaciones={ubicaciones.filter((u) => u.activa)} secciones={secciones} onClose={() => setShowForm(false)} onDone={handleCreated} />
+        <TraspasoFormModal
+          ubicaciones={ubicaciones.filter((u) => u.activa)}
+          articulos={articulos}
+          loadingArticulos={loadingArticulos}
+          onClose={() => setShowForm(false)}
+          onDone={handleCreated}
+        />
       )}
       {pdfBlob && <PdfPreviewModal blob={pdfBlob} fileName={pdfName} onClose={() => setPdfBlob(null)} />}
     </div>

@@ -18,6 +18,7 @@ import EstimatedDaysCard from '../components/orders/EstimatedDaysCard'
 import CancelOrderCard from '../components/orders/CancelOrderCard'
 import OrderEtapasCard from '../components/orders/OrderEtapasCard'
 import OrderBordadosCard from '../components/orders/OrderBordadosCard'
+import OrderDisenosCard from '../components/orders/OrderDisenosCard'
 import OrderSurtidoCard from '../components/orders/OrderSurtidoCard'
 import ComingSoonCard from '../components/orders/ComingSoonCard'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
@@ -260,6 +261,12 @@ function OrderDetailContent() {
             <OrderBordadosCard order={order} onUpdated={refresh} />
           </section>
         )}
+
+        {/* V120 — diseños (propuestas y final). Los sube sublimado desde su
+            vista de estación; aquí los ve cualquier sesión y los pueden
+            subir admin_fabrica/admin_general. La tarjeta no se pinta si no
+            hay diseños ni permiso para subirlos. */}
+        {user && <OrderDisenosCard order={order} className="card" />}
 
         {/* V48 — "Cantidad surtida" es demasiado ruido visual para quien
             solo consulta la orden (comparación pedido/surtido por cada

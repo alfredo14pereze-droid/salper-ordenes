@@ -3108,6 +3108,369 @@ h4 {
   }
 }
 
+/* ---------- V121 — Inventario: catálogo estructurado ---------- */
+.inv-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+.inv-buscador {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.inv-toolbar .inv-buscador {
+  flex: 1;
+  min-width: 240px;
+  max-width: 440px;
+}
+.inv-toolbar .inv-buscador .input {
+  max-width: none;
+}
+.inv-buscador .inv-search-results {
+  margin: 0;
+}
+/* En la pantalla principal la lista flota sobre el contenido; dentro de
+   un modal (traspaso) va en el flujo normal. */
+.inv-toolbar .inv-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin-top: 4px;
+  max-height: 320px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+}
+.inv-search-results li button {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  font-family: inherit;
+  color: var(--color-text);
+}
+.inv-search-results__hay {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+.inv-search-results li button.inv-search-results__cero,
+.inv-search-results li button.inv-search-results__cero .inv-search-results__hay {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+.inv-search-results__empty {
+  padding: 10px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+}
+.inv-search-results--alto {
+  max-height: 320px;
+}
+/* Tallas en 0: en gris, nunca escondidas. */
+.inv-chip--cero .inv-chip__valor,
+.inv-chip--cero .inv-chip__talla {
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+.inv-chip--cero .inv-chip__valor {
+  font-weight: 600;
+}
+.inv-chip--hit {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 1px;
+}
+.inv-prenda-card__tag {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  vertical-align: middle;
+}
+.inv-modelo-acciones {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.inv-expandir {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+.inv-banner {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+.inv-clasif-filtro {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-bottom: 8px;
+}
+.inv-clasif-filtro__btn {
+  border: none;
+  background: none;
+  padding: 4px 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid transparent;
+}
+.inv-clasif-filtro__btn--on {
+  color: var(--color-text);
+  border-bottom-color: var(--color-amber);
+}
+/* Cuadrícula de entrada: talla | hay | cantidad. */
+.inv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+.inv-grid__celda {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+.inv-grid__talla {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+.inv-grid__hay {
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.inv-grid__celda--cero .inv-grid__hay {
+  opacity: 0.6;
+}
+.inv-grid__celda .input {
+  width: 100%;
+  text-align: center;
+  margin-top: 4px;
+}
+/* Asistente "Nuevo modelo". */
+.inv-pasos {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border);
+}
+.inv-pasos__n {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+.inv-pasos__nombre {
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.inv-opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.inv-opciones--lista {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.inv-opcion {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.inv-opcion:hover {
+  background: var(--color-bg);
+}
+.inv-opcion--on {
+  border-color: var(--color-amber-strong);
+  background: var(--color-amber);
+  color: var(--color-black);
+}
+.inv-opcion--nuevo {
+  border-style: dashed;
+  color: var(--color-text-muted);
+}
+.inv-opcion__nota {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+.inv-aviso {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-amber-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  font-size: 13.5px;
+  font-weight: 400;
+  color: var(--color-text);
+}
+.inv-aviso p {
+  margin: 0;
+}
+.inv-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.order-form label.inv-check,
+.inv-check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+}
+.inv-check input[type='checkbox'] {
+  flex: 0 0 auto;
+  width: auto;
+}
+.inv-preview {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+.inv-preview li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.inv-preview li:last-child {
+  border-bottom: none;
+}
+.inv-preview__nota {
+  flex: 0 0 auto;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+/* "Artículos sin clasificar". */
+.inv-sc-seccion {
+  margin-bottom: 14px;
+}
+.inv-sc-seccion__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.inv-sc-fila {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--color-border);
+}
+.inv-sc-fila input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+}
+.inv-sc-fila__prenda {
+  font-weight: 700;
+  color: var(--color-text);
+}
+.inv-sc-fila__resultado {
+  grid-column: 2 / -1;
+  margin: 0;
+}
+.inv-sc-barra {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+}
+@media (max-width: 720px) {
+  .inv-toolbar .inv-buscador {
+    max-width: none;
+    flex-basis: 100%;
+  }
+  .inv-sc-fila {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .inv-sc-fila > select,
+  .inv-sc-fila > .input,
+  .inv-sc-fila > .btn,
+  .inv-sc-fila__resultado {
+    grid-column: 2;
+  }
+}
+
 /* ---------- V96 — Vistas de estación para fábrica (Parte 1) ---------- */
 .app-shell--estacion {
   flex-direction: column;
@@ -3265,6 +3628,67 @@ h4 {
   margin: 8px 0 0;
   font-weight: 700;
   font-size: 14px;
+}
+/* V120 — dashboard de sublimado y diseños de la orden. */
+.estacion-seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.estacion-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.estacion-disenos {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+.disenos-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.diseno {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 104px;
+}
+.diseno__archivo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 104px;
+  height: 104px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+.diseno__archivo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.disenos-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.disenos-form__tipos {
+  display: flex;
+  gap: 8px;
+}
+.disenos-form__tipos .btn {
+  flex: 1;
 }
 .surtido-fila {
   border: 1px solid var(--color-border);

@@ -5151,15 +5151,195 @@ movimientos se ve bien (estado vacío), "Esta semana" trajo 469 movimientos
 reales con el resumen (+3229 entradas / −36 salidas) y la tabla completa
 correctas.
 
+### V120 — Perfil de sublimación (Samuel): etapa Impresión + diseños
+
+`supabase/schema_v120_sublimado_impresion_disenos.sql` (aplicado
+2026-10-01 por el usuario desde el SQL Editor; verificado después con una
+consulta: 13 órdenes de sublimación recibieron `impresion` en
+`completado`, la plantilla tiene `impresion` en secuencia 0, existe
+`orden_disenos`, una sola versión de cada función y `anon` sin EXECUTE
+sobre `add_orden_diseno`). Decisiones confirmadas con el usuario: etapa
+nueva (no reusar `sublimado`), diseños sin aprobación de ventas por ahora.
+
+- **Etapa nueva `impresion`** (solo plantilla `sublimacion`, secuencia 0,
+  antes de `sublimado`). Rompe el 1:1 rol↔etapa en dos casos: `impresion`
+  la reporta el rol `sublimado` (Samuel) y `sublimado` pasa al rol `corte`
+  (Pancho). `update_orden_etapa` y `canChangeEtapa` son el espejo.
+  `orders.status` **no** ganó valores nuevos: `recompute_order_status` no
+  se tocó, así que una orden que solo lleva la impresión arrancada sigue
+  en "Confirmado"; el avance real está en `orden_etapas`.
+- **Órdenes existentes**: reciben su fila de `impresion` — `completado`
+  si la orden ya se entregó o si otra etapa ya arrancó, `pendiente` si no.
+- **Diseños**: tabla `orden_disenos` (`tipo` = `propuesta` | `final`) +
+  `add_orden_diseno` / `delete_orden_diseno` (sublimado, admin_fabrica,
+  admin_general). `propuesta` solo en órdenes de sublimación; `final` en
+  cualquiera. Archivos en el bucket `order-photos`, carpeta `disenos/`.
+  Sin flujo de aprobación todavía.
+- **Frontend**: `vistasPorRol.js` (`sublimado` → etapa `impresion`,
+  `dashboardSublimado`, `disenos`; `corte` gana `etapasExtra:
+  ['sublimado']`). `SublimadoHomePage.jsx` (nuevo): bandejas "Pendientes
+  de impresión" / "Diseño pendiente" / "Todas" + buscador de folio sobre
+  todas las órdenes. `EstacionHomePage.jsx`: una lista por etapa cuando la
+  estación reporta más de una (corte ve "Pendientes de sublimado" y
+  "Pendientes de corte"). `EstacionOrderPage.jsx`: un bloque de botones
+  por cada etapa mía que la orden tenga; botón final "Impresa" para
+  sublimado. `OrderDisenosCard.jsx` (nuevo) se usa en la vista de estación
+  y en el detalle de orden de los demás roles (solo lectura salvo admin).
+
+`npm run build` limpio. Verificado en local con "Ver como" (solo
+lectura): las pantallas de sublimado y corte cargan. Al aplicar la
+migración no había ninguna orden de sublimación activa (las 13 estaban
+entregadas), así que el dashboard de Samuel arranca vacío, y tampoco
+había usuarios con rol `sublimado` ni `corte`. Falta probar con una
+cuenta real de rol `sublimado`: subir un diseño y marcar "Impresa".
+
 ---
 
-## V117 — Rediseño visual (branch `rediseno-visual`, Parte 0 completa, sin fusionar)
+### V121 — Inventario: catálogo estructurado, tallas completas y búsqueda flexible (fusionado a `main` y SQL aplicado el 2026-10-01)
+
+**Estado:** desarrollado en la rama `inventario-catalogo` (salió de `main`,
+no de `fase-2`: `fase-2` se quedó en el 2 de septiembre, 133 commits atrás y
+sin el módulo de Inventario — confirmado con el usuario) y **fusionado a
+`main` el 2026-10-01 a pedido explícito del usuario** ("ya haz el merge, ya
+que quede en la página oficial"). `supabase/schema_v121_inventario_catalogo.sql` **se aplicó en Supabase el
+2026-10-01** desde el SQL Editor (cargado en una consulta nueva y verificado
+por hash contra el archivo de `main` antes de ejecutar; resultado "Success.
+No rows returned"). Verificación posterior con SELECT: 3 clasificaciones,
+17 tipos de prenda, 2 juegos (13 tallas), las 14 funciones nuevas sin
+overloads duplicados, RLS activo en las 6 tablas nuevas, y los 465
+artículos / 472 movimientos / 3,188 piezas intactos (0 modelos todavía:
+todos los artículos arrancan "sin clasificar").
+
+**Problema que resuelve:** artículos dados de alta con cualquier nombre
+(duplicados, nombres inconsistentes), tallas que había que crear sueltas, y
+un buscador de traspasos que solo comparaba texto corrido contra `prenda`
+("polo tricio 12" no encontraba nada).
+
+**Esquema (100% aditivo — no se borra/renombra nada ni cambia la firma de
+ninguna función existente):**
+
+- **"Cliente o línea" = `inv_secciones`.** Ya era exactamente eso (colegios
+  y líneas mezclados) y todas las pantallas/reportes agrupan por sección, así
+  que NO se creó un catálogo paralelo: solo gana `clasificacion_id` y
+  `cliente_id` (liga opcional y única al catálogo `clientes` de Órdenes).
+- `inv_clasificaciones` (Colegio / Empresa / Marca / Línea, ampliable),
+  `inv_tipos_prenda` (17 de semilla: los del pedido + los que ya existen en
+  el inventario real), `inv_juegos_tallas` + `inv_juego_tallas_det`
+  (semilla: "Escolar infantil" 2-16 y "Adulto" CH/M/L/XL/2XL — decisión del
+  usuario: se usan L/XL/2XL, las tallas que ya existían, NO G/XG/XXG).
+- **`inv_modelos`** = la prenda sin talla (sección + tipo de prenda +
+  variante). Único por esa combinación sin importar acentos/mayúsculas/
+  espacios (`inv_norm()`), que es el candado real contra duplicados. La
+  variante es **texto libre** (decisión del usuario), con sugerencias de las
+  ya usadas.
+- `inv_articulos.modelo_id` (nullable): **NULL = "sin clasificar"**, el
+  artículo funciona como siempre. Único parcial `(modelo_id, talla_id)`.
+- `inv_alias` (de un modelo o de un artículo; origen microsip/proveedor/
+  interno) — no existía ninguna tabla de alias antes.
+- **El nombre generado NO se guarda.** Un artículo creado desde un modelo
+  guarda en `prenda` el texto "Tipo + Variante" (ej. "Playera polo Blanca")
+  para que las pantallas ya en producción lo agrupen igual que a los viejos;
+  el nombre completo `[Tipo] [Cliente o línea] [Variante] T.[Talla]` se arma
+  al mostrarlo (`src/utils/inventarioCatalogo.js`). Las tallas de letra
+  siguen sin prefijo "T." (regla de V92).
+
+**RPCs nuevos:** `inv_guardar_clasificacion`, `inv_guardar_tipo_prenda`,
+`inv_guardar_talla` (talla nueva al catálogo general, ej. "18" con orden
+180), `inv_guardar_juego_tallas`, `inv_clasificar_seccion`,
+`inv_crear_modelo` (modelo + todas sus tallas en 0, una transacción; si ya
+existe regresa `ya_existia` sin cambiar nada; un artículo suelto con el
+mismo texto de prenda no se duplica, se vincula), `inv_modelo_agregar_talla`,
+`inv_entrada_modelo` (entrada por cuadrícula, todo o nada, solo las tallas
+capturadas), `inv_guardar_alias` / `inv_quitar_alias`,
+`inv_vincular_articulos` (clasifica artículos viejos: solo llena
+`modelo_id`, no renombra ni toca existencia), `inv_desvincular_articulos`
+(deshacer; borra el modelo si queda vacío) e `inv_catalogo()`.
+Permisos con los helpers de V95 sin tocarlos: crear modelos / catálogos /
+alias / clasificar = `inv_puede_editar()` (admin_tienda, admin_general —
+confirmado con el usuario); entrada por cuadrícula = `inv_puede_mover()`
+(incluye `tienda`).
+
+**GOTCHA encontrado — tope de 1000 filas de PostgREST:** `inv_existencias(null)`
+regresa una fila por artículo × ubicación: hoy 465 × 2 = **930**, a 35
+artículos de que Supabase (max rows = 1000 por default) empiece a cortar el
+resultado en silencio. El alta de traspaso que está en producción usa
+justo esa llamada. Por eso `inv_catalogo()` regresa **un solo JSON**
+(artículos + existencias ≠ 0 + modelos + alias), que no tiene ese tope. En
+esta rama ya nadie llama `inv_existencias(null)` salvo como respaldo.
+
+**Búsqueda flexible — en el navegador** (`src/utils/inventarioBusqueda.js`,
+componente `ArticuloBuscador.jsx`): con cientos/miles de artículos es
+instantánea (< 2 ms con los 465 reales) y da resultados en cada tecla sin
+ir al servidor; una función en Supabase solo valdría la pena arriba de
+~20 mil artículos. Reglas: tokens en cualquier orden, cada uno debe ser
+inicio de una palabra del nombre o de un alias; sin acentos/mayúsculas/
+puntuación; "T.12"/"t12" = talla 12; un token numérico se compara EXACTO
+contra la talla o contra un número completo del nombre (`12` nunca trae
+120; `2032` encuentra "Gen 2032"); primero lo que tiene existencia, luego
+mejor coincidencia. Se usa en traspasos (existencia en el origen), en la
+pantalla principal (busca en TODAS las secciones y lleva al grupo) y, para
+modelos, en "Dar entrada".
+
+**Frontend:**
+- `InventarioPage.jsx`: carga todo el catálogo una vez
+  (`useInventarioCatalogo`) y la pestaña filtra en memoria. Agrupa por
+  modelo (todas sus tallas, las que están en 0 en gris — `inv-chip--cero`)
+  y, lo no clasificado, por texto de prenda como antes. "Ver todo con
+  tallas" abre todos los grupos del cliente; filtro por clasificación sobre
+  las pestañas. Un modelo creado con el asistente muestra exactamente sus
+  tallas; uno formado al clasificar artículos viejos (sin juego) conserva
+  el relleno de huecos de V92, y una talla "hueco" que recibe su primer
+  movimiento nace ya dentro del modelo (`MovimientoModal` →
+  `inv_modelo_agregar_talla`).
+- `NuevoModeloModal.jsx`: asistente de 6 pasos (clasificación → cliente o
+  línea con buscador y "+ nuevo" en línea, sugiriendo clientes de Órdenes
+  para no duplicar → tipo de prenda → variante → juego de tallas con
+  casillas → vista previa). Avisa "Ya existe este modelo, ¿quieres usarlo?".
+- `EntradaModeloModal.jsx`: elegir modelo → cuadrícula talla | hay |
+  cantidad → Guardar; las vacías no se mandan.
+- `ModeloOpcionesModal.jsx`: talla extra, alias, deshacer clasificación.
+- `InventarioSinClasificarPage.jsx` (`/inventario/sin-clasificar`, solo
+  quien edita): por cada (sección, prenda) propone tipo + variante leyendo
+  el nombre (`sugerirClasificacion`: "Playera Polo Gen 2032" → Playera polo
+  / "Gen 2032"); se corrige y se aplica uno por uno o en grupo. Nada se
+  aplica sin confirmar.
+- `InventarioAdminPage.jsx`: pestañas nuevas Clasificaciones, Tipos de
+  prenda, Tallas y juegos; cada sección muestra su clasificación.
+
+**Compatibilidad:** si la base aún no tiene V121, `fetchCatalogo()` detecta
+que `inv_catalogo` no existe y cae a `inv_existencias(null)`: todo se ve
+"sin clasificar" como hoy y los botones nuevos no aparecen. Al revés, el
+frontend que hoy está en producción sigue funcionando con V121 aplicado
+(columnas nuevas nullable, funciones viejas intactas).
+
+**Verificado** (sin tocar Supabase): (1) las migraciones V89, V90, V95, V119
+y V121 corridas completas en un Postgres en memoria (PGlite), V121 dos veces
+(idempotente), con un escenario de punta a punta y los 3 roles; (2) las
+pantallas reales contra esa misma base en memoria, sembrada con los 465
+artículos reales: crear modelo → 8 tallas en 0; repetirlo → aviso; entrada
+solo a T.10 y T.12 → las demás no se mueven; `po tri 12`, `tri polo 12`,
+`pólo TRI` en traspaso → la prenda correcta; `12` no trae otras tallas;
+traspaso mezclando artículo viejo + nuevo (folio y PDF); clasificar los
+465 de un jalón sin conflictos y sin cambiar piezas ni nombres; roles
+`tienda`/`ventas`; base sin V121. `npm run build` limpio. **Falta:** probar
+en producción con sesión real (crear un modelo, darle entrada, un traspaso).
+
+**Pendiente / no incluido:** editar un modelo ya creado (cambiar tipo o
+variante — hoy se deshace la clasificación y se vuelve a crear); alias por
+artículo individual en la UI (el esquema ya lo soporta, la pantalla solo
+administra alias por modelo); los PDFs de traspaso/conteo siguen mostrando
+`prenda` + talla como antes.
+
+## V117 — Rediseño visual (branch `rediseno-visual`, fusionado a `main`)
 
 Branch creado desde `main` (no desde `fase-2`: ese branch quedó obsoleto
 hace 127 commits — confirmado con el usuario antes de empezar). Todo el
-trabajo de esta sección vive solo en `rediseno-visual`; `main`/producción
-no se tocó para nada de esto. **No se hizo merge** — el usuario revisa el
-Preview Deployment de Vercel y decide.
+trabajo de esta sección se hizo en `rediseno-visual` y se fue revisando en
+el Preview Deployment de Vercel en cada paso (Parte 0 con tokens/`/design`,
+luego Dashboard, detalle de orden, formularios, resto de módulos,
+Calendario/estaciones, y el ajuste de color de "Confirmada") — el usuario
+dio su visto bueno explícito a cada entrega antes de la siguiente, y al
+final autorizó fusionar todo a `main`.
 
 **Reglas seguidas** (del documento de rediseño que pasó el usuario): solo
 cambios visuales (nada de lógica ni de base de datos), tokens/componentes
@@ -5301,6 +5481,10 @@ verde" (mezcla de gris/azul/otros según la etapa real de cada orden) y
 el Dashboard muestra el badge "Confirmada" en gris, distinto de
 "Completado" (que sigue en verde).
 
-Pendiente: el usuario revisa el Preview Deployment actualizado y da el
-visto bueno explícito antes de fusionar cualquier cosa a `main` — sigue
-sin mergearse nada.
+El usuario confirmó el último ajuste ("ahí está perfecto") y autorizó
+fusionar todo a `main` — se mezcló `main` (que para entonces ya traía V120
+y V121, ver arriba) hacia `rediseno-visual` primero para resolver cualquier
+diferencia con cuidado (único conflicto real: este mismo archivo, por
+escribirse en paralelo en los dos branches — se resolvió a mano,
+conservando el contenido de ambos lados); el resto de los archivos se
+fusionó limpio sin intervención. Resultado ya en `main`/producción.

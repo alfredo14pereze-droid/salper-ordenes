@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Modal from '../talleros/Modal'
-import { registrarMovimiento, guardarArticulo } from '../../services/inventarioService'
+import { registrarMovimiento, guardarArticulo, agregarTallaModelo } from '../../services/inventarioService'
 import { formatTalla } from '../../utils/inventarioTallas'
 
 // Modal rápido de +/- (V89, punto de la pantalla principal): cantidad
@@ -34,14 +34,18 @@ export default function MovimientoModal({ articulo, tipo, ubicaciones, motivos, 
 
     let articuloId = articulo.articuloId
     if (!articuloId) {
-      const { data: nuevo, error: createErr } = await guardarArticulo({
-        id: null,
-        seccionId: articulo.seccionId,
-        prenda: articulo.prenda,
-        tallaId: articulo.tallaId,
-        minimo: null,
-        activo: true,
-      })
+      // V121 — si la talla virtual es de un modelo, se le agrega al modelo
+      // (queda clasificada desde que nace) en vez de crearla suelta.
+      const { data: nuevo, error: createErr } = articulo.modeloId
+        ? await agregarTallaModelo({ modeloId: articulo.modeloId, tallaId: articulo.tallaId })
+        : await guardarArticulo({
+            id: null,
+            seccionId: articulo.seccionId,
+            prenda: articulo.prenda,
+            tallaId: articulo.tallaId,
+            minimo: null,
+            activo: true,
+          })
       if (createErr) {
         setSaving(false)
         return setError(createErr)
