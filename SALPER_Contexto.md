@@ -5709,3 +5709,20 @@ guardar (otro Enter lo manda). Detalles:
 Probado en local con teclado real en "Nueva orden": cliente → fechas → folio (Enter agrega
 ORD3149/ORD3150, vacío sigue) → prenda → color → … → tallas → nombres y números → "Crear orden".
 No se probó formulario por formulario (es un mecanismo común), solo Nueva orden.
+
+### V128 — Indicador de nota interna en las tarjetas de orden
+
+Frontend únicamente, sin SQL. El admin de fábrica agrega notas internas (`orders.notas_internas`)
+y no había forma de saber cuáles órdenes las tenían sin abrirlas una por una. Ahora
+`OrderCard.jsx`, en cualquier orden activa con nota y con sesión iniciada:
+- tarjeta completa en **morado** (`.order-card--con-nota`, tokens `--color-nota`/`--color-nota-soft`,
+  y su regla en `dashboard-redesign.css`) — mismo estilo que el azul de "se modificó después de
+  confirmarse", pero con otro color para no confundirse;
+- línea "✎ Nota: <texto>" (una línea, recortada con …); en el celular, chip "✎ Nota" junto al folio.
+- Si la orden además se modificó después de confirmarse, gana el azul (señal más urgente) y la
+  línea de nota se sigue mostrando. Canceladas/completadas no se pintan (la línea de nota sí).
+- Invitados sin sesión no ven notas (igual que en el detalle).
+Hoy hay 30 órdenes con nota (21 sin completar). Se probó en local (escritorio y celular).
+Se descartó (a pedido del usuario) la versión con "notas nuevas / vistas" y SQL de fecha y
+autor por nota: no hace falta para este uso. Las pantallas de estación de fábrica
+(`EstacionHomePage`) no usan `OrderCard` y no muestran este indicador todavía.

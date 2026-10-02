@@ -32,6 +32,8 @@
      rojo/verde de urgencia ni al ámbar/naranja de etapa. */
   --color-info: #1d5f99;
   --color-info-soft: #e2eef7;
+  --color-nota: #6b3fa0;
+  --color-nota-soft: #efe8f7;
 
   /* V93 — paleta viva SOLO para series de gráficas en Estadísticas /
      Estadísticas de producción (.stage-bar-row__fill, .month-bar__fill,
@@ -3801,3 +3803,24 @@ h4 {
 .roster__titulo { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--color-text-muted); margin-bottom: 6px; }
 .roster__ayuda { margin: 8px 0 0; font-size: 0.75rem; color: var(--color-text-muted); }
 .input--invalid { border-color: #c0392b; }
+
+/* V128 — orden con nota interna (morado, distinto del azul de "modificada") */
+.order-card--con-nota {
+  border-color: var(--color-nota);
+  background: var(--color-nota-soft);
+}
+.order-card__nota-notice {
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-nota);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.order-card__nota-chip {
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-nota);
+}

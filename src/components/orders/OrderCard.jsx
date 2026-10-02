@@ -10,6 +10,12 @@ import { canConfirmOrderChanges } from '../../utils/permissions'
 export default function OrderCard({ order, orderType }) {
   const navigate = useNavigate()
   const { role } = useAuth()
+  const { user } = useAuth()
+  // V128 — indicador de nota interna: mismo estilo que el azul de "modificada
+  // después de confirmarse", pero en morado, para saber de un vistazo cuáles
+  // órdenes tienen una nota que revisar (antes había que abrirlas una por una).
+  // Las notas solo se muestran con sesión (nunca a invitados).
+  const nota = user ? order.notas_internas?.trim() : ''
   const days = daysUntil(order.requested_delivery_date)
   const completed = isCompleted(order.status)
   const prendas = resumenPrendas(order)
@@ -59,6 +65,9 @@ export default function OrderCard({ order, orderType }) {
   // cuadro.
   if (needsReconfirm) {
     cardClass = 'order-card order-card--needs-reconfirm'
+  } else if (nota && !order.cancelled_at && !completed) {
+    // La señal azul de "modificada" es más urgente y gana si coinciden.
+    cardClass = 'order-card order-card--con-nota'
   }
 
   return (
@@ -75,6 +84,7 @@ export default function OrderCard({ order, orderType }) {
         <h3 className="order-card__client">{order.client_name}</h3>
         {prendas && <p className="order-card__prendas">{prendas}</p>}
         {needsReconfirm && <p className="order-card__reconfirm-notice">✎ Se modificó después de confirmarse</p>}
+        {nota && <p className="order-card__nota-notice">✎ Nota: {nota}</p>}
         <div className="order-card__meta">
           <TypeBadge type={orderType} />
           <span className={dueClass}>{dueLabel}</span>
@@ -91,7 +101,10 @@ export default function OrderCard({ order, orderType }) {
           estado a la derecha — mismos datos que arriba, nada nuevo. */}
       <div className="order-card__compact">
         <div className="order-card__compact-text">
-          <span className="order-card__number">#{order.order_number}</span>
+          <span className="order-card__number">
+            #{order.order_number}
+            {nota && <span className="order-card__nota-chip">✎ Nota</span>}
+          </span>
           <span className="order-card__compact-sub">
             {order.client_name} · {dueLabel}
           </span>

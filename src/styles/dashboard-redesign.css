@@ -164,6 +164,10 @@
   border: none;
   background: #e2eef7;
 }
+.design-root .order-card--con-nota {
+  border: none;
+  background: #efe8f7;
+}
 .design-root .order-card__number {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-weight: 700;
