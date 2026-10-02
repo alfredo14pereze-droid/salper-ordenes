@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchConfig, guardarConfig } from '../../services/produccionService'
+import { fetchConfig, guardarConfig, setCapturaSemanasAnteriores } from '../../services/produccionService'
 import { useAuth } from '../../contexts/AuthContext'
 import { esFabricaSoloLectura } from '../../utils/permissions'
 
@@ -10,12 +10,16 @@ export default function ConfigAdmin() {
   const [segundos, setSegundos] = useState('')
   const [msg, setMsg] = useState(null)
   const [error, setError] = useState(null)
+  const [juanisSemanas, setJuanisSemanas] = useState(false)
+  const [juanisMsg, setJuanisMsg] = useState(null)
+  const [juanisError, setJuanisError] = useState(null)
 
   useEffect(() => {
     fetchConfig().then(({ data }) => {
       const m = Object.fromEntries((data || []).map((x) => [x.clave, x.valor]))
       setPrecio(String(m.precio_por_segundo ?? ''))
       setSegundos(String(m.segundos_jornada ?? ''))
+      setJuanisSemanas(Number(m.captura_semanas_anteriores ?? 0) === 1)
     })
   }, [])
 
@@ -28,7 +32,17 @@ export default function ConfigAdmin() {
     setMsg('Guardado. Solo aplica a lo que se capture de ahora en adelante.')
   }
 
+  async function cambiarJuanis(activo) {
+    setJuanisMsg(null)
+    setJuanisError(null)
+    const { error: err } = await setCapturaSemanasAnteriores(activo)
+    if (err) return setJuanisError(err.message)
+    setJuanisSemanas(activo)
+    setJuanisMsg(activo ? 'Juanis ya puede capturar y editar en semanas cerradas.' : 'Listo: Juanis volvió a solo la semana abierta.')
+  }
+
   return (
+    <>
     <form className="order-form card" onSubmit={guardar} style={{ maxWidth: 480 }}>
       <label>
         Precio por segundo ($)
@@ -49,5 +63,20 @@ export default function ConfigAdmin() {
         </div>
       )}
     </form>
+
+    <div className="order-form card" style={{ maxWidth: 480, marginTop: 16 }}>
+      <label className="fin-check">
+        <input type="checkbox" checked={juanisSemanas} disabled={soloLectura} onChange={(e) => cambiarJuanis(e.target.checked)} />
+        Juanis puede capturar y editar en semanas cerradas
+      </label>
+      <p className="template-hint">
+        Temporal: sirve para corregir una semana que ya cerró. Mientras esté activado, Juanis puede moverse a semanas
+        anteriores en Captura de producción y agregar, editar o borrar ahí. Una semana ya aprobada sigue bloqueada para
+        todos. Apágalo cuando terminen de corregir.
+      </p>
+      {juanisError && <p className="form-error">{juanisError}</p>}
+      {juanisMsg && <p className="captura__flash">{juanisMsg}</p>}
+    </div>
+    </>
   )
 }

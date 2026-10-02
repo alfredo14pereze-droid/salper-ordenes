@@ -2562,6 +2562,19 @@ h4 {
   color: var(--color-text-muted);
   cursor: default;
 }
+/* V123 — selector de semana (anterior / actual / siguiente) */
+.captura__semana-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.captura__semana-nav .captura__semana {
+  margin: 12px 0;
+  flex: 1;
+  text-align: center;
+}
 .captura__semana {
   margin: 12px 0;
   color: var(--color-text-muted);

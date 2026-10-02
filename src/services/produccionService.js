@@ -71,6 +71,23 @@ export async function listarRegistrosSemana(fecha, operadoraId) {
   return supabase.rpc('prod_listar_registros_semana', { p_fecha: fecha, p_operadora_id: operadoraId })
 }
 
+// V123 — ¿se puede editar/borrar/capturar en una semana con este estado? Es la
+// MISMA función que usa el servidor (prod_puede_editar_semana), así la pantalla
+// no adivina: respeta aprobada, el interruptor de Juanis y el rol real.
+export async function puedeEditarSemana(estado, fin) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_puede_editar_semana', { p_estado: estado, p_fin: fin })
+}
+
+// V123 — prender/apagar que captura_produccion (Juanis) pueda capturar y
+// editar en semanas cerradas (solo admin_general / admin_fabrica).
+export async function setCapturaSemanasAnteriores(activo) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('prod_set_captura_semanas_anteriores', { p_activo: !!activo })
+}
+
 export async function resumenCaptura(fecha) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }

@@ -12,6 +12,7 @@ import {
   borrarRegistro,
   listarRegistrosSemana,
   resumenCaptura,
+  puedeEditarSemana,
 } from '../services/produccionService'
 
 // V68 — Captura rápida de producción (Juanis). Prioridad: más rápida que el
@@ -124,7 +125,22 @@ function Captura() {
     d.setDate(d.getDate() - 1)
     return toStr(d)
   }, [semHoy.ini])
-  const fecha = enGracia ? semAnteriorFin : hoy
+  const fechaBase = enGracia ? semAnteriorFin : hoy
+
+  // V123 — selector de semana: 0 = la semana que se está capturando
+  // (como siempre), -1 = la anterior, etc. Pedido del usuario: poder volver
+  // a una semana ya cerrada y corregirla. Las fechas siguen sin pedírsele
+  // a nadie: al capturar en una semana anterior se usa su último día.
+  const [offsetSemana, setOffsetSemana] = useState(0)
+  const MAX_SEMANAS_ATRAS = 12
+  const fecha = useMemo(() => {
+    if (offsetSemana === 0) return fechaBase
+    const base = semanaDe(fechaBase)
+    const fin = fromStr(base.fin)
+    fin.setDate(fin.getDate() + offsetSemana * 7)
+    return toStr(fin)
+  }, [fechaBase, offsetSemana])
+  const [puedeEditarServidor, setPuedeEditarServidor] = useState(false)
 
   const sem = useMemo(() => semanaDe(fecha), [fecha])
 
@@ -142,7 +158,18 @@ function Captura() {
   const estadoBase = semana?.estado || 'abierta'
   const vencida = estadoBase === 'abierta' && ahora >= cierraEn
   const estadoSemana = vencida ? 'en_revision' : estadoBase
-  const puedeCapturar = estadoBase === 'aprobada' ? false : esAdmin ? true : estadoBase === 'abierta' && !vencida && !noAbierta
+  // V123 — en una semana cerrada (o anterior), la verdad la dice el servidor
+  // (prod_puede_editar_semana): incluye el interruptor de Juanis y respeta
+  // aprobada. En la semana normal abierta todo sigue igual que antes.
+  const semanaCerradaOAnterior = offsetSemana < 0 || vencida || estadoBase === 'en_revision'
+  const puedeCapturar =
+    estadoBase === 'aprobada'
+      ? false
+      : esAdmin
+        ? true
+        : semanaCerradaOAnterior
+          ? puedeEditarServidor
+          : estadoBase === 'abierta' && !noAbierta
 
   const refrescar = useCallback(async () => {
     const [r, s, sm] = await Promise.all([
@@ -152,8 +179,12 @@ function Captura() {
     ])
     if (!r.error) setRegistros(r.data || [])
     if (!s.error) setResumen(s.data)
-    if (!sm.error) setSemana(sm.data)
-  }, [fecha, operadora, sem.ini])
+    if (!sm.error) {
+      setSemana(sm.data)
+      const { data: ok } = await puedeEditarSemana(sm.data?.estado || 'abierta', sem.fin)
+      setPuedeEditarServidor(!!ok)
+    }
+  }, [fecha, operadora, sem.ini, sem.fin])
 
   useEffect(() => {
     if (!loading) refrescar()
@@ -177,6 +208,16 @@ function Captura() {
     if (operadora) folioRef.current?.focus()
     else opRef.current?.focus()
   }, [operadora, loading])
+
+  function irASemana(nuevoOffset) {
+    setOffsetSemana(nuevoOffset)
+    setEdit(null)
+    setWarn(null)
+    setError(null)
+    setFlash(null)
+    setFolio('')
+    setPiezas('')
+  }
 
   function cambiarOperadora() {
     setOperadora(null)
@@ -341,9 +382,36 @@ function Captura() {
         </div>
       </div>
 
-      <p className="captura__semana">
-        Semana del {fmt(sem.ini)} al {fmt(sem.fin)} · <b>{ESTADO_LABEL[estadoSemana] || estadoSemana}</b>
-      </p>
+      <div className="captura__semana-nav">
+        <button
+          type="button"
+          className="btn btn--ghost btn--small"
+          onClick={() => irASemana(offsetSemana - 1)}
+          disabled={offsetSemana <= -MAX_SEMANAS_ATRAS}
+        >
+          ← Semana anterior
+        </button>
+        <p className="captura__semana">
+          Semana del {fmt(sem.ini)} al {fmt(sem.fin)} · <b>{ESTADO_LABEL[estadoSemana] || estadoSemana}</b>
+        </p>
+        <button type="button" className="btn btn--ghost btn--small" onClick={() => irASemana(offsetSemana + 1)} disabled={offsetSemana >= 0}>
+          Semana siguiente →
+        </button>
+      </div>
+      {offsetSemana < 0 && (
+        <p className="captura__aviso">
+          Estás viendo una semana anterior.{' '}
+          <button type="button" className="btn btn--ghost btn--small" onClick={() => irASemana(0)}>
+            Volver a la semana actual
+          </button>
+        </p>
+      )}
+      {estadoBase === 'aprobada' && (
+        <p className="captura__aviso captura__aviso--cerrada">
+          Esta semana ya está aprobada y no se puede modificar. Para corregirla, el administrador general tiene que reabrirla
+          en Revisión producción.
+        </p>
+      )}
       {/* V108 — aviso de cambio de semana: aparece solo (el reloj en vivo
           de arriba lo actualiza) justo cuando cruza la hora de apertura/
           cierre, sin que nadie tenga que recargar la página. */}
@@ -352,7 +420,9 @@ function Captura() {
           Todavía no se abre la captura de esta semana — abre el {fmtHora(abreEn)}. Sigue subiendo la semana anterior mientras tanto.
         </p>
       )}
-      {!noAbierta && !puedeCapturar && <p className="captura__aviso captura__aviso--cerrada">Ya no se puede capturar en esta semana.</p>}
+      {!noAbierta && !puedeCapturar && estadoBase !== 'aprobada' && (
+        <p className="captura__aviso captura__aviso--cerrada">Ya no se puede capturar en esta semana.</p>
+      )}
 
       {operadora && (
         <div className="captura__entrada">
@@ -469,7 +539,7 @@ function Captura() {
                       </td>
                       <td>{r.piezas}</td>
                       <td>
-                        {(r.semana_estado !== 'aprobada' && (esAdmin || (r.semana_estado === 'abierta' && !vencida))) && (
+                        {(r.semana_estado !== 'aprobada' && (esAdmin || (r.semana_estado === 'abierta' && !vencida) || puedeEditarServidor)) && (
                           <>
                             <button type="button" className="btn btn--ghost btn--small" onClick={() => setEdit({ id: r.id, folio: String(r.folio), piezas: String(r.piezas) })}>
                               Editar
@@ -489,7 +559,7 @@ function Captura() {
         </div>
       )}
 
-      {resumen && (
+      {resumen && offsetSemana === 0 && (
         <div className="captura__resumen">
           <b>
             {resumen.capturadas} de {resumen.total}

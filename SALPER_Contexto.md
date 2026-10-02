@@ -5528,3 +5528,51 @@ valor actual; funcionalmente `costura` y `produccion` hacen lo mismo en las
 vistas de estación (misma etapa `produccion`, mismos pendientes de "Arreglo"),
 pero `costura` es el rol correcto de aquí en adelante. Falta que el usuario
 cambie a Carmen a `costura` desde Usuarios → editar.
+
+### V123 — Producción: moverse entre semanas y corregir semanas cerradas (con interruptor para Juanis)
+
+`supabase/schema_v123_produccion_semanas_anteriores.sql` (aplicado 2026-10-02
+por el usuario desde el SQL Editor; el archivo se cargó desde GitHub raw con
+hash verificado; después se verificó con una consulta: una sola versión de
+cada función, interruptor sembrado en 1, `anon` sin EXECUTE sobre las dos
+funciones nuevas, `authenticated` con EXECUTE sobre `prod_puede_editar_semana`,
+y las dos funciones modificadas usan el interruptor).
+
+Problema: la semana cerró (jueves 11am, V106) con captura mal hecha y ya no se
+podía corregir. Además, desde V118 la pantalla de Captura siempre abre la semana
+actual, así que ni un admin (que sí podía editar en_revision desde V69) tenía
+cómo llegar a la semana anterior.
+
+- **Selector de semana** en `ProduccionCapturaPage.jsx` (← Semana anterior /
+  Semana siguiente →, hasta 12 hacia atrás). `fecha` sigue sin pedirse: en una
+  semana anterior los registros nuevos se fechan con el último día de esa
+  semana. Aviso "Estás viendo una semana anterior" con botón para volver, y aviso
+  claro si la semana está **aprobada** (hay que reabrirla en Revisión producción,
+  solo admin_general). El resumen "X de Y operadoras capturadas" solo se muestra
+  en la semana actual (no tiene sentido por día en una pasada).
+- **Permiso real del servidor, no adivinado**: la pantalla llama
+  `prod_puede_editar_semana(estado, fin)` (misma función que usan
+  editar/borrar) para decidir si muestra Editar/Borrar y el formulario en una
+  semana cerrada — así respeta aprobada, el rol y el interruptor.
+- **Interruptor `prod_config.captura_semanas_anteriores`** (1 = activo): con él
+  prendido, `captura_produccion` (Juanis) puede capturar/editar/borrar en semanas
+  `abierta` o `en_revision` — nunca `aprobada`. Con él en 0 todo queda exactamente
+  como antes. Se sembró en **1** porque el usuario pidió el acceso "ahorita" y
+  quiere quitarlo cuando terminen la corrección. Se apaga desde **Admin producción
+  → Configuración → "Juanis puede capturar y editar en semanas cerradas"** (RPC
+  `prod_set_captura_semanas_anteriores`, solo admin_general / admin_fabrica) — sin
+  tocar SQL.
+- `prod_capturar_registro` se re-creó idéntica a V107 salvo una línea (el candado
+  de semana en_revision acepta también a quien tenga el interruptor);
+  `prod_puede_editar_semana` conserva su regla de V69 para el resto de casos.
+- Observación sin tocar (no pedida): `prod_puede_editar_semana` conserva la
+  cláusula `p_fin >= hoy` de V69 para quien no es admin ni tiene el interruptor,
+  que ya no coincide con el cierre del jueves 11am de V104/V106 — con el
+  interruptor apagado, Juanis no puede editar/borrar en miércoles/jueves-antes-
+  de-las-11 una semana que técnicamente sigue abierta (sí puede capturar nuevo).
+
+`npm run build` limpio. Probado en vivo con la cuenta admin: el selector llega a la
+semana anterior (en revisión) con Editar/Borrar, y el interruptor aparece marcado
+reflejando el valor sembrado (no se cambió en la prueba). No se probó con la cuenta
+real de Juanis (sin credenciales): el comportamiento de ella depende de la
+función de servidor ya verificada, pero conviene que lo confirme entrando ella.
