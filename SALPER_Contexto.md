@@ -5576,3 +5576,27 @@ semana anterior (en revisión) con Editar/Borrar, y el interruptor aparece marca
 reflejando el valor sembrado (no se cambió en la prueba). No se probó con la cuenta
 real de Juanis (sin credenciales): el comportamiento de ella depende de la
 función de servidor ya verificada, pero conviene que lo confirme entrando ella.
+
+### V124 — Usuarios: `admin_update_user_role` y `admin-create-user` aceptan `costura` y `consulta_tienda`
+
+`supabase/schema_v124_admin_update_user_role_roles_nuevos.sql` (aplicado 2026-10-02
+por el usuario desde el SQL Editor, cargado desde GitHub raw con hash verificado;
+verificado después: una sola copia de la función, acepta ambos roles nuevos y
+sigue exigiendo `admin_general`).
+
+Síntoma: al cambiar a Carmen a "Costura" desde Usuarios salía "Rol inválido:
+costura". Causa: V111 (costura) y V116 (consulta_tienda) agregaron los roles al
+CHECK de `profiles` y a `permissions.js`, pero había **otras tres listas de roles
+duplicadas** que nadie actualizó: `UsersPage.jsx` (arreglado antes, sin SQL), la
+función `admin_update_user_role` (lista de V88 — esta migración) y la Edge
+Function `admin-create-user` (`VALID_ROLES`). Lección para futuros roles: al
+crear uno, buscar `'admin_fabrica_lectura'` en todo el repo para encontrar
+todas las listas, no solo el CHECK.
+
+- Cambio de la función: solo la lista de roles válidos (misma firma, mismo
+  permiso, `create or replace`).
+- `supabase/functions/admin-create-user/index.ts`: `VALID_ROLES` actualizado **en
+  el repo, pero la Edge Function se despliega aparte desde el Dashboard de
+  Supabase** — **todavía NO redesplegada**. Hasta que se haga, crear una cuenta
+  NUEVA con rol `costura` o `consulta_tienda` desde Usuarios seguirá dando "Rol
+  inválido" (cambiar el rol de una cuenta ya existente sí funciona).
