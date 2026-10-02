@@ -5652,6 +5652,6 @@ bloqueado, sin errores de consola. **No probado con cuentas reales de otros role
 
 **Falta (fases siguientes):** migrar el resto de chequeos de rol módulo por módulo
 (órdenes, catálogos, producción restante, usuarios, anuncios, etc.); `prod_puede_editar_semana`;
-`produccion.ver_montos` y `prod.ver_captura` no tienen gemelo en el frontend todavía.
+`prod.ver_montos` y `prod.ver_captura` no tienen gemelo en el frontend todavía.
 Para futuros roles: agregarlos al CHECK, a `ROLES_ASIGNABLES` y marcar sus permisos en la
 pantalla; ya no hay que reescribir funciones SQL para las 15 centrales.
