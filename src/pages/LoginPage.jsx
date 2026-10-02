@@ -47,7 +47,7 @@ export default function LoginPage() {
           <span className="app-header__subtitle">Sistema Operativo</span>
         </div>
 
-        <form onSubmit={handleSubmit} className="order-form">
+        <form onSubmit={handleSubmit} className="order-form" data-enter-normal>
           <label>
             Correo
             <input

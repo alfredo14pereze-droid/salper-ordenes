@@ -45,7 +45,9 @@ export default function FoliosExternosField({ value = [], onChange, id }) {
             value={draft}
             onChange={(e) => setDraft(onlyDigits(e.target.value))}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              // V127 — con dígitos, Enter agrega el folio; vacío, Enter sigue al
+              // siguiente campo (lo maneja useEnterComoTab).
+              if (e.key === 'Enter' && onlyDigits(draft)) {
                 e.preventDefault()
                 addFolio()
               }

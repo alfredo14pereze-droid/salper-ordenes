@@ -4,8 +4,10 @@
 // ya no depende de que alguien apriete un botón.
 export const FILA_ROSTER_VACIA = { talla: '', nombre: '', numero: '' }
 
+// Una fila cuenta cuando trae nombre o número: la talla sola no es un
+// registro (las filas nuevas heredan la talla de la anterior).
 export function filaRosterConDatos(r) {
-  return !!(String(r?.talla ?? '').trim() || String(r?.nombre ?? '').trim() || String(r?.numero ?? '').trim())
+  return !!(String(r?.nombre ?? '').trim() || String(r?.numero ?? '').trim())
 }
 
 // Devuelve la prenda con el roster limpio (sin filas vacías, textos sin

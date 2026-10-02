@@ -153,20 +153,22 @@ export default function OrderItemsEditor({
 
   function handleRosterKeyDown(e, itemIndex, rowIndex, col, cols) {
     if (e.key !== 'Enter') return
-    e.preventDefault() // dentro del <form>, Enter mandaría "Crear orden"
     const rows = rosterRows(items[itemIndex])
     const ci = cols.indexOf(col)
+    const esUltimaFila = rowIndex >= rows.length - 1
+    // Última fila y vacía: no hay nada más que capturar aquí, así que se deja
+    // pasar el Enter (useEnterComoTab lo manda al siguiente campo del formulario).
+    if (ci === cols.length - 1 && esUltimaFila && !filaRosterConDatos(rows[rowIndex])) return
+    e.preventDefault() // dentro del <form>, Enter mandaría "Crear orden"
     if (ci < cols.length - 1) {
       pendingFocus.current = `${itemIndex}:${rowIndex}:${cols[ci + 1]}`
-    } else if (rowIndex < rows.length - 1) {
-      pendingFocus.current = `${itemIndex}:${rowIndex + 1}:${cols[0]}`
-    } else if (filaRosterConDatos(rows[rowIndex])) {
-      saveRoster(itemIndex, [...rows, { ...FILA_ROSTER_VACIA, talla: rows[rowIndex].talla }])
+    } else if (!esUltimaFila) {
       pendingFocus.current = `${itemIndex}:${rowIndex + 1}:${cols[0]}`
     } else {
-      return
+      saveRoster(itemIndex, [...rows, { ...FILA_ROSTER_VACIA, talla: rows[rowIndex].talla }])
+      pendingFocus.current = `${itemIndex}:${rowIndex + 1}:${cols[0]}`
     }
-    // Si el foco no cambia de render (solo pasa a otro campo), se aplica ya.
+    // Si el campo ya existe (solo se pasa a otro campo), el foco se aplica ya.
     const el = document.querySelector(`[data-roster="${pendingFocus.current}"]`)
     if (el) {
       pendingFocus.current = null

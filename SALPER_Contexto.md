@@ -5686,3 +5686,26 @@ anterior. Ahora las tres búsquedas (Dashboard, Órdenes pasadas y Sublimado) us
 ahora muestra "También en Órdenes pasadas (N)" cuando la búsqueda solo coincide con órdenes
 completadas, que antes salía como "No hay órdenes". Probado en local con "Ver como"
 sublimado: `ord 3149` encuentra SUB-006 (completada). Pendiente: confirmar con Samuel.
+
+### V127 — Enter avanza de campo en todos los formularios
+
+Frontend únicamente. `src/hooks/useEnterComoTab.js` (instalado una vez en `AppLayout`) hace que
+Enter, en un input o select de cualquier formulario `form.order-form` (órdenes, pendientes,
+inventario, talleros, catálogos, producción, usuarios…) o de un contenedor con
+`data-enter-next`, pase al **siguiente campo visible y editable**; el último paso es el botón de
+guardar (otro Enter lo manda). Detalles:
+- Respeta lo que un campo ya manejó solo (`defaultPrevented`): roster, folios externos. Folio
+  externo: con dígitos, Enter lo agrega (como siempre); con el campo vacío, Enter sigue al
+  siguiente campo. Roster: en la última fila vacía, Enter sale hacia el siguiente campo (la talla
+  heredada por sí sola ya no cuenta como registro, `utils/roster.js`).
+- En `<textarea>` Enter sigue siendo salto de línea; **Ctrl/⌘+Enter** avanza.
+- Salta campos dentro de `<details>` cerrados (Notas y fotos / Cotización), ocultos o
+  deshabilitados, y si un campo no acepta el foco prueba el siguiente.
+- `data-enter-normal` en un formulario conserva el Enter de siempre: se puso en el **login**.
+- En celular el teclado muestra "Siguiente" (`enterKeyHint`).
+- La edición de prendas en el detalle de la orden (`OrderItemsCard`) no es un `<form>`; se
+  envolvió con `data-enter-next` (ahí no hay botón de guardar en la cadena).
+- No aplica a `ProduccionCapturaPage` (tiene su propio flujo de Enter) ni a buscadores sueltos.
+Probado en local con teclado real en "Nueva orden": cliente → fechas → folio (Enter agrega
+ORD3149/ORD3150, vacío sigue) → prenda → color → … → tallas → nombres y números → "Crear orden".
+No se probó formulario por formulario (es un mecanismo común), solo Nueva orden.

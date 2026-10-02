@@ -282,17 +282,19 @@ export default function OrderItemsCard({ order, onUpdated }) {
       )}
       {templateSaved && <p className="template-hint">✓ Plantilla guardada — ya aparece en "Nueva orden".</p>}
 
-      <OrderItemsEditor
-        items={items}
-        onChange={setItems}
-        orderTypeKey={order.order_type_key}
-        telas={telas}
-        onTelaCreated={refreshTelas}
-        clienteId={order.client_id}
-        clienteNombre={order.client_name}
-        productos={productos}
-        onProductoCreated={refreshProductos}
-      />
+      <div data-enter-next>
+        <OrderItemsEditor
+          items={items}
+          onChange={setItems}
+          orderTypeKey={order.order_type_key}
+          telas={telas}
+          onTelaCreated={refreshTelas}
+          clienteId={order.client_id}
+          clienteNombre={order.client_name}
+          productos={productos}
+          onProductoCreated={refreshProductos}
+        />
+      </div>
 
       {error && <p className="form-error">{error.message}</p>}
 

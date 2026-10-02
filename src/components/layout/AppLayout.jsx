@@ -4,6 +4,7 @@ import ErrorBoundary from '../common/ErrorBoundary'
 import Logo from './Logo'
 import ChatWidget from '../chat/ChatWidget'
 import { useAuth } from '../../contexts/AuthContext'
+import { useEnterComoTab } from '../../hooks/useEnterComoTab'
 import {
   canCreateOrder,
   canViewCatalogos,
@@ -68,6 +69,7 @@ export default function AppLayout({ children }) {
   const { user, profile, role, trueRole, viewAsRole, setViewAsRole, signOut } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
+  useEnterComoTab() // V127 — Enter avanza de campo en los formularios
   // Los 5 roles de etapa de fábrica (corte/bordado/sublimado/producción/
   // terminado) solo necesitan Dashboard + Resumen para hacer su trabajo —
   // ver hasRestrictedNav en utils/permissions.js. admin_fabrica sigue
