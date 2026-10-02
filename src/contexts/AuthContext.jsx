@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { fetchMyProfile, signIn as signInRequest, signOut as signOutRequest } from '../services/authService'
-import { puedeVerComoOtroRol, FABRICA_ETAPA_ROLES } from '../utils/permissions'
+import { fetchRolPermisos } from '../services/permisosService'
+import { puedeVerComoOtroRol, FABRICA_ETAPA_ROLES, setPermisosMap } from '../utils/permissions'
 
 const AuthContext = createContext(null)
 
@@ -37,12 +38,18 @@ export function AuthProvider({ children }) {
   // pegado a otra cuenta que entre después en el mismo navegador.
   const [viewAsRole, setViewAsRoleState] = useState(loadStoredViewAs)
 
+  // V125 — la tabla de permisos por rol se carga junto con el perfil, antes
+  // de que `loading` pase a false, para que la primera pantalla ya use los
+  // permisos reales. Si falla (o V125 aún no está aplicada) setPermisosMap
+  // queda en null y permissions.js usa sus valores fijos de siempre.
   const loadProfile = useCallback(async (userId) => {
     if (!userId) {
       setProfile(null)
+      setPermisosMap(null)
       return
     }
-    const { data } = await fetchMyProfile(userId)
+    const [{ data }, permisos] = await Promise.all([fetchMyProfile(userId), fetchRolPermisos()])
+    setPermisosMap(permisos.error ? null : permisos.data)
     setProfile(data || null)
   }, [])
 

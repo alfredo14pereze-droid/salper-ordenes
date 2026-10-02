@@ -5600,3 +5600,58 @@ todas las listas, no solo el CHECK.
   Supabase** — **todavía NO redesplegada**. Hasta que se haga, crear una cuenta
   NUEVA con rol `costura` o `consulta_tienda` desde Usuarios seguirá dando "Rol
   inválido" (cambiar el rol de una cuenta ya existente sí funciona).
+
+### V125 — Roles y permisos editables desde la app (Fase 1: lo central)
+
+`supabase/schema_v125_roles_permisos_fase1.sql` (aplicado 2026-10-02, cargado desde
+GitHub raw con hash verificado; verificado después con 8 comprobaciones booleanas:
+conteos por permiso, catálogo, 15 funciones reescritas, grants, tablas sin
+escritura directa, `admin_general` con todo, `costura` en `pf.fabrica`).
+
+**Qué es:** hasta hoy "qué puede hacer cada rol" estaba escrito a mano en SQL
+(~203 chequeos de `current_user_role()` en 57 migraciones, 16 funciones auxiliares) y en
+`permissions.js` (62 funciones). Fase 1 convierte en datos las 15 funciones auxiliares
+centrales (inventario, finanzas, pendientes, producción) y sus gemelas del frontend.
+
+- Tablas nuevas: `permisos_catalogo` (15 permisos, con módulo/etiqueta/descripcion/nivel),
+  `rol_permisos` (rol × clave; la fila existe = permitido) y `rol_permisos_log` (historial,
+  solo lo lee `admin_general`). Sin políticas de escritura: todo pasa por
+  `admin_set_rol_permiso(rol, clave, permitido)`, solo `admin_general`, que además
+  rechaza tocar `admin_general` (anti-bloqueo) y valida el rol contra
+  `profiles_role_check` (así no se crea otra lista duplicada de roles).
+- `tiene_permiso(clave)` consulta la tabla con el rol real del usuario. Las 15 funciones
+  (`fin_*`, `inv_*`, `pf_*`, `prod_*`) conservan nombre/firma/grants y ahora llaman a
+  `tiene_permiso`, por eso las políticas RLS y RPC que las usan no se tocaron.
+  `prod_puede_editar_semana` NO se migró (mezcla rol con estado/fecha; fase posterior).
+- La migración empieza con una guarda de deriva: compara cada función viva con lo que
+  se siembra y aborta sin cambiar nada si alguien la modificó a mano.
+- Siembra = comportamiento de ese día, con **un cambio deliberado**: `costura` se agregó a
+  `pf.fabrica` (antes `pf_es_fabrica()` la omitía aunque el frontend la trataba como
+  fábrica; Carmen veía Pendientes pero el servidor le rechazaba confirmar). Se puede
+  desmarcar desde la pantalla.
+- Diferencia previa que quedó corregida en pantalla: `admin_fabrica_lectura` veía el botón
+  de ranking de producción pero el servidor no se lo permitía; `prod.ver_ranking` se
+  sembró según el servidor.
+
+**Frontend:** `permisosService.js`; `AuthContext` carga `rol_permisos` junto con el perfil
+(antes de `loading=false`) y llama a `setPermisosMap`; los helpers de `permissions.js`
+(`canViewFinanzas/Edit*`, `canViewInventario/Mover/Editar`, `pfEsTienda/Fabrica`,
+`canViewPendientes` (la lógica de estaciones sigue encima), `canMarcarEntregado`,
+`canCapturarProduccion`, `canViewProduccionMontos` ↔ `prod.ver_lectura`,
+`canVerRankingProduccion`) consultan el mapa y, si no cargó, usan el valor fijo de
+siempre. "Ver como" funciona sin cambios (el mapa trae todos los roles). Pantalla nueva
+`/roles-permisos` ("Roles y permisos", solo `admin_general`): selector de rol, casillas por
+módulo con etiqueta "Solo ver"/"Puede modificar", guardado inmediato e historial.
+`ROLES_ASIGNABLES` en `permissions.js` es ahora la única lista de roles para Usuarios y
+esta pantalla (el CHECK de la base sigue siendo la fuente real).
+
+**Pruebas:** `npm run build` limpio; en local con la cuenta admin: la matriz de `ventas` y
+`lectura` coincide con lo de hoy, activar/desactivar `pf.entregar` en `lectura` guarda,
+refleja y registra en el historial (se dejó como estaba), `admin_general` sale marcado y
+bloqueado, sin errores de consola. **No probado con cuentas reales de otros roles.**
+
+**Falta (fases siguientes):** migrar el resto de chequeos de rol módulo por módulo
+(órdenes, catálogos, producción restante, usuarios, anuncios, etc.); `prod_puede_editar_semana`;
+`produccion.ver_montos` y `prod.ver_captura` no tienen gemelo en el frontend todavía.
+Para futuros roles: agregarlos al CHECK, a `ROLES_ASIGNABLES` y marcar sus permisos en la
+pantalla; ya no hay que reescribir funciones SQL para las 15 centrales.

@@ -159,6 +159,8 @@ export default function AppLayout({ children }) {
     // de solo lectura (ver canViewPedidosColegio).
     { to: '/pedidos-colegio', label: 'Pedidos Colegio', show: canViewPedidosColegio(role) },
     { to: '/usuarios', label: 'Usuarios', show: canManageUsers(role) },
+    // V125 — qué puede hacer cada rol (editable), solo admin_general.
+    { to: '/roles-permisos', label: 'Roles y permisos', show: canManageUsers(role) },
     // V117 — Parte 0 del rediseño visual (branch rediseno-visual): solo
     // admin_general, mientras se espera su visto bueno (ver canViewDesignSystem).
     { to: '/design', label: 'Sistema de diseño', show: canViewDesignSystem(role) },

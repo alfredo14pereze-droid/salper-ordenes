@@ -23,6 +23,35 @@ import { esRolDeEstacion, estacionDeRol } from '../config/vistasPorRol'
 // Ver la sección "Roles y permisos" de SALPER_Contexto.md para el
 // detalle completo de la migración y sus decisiones.
 
+// V125 — Roles y permisos editables (Fase 1). Los permisos centrales
+// (inventario, finanzas, pendientes, producción) viven en la tabla
+// rol_permisos de Supabase y se editan desde "Roles y permisos". AuthContext
+// carga la tabla al iniciar sesión y la guarda aquí con setPermisosMap; los
+// helpers de abajo la consultan. Si la tabla aún no se pudo cargar (o la
+// migración V125 no está aplicada), cada helper usa el valor fijo de siempre
+// (`fallback`) — así la app nunca se queda sin reglas. El servidor sigue
+// siendo la autoridad: esto solo decide qué se muestra.
+let permisosMap = null // Map<rol, Set<clave>> | null
+
+export function setPermisosMap(filas) {
+  if (!Array.isArray(filas) || filas.length === 0) {
+    permisosMap = null
+    return
+  }
+  const m = new Map()
+  for (const { rol, clave } of filas) {
+    if (!m.has(rol)) m.set(rol, new Set())
+    m.get(rol).add(clave)
+  }
+  permisosMap = m
+}
+
+function tiene(role, clave, fallback) {
+  if (!role) return false
+  if (permisosMap) return permisosMap.get(role)?.has(clave) ?? false
+  return fallback()
+}
+
 // V96 — exportado (antes privado) para que vistasPorRol.js y
 // AuthContext.jsx (extensión de "Ver como" a admin_fabrica) lo reusen sin
 // duplicar la lista.
@@ -408,11 +437,11 @@ export function isCapturaProduccion(role) {
 // prod_puede_ver_montos(), que NO incluye este rol) — aquí solo se decide si
 // se abre la pantalla.
 export function canViewProduccionMontos(role) {
-  return role === 'admin_general' || role === 'admin_fabrica' || role === 'admin_fabrica_lectura'
+  return tiene(role, 'prod.ver_lectura', () => role === 'admin_general' || role === 'admin_fabrica' || role === 'admin_fabrica_lectura')
 }
 
 export function canCapturarProduccion(role) {
-  return role === 'admin_general' || role === 'admin_fabrica' || role === 'captura_produccion'
+  return tiene(role, 'prod.capturar', () => role === 'admin_general' || role === 'admin_fabrica' || role === 'captura_produccion')
 }
 
 // V103 — pedido del usuario: Juanis (captura_produccion) ve el resultado
@@ -423,22 +452,22 @@ export function canCapturarProduccion(role) {
 // tampoco ve los premios/bonos reales (eso sigue detrás de
 // prod_puede_ver_montos, ver schema_v103_produccion_ranking_captura.sql).
 export function canVerRankingProduccion(role) {
-  return canViewProduccionMontos(role) || role === 'captura_produccion'
+  return tiene(role, 'prod.ver_ranking', () => canViewProduccionMontos(role) || role === 'captura_produccion')
 }
 
 // V77 — precios, totales, facturación y razones sociales: espejo de
 // fin_puede_ver / fin_puede_editar / fin_puede_editar_razones en Supabase.
 // Producción, corte, bordado, etc. no ven nada de esto.
 export function canViewFinanzas(role) {
-  return ['admin_general', 'admin_tienda', 'admin_fabrica', 'ventas', 'contabilidad', 'admin_fabrica_lectura'].includes(role)
+  return tiene(role, 'fin.ver', () => ['admin_general', 'admin_tienda', 'admin_fabrica', 'ventas', 'contabilidad', 'admin_fabrica_lectura'].includes(role))
 }
 
 export function canEditFinanzas(role) {
-  return role === 'admin_general' || role === 'admin_tienda' || role === 'ventas'
+  return tiene(role, 'fin.editar', () => role === 'admin_general' || role === 'admin_tienda' || role === 'ventas')
 }
 
 export function canEditRazones(role) {
-  return role === 'admin_general' || role === 'admin_tienda' || role === 'ventas' || role === 'contabilidad'
+  return tiene(role, 'fin.editar_razones', () => role === 'admin_general' || role === 'admin_tienda' || role === 'ventas' || role === 'contabilidad')
 }
 
 // V78 — Pendientes tienda <-> fábrica: espejo de pf_es_tienda / pf_es_fabrica /
@@ -447,11 +476,11 @@ const PF_TIENDA = ['ventas', 'contabilidad', 'admin_tienda', 'tienda', 'admin_ge
 const PF_FABRICA = ['corte', 'bordado', 'sublimado', 'produccion', 'terminado', 'costura', 'admin_fabrica', 'admin_general']
 
 export function pfEsTienda(role) {
-  return PF_TIENDA.includes(role)
+  return tiene(role, 'pf.tienda', () => PF_TIENDA.includes(role))
 }
 
 export function pfEsFabrica(role) {
-  return PF_FABRICA.includes(role)
+  return tiene(role, 'pf.fabrica', () => PF_FABRICA.includes(role))
 }
 
 // V97 — antes cualquier rol con sesión (salvo captura_produccion) entraba
@@ -463,7 +492,7 @@ export function pfEsFabrica(role) {
 // vistasPorRol.js para no crear un ciclo — ese archivo no importa nada de
 // aquí.
 export function canViewPendientes(role) {
-  if (!role || role === 'captura_produccion') return false
+  if (!tiene(role, 'pf.ver', () => !!role && role !== 'captura_produccion')) return false
   if (esRolDeEstacion(role)) {
     const est = estacionDeRol(role)
     return !!(est?.pendientesTipo || est?.pendientesCompleto)
@@ -479,7 +508,7 @@ export function canManageTiposPendiente(role) {
 // espejo de pf_puede_entregar(). V113 — el usuario pidió agregar también el rol
 // básico `tienda` (antes excluido a propósito); contabilidad se queda fuera.
 export function canMarcarEntregado(role) {
-  return role === 'ventas' || role === 'admin_tienda' || role === 'admin_general' || role === 'tienda'
+  return tiene(role, 'pf.entregar', () => role === 'ventas' || role === 'admin_tienda' || role === 'admin_general' || role === 'tienda')
 }
 
 // V88 — admin_fabrica_lectura: ve todo lo que ve admin_fabrica (Dashboard,
@@ -537,18 +566,18 @@ export function puedeVerComoOtroRol(trueRole) {
 // V116 — consulta_tienda entra en modo ver (nunca mover/editar, ver
 // canMoverInventario/canEditarInventario abajo, sin cambio).
 export function canViewInventario(role) {
-  return (
+  return tiene(role, 'inv.ver', () => (
     role === 'admin_general' || role === 'admin_tienda' || role === 'admin_fabrica' ||
     role === 'ventas' || role === 'tienda' || role === 'consulta_tienda'
-  )
+  ))
 }
 
 export function canMoverInventario(role) {
-  return role === 'admin_tienda' || role === 'admin_general' || role === 'tienda'
+  return tiene(role, 'inv.mover', () => role === 'admin_tienda' || role === 'admin_general' || role === 'tienda')
 }
 
 export function canEditarInventario(role) {
-  return role === 'admin_tienda' || role === 'admin_general'
+  return tiene(role, 'inv.editar', () => role === 'admin_tienda' || role === 'admin_general')
 }
 
 // V117 — /design (Parte 0 del rediseño visual, branch rediseno-visual): el
@@ -557,6 +586,17 @@ export function canEditarInventario(role) {
 export function canViewDesignSystem(role) {
   return role === 'admin_general'
 }
+
+// V125 — única lista de roles que se pueden asignar a una cuenta (Usuarios) y
+// editar en "Roles y permisos". 'produccion' (obsoleto, reemplazado por
+// 'costura') ya no se ofrece; sigue permitido en la base.
+export const ROLES_ASIGNABLES = [
+  'ventas', 'contabilidad', 'admin_tienda',
+  'corte', 'bordado', 'sublimado', 'terminado', 'costura', 'admin_fabrica', 'admin_fabrica_lectura',
+  'captura_produccion',
+  'tienda', 'consulta_tienda', 'lectura',
+  'admin_general',
+]
 
 export const ROLE_LABELS = {
   ventas: 'Ventas',

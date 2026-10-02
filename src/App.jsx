@@ -14,6 +14,7 @@ import AnnouncementsPage from './pages/AnnouncementsPage'
 import PendientesPage from './pages/PendientesPage'
 import PendienteDetailPage from './pages/PendienteDetailPage'
 import UsersPage from './pages/UsersPage'
+import RolesPermisosPage from './pages/RolesPermisosPage'
 import PedidosTiendaPage from './pages/PedidosTiendaPage'
 import NewPedidoTiendaPage from './pages/NewPedidoTiendaPage'
 import PedidoTiendaDetailPage from './pages/PedidoTiendaDetailPage'
@@ -102,6 +103,7 @@ function AuthGate() {
           <Route path="/pendientes" element={<PendientesPage />} />
           <Route path="/pendientes/:id" element={<PendienteDetailPage />} />
           <Route path="/usuarios" element={<UsersPage />} />
+          <Route path="/roles-permisos" element={<RolesPermisosPage />} />
           {/* V117 — Parte 0 del rediseño visual (branch rediseno-visual):
               página de muestra de tokens/componentes, solo admin_general
               (ver canViewDesignSystem). */}
