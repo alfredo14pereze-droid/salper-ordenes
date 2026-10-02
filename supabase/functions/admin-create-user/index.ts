@@ -34,6 +34,9 @@ const VALID_ROLES = [
   'lectura', 'tienda',
   'captura_produccion',
   'admin_fabrica_lectura',
+  // V124 — faltaban: crear usuarios nuevos con estos roles daba "Rol inválido".
+  'costura',
+  'consulta_tienda',
 ]
 
 // Orígenes permitidos: el dominio de producción, cualquier preview de
