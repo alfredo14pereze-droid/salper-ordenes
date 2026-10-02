@@ -1,3 +1,4 @@
+import { limpiarRoster } from '../utils/roster'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOrderTypes } from '../hooks/useOrderTypes'
@@ -379,7 +380,7 @@ function NewOrderForm() {
 
     const cleanItems = items
       .filter((item) => item.garment.trim() || item.sizes.some((s) => s.talla.trim()))
-      .map((item) => ({
+      .map((item) => limpiarRoster({
         ...item,
         sizes: item.sizes
           .filter((s) => s.talla.trim() && Number(s.cantidad) > 0)

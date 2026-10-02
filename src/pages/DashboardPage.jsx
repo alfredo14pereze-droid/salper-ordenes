@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { coincideBusquedaOrden } from '../utils/ordenesBusqueda'
 import { useOrders } from '../hooks/useOrders'
 import { useOrderTypes } from '../hooks/useOrderTypes'
 import { isActiveStatus, matchesStatusGroups } from '../utils/status'
@@ -68,19 +69,26 @@ function DashboardContent() {
       if (filters.types.length > 0 && !filters.types.includes(order.order_type_key)) return false
       if (!matchesStatusGroups(order.status, filters.statuses)) return false
       if (filters.search.trim()) {
-        const q = filters.search.trim().toLowerCase()
-        // V37: también busca por folio externo (control anterior) — ya sea
-        // que escriban "ORD0007" completo o solo "0007", ambos hacen match
-        // porque es un simple "contiene" sobre el folio guardado.
-        const matches =
-          order.order_number.toLowerCase().includes(q) ||
-          order.client_name.toLowerCase().includes(q) ||
-          (order.folios_externos || []).some((f) => f.toLowerCase().includes(q))
-        if (!matches) return false
+        // V37: también busca por folio externo (control anterior); V126: ver
+        // utils/ordenesBusqueda.js (tolera espacios/guiones, "ORD 0007").
+        if (!coincideBusquedaOrden(order, filters.search)) return false
       }
       return true
     })
   }, [currentOrders, filters])
+
+  // V126 — las completadas no se mezclan aquí, pero si se busca algo y solo
+  // existe en una completada (un folio viejo), antes se veía "no hay órdenes"
+  // sin pista de dónde estaba: ahora se muestran aparte.
+  const completedMatches = useMemo(() => {
+    if (!filters.search.trim()) return []
+    return orders.filter(
+      (o) =>
+        o.status === 'completado' &&
+        (filters.types.length === 0 || filters.types.includes(o.order_type_key)) &&
+        coincideBusquedaOrden(o, filters.search)
+    )
+  }, [orders, filters])
 
   if (loading) return <Loading label="Cargando órdenes…" />
   if (error) return <ErrorState error={error} onRetry={refresh} />
@@ -141,6 +149,19 @@ function DashboardContent() {
               <OrderCard key={order.id} order={order} orderType={typesByKey[order.order_type_key]} />
             ))}
           </div>
+        )}
+
+        {completedMatches.length > 0 && (
+          <>
+            <h3 className="section-title" style={{ marginTop: 24 }}>
+              También en Órdenes pasadas ({completedMatches.length})
+            </h3>
+            <div className="order-grid">
+              {completedMatches.map((order) => (
+                <OrderCard key={order.id} order={order} orderType={typesByKey[order.order_type_key]} />
+              ))}
+            </div>
+          </>
         )}
       </section>
     </div>

@@ -1,3 +1,4 @@
+import { coincideBusquedaOrden } from '../utils/ordenesBusqueda'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useOrders } from '../hooks/useOrders'
 import { useAllOrdenEtapas } from '../hooks/useAllOrdenEtapas'
@@ -68,7 +69,7 @@ export default function SublimadoHomePage() {
 
   const texto = busqueda.trim().toLowerCase()
   const encontradas = useMemo(
-    () => (texto ? orders.filter((o) => String(o.order_number || '').toLowerCase().includes(texto) || String(o.client_name || '').toLowerCase().includes(texto)) : null),
+    () => (texto ? orders.filter((o) => coincideBusquedaOrden(o, texto)) : null),
     [orders, texto]
   )
 
@@ -93,7 +94,7 @@ export default function SublimadoHomePage() {
       <input
         type="search"
         className="input"
-        placeholder="Buscar folio o cliente (cualquier orden)"
+        placeholder="Buscar folio, folio anterior o cliente (cualquier orden)"
         value={busqueda}
         onChange={(e) => setBusqueda(e.target.value)}
       />

@@ -1,3 +1,4 @@
+import { coincideBusquedaOrden } from '../utils/ordenesBusqueda'
 import { useMemo, useState } from 'react'
 import { useOrders } from '../hooks/useOrders'
 import { useOrderTypes } from '../hooks/useOrderTypes'
@@ -22,12 +23,7 @@ export default function PastOrdersPage() {
       .filter((order) => {
         if (typeFilter && order.order_type_key !== typeFilter) return false
         if (search.trim()) {
-          const q = search.trim().toLowerCase()
-          const matches =
-            order.order_number.toLowerCase().includes(q) ||
-            order.client_name.toLowerCase().includes(q) ||
-            (order.folios_externos || []).some((f) => f.toLowerCase().includes(q))
-          if (!matches) return false
+          if (!coincideBusquedaOrden(order, search)) return false
         }
         return true
       })

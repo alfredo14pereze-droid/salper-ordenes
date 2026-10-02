@@ -5655,3 +5655,34 @@ bloqueado, sin errores de consola. **No probado con cuentas reales de otros role
 `prod.ver_montos` y `prod.ver_captura` no tienen gemelo en el frontend todavía.
 Para futuros roles: agregarlos al CHECK, a `ROLES_ASIGNABLES` y marcar sus permisos en la
 pantalla; ya no hay que reescribir funciones SQL para las 15 centrales.
+
+### V126 — Sublimación: nombres y números siempre visibles con Enter; búsqueda por folio anterior
+
+Puramente frontend (sin SQL; `items` sigue siendo el mismo JSONB).
+
+**Nombres y números.** La lista (`roster`, V39) existía pero solo aparecía tras elegir
+la prenda y apretar el botón "+ Agregar nombres y números"; si la prenda no coincidía
+con las 5 opciones (p. ej. una orden vieja o cargada desde foto/PDF con otro texto) el botón
+ni se mostraba, y con eso parecía que "ya no salía". Ahora, en órdenes de **sublimación**
+(todas las prendas menos Pantalonera), la sección **Nombres y números** (solo **Números** para
+Short) está siempre visible, sin botón. En `OrderItemsEditor.jsx`:
+- Talla, nombre y número son campos de texto. Enter pasa al siguiente campo; en el último se
+  abre una fila nueva **con la misma talla** (casi siempre vienen agrupados por talla) y el
+  cursor queda en Talla con el texto seleccionado. Enter ya no manda el formulario.
+- La talla debe ser una de "Tallas y cantidades" de esa prenda (regla de V39): al salir del
+  campo se acomoda a mayúsculas/minúsculas (`m` → `M`) y si no existe se marca en rojo con
+  el aviso y las tallas válidas (no bloquea el guardado).
+- `tiene_roster` ya no se activa a mano: se calcula al guardar (`utils/roster.js`,
+  `limpiarRoster`), que además descarta filas vacías. Se usa en "Nueva orden" y al editar la
+  prenda en el detalle de la orden. Una prenda que antes tenía datos pero el botón apagado
+  ahora los vuelve a mostrar.
+
+**Búsqueda por folio anterior (control anterior, `folios_externos`).** La pantalla de la
+estación de Sublimado (`SublimadoHomePage.jsx`, el buscador "cualquier orden") solo
+comparaba folio SALPER y cliente, por eso Samuel no encontraba una orden por su folio
+anterior. Ahora las tres búsquedas (Dashboard, Órdenes pasadas y Sublimado) usan
+`utils/ordenesBusqueda.js`: folio, cliente y folios anteriores, tolerando espacios y guiones
+(`ORD 0007`, `ord-0007`, `0007`, `esc 018`). Además, el Dashboard (que no mezcla completadas)
+ahora muestra "También en Órdenes pasadas (N)" cuando la búsqueda solo coincide con órdenes
+completadas, que antes salía como "No hay órdenes". Probado en local con "Ver como"
+sublimado: `ord 3149` encuentra SUB-006 (completada). Pendiente: confirmar con Samuel.

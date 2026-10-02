@@ -1,3 +1,4 @@
+import { limpiarRoster } from '../../utils/roster'
 import { useState } from 'react'
 import OrderItemsEditor from './OrderItemsEditor'
 import { setOrderItems } from '../../services/ordersService'
@@ -168,7 +169,7 @@ export default function OrderItemsCard({ order, onUpdated }) {
     setError(null)
     const cleanItems = items
       .filter((item) => item.garment.trim() || item.sizes.some((s) => String(s.talla).trim()))
-      .map((item) => ({
+      .map((item) => limpiarRoster({
         ...item,
         sizes: item.sizes
           .filter((s) => String(s.talla).trim() && Number(s.cantidad) > 0)

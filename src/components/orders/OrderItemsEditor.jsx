@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { GARMENT_COLORS, GARMENT_OPTIONS_SUBLIMACION, GARMENT_TOP_KEYS_SUBLIMACION, ORDER_TYPES_REQUIRING_PANTONE } from '../../lib/constants'
 import TelaSelect from './TelaSelect'
 import ProductoAutocomplete from './ProductoAutocomplete'
 import OrderTelaResumen from './OrderTelaResumen'
+import { FILA_ROSTER_VACIA, filaRosterConDatos } from '../../utils/roster'
 
 const OTRO_COLOR = '__otro__'
 
@@ -111,32 +112,66 @@ export default function OrderItemsEditor({
     updateItem(itemIndex, { sizes: item.sizes.filter((_, i) => i !== sizeIndex) })
   }
 
-  // Roster (V39): lista de talla/nombre/número (o solo talla/número para
-  // short) — para equipos, casi siempre llevan nombre y número en la
+  // Roster (V39 / V126): lista de talla/nombre/número (o solo talla/número
+  // para short) — para equipos, casi siempre llevan nombre y número en la
   // espalda. Vive aparte de "Tallas y cantidades" (esa sigue siendo el
-  // total a producir); el roster es el detalle de QUIÉN lleva cuál.
-  function toggleRoster(itemIndex) {
-    const item = items[itemIndex]
-    const turningOn = !item.tiene_roster
-    updateItem(itemIndex, {
-      tiene_roster: turningOn,
-      roster: turningOn && (!item.roster || item.roster.length === 0) ? [{ talla: '', nombre: '', numero: '' }] : item.roster,
-    })
-  }
+  // total a producir); el roster es el detalle de QUIÉN lleva cuál. Desde
+  // V126 siempre se ve en sublimación (sin botón que activar) y se llena
+  // con el teclado: Enter pasa al siguiente campo y, en el último, abre una
+  // fila nueva con la misma talla (casi siempre vienen agrupados por talla).
+  const pendingFocus = useRef(null)
+  useEffect(() => {
+    if (!pendingFocus.current) return
+    const el = document.querySelector(`[data-roster="${pendingFocus.current}"]`)
+    pendingFocus.current = null
+    el?.focus()
+  })
 
-  function addRosterRow(itemIndex) {
-    const item = items[itemIndex]
-    updateItem(itemIndex, { roster: [...(item.roster || []), { talla: '', nombre: '', numero: '' }] })
+  const rosterRows = (item) => (item.roster && item.roster.length > 0 ? item.roster : [FILA_ROSTER_VACIA])
+
+  function saveRoster(itemIndex, rows) {
+    updateItem(itemIndex, { roster: rows, tiene_roster: rows.some(filaRosterConDatos) })
   }
 
   function removeRosterRow(itemIndex, rowIndex) {
-    const item = items[itemIndex]
-    updateItem(itemIndex, { roster: item.roster.filter((_, i) => i !== rowIndex) })
+    const rows = rosterRows(items[itemIndex]).filter((_, i) => i !== rowIndex)
+    saveRoster(itemIndex, rows.length > 0 ? rows : [{ ...FILA_ROSTER_VACIA }])
   }
 
   function updateRosterRow(itemIndex, rowIndex, patch) {
-    const item = items[itemIndex]
-    updateItem(itemIndex, { roster: item.roster.map((r, i) => (i === rowIndex ? { ...r, ...patch } : r)) })
+    saveRoster(itemIndex, rosterRows(items[itemIndex]).map((r, i) => (i === rowIndex ? { ...r, ...patch } : r)))
+  }
+
+  // La talla se escribe a mano pero tiene que ser una de las que ya están en
+  // "Tallas y cantidades" de la misma prenda (pedido de V39, "para asegurarnos
+  // de que esté bien"): al salir del campo se acomoda a mayúsculas/minúsculas
+  // de la talla real, y si no existe se marca en rojo.
+  function normalizarTalla(valor, tallasDisponibles) {
+    const v = valor.trim()
+    return tallasDisponibles.find((t) => t.toLowerCase() === v.toLowerCase()) ?? valor
+  }
+
+  function handleRosterKeyDown(e, itemIndex, rowIndex, col, cols) {
+    if (e.key !== 'Enter') return
+    e.preventDefault() // dentro del <form>, Enter mandaría "Crear orden"
+    const rows = rosterRows(items[itemIndex])
+    const ci = cols.indexOf(col)
+    if (ci < cols.length - 1) {
+      pendingFocus.current = `${itemIndex}:${rowIndex}:${cols[ci + 1]}`
+    } else if (rowIndex < rows.length - 1) {
+      pendingFocus.current = `${itemIndex}:${rowIndex + 1}:${cols[0]}`
+    } else if (filaRosterConDatos(rows[rowIndex])) {
+      saveRoster(itemIndex, [...rows, { ...FILA_ROSTER_VACIA, talla: rows[rowIndex].talla }])
+      pendingFocus.current = `${itemIndex}:${rowIndex + 1}:${cols[0]}`
+    } else {
+      return
+    }
+    // Si el foco no cambia de render (solo pasa a otro campo), se aplica ya.
+    const el = document.querySelector(`[data-roster="${pendingFocus.current}"]`)
+    if (el) {
+      pendingFocus.current = null
+      el.focus()
+    }
   }
 
   const grandTotal = items.reduce(
@@ -153,7 +188,8 @@ export default function OrderItemsEditor({
         const isTopGarment = isSublimacion && GARMENT_TOP_KEYS_SUBLIMACION.includes(item.garment)
         const isShort = isSublimacion && item.garment === 'Short'
         const showCuelloManga = !isSublimacion || isTopGarment
-        const showRosterButton = isTopGarment || isShort
+        // V126 — el roster se ve siempre en sublimación (menos pantalonera, que no lleva).
+        const showRoster = isSublimacion && item.garment !== 'Pantalonera'
         const tallasDisponibles = [...new Set(item.sizes.map((s) => s.talla.trim()).filter(Boolean))]
         // V43: "otro" si se eligió a propósito (el set) O si ya trae un
         // color que no está en la lista (orden vieja, o cambió de tipo).
@@ -440,88 +476,90 @@ export default function OrderItemsEditor({
               </button>
             )}
 
-            {showRosterButton && (
-              <button
-                type="button"
-                className={item.tiene_roster ? 'btn btn--secondary btn--small' : 'btn btn--ghost btn--small'}
-                style={{ marginTop: 8, marginLeft: 8 }}
-                onClick={() => toggleRoster(itemIndex)}
-              >
-                {item.tiene_roster
-                  ? isShort
-                    ? '✓ Lista de números'
-                    : '✓ Lista de nombres y números'
-                  : isShort
-                    ? '+ Agregar número'
-                    : '+ Agregar nombres y números'}
-              </button>
-            )}
-
-            {showRosterButton && item.tiene_roster && (
-              <div style={{ marginTop: 10 }}>
-                <div className={'roster-table' + (isShort ? ' roster-table--numero-only' : '')}>
-                  <div className={'roster-row-header' + (isShort ? ' roster-row--numero-only' : '')}>
-                    <span>Talla</span>
-                    {!isShort && <span>Nombre</span>}
-                    <span>Número</span>
-                    <span />
-                  </div>
-                  {(item.roster || []).map((row, rowIndex) => (
-                    <div key={rowIndex} className={'roster-row' + (isShort ? ' roster-row--numero-only' : '')}>
-                      <select
-                        className="input"
-                        value={row.talla}
-                        onChange={(e) => updateRosterRow(itemIndex, rowIndex, { talla: e.target.value })}
-                      >
-                        <option value="">
-                          {tallasDisponibles.length === 0 ? 'Agrega tallas arriba' : 'Talla…'}
-                        </option>
-                        {tallasDisponibles.map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </select>
-                      {!isShort && (
+            {showRoster && (() => {
+              const rows = rosterRows(item)
+              const cols = isShort ? ['talla', 'numero'] : ['talla', 'nombre', 'numero']
+              const tallaInvalida = (t) =>
+                !!t.trim() && !tallasDisponibles.some((d) => d.toLowerCase() === t.trim().toLowerCase())
+              const hayInvalidas = rows.some((r) => tallaInvalida(r.talla))
+              return (
+                <div className="roster" style={{ marginTop: 12 }}>
+                  <div className="roster__titulo">{isShort ? 'Números' : 'Nombres y números'}</div>
+                  <div className={'roster-table' + (isShort ? ' roster-table--numero-only' : '')}>
+                    <div className={'roster-row-header' + (isShort ? ' roster-row--numero-only' : '')}>
+                      <span>Talla</span>
+                      {!isShort && <span>Nombre</span>}
+                      <span>Número</span>
+                      <span />
+                    </div>
+                    {rows.map((row, rowIndex) => (
+                      <div key={rowIndex} className={'roster-row' + (isShort ? ' roster-row--numero-only' : '')}>
+                        <input
+                          type="text"
+                          className={'input' + (tallaInvalida(row.talla) ? ' input--invalid' : '')}
+                          placeholder="Talla"
+                          value={row.talla}
+                          data-roster={`${itemIndex}:${rowIndex}:talla`}
+                          aria-invalid={tallaInvalida(row.talla) || undefined}
+                          autoComplete="off"
+                          onFocus={(e) => e.target.select()}
+                          onChange={(e) => updateRosterRow(itemIndex, rowIndex, { talla: e.target.value })}
+                          onBlur={(e) => {
+                            const n = normalizarTalla(e.target.value, tallasDisponibles)
+                            if (n !== row.talla) updateRosterRow(itemIndex, rowIndex, { talla: n })
+                          }}
+                          onKeyDown={(e) => handleRosterKeyDown(e, itemIndex, rowIndex, 'talla', cols)}
+                        />
+                        {!isShort && (
+                          <input
+                            type="text"
+                            className="input"
+                            placeholder="Nombre"
+                            value={row.nombre}
+                            data-roster={`${itemIndex}:${rowIndex}:nombre`}
+                            autoComplete="off"
+                            onChange={(e) => updateRosterRow(itemIndex, rowIndex, { nombre: e.target.value })}
+                            onKeyDown={(e) => handleRosterKeyDown(e, itemIndex, rowIndex, 'nombre', cols)}
+                          />
+                        )}
                         <input
                           type="text"
                           className="input"
-                          placeholder="Nombre"
-                          value={row.nombre}
-                          onChange={(e) => updateRosterRow(itemIndex, rowIndex, { nombre: e.target.value })}
+                          placeholder="Número"
+                          value={row.numero}
+                          data-roster={`${itemIndex}:${rowIndex}:numero`}
+                          autoComplete="off"
+                          onChange={(e) => updateRosterRow(itemIndex, rowIndex, { numero: e.target.value })}
+                          onKeyDown={(e) => handleRosterKeyDown(e, itemIndex, rowIndex, 'numero', cols)}
                         />
-                      )}
-                      <input
-                        type="text"
-                        className="input"
-                        placeholder="Número"
-                        value={row.numero}
-                        onChange={(e) => updateRosterRow(itemIndex, rowIndex, { numero: e.target.value })}
-                      />
-                      {(item.roster || []).length > 1 && (
-                        <button
-                          type="button"
-                          className="sizes-row__remove"
-                          onClick={() => removeRosterRow(itemIndex, rowIndex)}
-                          aria-label={isShort ? 'Quitar número' : 'Quitar nombre y número'}
-                        >
-                          ×
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                        {rows.length > 1 ? (
+                          <button
+                            type="button"
+                            className="sizes-row__remove"
+                            onClick={() => removeRosterRow(itemIndex, rowIndex)}
+                            aria-label={isShort ? 'Quitar número' : 'Quitar nombre y número'}
+                          >
+                            ×
+                          </button>
+                        ) : (
+                          <span />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {hayInvalidas && (
+                    <p className="form-error" style={{ marginTop: 6 }}>
+                      {tallasDisponibles.length === 0
+                        ? 'Primero agrega las tallas en «Tallas y cantidades».'
+                        : `Esa talla no está en «Tallas y cantidades». Tallas de esta prenda: ${tallasDisponibles.join(', ')}.`}
+                    </p>
+                  )}
+                  <p className="roster__ayuda">
+                    Escribe y presiona Enter para pasar al siguiente campo; en el último se abre otra fila.
+                  </p>
                 </div>
-                <button
-                  type="button"
-                  className="add-size-btn"
-                  style={{ marginTop: 8 }}
-                  onClick={() => addRosterRow(itemIndex)}
-                >
-                  {isShort ? '+ Agregar número' : '+ Agregar nombre y número'}
-                </button>
-              </div>
-            )}
-
+              )
+            })()}
 
             <div className="item-block__total">
               Piezas en esta prenda: <b>{itemTotal}</b>
