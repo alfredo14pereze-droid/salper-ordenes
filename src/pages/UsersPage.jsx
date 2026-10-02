@@ -16,14 +16,15 @@ import { useAuth } from '../contexts/AuthContext'
 
 const ROLES = [
   'ventas', 'contabilidad', 'admin_tienda',
-  'corte', 'bordado', 'sublimado', 'produccion', 'terminado', 'admin_fabrica',
+  'corte', 'bordado', 'sublimado', 'terminado', 'admin_fabrica',
   'admin_general',
   'lectura', 'tienda',
   'captura_produccion',
   'admin_fabrica_lectura',
   // V111/V116 — estos dos roles existían en la base y en permissions.js
-  // pero faltaban aquí, así que no se podían asignar desde Usuarios (y
-  // "produccion", ya obsoleto, parecía la única opción de costura).
+  // pero faltaban aquí, así que no se podían asignar desde Usuarios.
+  // 'produccion' (obsoleto, reemplazado por 'costura') ya no se ofrece:
+  // se verificó que ningún usuario lo tiene. Sigue permitido en la base.
   'costura',
   'consulta_tienda',
 ]

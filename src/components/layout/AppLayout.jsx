@@ -54,7 +54,6 @@ const VIEW_AS_ROLES = [
   'corte',
   'bordado',
   'sublimado',
-  'produccion',
   'costura',
   'terminado',
   'admin_fabrica',
