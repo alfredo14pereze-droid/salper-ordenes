@@ -21,6 +21,11 @@ const ROLES = [
   'lectura', 'tienda',
   'captura_produccion',
   'admin_fabrica_lectura',
+  // V111/V116 — estos dos roles existían en la base y en permissions.js
+  // pero faltaban aquí, así que no se podían asignar desde Usuarios (y
+  // "produccion", ya obsoleto, parecía la única opción de costura).
+  'costura',
+  'consulta_tienda',
 ]
 
 function NewUserForm({ onCreated }) {

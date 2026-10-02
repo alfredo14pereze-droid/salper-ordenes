@@ -5514,3 +5514,17 @@ diferencia con cuidado (único conflicto real: este mismo archivo, por
 escribirse en paralelo en los dos branches — se resolvió a mano,
 conservando el contenido de ambos lados); el resto de los archivos se
 fusionó limpio sin intervención. Resultado ya en `main`/producción.
+
+### Fix — Usuarios: faltaban los roles `costura` y `consulta_tienda`
+
+`UsersPage.jsx` tenía su propia lista `ROLES` (separada de `permissions.js`) y
+nunca se actualizó cuando V111 creó `costura` y V116 creó `consulta_tienda`:
+los dos roles existían en la base y en el resto del código, pero no se podían
+asignar desde Usuarios — por eso la persona de costura (Carmen) quedó con el
+rol obsoleto `produccion` (único "Costura" que aparecía en el desplegable).
+Se agregaron los dos a la lista. `produccion` se deja en el desplegable
+(etiquetado obsoleto) para que las cuentas que ya lo tienen sigan mostrando su
+valor actual; funcionalmente `costura` y `produccion` hacen lo mismo en las
+vistas de estación (misma etapa `produccion`, mismos pendientes de "Arreglo"),
+pero `costura` es el rol correcto de aquí en adelante. Falta que el usuario
+cambie a Carmen a `costura` desde Usuarios → editar.
