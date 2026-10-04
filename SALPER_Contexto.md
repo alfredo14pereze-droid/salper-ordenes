@@ -5759,3 +5759,19 @@ sigue funcionando; `pf_editar` cambia a pagado y limpia total/anticipo.
   funciones con la prueba que se revierte. Pendiente: que el usuario cree uno real y lo confirme.
 - La etiqueta imprimible (`generatePendientePdf.jsx`) no usa prenda/talla/cantidad, así que no
   cambia.
+
+### Arreglo 2026-10-04 — folios de pendientes quemados por mi prueba, y tipo "borado"
+
+`supabase/fix_folios_pendientes_y_tipo_borado_2026-10-04.sql` (aplicado con hash verificado, con guardas).
+- **Qué pasó:** la prueba de V129 corrió `pf_crear` dentro de un bloque `do $$ … raise exception` para
+  revertirlo, pero **las secuencias de Postgres no se revierten**: quemó P-0015 y P-0016. Los 3
+  pendientes reales del usuario (creados después) salieron como P-0017/18/19.
+- **Arreglo:** se renumeraron a P-0015/16/17 y `pf_folio_seq` quedó en 17 (el siguiente es P-0018).
+  Ojo: la etiqueta imprimible se nombra con el folio (`Etiqueta-P-00xx.pdf`); si alguien ya imprimió
+  una con el folio viejo (17/18/19), ese número ya no corresponde al mismo pendiente.
+- **Lección:** NO probar funciones que generan folios (`pf_crear`, `create_order`, etc.) en la base
+  de producción, ni siquiera con rollback: gasta folios que el usuario ve. Probar solo con SELECTs, o
+  contra funciones sin secuencia.
+- **Tipo de orden "borado":** duplicado mal escrito de "bordado", sin órdenes ni plantillas → se
+  borró (`order_types`). "Bordado" se queda. No existe pantalla para renombrar/borrar tipos de orden
+  (solo "+ Nuevo tipo…" al crear una orden); se hace por SQL.
