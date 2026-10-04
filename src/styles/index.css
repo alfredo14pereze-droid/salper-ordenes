@@ -3831,3 +3831,7 @@ h4 {
 .pf-lineas__row { display: grid; grid-template-columns: minmax(0, 1fr) 84px 64px 28px; gap: 8px; align-items: center; }
 .pf-lineas__head { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--color-text-muted); }
 .pf-resta { grid-column: 1 / -1; margin: 0; }
+
+/* V130 — nota resuelta */
+.nota-resuelta__texto { color: var(--color-text-muted); text-decoration: line-through; }
+.nota-resuelta__estado { margin: 8px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--color-good); }

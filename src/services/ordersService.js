@@ -259,6 +259,15 @@ export async function setOrderNotasInternas(orderId, notas) {
   return supabase.rpc('set_order_notas_internas', { p_order_id: orderId, p_notas: notas || null }).single()
 }
 
+// V130: marcar la nota interna como resuelta (o reabrirla). Si el texto de la
+// nota se edita, el servidor la deja otra vez sin resolver.
+export async function resolverNotaOrden(orderId, resuelta = true) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('resolver_nota_orden', { p_order_id: orderId, p_resuelta: resuelta }).single()
+}
+
 // Fábrica captura el tiempo estimado de producción (solo mientras la
 // orden sigue "en_confirmacion"; admin no tiene esa restricción).
 export async function setEstimatedProductionDays(orderId, days) {

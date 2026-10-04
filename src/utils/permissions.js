@@ -388,6 +388,12 @@ export function canManageOrderNotes(role) {
   return !!role && role !== 'lectura' && role !== 'captura_produccion'
 }
 
+// V130 — "Resolver" una nota: mismo criterio que escribirla, menos los roles de
+// solo lectura (espejo de resolver_nota_orden en el servidor).
+export function canResolverNotas(role) {
+  return canManageOrderNotes(role) && role !== 'admin_fabrica_lectura' && role !== 'consulta_tienda'
+}
+
 // V57 — Pedidos Colegio (beta): módulo OCULTO, exclusivo admin_general —
 // ni aparece en el menú para ningún otro rol. Espejo de lo que ya exige
 // el servidor (RLS de SELECT solo admin_general, y los RPC create_colegio*/

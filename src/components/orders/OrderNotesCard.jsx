@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { setOrderNotasInternas } from '../../services/ordersService'
+import { resolverNotaOrden, setOrderNotasInternas } from '../../services/ordersService'
 import { useAuth } from '../../contexts/AuthContext'
-import { canManageOrderNotes } from '../../utils/permissions'
+import { formatDateTime } from '../../utils/dates'
+import { canManageOrderNotes, canResolverNotas } from '../../utils/permissions'
 
 // V51 — bitácora interna de la orden: comunicación entre áreas que NUNCA
 // sale en el PDF de cliente ni en el interno (generateOrderPdf.jsx ni
@@ -15,6 +16,9 @@ import { canManageOrderNotes } from '../../utils/permissions'
 export default function OrderNotesCard({ order, onUpdated }) {
   const { role } = useAuth()
   const editable = canManageOrderNotes(role) && !order.eliminada_en
+  const puedeResolver = canResolverNotas(role) && !order.eliminada_en
+  const resuelta = !!order.nota_resuelta_en
+  const [resolviendo, setResolviendo] = useState(false)
   const [editing, setEditing] = useState(false)
   const [notas, setNotas] = useState(order.notas_internas || '')
   const [saving, setSaving] = useState(false)
@@ -39,6 +43,19 @@ export default function OrderNotesCard({ order, onUpdated }) {
       return
     }
     setEditing(false)
+    onUpdated?.()
+  }
+
+  // V130 — Resolver / Reabrir.
+  async function handleResolver(resolver) {
+    setResolviendo(true)
+    setError(null)
+    const { error: resError } = await resolverNotaOrden(order.id, resolver)
+    setResolviendo(false)
+    if (resError) {
+      setError(resError)
+      return
+    }
     onUpdated?.()
   }
 
@@ -84,7 +101,33 @@ export default function OrderNotesCard({ order, onUpdated }) {
         Esto no lo ve el cliente — es solo para comunicación entre áreas.
       </p>
       {order.notas_internas ? (
-        <p style={{ whiteSpace: 'pre-wrap', margin: 0, fontSize: 14 }}>{order.notas_internas}</p>
+        <>
+          <p
+            style={{ whiteSpace: 'pre-wrap', margin: 0, fontSize: 14 }}
+            className={resuelta ? 'nota-resuelta__texto' : undefined}
+          >
+            {order.notas_internas}
+          </p>
+          {resuelta ? (
+            <p className="nota-resuelta__estado">
+              ✓ Resuelta{order.nota_resuelta_por_nombre ? ` por ${order.nota_resuelta_por_nombre}` : ''} · {formatDateTime(order.nota_resuelta_en)}
+              {puedeResolver && (
+                <button type="button" className="btn btn--ghost btn--small" onClick={() => handleResolver(false)} disabled={resolviendo}>
+                  Reabrir
+                </button>
+              )}
+            </p>
+          ) : (
+            puedeResolver && (
+              <div style={{ marginTop: 10 }}>
+                <button type="button" className="btn btn--secondary btn--small" onClick={() => handleResolver(true)} disabled={resolviendo}>
+                  {resolviendo ? 'Guardando…' : '✓ Resolver'}
+                </button>
+              </div>
+            )
+          )}
+          {error && <p className="form-error">{error.message}</p>}
+        </>
       ) : (
         <p className="pantone-hint">Sin notas todavía.</p>
       )}

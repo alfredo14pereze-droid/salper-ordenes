@@ -5775,3 +5775,18 @@ sigue funcionando; `pf_editar` cambia a pagado y limpia total/anticipo.
 - **Tipo de orden "borado":** duplicado mal escrito de "bordado", sin órdenes ni plantillas → se
   borró (`order_types`). "Bordado" se queda. No existe pantalla para renombrar/borrar tipos de orden
   (solo "+ Nuevo tipo…" al crear una orden); se hace por SQL.
+
+### V130 — Notas internas: botón "Resolver"
+
+`supabase/schema_v130_notas_resolver.sql` (aplicado 2026-10-04, hash verificado; comprobado: anon sin
+acceso a `resolver_nota_orden`, authenticated sí, columnas y trigger creados, 0 notas resueltas al inicio).
+- Columnas `orders.nota_resuelta_en` / `nota_resuelta_por_nombre`; trigger `orders_nota_reabrir_trg`
+  (BEFORE UPDATE OF notas_internas) las borra si el texto de la nota cambia; RPC
+  `resolver_nota_orden(p_order_id, p_resuelta)` (no 'lectura', 'captura_produccion',
+  'admin_fabrica_lectura' ni 'consulta_tienda'; exige que exista nota). No se tocó
+  `set_order_notas_internas`.
+- Frontend: en el detalle de la orden (`OrderNotesCard`) botón "✓ Resolver"; resuelta = texto tachado +
+  "✓ Resuelta por X · fecha" + "Reabrir". `OrderCard` ya no pinta morado ni muestra "✎ Nota" si la nota
+  está resuelta (V128). `canResolverNotas` en `permissions.js`; `resolverNotaOrden` en el servicio.
+- Probado en local con una orden real: resolver → desaparece de las tarjetas (31 → 29 apariciones) →
+  reabrir → vuelve; quedó como estaba.

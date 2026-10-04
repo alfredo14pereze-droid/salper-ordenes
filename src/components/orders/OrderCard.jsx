@@ -15,7 +15,8 @@ export default function OrderCard({ order, orderType }) {
   // después de confirmarse", pero en morado, para saber de un vistazo cuáles
   // órdenes tienen una nota que revisar (antes había que abrirlas una por una).
   // Las notas solo se muestran con sesión (nunca a invitados).
-  const nota = user ? order.notas_internas?.trim() : ''
+  // V130: una nota resuelta ya no se marca.
+  const nota = user && !order.nota_resuelta_en ? order.notas_internas?.trim() : ''
   const days = daysUntil(order.requested_delivery_date)
   const completed = isCompleted(order.status)
   const prendas = resumenPrendas(order)
