@@ -1,3 +1,4 @@
+import { resumenPrendas } from '../utils/pendientesPago'
 import { useState } from 'react'
 import { usePendientes } from '../hooks/usePendientes'
 import { cambiarEstado, SIGUIENTE } from '../services/pendientesService'
@@ -43,7 +44,7 @@ export default function EstacionPendientesPage({ tipoNombre }) {
               <span className="estacion-card__folio">{p.folio}</span>
               <span className="estacion-card__prendas">{p.descripcion}</span>
               <span className="estacion-card__due">
-                {p.prenda} · talla {p.talla} · × {p.cantidad}
+                {resumenPrendas(p)}
               </span>
               <button
                 type="button"

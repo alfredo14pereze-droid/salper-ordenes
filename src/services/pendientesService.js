@@ -80,7 +80,7 @@ export async function uploadPendientePhoto(file) {
   return { data: { path, url: data.publicUrl }, error: null }
 }
 
-export async function crearPendiente({ descripcion, tipoId, cantidad, fechaRequerida, clienteId, fotos, esParaCliente, clienteNombre, clienteTelefono, prenda, talla, inventariado, pagado }) {
+export async function crearPendiente({ descripcion, tipoId, cantidad, fechaRequerida, clienteId, fotos, esParaCliente, clienteNombre, clienteTelefono, prenda, talla, inventariado, pagado, prendas, pagoEstado, pagoTotal, pagoAnticipo }) {
   const { error } = ensureClient()
   if (error) return { data: null, error }
   return supabase
@@ -98,11 +98,16 @@ export async function crearPendiente({ descripcion, tipoId, cantidad, fechaReque
       p_talla: talla || null,
       p_inventariado: inventariado,
       p_pagado: esParaCliente ? pagado : null,
+      // V129 — varias prendas y pago con anticipo
+      p_prendas: prendas || null,
+      p_pago_estado: esParaCliente ? pagoEstado || null : null,
+      p_pago_total: esParaCliente && pagoEstado === 'anticipo' ? pagoTotal : null,
+      p_pago_anticipo: esParaCliente && pagoEstado === 'anticipo' ? pagoAnticipo : null,
     })
     .single()
 }
 
-export async function editarPendiente({ id, descripcion, tipoId, cantidad, fechaRequerida, clienteId, fotos, esParaCliente, clienteNombre, clienteTelefono, prenda, talla, inventariado, pagado }) {
+export async function editarPendiente({ id, descripcion, tipoId, cantidad, fechaRequerida, clienteId, fotos, esParaCliente, clienteNombre, clienteTelefono, prenda, talla, inventariado, pagado, prendas, pagoEstado, pagoTotal, pagoAnticipo }) {
   const { error } = ensureClient()
   if (error) return { data: null, error }
   return supabase
@@ -121,6 +126,11 @@ export async function editarPendiente({ id, descripcion, tipoId, cantidad, fecha
       p_talla: talla || null,
       p_inventariado: inventariado,
       p_pagado: esParaCliente ? pagado : null,
+      // V129 — varias prendas y pago con anticipo
+      p_prendas: prendas || null,
+      p_pago_estado: esParaCliente ? pagoEstado || null : null,
+      p_pago_total: esParaCliente && pagoEstado === 'anticipo' ? pagoTotal : null,
+      p_pago_anticipo: esParaCliente && pagoEstado === 'anticipo' ? pagoAnticipo : null,
     })
     .single()
 }

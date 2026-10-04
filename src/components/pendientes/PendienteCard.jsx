@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { SIGUIENTE, sinRecibirAlerta, urgenciaFecha, diasEsperandoEntrega } from '../../services/pendientesService'
 import { formatDate, formatDateTime } from '../../utils/dates'
+import { resumenPrendas, textoPago } from '../../utils/pendientesPago'
 
 // Tarjeta de un pendiente. Móvil primero: el botón de confirmar es grande y de
 // un solo toque; la casilla permite confirmar varios en bloque.
@@ -40,11 +41,9 @@ export default function PendienteCard({ p, puedeActuar, puedeEntregar, selected,
           {p.descripcion}
         </Link>
         <div className="pf-card__meta">
-          <span>
-            {p.prenda} · talla {p.talla}
-          </span>
+          <span>{resumenPrendas(p)}</span>
           {p.es_para_cliente ? (
-            <span>{p.pagado ? '💰 Pagado' : 'No pagado'}</span>
+            <span>{textoPago(p)}</span>
           ) : (
             <span>{p.inventariado === null ? 'Inventariado: —' : p.inventariado ? 'Inventariado' : 'No inventariado'}</span>
           )}

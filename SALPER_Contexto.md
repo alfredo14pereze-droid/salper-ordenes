@@ -5726,3 +5726,36 @@ Hoy hay 30 órdenes con nota (21 sin completar). Se probó en local (escritorio 
 Se descartó (a pedido del usuario) la versión con "notas nuevas / vistas" y SQL de fecha y
 autor por nota: no hace falta para este uso. Las pantallas de estación de fábrica
 (`EstacionHomePage`) no usan `OrderCard` y no muestran este indicador todavía.
+
+### V129 — Pendientes: varias prendas por pendiente y pago con anticipo
+
+`supabase/schema_v129_pendientes_prendas_anticipo.sql` (aplicado 2026-10-04, cargado desde GitHub
+raw con hash verificado; empieza con una guarda de deriva que exige que `pf_crear`/`pf_editar`
+vivas sean las de V84). Verificado: una `pf_crear` y una `pf_editar` (17 parámetros y 18), grants
+(authenticated sí, anon no), pendientes existentes rellenados (13), y una prueba dentro de un
+bloque que se revierte solo (nada quedó en la base): crear con 2 prendas + anticipo → `cantidad`
+= 3 (suma), `prenda/talla` = primera línea, `pago_estado='anticipo'`, `pagado=false`, total 1500 y
+anticipo 500; anticipo ≥ total y talla vacía rechazados; llamada con los 13 parámetros viejos
+sigue funcionando; `pf_editar` cambia a pagado y limpia total/anticipo.
+
+- **Prendas:** `pf_pendientes.prendas` (jsonb `[{prenda,talla,cantidad}]`). Las columnas de siempre se
+  siguen llenando (`prenda`/`talla` = primera línea, `cantidad` = total de piezas) para no romper
+  nada que las lea. El formulario (`PendienteForm.jsx`) tiene una línea por prenda con cantidad
+  propia (se quitó el campo "Cantidad" general) y agrega una línea vacía sola al llenar prenda y
+  talla de la última; la vacía del final no se guarda. Muestra "Total: N piezas" si hay varias.
+- **Pago:** nueva opción **Anticipo** (además de Pagado / No pagado): pide total del trabajo y
+  anticipo y muestra "Resta" calculado (total − anticipo, no se guarda). Reglas (también en el
+  servidor): total > 0, anticipo > 0 y anticipo < total. Columnas `pago_estado`
+  (`pagado|no_pagado|anticipo`), `pago_total`, `pago_anticipo`; `pagado` queda true solo si 'pagado'.
+- **Cambio en la base de funciones:** se borraron las firmas viejas de `pf_crear`/`pf_editar` y se
+  recrearon con 4 parámetros opcionales al final (evita dos sobrecargas ambiguas para la API), mismos
+  permisos. Auxiliares nuevas: `pf_normalizar_prendas`, `pf_normalizar_pago`.
+- **Pantallas:** `utils/pendientesPago.js` (`prendasDe`, `resumenPrendas`, `textoPago`) alimenta la
+  tarjeta (`PendienteCard`), el detalle (`PendienteDetailPage`) y la estación
+  (`EstacionPendientesPage`): "Chamarra talla M ×2 · Short talla L" y "Anticipo $500 · Resta $1,000".
+  Los pendientes anteriores se ven igual que antes (caen a `prenda/talla/cantidad` y `pagado`).
+- **No probado:** el envío real desde la pantalla (crear un pendiente real dejaría una fila en la
+  base de producción); sí se probó el formulario (alta de prendas, Enter, anticipo/resta) y las
+  funciones con la prueba que se revierte. Pendiente: que el usuario cree uno real y lo confirme.
+- La etiqueta imprimible (`generatePendientePdf.jsx`) no usa prenda/talla/cantidad, así que no
+  cambia.

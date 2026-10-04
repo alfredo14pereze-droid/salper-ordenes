@@ -1,3 +1,4 @@
+import { prendasDe, resumenPrendas, textoPago } from '../utils/pendientesPago'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { fetchPendiente, fetchHistorial, cambiarEstado, ESTADOS, SIGUIENTE, sinRecibirAlerta, urgenciaFecha, diasEsperandoEntrega } from '../services/pendientesService'
@@ -96,10 +97,10 @@ export default function PendienteDetailPage() {
         <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{p.descripcion}</p>
         <div className="pf-card__meta" style={{ marginTop: 10 }}>
           <span>
-            Prenda: {p.prenda} · Talla {p.talla}
+            {prendasDe(p).length > 1 ? 'Prendas' : 'Prenda'}: {resumenPrendas(p)}
           </span>
           {p.es_para_cliente ? (
-            <span>{p.pagado ? '💰 Pagado' : 'No pagado'}</span>
+            <span>{textoPago(p)}</span>
           ) : (
             <span>{p.inventariado === null ? 'Inventariado: —' : p.inventariado ? 'Inventariado' : 'No inventariado'}</span>
           )}
