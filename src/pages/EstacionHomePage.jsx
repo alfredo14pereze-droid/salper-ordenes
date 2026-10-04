@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useOrders } from '../hooks/useOrders'
 import { useAllOrdenEtapas } from '../hooks/useAllOrdenEtapas'
 import { useAuth } from '../contexts/AuthContext'
@@ -7,6 +7,7 @@ import { ETAPA_LABELS } from '../lib/constants'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import EstacionCard from '../components/orders/EstacionCard'
 import SublimadoHomePage from './SublimadoHomePage'
+import { coincideBusquedaOrden } from '../utils/ordenesBusqueda'
 
 // V96 — "Siguientes órdenes": pantalla de inicio de cada estación de
 // fábrica (corte/bordado/sublimado/produccion/terminado). Sin menú
@@ -31,6 +32,7 @@ function SiguientesOrdenes() {
   const estacion = estacionDeRol(role)
   const { orders, loading: loadingOrders, error: errorOrders, refresh: refreshOrders } = useOrders()
   const { etapasPorOrden, loading: loadingEtapas, error: errorEtapas, refresh: refreshEtapas } = useAllOrdenEtapas()
+  const [busqueda, setBusqueda] = useState('')
 
   // V120 — una estación puede reportar más de una etapa (corte también
   // reporta sublimado): una lista por etapa, en el orden del flujo.
@@ -45,6 +47,14 @@ function SiguientesOrdenes() {
         }),
       })),
     [orders, etapasPorOrden, estacion]
+  )
+
+  // V131 — buscador por folio (SALPER o anterior) o cliente en cualquier orden,
+  // no solo en las pendientes de mi etapa.
+  const texto = busqueda.trim()
+  const encontradas = useMemo(
+    () => (texto ? orders.filter((o) => !o.cancelled_at && coincideBusquedaOrden(o, texto)) : null),
+    [orders, texto]
   )
 
   const loading = loadingOrders || loadingEtapas
@@ -62,7 +72,24 @@ function SiguientesOrdenes() {
   return (
     <div className="page estacion-page">
       {!variasEtapas && <h2 className="section-title">Siguientes órdenes</h2>}
-      {secciones.map(({ etapa, ordenes }) => (
+      <input
+        type="search"
+        className="input"
+        placeholder="Buscar folio, folio anterior o cliente (cualquier orden)"
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+      />
+      {encontradas &&
+        (encontradas.length === 0 ? (
+          <EmptyState>Ninguna orden coincide con esa búsqueda.</EmptyState>
+        ) : (
+          <div className="estacion-list">
+            {encontradas.map((o) => (
+              <EstacionCard key={o.id} order={o} />
+            ))}
+          </div>
+        ))}
+      {!encontradas && secciones.map(({ etapa, ordenes }) => (
         <div key={etapa} className="estacion-seccion">
           {variasEtapas && (
             <h2 className="section-title">

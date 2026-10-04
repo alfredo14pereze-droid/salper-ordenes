@@ -25,6 +25,7 @@ export default function OrderCorteResumen({ orderId }) {
               <th>Real</th>
               <th>Estimado</th>
               <th>Diferencia</th>
+              <th>Cortes</th>
             </tr>
           </thead>
           <tbody>
@@ -42,6 +43,7 @@ export default function OrderCorteResumen({ orderId }) {
                   <td className={diferenciaPct != null && Math.abs(diferenciaPct) > 10 ? 'form-error' : ''}>
                     {diferenciaPct != null ? `${diferenciaPct > 0 ? '+' : ''}${diferenciaPct.toFixed(1)}%` : '—'}
                   </td>
+                  <td>{m.nota || '—'}</td>
                 </tr>
               )
             })}

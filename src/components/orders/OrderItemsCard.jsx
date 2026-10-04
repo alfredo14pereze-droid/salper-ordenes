@@ -17,6 +17,7 @@ const emptyItem = () => ({
   tela_nombre: '',
   foto_url: '',
   lleva_bordado: false,
+  bordado_ubicacion: '',
   lleva_bolsas: false,
   manga: '',
   vivos: '',
@@ -68,6 +69,7 @@ function ItemSummary({ item, index }) {
     item.punos && ['Puños', item.punos],
     item.logotipos && ['Logotipos', item.logotipos],
     item.numeros && ['Números', item.numeros],
+    item.lleva_bordado && item.bordado_ubicacion && ['Bordado en', item.bordado_ubicacion],
   ].filter(Boolean)
 
   const notas = [item.lleva_bordado && 'Lleva bordado', item.lleva_bolsas && 'Lleva bolsas'].filter(Boolean)

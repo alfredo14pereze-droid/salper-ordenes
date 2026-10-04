@@ -5790,3 +5790,35 @@ acceso a `resolver_nota_orden`, authenticated sí, columnas y trigger creados, 0
   está resuelta (V128). `canResolverNotas` en `permissions.js`; `resolverNotaOrden` en el servicio.
 - Probado en local con una orden real: resolver → desaparece de las tarjetas (31 → 29 apariciones) →
   reabrir → vuelve; quedó como estaba.
+
+### V131 — Varios cortes, buscador en todas las estaciones, sublimado a Samuel, ubicación del bordado
+
+`supabase/schema_v131_corte_multiple_sublimado_samuel.sql` (aplicado 2026-10-04, hash verificado, con
+guarda de deriva; verificado: ambas funciones nuevas, grants authenticated sí/anon no, `impresion` sigue
+siendo del rol sublimado). Dos funciones, sin tablas ni columnas nuevas:
+- `update_orden_etapa`: la etapa `sublimado` ahora la reporta el rol **sublimado** (antes `corte`);
+  parche de un solo reemplazo sobre la definición viva. admin_fabrica/admin_general siguen pudiendo todas.
+- `marcar_corte(uuid, jsonb)`: acepta VARIOS cortes por tela y cortes de telas fuera de las prendas
+  (p. ej. vivos). Por cada tela suma sus cortes en un solo movimiento `consumo_corte` y junta las
+  descripciones (`nota` de cada elemento) en `movimientos_tela.nota`. Las telas de las prendas siguen
+  siendo obligatorias; llamada vieja (sin nota) funciona igual.
+
+Frontend:
+- **Corte** (`EstacionOrderPage.jsx`, `TelaUsadaCorte`): un bloque por tela como antes + "+ Agregar otro
+  corte" (campo "¿Qué corte es?" obligatorio, selector de tela con todas las telas, trazo/piezas/hojas).
+  Cada corte manda `{tela_id, cantidad, nota}`; la confirmación muestra el total por tela.
+  `OrderCorteResumen` tiene columna "Cortes" con la nota.
+- **Buscador**: `EstacionHomePage` (corte, bordado, costura, terminado) busca por folio, folio anterior o
+  cliente en cualquier orden (`utils/ordenesBusqueda.js`). Sublimado ya lo tenía.
+- **Sublimado → Samuel**: `vistasPorRol.js` (corte solo corte; sublimado = `impresion` + `sublimado` con
+  `finalLabels` Impresa/Sublimada), `canChangeEtapa`, bandeja nueva "Pendientes de sublimado" y chip de
+  estado en `SublimadoHomePage`. Lo que estaba pendiente de sublimar para corte pasa solo a Samuel.
+- **Bordado**: campo `bordado_ubicacion` por prenda (texto libre, "¿Dónde va el bordado?") en
+  `OrderItemsEditor` (solo si lleva bordado y no es sublimación); se ve en el resumen de la prenda, en
+  `OrderBordadosCard` (junto a las fotos), en la vista del bordador y en `EntregaResumenPdf`.
+- Probado en local con "Ver como": corte (buscador, sin sección de sublimado, formulario de cortes con
+  extra, deshabilitado hasta completar), sublimado (bandejas, botones Impresa/Sublimada), campo de bordado.
+  **No probado**: confirmar un corte real (descontaría tela del inventario real); la primera orden real que
+  corte Pancho será la prueba. Tampoco se probó con las cuentas reales de Samuel/Pancho.
+- Nota: la interfaz del SQL Editor se quedó en "Running…" y la conexión de Chrome se cayó mientras corría;
+  se comprobó con consultas de solo lectura que la migración sí quedó aplicada completa.

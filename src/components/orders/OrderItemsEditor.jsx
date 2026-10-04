@@ -71,6 +71,7 @@ export default function OrderItemsEditor({
         tela_nombre: '',
         foto_url: '',
         lleva_bordado: false,
+        bordado_ubicacion: '',
         lleva_bolsas: false,
         manga: '',
         vivos: '',
@@ -476,6 +477,18 @@ export default function OrderItemsEditor({
               >
                 {item.lleva_bordado ? '✓ Lleva bordado' : '¿Lleva bordado?'}
               </button>
+            )}
+            {!isSublimacion && item.lleva_bordado && (
+              <label style={{ marginTop: 8 }}>
+                ¿Dónde va el bordado?
+                <input
+                  type="text"
+                  className="input"
+                  value={item.bordado_ubicacion || ''}
+                  onChange={(e) => updateItem(itemIndex, { bordado_ubicacion: e.target.value })}
+                  placeholder="Ej. Espalda, manga derecha, pecho izquierdo"
+                />
+              </label>
             )}
 
             {showRoster && (() => {

@@ -80,7 +80,7 @@ export const STATUS_GROUPS = [
 // canChangeEtapa en utils/permissions.js.
 // V120 — 'impresion' (solo órdenes de sublimación, va antes de sublimado)
 // es la excepción al 1:1: la reporta el rol 'sublimado', y la etapa
-// 'sublimado' la reporta el rol 'corte'.
+// 'sublimado' la reporta el rol 'sublimado' (V131; antes 'corte').
 export const ETAPA_LABELS = {
   impresion: 'Impresión',
   corte: 'Corte',

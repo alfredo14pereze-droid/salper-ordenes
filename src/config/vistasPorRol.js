@@ -15,13 +15,20 @@
 // tipo de trabajo propio en Pendientes — se quedan sin acceso (ni
 // `pendientesTipo` ni `pendientesCompleto`).
 export const ESTACIONES = {
-  // V120 — corte (Pancho) también reporta la etapa 'sublimado' de las
-  // órdenes de sublimación (`etapasExtra`); el rol sublimado (Samuel) pasa
-  // a la etapa nueva 'impresion', con su propio dashboard de órdenes de
-  // sublimación (`dashboardSublimado`) y la subida de diseños (`disenos`).
-  corte: { etapa: 'corte', consumoPlaceholder: true, etapasExtra: ['sublimado'] },
+  // V131 — corte (Pancho) solo reporta corte. La etapa 'sublimado' (la
+  // sublimada de las órdenes de sublimación) pasó al rol sublimado (Samuel),
+  // que reporta las dos: primero 'impresion' (Impresa) y luego 'sublimado'
+  // (Sublimada) — ver `finalLabels`. El dashboard de sublimado
+  // (`dashboardSublimado`) y la subida de diseños (`disenos`) siguen igual.
+  corte: { etapa: 'corte', consumoPlaceholder: true },
   bordado: { etapa: 'bordado', pendientesTipo: 'Bordado' },
-  sublimado: { etapa: 'impresion', finalLabel: 'Impresa', dashboardSublimado: true, disenos: true },
+  sublimado: {
+    etapa: 'sublimado',
+    etapasExtra: ['impresion'],
+    finalLabels: { impresion: 'Impresa', sublimado: 'Sublimada' },
+    dashboardSublimado: true,
+    disenos: true,
+  },
   // V111 — 'produccion' (rol) queda deprecated, sin usuarios reales; el
   // rol nuevo es 'costura' — misma etapa ('produccion', que no se
   // renombró) y mismo pendientesTipo. Se deja la entrada 'produccion'

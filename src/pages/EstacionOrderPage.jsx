@@ -28,6 +28,7 @@ function PrendaResumen({ item }) {
         {item.color ? ` · ${item.color}` : ''}
       </p>
       {item.tela_nombre && <p className="estacion-prenda__detalle">Tela: {item.tela_nombre}</p>}
+      {item.lleva_bordado && item.bordado_ubicacion && <p className="estacion-prenda__detalle">Bordado en: {item.bordado_ubicacion}</p>}
       <p className="estacion-prenda__detalle">{sizesText || 'Sin tallas capturadas'}</p>
     </div>
   )
@@ -35,16 +36,25 @@ function PrendaResumen({ item }) {
 
 // V110 — Parte A: para `corte`, "Tela usada" ya no se escribe directo —
 // se captura el trazo (largo del trazo, piezas por trazo, número de
-// hojas) POR CADA tela que use la orden, y los metros/piezas se calculan
-// solos: metros = largo × hojas, piezas cortadas = piezas por trazo ×
-// hojas. Los metros calculados son los que se mandan a marcar_corte (el
-// RPC no cambió — sigue esperando {tela_id, cantidad} en metros/kilos).
-// Piezas cortadas es solo de referencia en pantalla para el operador —
-// no se guarda aparte, no hay a dónde compararla todavía.
+// hojas) y los metros/piezas se calculan solos: metros = largo × hojas,
+// piezas cortadas = piezas por trazo × hojas. Los metros calculados son
+// los que se mandan a marcar_corte (el RPC espera {tela_id, cantidad} en
+// metros/kilos). Piezas cortadas es solo de referencia en pantalla.
+//
+// V131 — varios cortes: cada tela de la orden arranca con un corte, y
+// "+ Agregar corte" suma otro (p. ej. manta para pantalón, vivos para
+// chamarra) con un campo de texto para decir qué corte es y la tela de la
+// que sale (por default una de la orden, pero puede ser otra, como la de los
+// vivos). El servidor suma los cortes de cada tela en un solo movimiento y
+// guarda las descripciones en su nota (ver marcar_corte en
+// schema_v131_corte_multiple_sublimado_samuel.sql).
+let cortePk = 0
+const nuevoCorte = (telaId, extra = false) => ({ key: ++cortePk, telaId, extra, descripcion: '', largo: '', piezas: '', hojas: '' })
+
 function TelaUsadaCorte({ order, onCortado }) {
   const telaIds = useMemo(() => [...new Set((order.items || []).map((i) => i.tela_id).filter(Boolean))], [order.items])
   const [telas, setTelas] = useState({})
-  const [trazos, setTrazos] = useState({})
+  const [cortes, setCortes] = useState(() => telaIds.map((id) => nuevoCorte(id)))
   const [confirmando, setConfirmando] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
@@ -61,29 +71,36 @@ function TelaUsadaCorte({ order, onCortado }) {
     return <p className="form-error">Esta orden no tiene ninguna tela asignada a sus prendas — avisa a tienda antes de cortar.</p>
   }
 
-  function actualizar(telaId, campo, valor) {
-    setTrazos((prev) => ({ ...prev, [telaId]: { ...prev[telaId], [campo]: valor } }))
+  const nombreTela = (id) => telas[id]?.nombre || 'Tela'
+  const unidadTela = (id) => telas[id]?.unidad || ''
+
+  function actualizar(key, patch) {
+    setCortes((prev) => prev.map((c) => (c.key === key ? { ...c, ...patch } : c)))
+  }
+  function quitar(key) {
+    setCortes((prev) => prev.filter((c) => c.key !== key))
   }
 
-  function metrosDe(telaId) {
-    const t = trazos[telaId] || {}
-    const largo = Number(t.largo)
-    const hojas = Number(t.hojas)
-    return largo > 0 && hojas > 0 ? largo * hojas : null
-  }
-  function piezasDe(telaId) {
-    const t = trazos[telaId] || {}
-    const piezas = Number(t.piezas)
-    const hojas = Number(t.hojas)
-    return piezas > 0 && hojas > 0 ? piezas * hojas : null
-  }
+  const metrosDe = (c) => (Number(c.largo) > 0 && Number(c.hojas) > 0 ? Number(c.largo) * Number(c.hojas) : null)
+  const piezasDe = (c) => (Number(c.piezas) > 0 && Number(c.hojas) > 0 ? Number(c.piezas) * Number(c.hojas) : null)
+  const completo = (c) => metrosDe(c) != null && piezasDe(c) != null && (!c.extra || c.descripcion.trim() !== '')
 
-  const todasCapturadas = telaIds.every((id) => metrosDe(id) != null && piezasDe(id) != null)
+  // Cada tela de la orden necesita al menos un corte completo; los cortes
+  // agregados tienen que estar completos (o quitarse).
+  const todasCapturadas = telaIds.every((id) => cortes.some((c) => !c.extra && c.telaId === id && completo(c))) && cortes.filter((c) => c.extra).every(completo)
+
+  const completos = cortes.filter(completo)
+  const telasUsadas = [...new Set(completos.map((c) => c.telaId))]
+  const totalDeTela = (id) => completos.filter((c) => c.telaId === id).reduce((n, c) => n + metrosDe(c), 0)
 
   async function handleConfirmar() {
     setBusy(true)
     setError(null)
-    const consumos = telaIds.map((tela_id) => ({ tela_id, cantidad: metrosDe(tela_id) }))
+    const consumos = completos.map((c) => ({
+      tela_id: c.telaId,
+      cantidad: metrosDe(c),
+      nota: c.extra || c.descripcion.trim() ? `${c.descripcion.trim() || 'Corte'}: ${metrosDe(c).toFixed(2)} ${unidadTela(c.telaId)}`.trim() : null,
+    }))
     const { error: err } = await marcarCorte(order.id, consumos)
     setBusy(false)
     if (err) return setError(err)
@@ -92,52 +109,51 @@ function TelaUsadaCorte({ order, onCortado }) {
 
   return (
     <div className="estacion-consumo">
-      {telaIds.map((telaId) => {
-        const t = trazos[telaId] || {}
-        const unidad = telas[telaId]?.unidad || ''
-        const metros = metrosDe(telaId)
-        const piezas = piezasDe(telaId)
+      {cortes.map((c, i) => {
+        const unidad = unidadTela(c.telaId)
+        const metros = metrosDe(c)
+        const piezas = piezasDe(c)
         return (
-          <div key={telaId} className="estacion-trazo">
+          <div key={c.key} className="estacion-trazo">
             <p className="field-label">
-              {telas[telaId]?.nombre || 'Tela'} {unidad ? `(${unidad})` : ''}
+              {c.extra ? `Corte ${i + 1}` : nombreTela(c.telaId)} {!c.extra && unidad ? `(${unidad})` : ''}
             </p>
+            {c.extra && (
+              <div className="form-row">
+                <label>
+                  ¿Qué corte es? *
+                  <input
+                    type="text"
+                    className="input"
+                    value={c.descripcion}
+                    onChange={(e) => actualizar(c.key, { descripcion: e.target.value })}
+                    placeholder="Ej. Manta para pantalón, vivos de chamarra"
+                  />
+                </label>
+                <label>
+                  Tela
+                  <select className="input" value={c.telaId} onChange={(e) => actualizar(c.key, { telaId: e.target.value })}>
+                    {[...new Set([...telaIds, ...Object.keys(telas)])].map((id) => (
+                      <option key={id} value={id}>
+                        {nombreTela(id)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
             <div className="form-row-3">
               <label>
                 Largo del trazo {unidad ? `(${unidad})` : ''}
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min="0.01"
-                  step="0.01"
-                  className="input"
-                  value={t.largo || ''}
-                  onChange={(e) => actualizar(telaId, 'largo', e.target.value)}
-                />
+                <input type="number" inputMode="decimal" min="0.01" step="0.01" className="input" value={c.largo} onChange={(e) => actualizar(c.key, { largo: e.target.value })} />
               </label>
               <label>
                 Piezas por trazo
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  min="1"
-                  step="1"
-                  className="input"
-                  value={t.piezas || ''}
-                  onChange={(e) => actualizar(telaId, 'piezas', e.target.value)}
-                />
+                <input type="number" inputMode="numeric" min="1" step="1" className="input" value={c.piezas} onChange={(e) => actualizar(c.key, { piezas: e.target.value })} />
               </label>
               <label>
                 Número de hojas
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  min="1"
-                  step="1"
-                  className="input"
-                  value={t.hojas || ''}
-                  onChange={(e) => actualizar(telaId, 'hojas', e.target.value)}
-                />
+                <input type="number" inputMode="numeric" min="1" step="1" className="input" value={c.hojas} onChange={(e) => actualizar(c.key, { hojas: e.target.value })} />
               </label>
             </div>
             {(metros != null || piezas != null) && (
@@ -147,9 +163,17 @@ function TelaUsadaCorte({ order, onCortado }) {
                 {piezas != null && `${piezas} piezas cortadas`}
               </p>
             )}
+            {c.extra && (
+              <button type="button" className="btn btn--ghost btn--small" onClick={() => quitar(c.key)}>
+                Quitar este corte
+              </button>
+            )}
           </div>
         )
       })}
+      <button type="button" className="btn btn--secondary estacion-btn" onClick={() => setCortes((prev) => [...prev, nuevoCorte(telaIds[0], true)])}>
+        + Agregar otro corte
+      </button>
       {error && <p className="form-error">{error.message}</p>}
       {!confirmando ? (
         <button type="button" className="btn btn--primary estacion-btn" disabled={!todasCapturadas} onClick={() => setConfirmando(true)}>
@@ -158,9 +182,7 @@ function TelaUsadaCorte({ order, onCortado }) {
       ) : (
         <div className="estacion-acciones">
           <p>
-            ¿Confirmas que se usaron{' '}
-            {telaIds.map((telaId) => `${metrosDe(telaId).toFixed(2)} ${telas[telaId]?.unidad || ''} de ${telas[telaId]?.nombre || 'tela'}`).join(', ')} y la
-            orden está cortada?
+            ¿Confirmas que se usaron {telasUsadas.map((id) => `${totalDeTela(id).toFixed(2)} ${unidadTela(id)} de ${nombreTela(id)}`).join(', ')} y la orden está cortada?
           </p>
           <button type="button" className="btn btn--primary estacion-btn" disabled={busy} onClick={handleConfirmar}>
             {busy ? 'Guardando…' : 'Sí, confirmar'}
@@ -217,7 +239,10 @@ function EstacionFotos({ order, esBordado }) {
           if (registros.length === 0) return null
           return (
             <div key={item.id || i} style={{ marginBottom: 10 }}>
-              <p className="estacion-prenda__detalle">{item.garment || `Prenda ${i + 1}`}</p>
+              <p className="estacion-prenda__detalle">
+                {item.garment || `Prenda ${i + 1}`}
+                {item.bordado_ubicacion ? ` — Dónde va: ${item.bordado_ubicacion}` : ''}
+              </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {registros.map((r) => (
                   <button
@@ -536,7 +561,7 @@ export default function EstacionOrderPage() {
                     disabled={busy}
                     onClick={() => handleCambiarEtapa(et.etapa, 'completado')}
                   >
-                    {(esPrincipal && estacion.finalLabel) || 'Finalizado'}
+                    {estacion.finalLabels?.[et.etapa] || (esPrincipal && estacion.finalLabel) || 'Finalizado'}
                   </button>
                 )}
               </div>

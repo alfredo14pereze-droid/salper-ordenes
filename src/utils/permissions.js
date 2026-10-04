@@ -149,11 +149,12 @@ export function canConfirmOrderChanges(role) {
 // no se renombró — ver schema_v111_roles_fabrica_parte1.sql).
 // V120 — dos casos más (ver schema_v120_sublimado_impresion_disenos.sql):
 // la etapa nueva 'impresion' es del rol 'sublimado', y la etapa
-// 'sublimado' pasa a ser del rol 'corte'.
+// 'sublimado' pasa a ser del rol 'corte'. V131: la etapa 'sublimado' pasa al rol
+// 'sublimado' (Samuel), que ahora reporta impresión y sublimado.
 export function canChangeEtapa(role, etapa) {
   if (role === 'admin_fabrica' || role === 'admin_general') return true
   if (etapa === 'impresion') return role === 'sublimado'
-  if (etapa === 'sublimado') return role === 'corte'
+  if (etapa === 'sublimado') return role === 'sublimado' // V131: antes 'corte'
   if (etapa === 'produccion') return role === 'produccion' || role === 'costura'
   return role === etapa
 }

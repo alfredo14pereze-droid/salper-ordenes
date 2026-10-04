@@ -64,7 +64,7 @@ function specsDe(item) {
     item.vivos && `Vivos: ${item.vivos}`,
     item.logotipos && `Logotipos: ${item.logotipos}`,
     item.numeros && `Números: ${item.numeros}`,
-    item.lleva_bordado && 'Lleva bordado',
+    item.lleva_bordado && (item.bordado_ubicacion ? `Lleva bordado (${item.bordado_ubicacion})` : 'Lleva bordado'),
     item.lleva_bolsas && 'Lleva bolsas',
   ].filter(Boolean)
 }

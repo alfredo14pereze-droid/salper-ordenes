@@ -8,12 +8,14 @@ import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import EstacionCard from '../components/orders/EstacionCard'
 
 // V120 — pantalla de inicio del rol sublimado (Samuel): dashboard de las
-// órdenes de sublimación con el estado de su impresión y de su diseño.
-// Tres bandejas: lo que falta imprimir, lo que todavía no tiene diseño
-// final, y todas las de sublimación que siguen vivas. El buscador de
+// órdenes de sublimación con el estado de su impresión, su sublimada (V131) y
+// su diseño. Bandejas: lo que falta imprimir, lo que falta sublimar, lo que
+// todavía no tiene diseño final, y todas las de sublimación que siguen vivas. El buscador de
 // folio abarca TODAS las órdenes (cualquier tipo), porque también sube
 // diseños a órdenes que no son de sublimación.
 const IMPRESION_LABELS = { pendiente: 'Por imprimir', en_proceso: 'Imprimiendo', completado: 'Impresa' }
+// V131 — Samuel también reporta la sublimada (antes la reportaba corte).
+const SUBLIMADO_LABELS = { pendiente: 'Por sublimar', en_proceso: 'Sublimando', completado: 'Sublimada' }
 
 function estadoDiseno(tipos) {
   if (tipos?.has('final')) return { label: 'Diseño final', estado: 'completado' }
@@ -57,15 +59,17 @@ export default function SublimadoHomePage() {
   }, [loadDisenos, orders])
 
   const impresionDe = useCallback((o) => (etapasPorOrden[o.id] || []).find((e) => e.etapa === 'impresion'), [etapasPorOrden])
+  const sublimadoDe = useCallback((o) => (etapasPorOrden[o.id] || []).find((e) => e.etapa === 'sublimado'), [etapasPorOrden])
 
   const bandejas = useMemo(() => {
     const vivas = orders.filter((o) => o.order_type_key === 'sublimacion' && !o.cancelled_at && o.status !== 'completado')
     return [
       { key: 'imprimir', label: 'Pendientes de impresión', ordenes: vivas.filter((o) => ['pendiente', 'en_proceso'].includes(impresionDe(o)?.estado)) },
+      { key: 'sublimar', label: 'Pendientes de sublimado', ordenes: vivas.filter((o) => ['pendiente', 'en_proceso'].includes(sublimadoDe(o)?.estado)) },
       { key: 'diseno', label: 'Diseño pendiente', ordenes: vivas.filter((o) => !disenosPorOrden[o.id]?.has('final')) },
       { key: 'todas', label: 'Todas', ordenes: vivas },
     ]
-  }, [orders, disenosPorOrden, impresionDe])
+  }, [orders, disenosPorOrden, impresionDe, sublimadoDe])
 
   const texto = busqueda.trim().toLowerCase()
   const encontradas = useMemo(
@@ -115,11 +119,13 @@ export default function SublimadoHomePage() {
         <div className="estacion-list">
           {lista.map((o) => {
             const impresion = impresionDe(o)
+            const sublimado = sublimadoDe(o)
             const diseno = estadoDiseno(disenosPorOrden[o.id])
             return (
               <EstacionCard key={o.id} order={o}>
                 <span className="estacion-card__chips">
                   {impresion && <Chip estado={impresion.estado}>{IMPRESION_LABELS[impresion.estado]}</Chip>}
+                  {sublimado && <Chip estado={sublimado.estado}>{SUBLIMADO_LABELS[sublimado.estado]}</Chip>}
                   <Chip estado={diseno.estado}>{diseno.label}</Chip>
                 </span>
               </EstacionCard>

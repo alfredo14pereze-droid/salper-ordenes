@@ -47,6 +47,11 @@ function PrendaBordadoRow({ orderId, item, registros, canEdit, onChanged }) {
   return (
     <div className="document-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
       <span className="document-row__label">{item.garment || 'Prenda sin nombre'}</span>
+      {item.bordado_ubicacion && (
+        <span className="pending-card__garment" style={{ display: 'block' }}>
+          Dónde va: <strong>{item.bordado_ubicacion}</strong>
+        </span>
+      )}
 
       {registros.length === 0 && <p className="document-row__empty">Sin registros de bordado todavía.</p>}
 
