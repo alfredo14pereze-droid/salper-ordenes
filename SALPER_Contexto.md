@@ -5976,9 +5976,10 @@ a ninguna estación de fábrica.
 
 ### V136 — Tipos de orden con candados y cliente fijo en Venta Mostrador (rama `venta-mostrador-plantilla`)
 
-**ESTADO: código en la rama `venta-mostrador-plantilla` (sale de `main` en V134), SIN fusionar.
-`supabase/schema_v136_tipos_orden_candados.sql` está escrito pero NO aplicado todavía** (pendiente de
-que Alfredo lo confirme). El frontend de esta rama necesita ese SQL para crear/editar tipos.
+**ESTADO: SQL aplicado en Supabase el 2026-10-05** (`supabase/schema_v136_tipos_orden_candados.sql`,
+hash verificado). **El frontend está en la rama `venta-mostrador-plantilla` (sale de `main` en V134), SIN
+fusionar.** Mientras no se fusione, el "+ Nuevo tipo…" de producción responde "Elige al menos una
+etapa…" (manda la llamada vieja sin etapas); el resto de producción no cambia.
 
 **SQL (V136):**
 - `order_type_puede_administrar()`: `admin_tienda`, `admin_fabrica`, `admin_general` ("super_admin" no
@@ -6016,6 +6017,13 @@ que Alfredo lo confirme). El frontend de esta rama necesita ese SQL para crear/e
 - Detalle de orden (editar): el campo Cliente queda deshabilitado en órdenes de Venta Mostrador.
 - Constantes: `TIPO_VENTA_MOSTRADOR`, `CLIENTE_SALPER_NOMBRE`, `ETAPAS_PLANTILLA_OPTIONS`.
 
-**Probado:** `npm run build` limpio. **No probado en pantalla** (el entorno local pide iniciar sesión)
-ni contra la base (V136 sin aplicar; crear un tipo o una orden de prueba escribiría en producción y
-gastaría folios).
+**Verificado tras aplicar (solo lectura y llamadas que el servidor rechaza antes de escribir):**
+`create_order_type` con 5 parámetros, `anon` sin acceso y `authenticated` sí; la interna sin grant;
+los 3 triggers creados (`orders_validar_tipo_ins` corre antes de `trg_assign_order_folio`). Con la
+cuenta admin_general: crear tipo sin etapas → rechazado; tipo que ya existe → rechazado; etapas vacías
+o `bordado` en `set_order_type_etapas` → rechazado. Tipos y plantillas quedaron igual (22 filas).
+`npm run build` limpio.
+
+**No probado:** las pantallas (el entorno local pide iniciar sesión), crear un tipo real, crear una
+orden de Venta Mostrador ni el rechazo de una orden sin etapas (escribirían en producción o gastarían
+folios). La primera orden real de Venta Mostrador será la prueba del cliente fijo.
