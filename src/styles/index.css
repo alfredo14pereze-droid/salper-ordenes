@@ -1478,6 +1478,13 @@ h4 {
   gap: 2px;
 }
 
+/* Botones "¿Lleva bordado?" / "¿Lleva impresión?" junto a Logotipos */
+.prenda-marcas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 /* V133 — bordados de una prenda (foto + dónde va) en el formulario de orden */
 .bordados-prenda {
   display: flex;

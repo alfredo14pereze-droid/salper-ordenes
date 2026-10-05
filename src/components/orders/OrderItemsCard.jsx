@@ -74,7 +74,7 @@ function ItemSummary({ item, index }) {
     item.lleva_bordado && item.bordado_ubicacion && ['Bordado en', item.bordado_ubicacion],
   ].filter(Boolean)
 
-  const notas = [item.lleva_bordado && 'Lleva bordado', item.lleva_bolsas && 'Lleva bolsas'].filter(Boolean)
+  const notas = [item.lleva_bordado && 'Lleva bordado', item.lleva_impresion && 'Lleva impresión', item.lleva_bolsas && 'Lleva bolsas'].filter(Boolean)
 
   // V50 — antes solo se decía "Lista de N registros"; el usuario pidió
   // que la lista de nombres/números en sí se vea en el resumen (no solo

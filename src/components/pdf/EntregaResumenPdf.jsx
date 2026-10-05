@@ -66,6 +66,7 @@ function specsDe(item) {
     item.numeros && `Números: ${item.numeros}`,
     item.bordados?.length > 0 && `Bordados: ${item.bordados.map((b) => b.ubicacion || 'foto').join(', ')}`,
     item.lleva_bordado && (item.bordado_ubicacion ? `Lleva bordado (${item.bordado_ubicacion})` : 'Lleva bordado'),
+    item.lleva_impresion && 'Lleva impresión',
     item.lleva_bolsas && 'Lleva bolsas',
   ].filter(Boolean)
 }

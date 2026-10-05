@@ -413,6 +413,38 @@ function OrderItemsEditorGeneral({
                   onChange={(e) => updateItem(itemIndex, { logotipos: e.target.value })}
                 />
               </label>
+              {/* Bordado e impresión van junto a Logotipos (pedido explícito:
+                  a la vista, no hasta abajo de la prenda). V40: sublimación
+                  nunca lleva bordado — los botones ni se ofrecen; si una prenda
+                  vieja de sublimación ya tenía lleva_bordado=true, el dato se
+                  queda como está, solo deja de poder tocarse desde aquí.
+                  "Lleva impresión" es solo una marca en la prenda. */}
+              {!isSublimacion && (
+                <div>
+                  <div className="prenda-marcas">
+                    <button
+                      type="button"
+                      className={item.lleva_bordado ? 'btn btn--secondary btn--small' : 'btn btn--ghost btn--small'}
+                      onClick={() => updateItem(itemIndex, { lleva_bordado: !item.lleva_bordado })}
+                    >
+                      {item.lleva_bordado ? '✓ Lleva bordado' : '¿Lleva bordado?'}
+                    </button>
+                    <button
+                      type="button"
+                      className={item.lleva_impresion ? 'btn btn--secondary btn--small' : 'btn btn--ghost btn--small'}
+                      onClick={() => updateItem(itemIndex, { lleva_impresion: !item.lleva_impresion })}
+                    >
+                      {item.lleva_impresion ? '✓ Lleva impresión' : '¿Lleva impresión?'}
+                    </button>
+                  </div>
+                  {item.lleva_bordado && (
+                    <BordadosPrenda
+                      item={item}
+                      onPatch={(fn) => onChange((prev) => prev.map((it, i) => (i === itemIndex ? { ...it, ...fn(it) } : it)))}
+                    />
+                  )}
+                </div>
+              )}
               <label>
                 Números
                 <input
@@ -480,27 +512,6 @@ function OrderItemsEditorGeneral({
                 + Agregar talla
               </button>
             </div>
-
-            {/* V40: sublimación nunca lleva bordado — el botón ni se ofrece
-                (pedido explícito del usuario). Si una prenda vieja de
-                sublimación ya tenía lleva_bordado=true, el dato se queda
-                como está, solo deja de poder tocarse desde aquí. */}
-            {!isSublimacion && (
-              <button
-                type="button"
-                className={item.lleva_bordado ? 'btn btn--secondary btn--small' : 'btn btn--ghost btn--small'}
-                style={{ marginTop: 12 }}
-                onClick={() => updateItem(itemIndex, { lleva_bordado: !item.lleva_bordado })}
-              >
-                {item.lleva_bordado ? '✓ Lleva bordado' : '¿Lleva bordado?'}
-              </button>
-            )}
-            {!isSublimacion && item.lleva_bordado && (
-              <BordadosPrenda
-                item={item}
-                onPatch={(fn) => onChange((prev) => prev.map((it, i) => (i === itemIndex ? { ...it, ...fn(it) } : it)))}
-              />
-            )}
 
             {showRoster && (() => {
               const rows = rosterRows(item)
