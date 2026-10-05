@@ -4149,3 +4149,13 @@ h4 {
 /* V130 — nota resuelta */
 .nota-resuelta__texto { color: var(--color-text-muted); text-decoration: line-through; }
 .nota-resuelta__estado { margin: 8px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--color-good); }
+
+/* V132 — órdenes de bordado: filas de bordados y miniaturas */
+.bordado-lista { display: grid; gap: 8px; }
+.bordado-fila { display: flex; align-items: center; gap: 8px; }
+.bordado-fila__foto { width: 64px; height: 64px; object-fit: cover; border-radius: 6px; display: block; }
+.bordado-subir { align-self: flex-start; cursor: pointer; }
+.bordado-miniaturas { display: flex; flex-wrap: wrap; gap: 10px; }
+.bordado-miniaturas__item { display: flex; flex-direction: column; align-items: center; gap: 2px; max-width: 96px; color: inherit; text-decoration: none; }
+.bordado-miniaturas__item img { width: 90px; height: 90px; object-fit: cover; border-radius: 6px; display: block; }
+.bordado-miniaturas__lugar { font-size: 12px; text-align: center; }

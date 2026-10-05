@@ -1,3 +1,4 @@
+import BordadosMiniaturas from '../components/orders/BordadosMiniaturas'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useOrder } from '../hooks/useOrder'
@@ -228,7 +229,8 @@ function EstacionFotos({ order, esBordado }) {
       lista.push(r)
       registrosPorItem.set(r.item_id, lista)
     }
-    if (bordados.length === 0) {
+    // V132 — también cuentan los bordados que tienda capturó dentro de la prenda.
+    if (bordados.length === 0 && !items.some((it) => it.bordados?.length > 0)) {
       return <p className="form-error">Esta orden no tiene foto de bordado.</p>
     }
     return (
@@ -236,13 +238,14 @@ function EstacionFotos({ order, esBordado }) {
         <span className="field-label">Fotos de bordado</span>
         {items.map((item, i) => {
           const registros = registrosPorItem.get(item.id) || []
-          if (registros.length === 0) return null
+          if (registros.length === 0 && !(item.bordados?.length > 0)) return null
           return (
             <div key={item.id || i} style={{ marginBottom: 10 }}>
               <p className="estacion-prenda__detalle">
                 {item.garment || `Prenda ${i + 1}`}
                 {item.bordado_ubicacion ? ` — Dónde va: ${item.bordado_ubicacion}` : ''}
               </p>
+              <BordadosMiniaturas bordados={item.bordados} />
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {registros.map((r) => (
                   <button

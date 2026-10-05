@@ -1,3 +1,4 @@
+import BordadosMiniaturas from './BordadosMiniaturas'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchOrdenBordados, createOrdenBordado, deleteOrdenBordado } from '../../services/bordadosService'
 import { useAuth } from '../../contexts/AuthContext'
@@ -53,7 +54,10 @@ function PrendaBordadoRow({ orderId, item, registros, canEdit, onChanged }) {
         </span>
       )}
 
-      {registros.length === 0 && <p className="document-row__empty">Sin registros de bordado todavía.</p>}
+      {/* V132 — bordados capturados por tienda al crear la orden (foto + dónde va). */}
+      <BordadosMiniaturas bordados={item.bordados} />
+
+      {registros.length === 0 && !(item.bordados?.length > 0) && <p className="document-row__empty">Sin registros de bordado todavía.</p>}
 
       {registros.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>

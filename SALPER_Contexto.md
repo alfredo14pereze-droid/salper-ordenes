@@ -5884,3 +5884,34 @@ desde la app (logotipos de bordados y fotos extra). Imprime el checklist de pend
 **Pendiente:** V132 (sin commit en `rediseno-visual`) toca `OrderItemsEditor`/`OrderItemsCard`/`NewOrderPage`/
 `bordadosService`, igual que esto: habrá que conciliar al fusionarlo; observaciones y logotipos todavía no salen en PDFs ni en las
 pantallas de estación; editar productos sigue siendo solo de ventas/admin_general.
+
+### V132 — Órdenes de tipo "bordado": simples, solo bordado y terminado
+
+`supabase/schema_v132_plantilla_etapas_bordado.sql` (aplicado 2026-10-04, hash verificado, con guarda): dos
+filas en `plantillas_etapas` para el tipo `bordado` → **bordado (1)** y **terminado (2)**. `create_order`
+copia la plantilla (la etapa bordado la decide `lleva_bordado` y toma su secuencia de aquí). Verificado:
+las dos filas existen. No hay ninguna orden de tipo bordado todavía (no se creó ninguna de prueba).
+
+Frontend (`utils/bordadoOrden.js`, `components/orders/BordadoItemsEditor.jsx`; `OrderItemsEditor` lo usa
+cuando `orderTypeKey === 'bordado'`):
+- Solo **prenda** (Camisa, Polo, Playera, Pantalón, Chamarra, Sudadera, Chaleco, Mandil, Cachucha, "Otra…"),
+  **tallas y cantidades** y **bordados**: cada bordado = foto + "¿Dónde va?" (texto libre), salvo
+  **cachucha**, que solo pide la foto. Se pueden subir **varias fotos a la vez** (cada una es un bordado).
+  Nada de tela, color, cuello, manga, vivos, puños, logotipos, números ni bolsas. Cotización, orden de compra,
+  factura, total y anticipo siguen como siempre.
+- Los bordados viven dentro de la prenda (`items[].bordados[] = {id, ubicacion, foto_url, foto_path}`), no en
+  `orden_bordados`, así tienda los captura al crear la orden sin depender de permisos de bordado. Las fotos se
+  suben al elegirlas (`uploadFotoBordado`, carpeta `bordados-orden/`).
+- Validación (`validarItemsBordado`): cada prenda necesita la foto de su bordado y su "dónde va" (no
+  cachucha). `normalizarItemsBordado` marca `lleva_bordado` en todas las prendas (así el servidor crea la etapa
+  bordado) en "Nueva orden" y al editar prendas en el detalle.
+- Se ven en el detalle (`OrderBordadosCard`), en la pantalla del bordador (`EstacionOrderPage`) y, el texto de
+  ubicaciones, en `EntregaResumenPdf`.
+- **Cruce con la otra sesión (V133):** mientras yo trabajaba en este directorio, otra sesión (catálogo de
+  productos, V133) confirmó en su commit mi `uploadFotoBordado` y reutilizó la misma forma de datos
+  (`bordados[]`) en su `BordadosPrenda` para escolar/industrial. Se mezcló sin pérdida: en los otros tipos
+  sigue su lista de bordados (V133) y en `bordado` el editor simple de V132; la validación de foto usa la de
+  V132 para órdenes de bordado y la de V133 para las demás. Lección: este directorio es compartido; las
+  sesiones deben usar worktrees separados.
+- No probado: crear una orden de bordado completa (crearía una orden real); sí el formulario, la subida de
+  varias fotos (archivos de prueba borrados del almacenamiento) y que escolar conserva su editor.
