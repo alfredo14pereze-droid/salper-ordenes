@@ -1,3 +1,4 @@
+import { esOrdenBordado, normalizarItemsBordado, validarItemsBordado } from '../../utils/bordadoOrden'
 import { limpiarRoster } from '../../utils/roster'
 import { useState } from 'react'
 import OrderItemsEditor from './OrderItemsEditor'
@@ -183,9 +184,16 @@ export default function OrderItemsCard({ order, onUpdated }) {
   }
 
   async function handleSave() {
+    if (esOrdenBordado(order.order_type_key)) {
+      const bordadoError = validarItemsBordado(items)
+      if (bordadoError) {
+        setError(new Error(bordadoError))
+        return
+      }
+    }
     setSaving(true)
     setError(null)
-    const cleanItems = items
+    const cleanItemsBase = items
       .filter((item) => item.garment.trim() || item.sizes.some((s) => String(s.talla).trim()))
       .map((item) => limpiarRoster({
         ...item,
@@ -193,6 +201,7 @@ export default function OrderItemsCard({ order, onUpdated }) {
           .filter((s) => String(s.talla).trim() && Number(s.cantidad) > 0)
           .map((s) => ({ talla: String(s.talla).trim(), cantidad: Number(s.cantidad) })),
       }))
+    const cleanItems = esOrdenBordado(order.order_type_key) ? normalizarItemsBordado(cleanItemsBase) : cleanItemsBase
 
     const { error: saveError } = await setOrderItems(order.id, cleanItems)
     setSaving(false)

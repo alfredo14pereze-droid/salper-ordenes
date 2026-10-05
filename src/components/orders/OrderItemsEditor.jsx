@@ -4,6 +4,8 @@ import TelaSelect from './TelaSelect'
 import ProductoAutocomplete from './ProductoAutocomplete'
 import OrderTelaResumen from './OrderTelaResumen'
 import BordadosPrenda from './BordadosPrenda'
+import BordadoItemsEditor from './BordadoItemsEditor'
+import { esOrdenBordado } from '../../utils/bordadoOrden'
 import { FILA_ROSTER_VACIA, filaRosterConDatos } from '../../utils/roster'
 
 const OTRO_COLOR = '__otro__'
@@ -28,7 +30,7 @@ const OTRO_COLOR = '__otro__'
 // nombres+números (o solo números, para short) — ver GARMENT_TOP_KEYS_SUBLIMACION
 // y GARMENT_OPTIONS_SUBLIMACION en utils/constants.js. Los demás tipos de
 // orden (escolar, industrial) se quedan exactamente como estaban.
-export default function OrderItemsEditor({
+function OrderItemsEditorGeneral({
   items,
   onChange,
   orderTypeKey,
@@ -604,4 +606,11 @@ export default function OrderItemsEditor({
       <OrderTelaResumen items={items} />
     </div>
   )
+}
+
+// V132 — las órdenes de tipo bordado usan un editor mucho más simple (prenda,
+// tallas y bordados con foto). El resto de los tipos sigue igual.
+export default function OrderItemsEditor(props) {
+  if (esOrdenBordado(props.orderTypeKey)) return <BordadoItemsEditor items={props.items} onChange={props.onChange} />
+  return <OrderItemsEditorGeneral {...props} />
 }

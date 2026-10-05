@@ -1,3 +1,4 @@
+import { esOrdenBordado, normalizarItemsBordado, validarItemsBordado } from '../utils/bordadoOrden'
 import { limpiarRoster } from '../utils/roster'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -377,8 +378,14 @@ function NewOrderForm() {
       return
     }
 
-    // V133 — una prenda que lleva bordado necesita la foto del bordado.
-    const faltaFotoBordado = form.orderTypeKey === 'sublimacion' ? null : validarFotosBordado(items)
+    // V132/V133 — foto de bordado obligatoria: en una orden de bordado, cada prenda necesita
+    // la foto de su bordado (y su "dónde va" si no es cachucha); en las demás, solo las
+    // prendas que llevan bordado (sublimación nunca).
+    const faltaFotoBordado = esOrdenBordado(form.orderTypeKey)
+      ? validarItemsBordado(items)
+      : form.orderTypeKey === 'sublimacion'
+        ? null
+        : validarFotosBordado(items)
     if (faltaFotoBordado) {
       setSubmitError(new Error(faltaFotoBordado))
       return
@@ -387,7 +394,7 @@ function NewOrderForm() {
     setSubmitting(true)
     setSubmitError(null)
 
-    const cleanItems = items
+    const cleanItemsBase = items
       .filter((item) => item.garment.trim() || item.sizes.some((s) => s.talla.trim()))
       .map((item) => limpiarRoster({
         ...item,
@@ -395,6 +402,7 @@ function NewOrderForm() {
           .filter((s) => s.talla.trim() && Number(s.cantidad) > 0)
           .map((s) => ({ talla: s.talla.trim(), cantidad: Number(s.cantidad) })),
       }))
+    const cleanItems = esOrdenBordado(form.orderTypeKey) ? normalizarItemsBordado(cleanItemsBase) : cleanItemsBase
 
     const { data, error: createError } = await createOrder({
       clientName: form.clientName.trim(),
