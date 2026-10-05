@@ -5822,3 +5822,65 @@ Frontend:
   corte Pancho será la prueba. Tampoco se probó con las cuentas reales de Samuel/Pancho.
 - Nota: la interfaz del SQL Editor se quedó en "Running…" y la conexión de Chrome se cayó mientras corría;
   se comprobó con consultas de solo lectura que la migración sí quedó aplicada completa.
+
+### V133 — Catálogo de productos por cliente: ficha completa, carga de las fichas de uniformes y página por colegio
+
+Fusionado a `main` el 2026-10-04 (rama `catalogo-productos`, salió de `main` en V131). El SQL
+(`schema_v133_catalogo_productos.sql`) **ya está aplicado en Supabase** y verificado (17 columnas en
+`productos`, una sola copia de `guardar_producto`, `anon` no la puede ejecutar).
+
+**Estructura final del catálogo** (`public.productos`, V12 + V133, todo aditivo):
+- De V12: `cliente_id`, `nombre`, `garment`, `color`, `pantone`, `tela_id`, `foto_url`, `foto_path`.
+- Nuevas: `especificaciones jsonb` (manga, vivos, cuello, punos, bies, hilo, tecnicas[], proveedor,
+  observaciones, tela_extra, ficha, color_sugerido_de_foto), `bordados jsonb`
+  (`[{ubicacion, descripcion, foto_url, foto_path}]` — la foto es la del logotipo), `tallas text[]`,
+  `tallas_rango text`, `fotos jsonb` (`[{url, path}]`, igual que `orders.reference_photos`;
+  `foto_url`/`foto_path` siempre traen la primera), `pendiente_validar boolean`, `notas_validacion text`.
+- RPC nueva `guardar_producto(...)` (ventas / admin_general): con `p_id` actualiza; sin `p_id` busca por
+  cliente + nombre y crea si no existe. `create_producto`/`delete_producto` no se tocaron.
+- **Sin índice único por cliente + nombre**, a propósito: "Guardar como producto" usa el nombre de la
+  prenda como nombre del producto y fallaría con la misma prenda en dos colores.
+- Fotos en el bucket público `order-photos`, carpeta `productos/<clienteId>/`.
+
+**Carga de las fichas "Layout Uniformes Escolares"** (`data/catalogo/catalogo_salper.json` + 55 fotos):
+- Clientes ligados: Colegio Echavarría, Domus (ficha "Colegio Domus"), IMES, Tricio (ficha "Instituto
+  Tricio"). Cliente creado: 18 de Marzo (escolar).
+- Telas ligadas: Pique, Tampa, polifel afelpado. Creadas: Pique 50/50 (los tres piqué 50/50 de color son
+  una sola tela; el color va en el producto), Dubay XS, Qatar 2.
+- 28 productos: Echavarría 7, Domus 10, IMES 7, 18 de Marzo 3, Tricio 1.
+- 21 quedaron con `pendiente_validar` (los 18 con `revisar` o color tomado de la foto, más los que no
+  traen color o tallas); `notas_validacion` dice qué falta en cada uno.
+- Tallas (decisión de Alfredo): la 16 es la misma que XS y no se usa. "2-XL" = 2…14, XS, CH, M, L, XL;
+  "0-XL" y "2-40" = 0, 1, 2…14, XS, CH, M, L, XL; "S-5XL" = CH…5XL.
+
+**Script de recarga:** `data/catalogo/` (el JSON y las fotos) **no está en git** (el repo es público;
+está en `.gitignore`) — vive solo en la máquina de Alfredo, en `salper-ordenes-catalogo/data/catalogo/`.
+Desde la raíz del repo, `node scripts/seed_catalogo.mjs --simular` (no escribe) y
+`node scripts/seed_catalogo.mjs` (carga). Usa `.env` y la cuenta admin_general de `.env.capturas`. Es
+idempotente, pero **lo que diga el JSON pisa lo editado en la app**; solo se conservan las fotos subidas
+desde la app (logotipos de bordados y fotos extra). Imprime el checklist de pendientes por cliente.
+
+**Frontend:**
+- Nueva orden (`ProductoAutocomplete.jsx`, `utils/productoCatalogo.js`): el catálogo del cliente se ve
+  con miniatura, nombre y prenda; elegir un producto COPIA a la prenda (snapshot en `orders.items`)
+  prenda, color, tela, manga, vivos, cuello, puños, observaciones (campo nuevo de la prenda, solo si viene
+  del catálogo) y los bordados. Aviso "⚠️ Datos por validar" en los incompletos.
+- **Bordados con foto en la orden** (`BordadosPrenda.jsx`, escolar/industrial): al marcar "Lleva bordado"
+  ya no hay un solo texto "¿Dónde va?", sino una lista de bordados, cada uno con foto y dónde va,
+  guardada en la prenda como `items[].bordados[] = {id, ubicacion, foto_url, foto_path}` — la misma forma
+  que V132 usa en las órdenes de tipo bordado (`uploadFotoBordado`, carpeta `bordados-orden/`). Si la
+  prenda viene del catálogo llegan llenos, con la foto del logotipo si el producto la tiene.
+  `bordado_ubicacion` (V131) se sigue llenando con las ubicaciones. **Al crear la orden se exige al menos
+  una foto de bordado por prenda que lleva bordado** (`validarFotosBordado`); al editar una orden ya
+  creada no se exige, para no bloquear órdenes viejas.
+- **Las tallas NO se cargan solas** (se probó y Alfredo pidió quitarlo): se capturan a mano. `tallas`
+  queda en el catálogo solo como referencia.
+- Los bordados no se precargan en `orden_bordados` (ahí solo escribe bordado/admin de fábrica con la
+  etapa activa); viven en la prenda.
+- Catálogos: "Productos por cliente" es ahora una lista de clientes; cada uno abre su página
+  (`/catalogos/cliente/:id`, `CatalogoClientePage.jsx`) con sus productos en tarjetas, la ficha completa,
+  filtro "Solo pendientes de validar" y alta/edición (datos, fotos y bordados con foto del logotipo).
+
+**Pendiente:** V132 (sin commit en `rediseno-visual`) toca `OrderItemsEditor`/`OrderItemsCard`/`NewOrderPage`/
+`bordadosService`, igual que esto: habrá que conciliar al fusionarlo; observaciones y logotipos todavía no salen en PDFs ni en las
+pantallas de estación; editar productos sigue siendo solo de ventas/admin_general.

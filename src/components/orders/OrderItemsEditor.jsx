@@ -3,6 +3,7 @@ import { GARMENT_COLORS, GARMENT_OPTIONS_SUBLIMACION, GARMENT_TOP_KEYS_SUBLIMACI
 import TelaSelect from './TelaSelect'
 import ProductoAutocomplete from './ProductoAutocomplete'
 import OrderTelaResumen from './OrderTelaResumen'
+import BordadosPrenda from './BordadosPrenda'
 import { FILA_ROSTER_VACIA, filaRosterConDatos } from '../../utils/roster'
 
 const OTRO_COLOR = '__otro__'
@@ -419,6 +420,20 @@ export default function OrderItemsEditor({
                   onChange={(e) => updateItem(itemIndex, { numeros: e.target.value })}
                 />
               </label>
+              {/* V133 — viene del catálogo de productos (se puede editar o
+                  borrar aquí sin tocar el catálogo). Solo se muestra si la
+                  prenda la trae, para no agregar un campo vacío a todas. */}
+              {!!item.producto_id && (
+                <label>
+                  Observaciones
+                  <input
+                    type="text"
+                    className="input"
+                    value={item.observaciones || ''}
+                    onChange={(e) => updateItem(itemIndex, { observaciones: e.target.value })}
+                  />
+                </label>
+              )}
             </div>
 
             <div>
@@ -479,16 +494,10 @@ export default function OrderItemsEditor({
               </button>
             )}
             {!isSublimacion && item.lleva_bordado && (
-              <label style={{ marginTop: 8 }}>
-                ¿Dónde va el bordado?
-                <input
-                  type="text"
-                  className="input"
-                  value={item.bordado_ubicacion || ''}
-                  onChange={(e) => updateItem(itemIndex, { bordado_ubicacion: e.target.value })}
-                  placeholder="Ej. Espalda, manga derecha, pecho izquierdo"
-                />
-              </label>
+              <BordadosPrenda
+                item={item}
+                onPatch={(fn) => onChange((prev) => prev.map((it, i) => (i === itemIndex ? { ...it, ...fn(it) } : it)))}
+              />
             )}
 
             {showRoster && (() => {

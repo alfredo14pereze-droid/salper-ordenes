@@ -10,3 +10,4 @@ dev.sh
 .vercel
 .env*
 scripts/data/
+data/catalogo/

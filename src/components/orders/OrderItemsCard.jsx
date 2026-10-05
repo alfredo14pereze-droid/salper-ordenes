@@ -69,6 +69,7 @@ function ItemSummary({ item, index }) {
     item.punos && ['Puños', item.punos],
     item.logotipos && ['Logotipos', item.logotipos],
     item.numeros && ['Números', item.numeros],
+    item.observaciones && ['Observaciones', item.observaciones],
     item.lleva_bordado && item.bordado_ubicacion && ['Bordado en', item.bordado_ubicacion],
   ].filter(Boolean)
 
@@ -99,6 +100,21 @@ function ItemSummary({ item, index }) {
             <dd>{value}</dd>
           </div>
         ))}
+        {item.lleva_bordado && item.bordados?.some((b) => b.foto_url) && (
+          <div>
+            <dt>Fotos de bordados</dt>
+            <dd className="logotipos-catalogo">
+              {item.bordados
+                .filter((b) => b.foto_url)
+                .map((b) => (
+                  <a key={b.id} href={b.foto_url} target="_blank" rel="noreferrer">
+                    <img src={b.foto_url} alt="" loading="lazy" />
+                    <span>{b.ubicacion}</span>
+                  </a>
+                ))}
+            </dd>
+          </div>
+        )}
         <div>
           <dt>Tallas y cantidades</dt>
           <dd>{sizesText || 'Sin tallas capturadas'}</dd>

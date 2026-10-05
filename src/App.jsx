@@ -19,6 +19,7 @@ import PedidosTiendaPage from './pages/PedidosTiendaPage'
 import NewPedidoTiendaPage from './pages/NewPedidoTiendaPage'
 import PedidoTiendaDetailPage from './pages/PedidoTiendaDetailPage'
 import CatalogosPage from './pages/CatalogosPage'
+import CatalogoClientePage from './pages/CatalogoClientePage'
 import InventarioTelaPage from './pages/InventarioTelaPage'
 import ConsumosPrendaPage from './pages/ConsumosPrendaPage'
 import ControlRapidoPage from './pages/ControlRapidoPage'
@@ -109,6 +110,7 @@ function AuthGate() {
               (ver canViewDesignSystem). */}
           <Route path="/design" element={<DesignSystemPage />} />
           <Route path="/catalogos" element={<CatalogosPage />} />
+          <Route path="/catalogos/cliente/:clienteId" element={<CatalogoClientePage />} />
           <Route path="/inventario-tela" element={<InventarioTelaPage />} />
           <Route path="/consumos-prenda" element={<ConsumosPrendaPage />} />
           <Route path="/control-rapido" element={<ControlRapidoPage />} />

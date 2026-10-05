@@ -1391,6 +1391,320 @@ h4 {
   gap: 4px;
 }
 
+/* V133 — catálogo de productos del cliente dentro de una prenda */
+.producto-picker__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.producto-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.producto-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.producto-card:hover,
+.producto-card--activo {
+  border-color: var(--color-black);
+}
+
+.producto-card img,
+.producto-card__sin-foto {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--color-bg);
+}
+
+.producto-card__sin-foto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.producto-card__nombre {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.producto-card__prenda {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.producto-aviso {
+  font-size: 11px;
+  color: var(--color-warning);
+}
+
+.producto-elegido {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.producto-elegido img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.producto-elegido div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* V133 — bordados de una prenda (foto + dónde va) en el formulario de orden */
+.bordados-prenda {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.bordados-prenda .producto-bordado .input {
+  flex: 1;
+}
+
+.bordados-prenda__subir {
+  align-self: flex-start;
+  cursor: pointer;
+}
+
+.producto-fotos__agregar--falta {
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+
+/* V133 — fotos de bordados en el resumen de la prenda */
+.logotipos-catalogo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.logotipos-catalogo a {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 84px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.logotipos-catalogo img {
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+/* V133 — Catálogos: lista de clientes y página del catálogo de un cliente */
+.cliente-catalogo {
+  justify-content: flex-start;
+  color: inherit;
+  text-decoration: none;
+}
+
+.cliente-catalogo:hover {
+  border-color: var(--color-black);
+}
+
+.cliente-catalogo img,
+.cliente-catalogo__sin-foto {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--color-bg);
+}
+
+.cliente-catalogo > div {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.cliente-catalogo__meta {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.cliente-catalogo__flecha {
+  font-size: 20px;
+  color: var(--color-text-muted);
+}
+
+.catalogo-cliente__barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+
+.producto-picker__grid--grande {
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.producto-aviso--bloque {
+  font-size: 13px;
+  margin: 8px 0;
+}
+
+.producto-detalle__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.producto-detalle__fotos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 14px;
+}
+
+.producto-detalle__fotos img {
+  height: 220px;
+  max-width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  display: block;
+}
+
+.producto-detalle__datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  margin-bottom: 14px;
+}
+
+.producto-fotos,
+.producto-bordados {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.producto-bordados {
+  flex-direction: column;
+}
+
+.producto-fotos__item {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  flex: none;
+  display: block;
+}
+
+.producto-fotos__item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  display: block;
+}
+
+.producto-fotos__item button {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.producto-fotos__agregar,
+.order-form label.producto-fotos__agregar {
+  width: 84px;
+  height: 84px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4px;
+  border: 1px dashed var(--color-border);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.producto-fotos__agregar--vacio {
+  cursor: default;
+  font-weight: 400;
+}
+
+.producto-bordado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.producto-bordado__campos {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.producto-validado,
+.order-form label.producto-validado {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  color: var(--color-text);
+}
+
 .sizes-table {
   display: flex;
   flex-direction: column;

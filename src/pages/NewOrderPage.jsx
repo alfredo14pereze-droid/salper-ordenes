@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useOrderTypes } from '../hooks/useOrderTypes'
 import { useClientes } from '../hooks/useClientes'
 import { useTelas } from '../hooks/useTelas'
+import { validarFotosBordado } from '../utils/productoCatalogo'
 import { useProductosByCliente } from '../hooks/useProductosByCliente'
 import { useOrders } from '../hooks/useOrders'
 import { buildDemandMap, getLoadForDate } from '../utils/demand'
@@ -373,6 +374,13 @@ function NewOrderForm() {
     const totalOrdenNum = Number(form.totalOrden)
     if (form.totalOrden && (!totalOrdenNum || totalOrdenNum <= 0)) {
       setSubmitError(new Error('El total de la orden debe ser mayor a cero.'))
+      return
+    }
+
+    // V133 — una prenda que lleva bordado necesita la foto del bordado.
+    const faltaFotoBordado = form.orderTypeKey === 'sublimacion' ? null : validarFotosBordado(items)
+    if (faltaFotoBordado) {
+      setSubmitError(new Error(faltaFotoBordado))
       return
     }
 

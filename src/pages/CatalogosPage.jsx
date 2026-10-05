@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import RequireRole from '../components/common/RequireRole'
 import { useAuth } from '../contexts/AuthContext'
 import {
   canManageCatalogs,
   canCreateCliente,
   canCreateTela,
-  canCreateProducto,
   canViewCatalogos,
   canViewFinanzas,
   canVerComprometidoTela,
@@ -13,7 +13,6 @@ import {
 import RazonesSocialesManager from '../components/finanzas/RazonesSocialesManager'
 import { PROVEEDORES_HABILITADO } from '../utils/featureFlags'
 import { Loading, ErrorState } from '../components/common/States'
-import { useFileDrop } from '../hooks/useFileDrop'
 import { fetchProveedores, getProveedorDeleteImpact, deleteProveedor } from '../services/proveedoresService'
 import {
   fetchClientes,
@@ -24,13 +23,8 @@ import {
 } from '../services/clientesService'
 import { fetchTelas, createTela, updateTela, getTelaDeleteImpact, deleteTela } from '../services/telasService'
 import { fetchInventarioTelas, fetchMovimientosPorTela } from '../services/movimientosTelaService'
-import {
-  fetchProductosByCliente,
-  createProducto,
-  uploadProductoFoto,
-  deleteProducto,
-} from '../services/productosService'
-import { GARMENT_COLORS, CLIENTE_TIPO_ORDEN_OPTIONS } from '../lib/constants'
+import { fetchProductosResumen } from '../services/productosService'
+import { CLIENTE_TIPO_ORDEN_OPTIONS } from '../lib/constants'
 
 // Fila genérica con nombre + botón Eliminar — usada por las 3 secciones
 // simples (proveedores/clientes/telas). Pide confirmación en dos pasos y,
@@ -533,242 +527,64 @@ function CatalogSection({ title, fetchFn, deleteFn, impactFn, impactLabel, addFo
   )
 }
 
-// Alta de producto directo desde Catálogos, con foto — a diferencia del
-// "guardar como producto" que ya existía dentro de una orden (ver
-// ProductoAutocomplete.jsx, que nunca subía una foto real porque las
-// prendas de una orden no tienen selector de foto propio), aquí sí se
-// sube un archivo real al mismo bucket que las fotos de referencia.
-function AddProductoForm({ clienteId, clienteNombre, telas, onCreated }) {
-  const [open, setOpen] = useState(false)
-  const [nombre, setNombre] = useState('')
-  const [garment, setGarment] = useState('')
-  const [color, setColor] = useState('')
-  const [pantone, setPantone] = useState('')
-  const [telaId, setTelaId] = useState('')
-  const [file, setFile] = useState(null)
-  const [preview, setPreview] = useState(null)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
-
-  function handleFile(e) {
-    const f = e.target.files?.[0]
-    e.target.value = ''
-    if (!f) return
-    setFile(f)
-    setPreview(URL.createObjectURL(f))
-  }
-
-  const { dragActive, dropHandlers } = useFileDrop((files) => {
-    const f = files[0]
-    if (!f) return
-    setFile(f)
-    setPreview(URL.createObjectURL(f))
-  })
-
-  function reset() {
-    setNombre('')
-    setGarment('')
-    setColor('')
-    setPantone('')
-    setTelaId('')
-    setFile(null)
-    setPreview(null)
-    setOpen(false)
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    if (!nombre.trim()) return
-    setSaving(true)
-    setError(null)
-
-    let fotoUrl = null
-    let fotoPath = null
-    if (file) {
-      const { data: uploaded, error: uploadError } = await uploadProductoFoto(clienteId, file)
-      if (uploadError) {
-        setSaving(false)
-        setError(uploadError)
-        return
-      }
-      fotoUrl = uploaded.url
-      fotoPath = uploaded.path
-    }
-
-    const { error: createError } = await createProducto({
-      clienteId,
-      nombre: nombre.trim(),
-      garment: garment.trim(),
-      color,
-      pantone: pantone.trim(),
-      telaId: telaId || null,
-      fotoUrl,
-      fotoPath,
-    })
-    setSaving(false)
-    if (createError) {
-      setError(createError)
-      return
-    }
-    reset()
-    onCreated?.()
-  }
-
-  if (!open) {
-    return (
-      <button type="button" className="btn btn--secondary btn--small" onClick={() => setOpen(true)}>
-        + Producto nuevo de {clienteNombre}
-      </button>
-    )
-  }
-
-  return (
-    <form className="order-form" onSubmit={handleSubmit} style={{ marginTop: 10 }}>
-      <label>
-        Nombre del producto
-        <input
-          type="text"
-          className="input"
-          placeholder="Ej. Polo manga larga escolar"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          autoFocus
-        />
-      </label>
-      <div className="form-row">
-        <label>
-          Prenda
-          <input
-            type="text"
-            className="input"
-            placeholder="Ej. Polo, Short…"
-            value={garment}
-            onChange={(e) => setGarment(e.target.value)}
-          />
-        </label>
-        <label>
-          Color
-          <select className="input" value={color} onChange={(e) => setColor(e.target.value)}>
-            <option value="">Selecciona…</option>
-            {GARMENT_COLORS.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-      <div className="form-row">
-        <label>
-          Pantone / especificación
-          <input
-            type="text"
-            className="input"
-            placeholder="Ej. PMS 289 C"
-            value={pantone}
-            onChange={(e) => setPantone(e.target.value)}
-          />
-        </label>
-        <div>
-          <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
-            Tela
-          </span>
-          <select className="input" value={telaId} onChange={(e) => setTelaId(e.target.value)}>
-            <option value="">Sin especificar</option>
-            {telas.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <label>
-        Foto del producto (o arrastra aquí)
-        <span
-          className={'dropzone-inline' + (dragActive ? ' dropzone--active' : '')}
-          style={{ display: 'block' }}
-          {...dropHandlers}
-        >
-          <input type="file" accept="image/*" onChange={handleFile} className="input" />
-        </span>
-      </label>
-      {preview && (
-        <div className="photo-picker__thumb" style={{ width: 120, marginTop: 8 }}>
-          <img src={preview} alt="Vista previa" />
-        </div>
-      )}
-
-      {error && <p className="form-error">{error.message}</p>}
-      <div className="order-form__actions">
-        <button type="button" className="btn btn--ghost" onClick={reset} disabled={saving}>
-          Cancelar
-        </button>
-        <button type="submit" className="btn btn--primary" disabled={saving || !nombre.trim()}>
-          {saving ? 'Guardando…' : 'Guardar producto'}
-        </button>
-      </div>
-    </form>
-  )
-}
-
-// Productos: a diferencia de proveedores/clientes/telas, están agrupados
-// por cliente (no hay un catálogo plano) — se elige un cliente primero.
-function ProductosSection({ canAdd, canDelete }) {
+// V133 — Productos por cliente: aquí solo se elige el cliente (colegio); sus
+// productos se ven y se editan en su propia página (CatalogoClientePage.jsx).
+// "Solo con pendientes" deja a la vista los que tienen fichas por validar.
+function ProductosSection() {
   const [clientes, setClientes] = useState([])
-  const [clienteId, setClienteId] = useState('')
-  const [telas, setTelas] = useState([])
   const [productos, setProductos] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [soloPendientes, setSoloPendientes] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchClientes().then(({ data }) => setClientes(data || []))
-    fetchTelas().then(({ data }) => setTelas(data || []))
+    Promise.all([fetchClientes(), fetchProductosResumen()]).then(([c, p]) => {
+      setClientes(c.data || [])
+      setProductos(p.data || [])
+      setLoading(false)
+    })
   }, [])
 
-  const loadProductos = useCallback(async () => {
-    if (!clienteId) {
-      setProductos([])
-      return
-    }
-    setLoading(true)
-    const { data } = await fetchProductosByCliente(clienteId)
-    setProductos(data || [])
-    setLoading(false)
-  }, [clienteId])
-
-  useEffect(() => {
-    loadProductos()
-  }, [loadProductos])
-
-  const clienteNombre = clientes.find((c) => c.id === clienteId)?.nombre || ''
+  const porCliente = new Map()
+  for (const p of productos) {
+    const r = porCliente.get(p.cliente_id) || { total: 0, pendientes: 0, foto: null }
+    r.total += 1
+    if (p.pendiente_validar) r.pendientes += 1
+    if (!r.foto && p.foto_url) r.foto = p.foto_url
+    porCliente.set(p.cliente_id, r)
+  }
+  const totalPendientes = productos.filter((p) => p.pendiente_validar).length
+  // Primero los que ya tienen productos; los demás quedan abajo para poder
+  // entrar a darles de alta el primero.
+  const lista = clientes
+    .map((c) => ({ ...c, ...(porCliente.get(c.id) || { total: 0, pendientes: 0, foto: null }) }))
+    .filter((c) => !soloPendientes || c.pendientes > 0)
+    .sort((a, b) => (b.total > 0) - (a.total > 0) || a.nombre.localeCompare(b.nombre))
 
   return (
     <div className="card">
       <h3 className="section-title section-title--small">Productos por cliente</h3>
-      <select className="input" value={clienteId} onChange={(e) => setClienteId(e.target.value)} style={{ marginBottom: 10 }}>
-        <option value="">Selecciona un cliente…</option>
-        {clientes.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.nombre}
-          </option>
-        ))}
-      </select>
+      <p className="page-subtitle">Entra a un cliente para ver, agregar o editar sus productos.</p>
+      <label className="producto-validado" style={{ marginBottom: 10 }}>
+        <input type="checkbox" checked={soloPendientes} onChange={(e) => setSoloPendientes(e.target.checked)} />
+        Solo clientes con productos por validar ({totalPendientes} productos)
+      </label>
       {loading && <Loading label="Cargando…" />}
-      {!loading && clienteId && productos.length === 0 && <p className="page-subtitle">Este cliente no tiene productos guardados.</p>}
-      {!loading && productos.length > 0 && (
-        <div className="document-list">
-          {productos.map((p) => (
-            <CatalogRow key={p.id} item={p} deleteFn={deleteProducto} onDeleted={loadProductos} canDelete={canDelete} />
-          ))}
-        </div>
-      )}
-      {clienteId && canAdd && (
-        <div style={{ marginTop: 12 }}>
-          <AddProductoForm clienteId={clienteId} clienteNombre={clienteNombre} telas={telas} onCreated={loadProductos} />
-        </div>
-      )}
+      {!loading && lista.length === 0 && <p className="page-subtitle">No hay productos pendientes de validar.</p>}
+      <div className="document-list">
+        {lista.map((c) => (
+          <Link key={c.id} to={`/catalogos/cliente/${c.id}`} className="document-row cliente-catalogo">
+            {c.foto ? <img src={c.foto} alt="" loading="lazy" /> : <span className="cliente-catalogo__sin-foto" />}
+            <div>
+              <span className="document-row__label">{c.nombre}</span>
+              <span className="cliente-catalogo__meta">
+                {c.total === 0 ? 'Sin productos' : `${c.total} producto(s)`}
+                {c.pendientes > 0 && <span className="producto-aviso"> · ⚠️ {c.pendientes} por validar</span>}
+              </span>
+            </div>
+            <span className="cliente-catalogo__flecha">›</span>
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }
@@ -860,7 +676,7 @@ function CatalogosPageContent() {
           </>
         )}
       />
-      <ProductosSection canAdd={canCreateProducto(role)} canDelete={canDelete} />
+      <ProductosSection />
     </div>
   )
 }

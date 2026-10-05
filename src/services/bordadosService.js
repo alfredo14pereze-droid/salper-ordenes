@@ -72,3 +72,22 @@ export async function deleteOrdenBordado(registro) {
   }
   return supabase.rpc('delete_orden_bordado', { p_id: registro.id })
 }
+
+// V132 — foto de un bordado capturado al crear la orden (órdenes de tipo
+// bordado): se sube de inmediato y su URL queda dentro de la prenda
+// (items[].bordados[]), así sobrevive al borrador y no depende de los permisos
+// de orden_bordados. Mismo bucket y límites que createOrdenBordado.
+export async function uploadFotoBordado(file) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  if (!file.type.startsWith('image/')) return { data: null, error: new Error(`"${file.name}" no es una imagen.`) }
+  if (file.size > MAX_BORDADO_PHOTO_SIZE_MB * 1024 * 1024) {
+    return { data: null, error: new Error(`"${file.name}" pesa más de ${MAX_BORDADO_PHOTO_SIZE_MB}MB.`) }
+  }
+  const ext = file.name.split('.').pop()
+  const path = `bordados-orden/${crypto.randomUUID()}.${ext}`
+  const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file)
+  if (uploadError) return { data: null, error: uploadError }
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
+  return { data: { path, url: data.publicUrl }, error: null }
+}

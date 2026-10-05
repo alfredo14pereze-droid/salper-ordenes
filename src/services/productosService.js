@@ -72,3 +72,54 @@ export async function deleteProducto(id) {
 
   return supabase.rpc('delete_producto', { p_id: id })
 }
+
+// V133 — todos los productos, solo lo necesario para el índice de Catálogos
+// (cuántos tiene cada cliente, cuántos por validar y una miniatura).
+export async function fetchProductosResumen() {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.from('productos').select('id, cliente_id, foto_url, pendiente_validar').order('nombre', { ascending: true })
+}
+
+// V133 — guarda la ficha completa de un producto (ver guardar_producto en
+// schema_v133_catalogo_productos.sql). Con `id` actualiza ese producto; sin
+// `id` lo busca por cliente + nombre y lo crea si no existe.
+export async function guardarProducto({
+  id = null,
+  clienteId,
+  nombre,
+  garment,
+  color,
+  pantone,
+  telaId,
+  especificaciones = {},
+  bordados = [],
+  tallas = [],
+  tallasRango,
+  fotos = [],
+  pendienteValidar = false,
+  notasValidacion,
+}) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase
+    .rpc('guardar_producto', {
+      p_id: id,
+      p_cliente_id: clienteId,
+      p_nombre: nombre,
+      p_garment: garment || null,
+      p_color: color || null,
+      p_pantone: pantone || null,
+      p_tela_id: telaId || null,
+      p_especificaciones: especificaciones,
+      p_bordados: bordados,
+      p_tallas: tallas,
+      p_tallas_rango: tallasRango || null,
+      p_fotos: fotos,
+      p_pendiente_validar: pendienteValidar,
+      p_notas_validacion: notasValidacion || null,
+    })
+    .single()
+}
