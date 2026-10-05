@@ -5877,8 +5877,9 @@ desde la app (logotipos de bordados y fotos extra). Imprime el checklist de pend
   queda en el catálogo solo como referencia.
 - Los bordados no se precargan en `orden_bordados` (ahí solo escribe bordado/admin de fábrica con la
   etapa activa); viven en la prenda.
-- Catálogos: "Productos por cliente" es ahora una lista de clientes; cada uno abre su página
-  (`/catalogos/cliente/:id`, `CatalogoClientePage.jsx`) con sus productos en tarjetas, la ficha completa,
+- Catálogos: las listas (Clientes, Telas…) son desplegables y arrancan cerradas. Ya no hay sección
+  "Productos por cliente": cada fila de Clientes tiene el botón "Ver catálogo de prendas (N)", que abre su
+  página (`/catalogos/cliente/:id`, `CatalogoClientePage.jsx`) con sus productos en tarjetas, la ficha completa,
   filtro "Solo pendientes de validar" y alta/edición (datos, fotos y bordados con foto del logotipo).
 
 **Pendiente:** V132 (sin commit en `rediseno-visual`) toca `OrderItemsEditor`/`OrderItemsCard`/`NewOrderPage`/

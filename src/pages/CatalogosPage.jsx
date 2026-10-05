@@ -480,6 +480,7 @@ function CatalogSection({ title, fetchFn, deleteFn, impactFn, impactLabel, addFo
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [abierto, setAbierto] = useState(false)
 
   const load = useCallback(async () => {
     const { data, error: fetchError } = await fetchFn()
@@ -496,18 +497,24 @@ function CatalogSection({ title, fetchFn, deleteFn, impactFn, impactLabel, addFo
     load()
   }, [load])
 
+  // V133 — cada lista es desplegable y arranca cerrada, para llegar a Telas
+  // sin tener que recorrer todos los clientes.
   return (
     <div className="card">
-      <div className="section-header">
-        <h3 className="section-title section-title--small" style={{ marginBottom: 0 }}>
-          {title}
-        </h3>
-        {addForm?.(load)}
+      <div className="section-header" style={abierto ? undefined : { marginBottom: 0 }}>
+        <button type="button" className="catalogo-toggle" onClick={() => setAbierto((v) => !v)} aria-expanded={abierto}>
+          <span className="catalogo-toggle__flecha">{abierto ? '▾' : '▸'}</span>
+          <h3 className="section-title section-title--small" style={{ marginBottom: 0 }}>
+            {title}
+          </h3>
+          {!loading && <span className="section-count">{items.length}</span>}
+        </button>
+        {abierto && addForm?.(load)}
       </div>
-      {loading && <Loading label="Cargando…" />}
-      {error && <ErrorState error={error} onRetry={load} />}
-      {!loading && !error && items.length === 0 && <p className="page-subtitle">No hay registros todavía.</p>}
-      {!loading && !error && items.length > 0 && (
+      {abierto && loading && <Loading label="Cargando…" />}
+      {abierto && error && <ErrorState error={error} onRetry={load} />}
+      {abierto && !loading && !error && items.length === 0 && <p className="page-subtitle">No hay registros todavía.</p>}
+      {abierto && !loading && !error && items.length > 0 && (
         <div className="document-list">
           {items.map((item) => (
             <CatalogRow
@@ -527,65 +534,15 @@ function CatalogSection({ title, fetchFn, deleteFn, impactFn, impactLabel, addFo
   )
 }
 
-// V133 — Productos por cliente: aquí solo se elige el cliente (colegio); sus
-// productos se ven y se editan en su propia página (CatalogoClientePage.jsx).
-// "Solo con pendientes" deja a la vista los que tienen fichas por validar.
-function ProductosSection() {
-  const [clientes, setClientes] = useState([])
-  const [productos, setProductos] = useState([])
-  const [soloPendientes, setSoloPendientes] = useState(false)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    Promise.all([fetchClientes(), fetchProductosResumen()]).then(([c, p]) => {
-      setClientes(c.data || [])
-      setProductos(p.data || [])
-      setLoading(false)
-    })
-  }, [])
-
-  const porCliente = new Map()
-  for (const p of productos) {
-    const r = porCliente.get(p.cliente_id) || { total: 0, pendientes: 0, foto: null }
-    r.total += 1
-    if (p.pendiente_validar) r.pendientes += 1
-    if (!r.foto && p.foto_url) r.foto = p.foto_url
-    porCliente.set(p.cliente_id, r)
-  }
-  const totalPendientes = productos.filter((p) => p.pendiente_validar).length
-  // Primero los que ya tienen productos; los demás quedan abajo para poder
-  // entrar a darles de alta el primero.
-  const lista = clientes
-    .map((c) => ({ ...c, ...(porCliente.get(c.id) || { total: 0, pendientes: 0, foto: null }) }))
-    .filter((c) => !soloPendientes || c.pendientes > 0)
-    .sort((a, b) => (b.total > 0) - (a.total > 0) || a.nombre.localeCompare(b.nombre))
-
+// V133 — el catálogo de prendas de un cliente se abre desde su fila en
+// Clientes (CatalogoClientePage.jsx): ahí se ven, agregan y editan.
+function ClienteProductosLink({ cliente, resumen }) {
+  const total = resumen?.total || 0
   return (
-    <div className="card">
-      <h3 className="section-title section-title--small">Productos por cliente</h3>
-      <p className="page-subtitle">Entra a un cliente para ver, agregar o editar sus productos.</p>
-      <label className="producto-validado" style={{ marginBottom: 10 }}>
-        <input type="checkbox" checked={soloPendientes} onChange={(e) => setSoloPendientes(e.target.checked)} />
-        Solo clientes con productos por validar ({totalPendientes} productos)
-      </label>
-      {loading && <Loading label="Cargando…" />}
-      {!loading && lista.length === 0 && <p className="page-subtitle">No hay productos pendientes de validar.</p>}
-      <div className="document-list">
-        {lista.map((c) => (
-          <Link key={c.id} to={`/catalogos/cliente/${c.id}`} className="document-row cliente-catalogo">
-            {c.foto ? <img src={c.foto} alt="" loading="lazy" /> : <span className="cliente-catalogo__sin-foto" />}
-            <div>
-              <span className="document-row__label">{c.nombre}</span>
-              <span className="cliente-catalogo__meta">
-                {c.total === 0 ? 'Sin productos' : `${c.total} producto(s)`}
-                {c.pendientes > 0 && <span className="producto-aviso"> · ⚠️ {c.pendientes} por validar</span>}
-              </span>
-            </div>
-            <span className="cliente-catalogo__flecha">›</span>
-          </Link>
-        ))}
-      </div>
-    </div>
+    <Link to={`/catalogos/cliente/${cliente.id}`} className="btn btn--secondary btn--small cliente-productos-link">
+      {total > 0 ? `Ver catálogo de prendas (${total})` : 'Catálogo de prendas (vacío)'}
+      {resumen?.pendientes > 0 && <span className="producto-aviso"> · ⚠️ {resumen.pendientes} por validar</span>}
+    </Link>
   )
 }
 
@@ -610,6 +567,21 @@ function CatalogosPageContent() {
   useEffect(() => {
     loadInventario()
   }, [loadInventario])
+
+  // V133 — cuántos productos tiene cada cliente en su catálogo (y cuántos por
+  // validar), para el botón que lleva a ellos desde la lista de Clientes.
+  const [productosPorCliente, setProductosPorCliente] = useState({})
+  useEffect(() => {
+    fetchProductosResumen().then(({ data }) => {
+      const map = {}
+      for (const p of data || []) {
+        const r = (map[p.cliente_id] ||= { total: 0, pendientes: 0 })
+        r.total += 1
+        if (p.pendiente_validar) r.pendientes += 1
+      }
+      setProductosPorCliente(map)
+    })
+  }, [])
 
   return (
     <div className="page page--narrow">
@@ -641,14 +613,13 @@ function CatalogosPageContent() {
         addForm={showAddCliente ? (onCreated) => <AddClienteForm onCreated={onCreated} /> : undefined}
         canDelete={canDelete}
         renderExtra={
-          showAddCliente || canViewFinanzas(role)
-            ? (cliente, load) => (
+          (cliente, load) => (
                 <>
+                  <ClienteProductosLink cliente={cliente} resumen={productosPorCliente[cliente.id]} />
                   {showAddCliente && <ClienteTipoOrdenEditor cliente={cliente} onSaved={load} />}
                   {canViewFinanzas(role) && <ClienteRazonesSociales cliente={cliente} />}
                 </>
-              )
-            : undefined
+          )
         }
       />
       <CatalogSection
@@ -676,7 +647,6 @@ function CatalogosPageContent() {
           </>
         )}
       />
-      <ProductosSection />
     </div>
   )
 }

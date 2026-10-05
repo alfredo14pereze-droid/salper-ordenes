@@ -1526,6 +1526,32 @@ h4 {
   border-radius: 4px;
 }
 
+/* V133 — Catálogos: listas desplegables */
+.catalogo-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  padding: 4px 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.catalogo-toggle__flecha {
+  width: 16px;
+  color: var(--color-text-muted);
+}
+
+.cliente-productos-link {
+  display: inline-block;
+  margin: 4px 0 6px 10px;
+  text-decoration: none;
+}
+
 /* V133 — Catálogos: lista de clientes y página del catálogo de un cliente */
 .cliente-catalogo {
   justify-content: flex-start;
