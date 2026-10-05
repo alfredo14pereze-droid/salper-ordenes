@@ -1,20 +1,33 @@
 import { useState } from 'react'
 import { createOrderType } from '../../services/orderTypesService'
+import { useAuth } from '../../contexts/AuthContext'
+import { canManageOrderTypes } from '../../utils/permissions'
+import { ETAPAS_PLANTILLA_DEFAULT } from '../../lib/constants'
+import EtapasPlantillaChecks from './EtapasPlantillaChecks'
 
-// Tabs de tipo de orden que además permiten crear un tipo nuevo al vuelo
-// (cumple "categoría seleccionable, con posibilidad de agregar más tipos
-// después" sin necesitar una pantalla de administración aparte).
+// Tabs de tipo de orden que además permiten crear un tipo nuevo al vuelo.
+// V136 — "+ Nuevo tipo…" solo lo ven los administradores (tienda, fábrica,
+// general) y pide las etapas del tipo: un tipo sin etapas deja sus órdenes
+// invisibles para fábrica. Los tipos también se administran en Catálogos →
+// Tipos de orden.
 export default function OrderTypeSelect({ orderTypes, value, onChange, onTypeCreated }) {
+  const { role } = useAuth()
+  const puedeCrearTipo = canManageOrderTypes(role)
   const [creating, setCreating] = useState(false)
   const [newLabel, setNewLabel] = useState('')
+  const [etapas, setEtapas] = useState(ETAPAS_PLANTILLA_DEFAULT)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
   async function handleCreateType() {
     if (!newLabel.trim()) return
+    if (etapas.length === 0) {
+      setError(new Error('Elige al menos una etapa para el tipo de orden.'))
+      return
+    }
     setSaving(true)
     setError(null)
-    const { data, error: createError } = await createOrderType(newLabel.trim())
+    const { data, error: createError } = await createOrderType(newLabel.trim(), etapas)
     setSaving(false)
 
     if (createError) {
@@ -25,6 +38,7 @@ export default function OrderTypeSelect({ orderTypes, value, onChange, onTypeCre
     onChange(data.key)
     setCreating(false)
     setNewLabel('')
+    setEtapas(ETAPAS_PLANTILLA_DEFAULT)
   }
 
   if (creating) {
@@ -38,6 +52,7 @@ export default function OrderTypeSelect({ orderTypes, value, onChange, onTypeCre
           onChange={(e) => setNewLabel(e.target.value)}
           autoFocus
         />
+        <EtapasPlantillaChecks value={etapas} onChange={setEtapas} disabled={saving} />
         <div className="order-type-create__actions">
           <button type="button" className="btn btn--primary" onClick={handleCreateType} disabled={saving}>
             {saving ? 'Creando…' : 'Crear tipo'}
@@ -65,9 +80,11 @@ export default function OrderTypeSelect({ orderTypes, value, onChange, onTypeCre
           {type.label}
         </button>
       ))}
-      <button type="button" className="type-tab type-tab--add" onClick={() => setCreating(true)}>
-        + Nuevo tipo…
-      </button>
+      {puedeCrearTipo && (
+        <button type="button" className="type-tab type-tab--add" onClick={() => setCreating(true)}>
+          + Nuevo tipo…
+        </button>
+      )}
     </div>
   )
 }

@@ -12,6 +12,8 @@ import { buildDemandMap, getLoadForDate } from '../utils/demand'
 import { parseDate } from '../utils/dates'
 import { isActiveStatus } from '../utils/status'
 import { createOrder } from '../services/ordersService'
+import { fetchPlantillasEtapas } from '../services/orderTypesService'
+import { TIPO_VENTA_MOSTRADOR, CLIENTE_SALPER_NOMBRE } from '../lib/constants'
 import { uploadOrderPhotos } from '../services/photosService'
 import { uploadOrderDocument } from '../services/documentsService'
 import { createAnticipo, METODOS_PAGO } from '../services/anticiposService'
@@ -235,6 +237,22 @@ function NewOrderForm() {
     saveDraft({ form, items, anticipoMonto, anticipoMetodo, anticipoRecibidoPor, anticipoNotas })
   }, [form, items, anticipoMonto, anticipoMetodo, anticipoRecibidoPor, anticipoNotas])
 
+  // V136 — "Venta Mostrador": el cliente es siempre Salper (se asigna solo y
+  // el selector queda bloqueado). El servidor lo fuerza igual.
+  const esVentaMostrador = form.orderTypeKey === TIPO_VENTA_MOSTRADOR
+  const clienteSalper = useMemo(
+    () => clientes.find((c) => c.nombre.trim().toLowerCase() === CLIENTE_SALPER_NOMBRE.toLowerCase()) || null,
+    [clientes]
+  )
+  useEffect(() => {
+    if (!esVentaMostrador || !clienteSalper) return
+    setForm((f) =>
+      f.clientId === clienteSalper.id && !f.clienteIncidental
+        ? f
+        : { ...f, clientId: clienteSalper.id, clienteIncidental: false, clientName: clienteSalper.nombre, clientTelefono: '', clientCorreo: '' }
+    )
+  }, [esVentaMostrador, clienteSalper])
+
   function discardDraft() {
     clearDraft()
     setForm(initialForm)
@@ -324,6 +342,10 @@ function NewOrderForm() {
   // se conserva, no depende del catálogo).
   function handleTypeChange(key) {
     setForm((f) => {
+      // Al salir de Venta Mostrador se suelta el cliente Salper puesto a la fuerza.
+      if (f.orderTypeKey === TIPO_VENTA_MOSTRADOR && key !== TIPO_VENTA_MOSTRADOR) {
+        return { ...f, orderTypeKey: key, clientId: '', clienteIncidental: false, clientName: '', clientTelefono: '', clientCorreo: '' }
+      }
       const sigueValido = !f.clientId || filtrarClientesPorTipo(clientes, key).some((c) => c.id === f.clientId)
       return sigueValido
         ? { ...f, orderTypeKey: key }
@@ -353,6 +375,10 @@ function NewOrderForm() {
 
     if (!form.orderTypeKey) {
       setSubmitError(new Error('Elige el tipo de orden.'))
+      return
+    }
+    if (esVentaMostrador && form.clientId !== clienteSalper?.id) {
+      setSubmitError(new Error('Las órdenes de Venta Mostrador van al cliente "Salper", y no lo encontré en el catálogo de clientes. Avisa a un administrador.'))
       return
     }
     if (!form.clientName.trim()) {
@@ -409,6 +435,26 @@ function NewOrderForm() {
           .map((s) => ({ talla: s.talla.trim(), cantidad: Number(s.cantidad) })),
       }))
     const cleanItems = esOrdenBordado(form.orderTypeKey) ? normalizarItemsBordado(cleanItemsBase) : cleanItemsBase
+
+    // V136 — si el tipo no tiene etapas, la orden nacería sin orden_etapas y
+    // no le aparecería a ninguna estación de fábrica: no se guarda. (El
+    // servidor tiene el mismo candado; aquí se avisa antes de subir nada.)
+    const { data: plantillas, error: plantillasError } = await fetchPlantillasEtapas()
+    if (!plantillasError) {
+      const generaEtapas =
+        (plantillas || []).some((p) => p.order_type_key === form.orderTypeKey && p.etapa !== 'bordado') ||
+        cleanItems.some((item) => item.lleva_bordado)
+      if (!generaEtapas) {
+        const tipoLabel = orderTypes.find((t) => t.key === form.orderTypeKey)?.label || form.orderTypeKey
+        setSubmitError(
+          new Error(
+            `No se puede crear la orden: el tipo "${tipoLabel}" no tiene etapas de producción configuradas, así que no le aparecería a corte, costura ni terminado. Pide a un administrador que le asigne etapas en Catálogos → Tipos de orden.`
+          )
+        )
+        setSubmitting(false)
+        return
+      }
+    }
 
     const { data, error: createError } = await createOrder({
       clientName: form.clientName.trim(),
@@ -563,6 +609,7 @@ function NewOrderForm() {
             onSelectCliente={handleSelectCliente}
             onSelectIncidental={handleSelectIncidental}
             onField={updateField}
+            bloqueado={esVentaMostrador}
           />
         </div>
 

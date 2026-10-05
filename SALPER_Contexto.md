@@ -5952,3 +5952,70 @@ estado propio en `orders.status`. No se redefinieron `create_order` ni `set_orde
 
 **No probado en vivo:** crear una orden con impresión ni los dos tipos de pendiente (gastarían folios
 reales). Sí: el formulario (lista de impresiones y validación) y la verificación del SQL por consulta.
+
+### V135 — "Venta Mostrador": plantilla de etapas, backfill y cliente Salper (2026-10-05)
+
+`supabase/schema_v135_venta_mostrador_plantilla.sql` (aplicado 2026-10-05 desde el SQL Editor, hash
+verificado; comprobado después con consultas de solo lectura).
+
+**Qué pasó:** el tipo `venta_mostrador` ("Venta Mostrador", prefijo `VEN`) se creó el 29-sep con
+"+ Nuevo tipo…" de Nueva orden. `create_order_type` no creaba plantilla, así que sus 4 órdenes
+(VEN-001 a VEN-004, de ventas, ya `confirmado`) nacieron sin filas en `orden_etapas` y no le aparecían
+a ninguna estación de fábrica.
+
+**Arreglo (el tipo se queda activo):**
+- Plantilla: **corte (1) → produccion (2) → terminado (4)**. "Costura" es la etapa `produccion` (la
+  reporta el rol `costura`; el rol `produccion` no tiene usuarios). El 3 queda libre para `bordado`, que
+  NO va en la plantilla: `create_order` lo agrega con secuencia 3 si alguna prenda trae `lleva_bordado`.
+- Backfill: las 4 órdenes recibieron sus 3 etapas en `pendiente` (12 filas). Ninguna llevaba bordado.
+  `orders.status` no se tocó (siguen `confirmado`); el flujo Por confirmar → Confirmada → … es el mismo
+  de todos los tipos.
+- Cliente **"Salper"** creado en `clientes` con las tres categorías (`escolar`, `industrial`,
+  `sublimacion`: sale en todos los tipos). Las 4 órdenes pasaron de "Venta Mostrador" (texto, sin
+  `client_id`) a ese cliente.
+
+### V136 — Tipos de orden con candados y cliente fijo en Venta Mostrador (rama `venta-mostrador-plantilla`)
+
+**ESTADO: código en la rama `venta-mostrador-plantilla` (sale de `main` en V134), SIN fusionar.
+`supabase/schema_v136_tipos_orden_candados.sql` está escrito pero NO aplicado todavía** (pendiente de
+que Alfredo lo confirme). El frontend de esta rama necesita ese SQL para crear/editar tipos.
+
+**SQL (V136):**
+- `order_type_puede_administrar()`: `admin_tienda`, `admin_fabrica`, `admin_general` ("super_admin" no
+  existe; es `admin_general`).
+- `create_order_type` cambia de 4 a 5 parámetros (`p_etapas text[]`): exige rol administrador y al
+  menos una etapa; el tipo nace inactivo, recibe su plantilla y se activa. Si la key ya existe, error
+  (antes lo reactivaba y renombraba). El frontend viejo (solo `p_key`/`p_label`) recibe el aviso de que
+  faltan etapas.
+- Nuevas: `set_order_type_etapas(key, etapas[])` y `set_order_type_active(key, bool)` (mismos roles).
+  Interna `order_type_guardar_plantilla` (sin grant): etapas válidas `impresion`, `sublimado`, `corte`,
+  `produccion`, `terminado`; secuencias fijas (sin sublimado: corte 1, produccion 2, terminado 4; con
+  sublimado/impresión: 0, 1, 2, 3, 4). **Nunca toca la fila `bordado`** de una plantilla.
+- Trigger `order_types_exigir_plantilla_trg` (before insert / update of active): un tipo no puede
+  estar activo sin plantilla, tampoco por SQL a mano.
+- Trigger `orders_validar_tipo_ins` (before insert en `orders`; corre antes de
+  `trg_assign_order_folio` por orden alfabético, así un rechazo no gasta folio): rechaza la orden si no
+  generaría ninguna etapa (plantilla sin etapas distintas de bordado y ninguna prenda con
+  `lleva_bordado`), con mensaje claro. No se redefinió `create_order`.
+- Mismo trigger + `orders_validar_tipo_upd` (before update of client_name/client_id/order_type_key):
+  en órdenes `venta_mostrador` fuerza `client_id`/`client_name` al cliente "Salper".
+- La migración empieza con guardas (firma vieja de `create_order_type`, ningún tipo activo sin
+  plantilla, existe el cliente Salper).
+
+**Frontend:**
+- `canManageOrderTypes` (`permissions.js`). "+ Nuevo tipo…" en Nueva orden solo lo ven esos 3 roles
+  (**`ventas` ya no puede crear tipos**) y pide las etapas (`EtapasPlantillaChecks`, por defecto corte,
+  costura y terminado).
+- **Catálogos → Tipos de orden** (`components/catalogos/TiposOrdenSection.jsx`): lista todos los tipos
+  con sus etapas, "+ Agregar tipo de orden", "Editar etapas" (solo afecta órdenes nuevas) y
+  Activar/Desactivar. `admin_tienda` ahora entra a Catálogos (antes no): ve las demás listas sin botones
+  de alta ni baja.
+- Nueva orden: con tipo Venta Mostrador el cliente se pone solo en "Salper" y el selector queda
+  bloqueado (`ClienteSelect` con `bloqueado`); al cambiar a otro tipo se limpia. Antes de guardar se
+  consulta `plantillas_etapas`: si la orden no generaría etapas, no se guarda y se muestra el motivo.
+- Detalle de orden (editar): el campo Cliente queda deshabilitado en órdenes de Venta Mostrador.
+- Constantes: `TIPO_VENTA_MOSTRADOR`, `CLIENTE_SALPER_NOMBRE`, `ETAPAS_PLANTILLA_OPTIONS`.
+
+**Probado:** `npm run build` limpio. **No probado en pantalla** (el entorno local pide iniciar sesión)
+ni contra la base (V136 sin aplicar; crear un tipo o una orden de prueba escribiría en producción y
+gastaría folios).

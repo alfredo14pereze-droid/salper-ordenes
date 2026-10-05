@@ -94,6 +94,23 @@ export const ETAPA_LABELS = {
   terminado: 'Terminado',
 }
 
+// V136 — etapas que se pueden poner en la plantilla de un tipo de orden, en
+// el orden en que se recorren. 'bordado' no está: se decide por orden
+// ("¿Lleva bordado?"), no por tipo.
+export const ETAPAS_PLANTILLA_OPTIONS = [
+  { key: 'impresion', label: 'Impresión de sublimación' },
+  { key: 'sublimado', label: 'Sublimado' },
+  { key: 'corte', label: 'Corte' },
+  { key: 'produccion', label: 'Costura' },
+  { key: 'terminado', label: 'Terminado' },
+]
+export const ETAPAS_PLANTILLA_DEFAULT = ['corte', 'produccion', 'terminado']
+
+// V135/V136 — las órdenes de "Venta Mostrador" son producción para la tienda
+// propia: su cliente siempre es "Salper" (el servidor lo fuerza también).
+export const TIPO_VENTA_MOSTRADOR = 'venta_mostrador'
+export const CLIENTE_SALPER_NOMBRE = 'Salper'
+
 export const ETAPA_ESTADO_LABELS = {
   pendiente: 'Pendiente',
   en_proceso: 'En proceso',

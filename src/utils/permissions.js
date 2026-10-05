@@ -205,6 +205,15 @@ export function canCreateProducto(role) {
   return canCreateCliente(role)
 }
 
+// V136 — crear/editar tipos de orden (y sus etapas): solo los tres
+// administradores. Antes cualquiera que creara órdenes podía dar de alta
+// un tipo con "+ Nuevo tipo…", y un tipo sin etapas dejaba sus órdenes
+// invisibles para fábrica. El servidor lo exige en create_order_type /
+// set_order_type_etapas / set_order_type_active.
+export function canManageOrderTypes(role) {
+  return role === 'admin_tienda' || role === 'admin_fabrica' || role === 'admin_general'
+}
+
 // Quién puede ENTRAR a la pantalla de Catálogos — más amplio que quién
 // puede borrar: cualquiera que pueda dar de alta algo ahí (cliente, tela
 // o producto) también necesita ver la pantalla para hacerlo. Quien no
@@ -216,6 +225,7 @@ export function canCreateProducto(role) {
 export function canViewCatalogos(role) {
   return (
     canCreateCliente(role) || canCreateTela(role) || canCreateProducto(role) || canManageCatalogs(role) ||
+    canManageOrderTypes(role) ||
     role === 'admin_fabrica_lectura' || role === 'consulta_tienda'
   )
 }

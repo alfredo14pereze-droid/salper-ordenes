@@ -9,7 +9,9 @@ import {
   canViewCatalogos,
   canViewFinanzas,
   canVerComprometidoTela,
+  canManageOrderTypes,
 } from '../utils/permissions'
+import TiposOrdenSection from '../components/catalogos/TiposOrdenSection'
 import RazonesSocialesManager from '../components/finanzas/RazonesSocialesManager'
 import { PROVEEDORES_HABILITADO } from '../utils/featureFlags'
 import { Loading, ErrorState } from '../components/common/States'
@@ -589,8 +591,10 @@ function CatalogosPageContent() {
       <p className="page-subtitle">
         Dar de alta depende del catálogo: Clientes y Productos son de ventas y administrador general; Telas es de
         ventas, administrador de fábrica y administrador general. Eliminar (hard-delete, definitivo) sigue siendo
-        exclusivo de administrador general.
+        exclusivo de administrador general. Tipos de orden: solo administradores (tienda, fábrica y general).
       </p>
+
+      {canManageOrderTypes(role) && <TiposOrdenSection />}
 
       {PROVEEDORES_HABILITADO && (
         <CatalogSection

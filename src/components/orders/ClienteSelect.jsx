@@ -24,6 +24,7 @@ export default function ClienteSelect({
   onSelectCliente,
   onSelectIncidental,
   onField,
+  bloqueado = false,
 }) {
   const clientesFiltrados = useMemo(() => filtrarClientesPorTipo(clientes, orderTypeKey), [clientes, orderTypeKey])
   const seleccionado = clientesFiltrados.find((c) => c.id === clientId)
@@ -35,6 +36,18 @@ export default function ClienteSelect({
       return
     }
     onSelectCliente(clientesFiltrados.find((c) => c.id === v) || null)
+  }
+
+  // V136 — "Venta Mostrador": el cliente es siempre Salper y no se elige.
+  if (bloqueado) {
+    return (
+      <div>
+        <input type="text" className="input" value={nombre} disabled readOnly />
+        <p className="pantone-hint" style={{ marginTop: 6 }}>
+          Las órdenes de Venta Mostrador siempre van al cliente {nombre || 'Salper'}.
+        </p>
+      </div>
+    )
   }
 
   return (

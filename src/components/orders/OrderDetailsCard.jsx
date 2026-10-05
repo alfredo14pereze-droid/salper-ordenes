@@ -4,6 +4,7 @@ import { formatDate, computeProductionWindow } from '../../utils/dates'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditOrder } from '../../utils/permissions'
 import OrderTypeSelect from './OrderTypeSelect'
+import { TIPO_VENTA_MOSTRADOR } from '../../lib/constants'
 import FoliosExternosField from './FoliosExternosField'
 
 // Datos generales de la orden. Si el rol actual puede editarla (tienda
@@ -74,6 +75,8 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
             className="input"
             value={form.clientName}
             onChange={(e) => updateField('clientName', e.target.value)}
+            disabled={order.order_type_key === TIPO_VENTA_MOSTRADOR}
+            title={order.order_type_key === TIPO_VENTA_MOSTRADOR ? 'Las órdenes de Venta Mostrador siempre van al cliente Salper.' : undefined}
           />
         </label>
         <div className="form-row">
