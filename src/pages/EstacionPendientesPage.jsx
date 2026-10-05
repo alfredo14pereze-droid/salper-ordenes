@@ -1,7 +1,7 @@
 import { resumenPrendas } from '../utils/pendientesPago'
 import { useState } from 'react'
 import { usePendientes } from '../hooks/usePendientes'
-import { cambiarEstado, SIGUIENTE } from '../services/pendientesService'
+import { cambiarEstado, SIGUIENTE, esTrabajoDe, marcarParte, partesDe } from '../services/pendientesService'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 
 // V97 — Pendientes para bordado/producción (costura): a diferencia de
@@ -14,12 +14,15 @@ export default function EstacionPendientesPage({ tipoNombre }) {
   const [busy, setBusy] = useState(null)
   const [msg, setMsg] = useState(null)
 
-  const lista = items.filter((p) => p.tipo?.nombre === tipoNombre && p.estado === 'recibido_en_fabrica')
+  // V134 — también los tipos compuestos que llevan mi parte (p. ej. "Arreglo y
+  // bordado") mientras yo no la haya marcado.
+  const lista = items.filter((p) => esTrabajoDe(p, tipoNombre))
 
   async function confirmar(p) {
     setBusy(p.id)
     setMsg(null)
-    const { error: err } = await cambiarEstado(p.id, SIGUIENTE[p.estado].next)
+    const { error: err } =
+      partesDe(p).length > 0 ? await marcarParte(p.id, tipoNombre) : await cambiarEstado(p.id, SIGUIENTE[p.estado].next)
     setBusy(null)
     if (err) setMsg({ error: true, text: err.message })
     else {
@@ -42,6 +45,11 @@ export default function EstacionPendientesPage({ tipoNombre }) {
           {lista.map((p) => (
             <div key={p.id} className="estacion-card" style={{ cursor: 'default' }}>
               <span className="estacion-card__folio">{p.folio}</span>
+              {partesDe(p).length > 0 && (
+                <span className="estacion-card__due">
+                  {p.tipo.nombre}: tú marcas {tipoNombre.toLowerCase()}
+                </span>
+              )}
               <span className="estacion-card__prendas">{p.descripcion}</span>
               <span className="estacion-card__due">
                 {resumenPrendas(p)}

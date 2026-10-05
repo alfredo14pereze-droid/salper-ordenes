@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useOrderTypes } from '../hooks/useOrderTypes'
 import { useClientes } from '../hooks/useClientes'
 import { useTelas } from '../hooks/useTelas'
-import { validarFotosBordado } from '../utils/productoCatalogo'
+import { validarFotosBordado, validarImpresiones } from '../utils/productoCatalogo'
 import { useProductosByCliente } from '../hooks/useProductosByCliente'
 import { useOrders } from '../hooks/useOrders'
 import { buildDemandMap, getLoadForDate } from '../utils/demand'
@@ -388,6 +388,12 @@ function NewOrderForm() {
         : validarFotosBordado(items)
     if (faltaFotoBordado) {
       setSubmitError(new Error(faltaFotoBordado))
+      return
+    }
+    // V134 — y una que lleva impresión, la foto y el lugar de cada impresión.
+    const faltaImpresion = esOrdenBordado(form.orderTypeKey) || form.orderTypeKey === 'sublimacion' ? null : validarImpresiones(items)
+    if (faltaImpresion) {
+      setSubmitError(new Error(faltaImpresion))
       return
     }
 

@@ -21,6 +21,8 @@ export const ESTACIONES = {
   // (Sublimada) — ver `finalLabels`. El dashboard de sublimado
   // (`dashboardSublimado`) y la subida de diseños (`disenos`) siguen igual.
   corte: { etapa: 'corte', consumoPlaceholder: true },
+  // V134 — `pendientesTipo` también es la "parte" que le toca a la estación en
+  // los tipos compuestos (p. ej. "Arreglo y bordado" lleva Arreglo y Bordado).
   bordado: { etapa: 'bordado', pendientesTipo: 'Bordado' },
   sublimado: {
     etapa: 'sublimado',
@@ -38,7 +40,15 @@ export const ESTACIONES = {
   // V105 — terminado ya no usa el botón genérico "Finalizado": captura
   // cantidades reales por talla y genera la remisión al confirmar (ver
   // EstacionOrderPage.jsx).
-  terminado: { etapa: 'terminado', pendientesCompleto: true, surtidoFinal: true },
+  // V134 — terminado también reporta la impresión de las prendas que la
+  // llevan (etapa 'impresion_prenda', antes de terminado): botón "Impresa".
+  terminado: {
+    etapa: 'terminado',
+    etapasExtra: ['impresion_prenda'],
+    finalLabels: { impresion_prenda: 'Impresa' },
+    pendientesCompleto: true,
+    surtidoFinal: true,
+  },
 }
 
 export function esRolDeEstacion(role) {

@@ -31,6 +31,13 @@ function PrendaResumen({ item }) {
       {item.tela_nombre && <p className="estacion-prenda__detalle">Tela: {item.tela_nombre}</p>}
       {item.lleva_bordado && item.bordado_ubicacion && <p className="estacion-prenda__detalle">Bordado en: {item.bordado_ubicacion}</p>}
       <p className="estacion-prenda__detalle">{sizesText || 'Sin tallas capturadas'}</p>
+      {/* V134 — impresiones de la prenda (foto y dónde va), para la etapa de impresión. */}
+      {item.lleva_impresion && (
+        <>
+          <p className="estacion-prenda__detalle">Lleva impresión:</p>
+          <BordadosMiniaturas bordados={item.impresiones} />
+        </>
+      )}
     </div>
   )
 }

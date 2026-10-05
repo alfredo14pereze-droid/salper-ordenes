@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { SIGUIENTE, sinRecibirAlerta, urgenciaFecha, diasEsperandoEntrega } from '../../services/pendientesService'
+import { SIGUIENTE, sinRecibirAlerta, urgenciaFecha, diasEsperandoEntrega, partesDe, partesFaltantes } from '../../services/pendientesService'
 import { formatDate, formatDateTime } from '../../utils/dates'
 import { resumenPrendas, textoPago } from '../../utils/pendientesPago'
 
@@ -20,7 +20,7 @@ export default function PendienteCard({ p, puedeActuar, puedeEntregar, selected,
   let cls = 'pf-card'
   if (alerta || urg?.nivel === 'rojo' || esperandoMucho) cls += ' pf-card--rojo'
   else if (urg?.nivel === 'amarillo') cls += ' pf-card--amarillo'
-  if (p.estado === 'entregado' || (p.estado === 'recibido_en_tienda' && !p.es_para_cliente)) cls += ' pf-card--cerrado'
+  if (p.estado === 'entregado' || p.estado === 'mercancia_recibida' || (p.estado === 'recibido_en_tienda' && !p.es_para_cliente)) cls += ' pf-card--cerrado'
 
   return (
     <article className={cls}>
@@ -42,6 +42,10 @@ export default function PendienteCard({ p, puedeActuar, puedeEntregar, selected,
         </Link>
         <div className="pf-card__meta">
           <span>{resumenPrendas(p)}</span>
+          {/* V134 — tipo compuesto: qué parte falta mientras está por hacer. */}
+          {p.estado === 'recibido_en_fabrica' && partesDe(p).length > 0 && (
+            <span>{partesFaltantes(p).length > 0 ? `Falta: ${partesFaltantes(p).join(' y ')}` : 'Todo listo'}</span>
+          )}
           {p.es_para_cliente ? (
             <span>{textoPago(p)}</span>
           ) : (

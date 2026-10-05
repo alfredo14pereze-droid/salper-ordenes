@@ -78,9 +78,14 @@ export default function PendienteDetailPage() {
           <p className="order-detail__client">
             {p.tipo?.nombre} · × {p.cantidad}
           </p>
+          {p.tipo?.partes?.length > 0 && (
+            <p className="page-subtitle" style={{ margin: 0 }}>
+              {p.tipo.partes.map((parte) => `${parte}: ${(p.partes_listas || []).includes(parte) ? 'listo' : 'pendiente'}`).join(' · ')}
+            </p>
+          )}
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span className={'badge ' + (p.estado === 'entregado' ? 'badge--status-entregado' : 'badge--status')}>{ESTADOS[p.estado].label}</span>
+          <span className={'badge ' + (p.estado === 'entregado' ? 'badge--status-entregado' : 'badge--status')}>{ESTADOS[p.estado]?.label || p.estado}</span>
           <button type="button" className="btn btn--secondary" onClick={etiqueta}>
             Imprimir etiqueta
           </button>

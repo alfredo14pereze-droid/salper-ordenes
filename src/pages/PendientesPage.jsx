@@ -29,8 +29,8 @@ const BANDEJAS = {
     {
       key: 'cerrados',
       label: 'Cerrados',
-      estados: ['recibido_en_tienda', 'entregado'],
-      filtro: (p) => !p.es_para_cliente || p.estado === 'entregado',
+      estados: ['recibido_en_tienda', 'entregado', 'mercancia_recibida'],
+      filtro: (p) => !p.es_para_cliente || p.estado !== 'recibido_en_tienda',
     },
   ],
   fabrica: [
@@ -38,6 +38,8 @@ const BANDEJAS = {
     { key: 'hacer', label: 'Por hacer', estados: ['recibido_en_fabrica'] },
     { key: 'listo', label: 'Listo para regresar', estados: ['listo_para_regresar'] },
     { key: 'enviados', label: 'Enviados a tienda', estados: ['enviado_a_tienda', 'recibido_en_tienda', 'entregado'] },
+    // V134 — envíos de mercancía ya recibidos (no llevan trabajo ni regresan).
+    { key: 'mercancia', label: 'Mercancía recibida', estados: ['mercancia_recibida'] },
   ],
 }
 

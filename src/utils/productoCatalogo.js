@@ -41,6 +41,23 @@ export function validarFotosBordado(items) {
   return null
 }
 
+// V134 — mensaje de error (o null): toda prenda que "lleva impresión" necesita
+// al menos una impresión, y cada una su foto y dónde va (así terminado sabe
+// qué imprimir y en qué parte). Solo se exige al CREAR la orden.
+export function validarImpresiones(items) {
+  for (const [n, item] of (items || []).entries()) {
+    if (!item?.lleva_impresion) continue
+    const nombre = String(item.garment || '').trim() || `Prenda ${n + 1}`
+    const impresiones = item.impresiones || []
+    if (impresiones.length === 0) return `${nombre}: lleva impresión, agrega la foto de la impresión.`
+    for (const i of impresiones) {
+      if (!i.foto_url) return `${nombre}: falta la foto de una impresión.`
+      if (!String(i.ubicacion || '').trim()) return `${nombre}: falta indicar dónde va una de las impresiones.`
+    }
+  }
+  return null
+}
+
 // Lo que se le aplica a la prenda al elegir un producto. Las tallas NO se
 // cargan (pedido explícito: se capturan a mano, como siempre). Los bordados
 // del producto se copian a la prenda con su foto del logotipo, si la tiene.

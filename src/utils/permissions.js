@@ -154,6 +154,7 @@ export function canConfirmOrderChanges(role) {
 export function canChangeEtapa(role, etapa) {
   if (role === 'admin_fabrica' || role === 'admin_general') return true
   if (etapa === 'impresion') return role === 'sublimado'
+  if (etapa === 'impresion_prenda') return role === 'terminado' // V134
   if (etapa === 'sublimado') return role === 'sublimado' // V131: antes 'corte'
   if (etapa === 'produccion') return role === 'produccion' || role === 'costura'
   return role === etapa

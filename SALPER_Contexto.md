@@ -5916,3 +5916,39 @@ cuando `orderTypeKey === 'bordado'`):
   sesiones deben usar worktrees separados.
 - No probado: crear una orden de bordado completa (crearía una orden real); sí el formulario, la subida de
   varias fotos (archivos de prueba borrados del almacenamiento) y que escolar conserva su editor.
+
+### V134 — Impresión por prenda (etapa de terminado) y dos tipos nuevos de pendiente (2026-10-05)
+
+`supabase/schema_v134_impresion_prenda_y_pendientes.sql` (aplicado 2026-10-05 desde el SQL Editor, hash
+verificado, con guarda de deriva).
+
+**Nueva orden (escolar/industrial/basquetbol):** los botones "¿Lleva bordado?" y "¿Lleva impresión?" van
+juntos debajo de Logotipos (antes el de bordado estaba al final de la prenda). "Lleva impresión"
+(`items[].lleva_impresion`) abre una lista igual a la de bordados: `items[].impresiones[] = {id, ubicacion,
+foto_url, foto_path}` (`BordadosPrenda` con `tipo="impresion"`; fotos en `bordados-orden/`). Al crear la
+orden se exige al menos una impresión y cada una con foto y lugar (`validarImpresiones`). No aplica a
+sublimación ni a órdenes de tipo bordado.
+
+**Etapa `impresion_prenda`** (etiqueta "Impresión"): distinta de `impresion` (V120, papel de sublimación,
+rol sublimado). La reporta el rol **terminado** (`update_orden_etapa` parcheada; `canChangeEtapa`;
+`vistasPorRol.js`: terminado gana `etapasExtra: ['impresion_prenda']` con botón final "Impresa", así ve
+"Pendientes de impresión" aparte de terminado). La crea/quita el trigger `orders_sync_impresion_prenda`
+(after insert/update of items en `orders`) según haya alguna prenda con `lleva_impresion`; solo se quita
+si sigue `pendiente`. Secuencia = la de bordado. `recompute_order_status` no se tocó: la etapa no tiene
+estado propio en `orders.status`. No se redefinieron `create_order` ni `set_order_items`.
+
+**Pendientes:**
+- `pf_tipos_trabajo` gana `partes text[]` y `solo_envio boolean`; `pf_pendientes` gana `partes_listas
+  text[]`; estado nuevo `mercancia_recibida` en el CHECK.
+- **"Arreglo y bordado"** (`partes = {Arreglo, Bordado}`): le aparece a bordado y a costura (su
+  `pendientesTipo` es también su "parte"; `esTrabajoDe`). Cada quien marca la suya con
+  `pf_marcar_parte(id, parte)`; con todas listas pasa a `listo_para_regresar` vía `pf_aplicar`.
+  Terminado/admin pueden seguir marcándolo listo completo desde las bandejas.
+- **"Envío de mercancía"** (`solo_envio`): al confirmar "recibido en fábrica" el trigger
+  `pf_pendientes_cerrar_envio` lo deja en `mercancia_recibida` con `cerrado_en` (el historial registra
+  "recibido_en_fabrica"). Se ve en "Cerrados" (tienda) y en la bandeja "Mercancía recibida" (fábrica). El
+  formulario sigue pidiendo prenda y talla.
+- No se tocaron `pf_aplicar` ni `pf_crear`.
+
+**No probado en vivo:** crear una orden con impresión ni los dos tipos de pendiente (gastarían folios
+reales). Sí: el formulario (lista de impresiones y validación) y la verificación del SQL por consulta.

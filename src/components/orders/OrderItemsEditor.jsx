@@ -418,7 +418,8 @@ function OrderItemsEditorGeneral({
                   nunca lleva bordado — los botones ni se ofrecen; si una prenda
                   vieja de sublimación ya tenía lleva_bordado=true, el dato se
                   queda como está, solo deja de poder tocarse desde aquí.
-                  "Lleva impresión" es solo una marca en la prenda. */}
+                  V134 — "Lleva impresión" pide foto y dónde va, y le crea a la
+                  orden la etapa de impresión (la reporta terminado). */}
               {!isSublimacion && (
                 <div>
                   <div className="prenda-marcas">
@@ -439,6 +440,13 @@ function OrderItemsEditorGeneral({
                   </div>
                   {item.lleva_bordado && (
                     <BordadosPrenda
+                      item={item}
+                      onPatch={(fn) => onChange((prev) => prev.map((it, i) => (i === itemIndex ? { ...it, ...fn(it) } : it)))}
+                    />
+                  )}
+                  {item.lleva_impresion && (
+                    <BordadosPrenda
+                      tipo="impresion"
                       item={item}
                       onPatch={(fn) => onChange((prev) => prev.map((it, i) => (i === itemIndex ? { ...it, ...fn(it) } : it)))}
                     />

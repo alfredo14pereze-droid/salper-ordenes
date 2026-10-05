@@ -7,6 +7,7 @@ import { createOrderTemplate } from '../../services/templatesService'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditOrder } from '../../utils/permissions'
 import { useTelas } from '../../hooks/useTelas'
+import BordadosMiniaturas from './BordadosMiniaturas'
 import { useProductosByCliente } from '../../hooks/useProductosByCliente'
 
 const emptyItem = () => ({
@@ -113,6 +114,14 @@ function ItemSummary({ item, index }) {
                     <span>{b.ubicacion}</span>
                   </a>
                 ))}
+            </dd>
+          </div>
+        )}
+        {item.lleva_impresion && item.impresiones?.length > 0 && (
+          <div>
+            <dt>Impresiones</dt>
+            <dd>
+              <BordadosMiniaturas bordados={item.impresiones} />
             </dd>
           </div>
         )}

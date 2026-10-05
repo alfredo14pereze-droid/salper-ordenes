@@ -21,6 +21,28 @@ export const ESTADOS = {
   // V94 — solo pendientes de cliente pasan por aquí (ver pf_marcar_entregado);
   // los que se quedan en la tienda siguen cerrando en recibido_en_tienda.
   entregado: { label: 'Entregado', short: 'Entregado' },
+  // V134 — cierre de un "Envío de mercancía": solo se manda a fábrica y al
+  // confirmar que llegó ya no hay nada más que hacer.
+  mercancia_recibida: { label: 'Mercancía recibida en fábrica', short: 'Cerrado' },
+}
+
+// V134 — tipos compuestos (p. ej. "Arreglo y bordado"): `tipo.partes` son los
+// trabajos que lleva y `partes_listas` los que ya se marcaron. Con todos
+// listos el servidor lo pasa solo a "listo para regresar" (pf_marcar_parte).
+export const partesDe = (p) => p?.tipo?.partes || []
+export const partesFaltantes = (p) => partesDe(p).filter((parte) => !(p.partes_listas || []).includes(parte))
+
+// ¿Le toca a la estación de `parte` ("Bordado", "Arreglo") trabajar este pendiente?
+export function esTrabajoDe(p, parte) {
+  if (p.estado !== 'recibido_en_fabrica') return false
+  if (partesDe(p).length > 0) return partesFaltantes(p).includes(parte)
+  return p.tipo?.nombre === parte
+}
+
+export async function marcarParte(id, parte) {
+  const { error } = ensureClient()
+  if (error) return { data: null, error }
+  return supabase.rpc('pf_marcar_parte', { p_id: id, p_parte: parte }).single()
 }
 
 // Siguiente paso de cada estado y quién lo confirma (espejo de pf_aplicar).
@@ -31,7 +53,7 @@ export const SIGUIENTE = {
   enviado_a_tienda: { next: 'recibido_en_tienda', label: 'Confirmar recibido', quien: 'tienda' },
 }
 
-const SELECT = '*, tipo:pf_tipos_trabajo(nombre), cliente:clientes(nombre)'
+const SELECT = '*, tipo:pf_tipos_trabajo(nombre, partes, solo_envio), cliente:clientes(nombre)'
 
 export async function fetchPendientes() {
   const { error } = ensureClient()

@@ -87,6 +87,10 @@ export const ETAPA_LABELS = {
   sublimado: 'Sublimado',
   produccion: 'Costura',
   bordado: 'Bordado',
+  // V134 — impresión de una prenda escolar/industrial ("Lleva impresión"); la
+  // reporta terminado. No es la 'impresion' de sublimación (nunca coinciden
+  // en la misma orden, por eso comparten etiqueta).
+  impresion_prenda: 'Impresión',
   terminado: 'Terminado',
 }
 
