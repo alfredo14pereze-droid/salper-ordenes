@@ -514,6 +514,7 @@ export default function EstacionOrderPage() {
 
       <h2 className="estacion-order__folio">#{order.order_number}</h2>
       <p className="estacion-order__cliente">{order.client_name}</p>
+      {order.created_by_nombre && <p className="pantone-hint">Creada por: {order.created_by_nombre}</p>}
 
       <div className="estacion-list" style={{ marginTop: 14 }}>
         {(order.items || []).map((item, i) => (

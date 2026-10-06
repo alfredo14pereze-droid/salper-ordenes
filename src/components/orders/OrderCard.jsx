@@ -93,6 +93,7 @@ export default function OrderCard({ order, orderType }) {
         <div className="order-card__footer">
           <span>Entrega: {formatDate(order.requested_delivery_date)}</span>
           <span> · Creada: {formatDate(order.created_at)}</span>
+          {order.created_by_nombre && <span> · Creada por: {order.created_by_nombre}</span>}
         </div>
       </div>
 

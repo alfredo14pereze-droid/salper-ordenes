@@ -123,7 +123,7 @@ export default function PendienteDetailPage() {
               {urg ? ` · ${urg.label}` : ''}
             </span>
           )}
-          <span>Creó: {p.creado_por_nombre || '—'} · {formatDateTime(p.created_at)}</span>
+          <span>Creado por: {p.creado_por_nombre || '—'} · {formatDateTime(p.created_at)}</span>
           {diasEsperando !== null && (
             <span className={diasEsperando > 7 ? 'pf-due pf-due--rojo' : undefined}>
               Lleva {diasEsperando} día{diasEsperando === 1 ? '' : 's'} esperando entrega

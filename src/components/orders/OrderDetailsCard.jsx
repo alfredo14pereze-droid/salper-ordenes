@@ -203,6 +203,12 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
           <dt>Creada</dt>
           <dd>{formatDate(order.created_at)}</dd>
         </div>
+        {order.created_by_nombre && (
+          <div>
+            <dt>Creada por</dt>
+            <dd>{order.created_by_nombre}</dd>
+          </div>
+        )}
       </dl>
     </>
   )

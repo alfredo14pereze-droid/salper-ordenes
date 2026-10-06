@@ -6027,3 +6027,17 @@ o `bordado` en `set_order_type_etapas` → rechazado. Tipos y plantillas quedaro
 **No probado:** las pantallas (el entorno local pide iniciar sesión), crear un tipo real, crear una
 orden de Venta Mostrador ni el rechazo de una orden sin etapas (escribirían en producción o gastarían
 folios). La primera orden real de Venta Mostrador será la prueba del cliente fijo.
+
+### V137 — "Creada por" en órdenes y pendientes (rama `venta-mostrador-plantilla`)
+
+**ESTADO: `supabase/schema_v137_orden_creada_por.sql` escrito, NO aplicado todavía** (pendiente de que
+Alfredo lo confirme). Frontend en la rama, sin fusionar.
+- **Órdenes:** `orders.created_by` ya existía, pero `profiles` solo lo lee el propio usuario o un admin,
+  así que los demás roles no podían ver el nombre. V137 agrega `orders.created_by_nombre` (texto), lo
+  rellena en las órdenes existentes desde `profiles.full_name` y un trigger before insert
+  (`orders_llenar_creado_por_trg`) lo llena al crear. No se redefinió `create_order`. Se muestra como
+  "Creada por: Nombre" en la tarjeta (`OrderCard`), el detalle (`OrderDetailsCard`) y la vista de
+  estación (`EstacionOrderPage`). Sin el SQL aplicado simplemente no aparece.
+- **Pendientes:** `pf_pendientes.creado_por_nombre` ya existía (V78); ahora sale "Creado por: Nombre" en
+  la tarjeta (`PendienteCard`) y el detalle dice "Creado por" en vez de "Creó". No necesita SQL.
+- No se agregó a los PDFs. `npm run build` limpio; no probado en pantalla.

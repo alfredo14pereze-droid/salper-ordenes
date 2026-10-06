@@ -77,6 +77,7 @@ export default function PendienteCard({ p, puedeActuar, puedeEntregar, selected,
               {p.recogio && ` · ${p.recogio}`}
             </span>
           )}
+          {p.creado_por_nombre && <span>Creado por: {p.creado_por_nombre}</span>}
         </div>
         {alerta && <p className="pf-alerta">⚠ Enviado a fábrica y sin recibir desde hace más de 1 día</p>}
       </div>
