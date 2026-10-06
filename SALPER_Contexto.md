@@ -6096,7 +6096,9 @@ admin_general; todo en 0, sin tocar existencias. Fuente: los Excel de artículos
 - **Tallas nuevas en el catálogo:** `00` (orden -10), `3`, `3 TALL`, `8 TALL`, `10 TALL`, `12 TALL`, `14 TALL`,
   `46`, `48`. Decisiones de Alfredo: se crea la `00` (Microsip trae 00, 0, 01, 02); XCH de Microsip = `XS`.
 - **Nexus** (sección que creó Alfredo): Playera polo 6–3XL y Sudadera 6–4XL (sin tallas 0–4).
-- **Avenue School:** Pantalón 0–10, 30, 32; Pantalón Tall 0–10 TALL; Vestido Marinero 0–14 (incluye la 3) con
+- **Avenue School:** Pantalón 0–10, 30, 32 y sus Tall 0–10 en el MISMO modelo (el modelo "Pantalón Tall"
+  se fusionó en "Pantalón" a pedido de Alfredo, con `inv_desvincular_articulos` + `inv_vincular_articulos`;
+  las 60 piezas Tall intactas; esos artículos conservan el texto de prenda "Pantalon Tall"); Vestido Marinero 0–14 (incluye la 3) con
   su Tall de cada talla, en el mismo modelo; Bermuda 0–10; Falda Envolvente (nuevo) 0–14; Playera polo ya
   estaba completa. 30 y 32 sin Tall.
 - **Instituto Tricio:** Playera polo Gen 2029 a 2038 (2029, 2031 y 2038 nuevos) y "sin generacion", todas
