@@ -41,7 +41,7 @@ import { buildReporteBlob, reporteFileName } from '../utils/generateInventarioRe
 // de cada familia que la prenda ya toca — nunca le mezcla, por ejemplo,
 // tallas de pantalón a una playera que solo usa infantil, aunque el orden
 // de ambas quede "cerca". Tampoco ofrece variantes TALL/(NN) a menos que
-// la propia prenda ya use ese estilo (si no, "4 TALL" aparecería de la
+// la propia prenda ya use ESE MISMO estilo (TALL y (NN) van por separado) (si no, "4 TALL" aparecería de la
 // nada entre "4" y "6" para prendas que nunca lo usan). El artículo real
 // se crea hasta que se hace el primer movimiento sobre ese chip (ver
 // MovimientoModal).
@@ -52,9 +52,18 @@ function tallaFamilia(orden) {
   return 'sin_talla'
 }
 
-function esTallaVariante(nombre) {
-  return /TALL/i.test(nombre) || /\(\d+\)/.test(nombre)
+// Estilo de una talla "variante": 'tall' (4 TALL) o 'paren' (1(20)); null si
+// es una talla normal. Son estilos distintos: una prenda etiquetada con
+// 1(20)/2(22) no usa tallas TALL, y al revés.
+function estiloVariante(nombre) {
+  if (/TALL/i.test(nombre)) return 'tall'
+  if (/\(\d+\)/.test(nombre)) return 'paren'
+  return null
 }
+
+// Tallas que casi ninguna prenda usa (hoy solo el vestido de Avenue): nunca
+// se ofrecen como hueco; la prenda que las lleva las tiene dadas de alta.
+const TALLAS_SIN_RELLENO = new Set(['3', '3 TALL'])
 
 function fillTallaGaps(items, todasLasTallas) {
   if (items.length < 2) return items
@@ -64,12 +73,13 @@ function fillTallaGaps(items, todasLasTallas) {
   const porFamilia = new Map()
   for (const it of items) {
     const familia = tallaFamilia(it.tallaOrden)
-    if (!porFamilia.has(familia)) porFamilia.set(familia, { minOrden: it.tallaOrden, maxOrden: it.tallaOrden, cantidad: 0, tieneVariante: false })
+    if (!porFamilia.has(familia)) porFamilia.set(familia, { minOrden: it.tallaOrden, maxOrden: it.tallaOrden, cantidad: 0, estilos: new Set() })
     const f = porFamilia.get(familia)
     f.minOrden = Math.min(f.minOrden, it.tallaOrden)
     f.maxOrden = Math.max(f.maxOrden, it.tallaOrden)
     f.cantidad += 1
-    if (esTallaVariante(it.talla)) f.tieneVariante = true
+    const estilo = estiloVariante(it.talla)
+    if (estilo) f.estilos.add(estilo)
   }
 
   const faltantes = []
@@ -79,7 +89,9 @@ function fillTallaGaps(items, todasLasTallas) {
     const info = porFamilia.get(familia)
     if (!info || info.cantidad < 2) continue // sin al menos 2 tallas de esa familia, no hay rango que interpolar
     if (t.orden < info.minOrden || t.orden > info.maxOrden) continue
-    if (esTallaVariante(t.nombre) && !info.tieneVariante) continue
+    if (TALLAS_SIN_RELLENO.has(t.nombre)) continue
+    const estilo = estiloVariante(t.nombre)
+    if (estilo && !info.estilos.has(estilo)) continue
     faltantes.push({
       articuloId: null,
       seccionId,

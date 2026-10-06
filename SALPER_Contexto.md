@@ -6105,3 +6105,13 @@ admin_general; todo en 0, sin tocar existencias. Fuente: los Excel de artículos
   00–3XL; Chamarra Bordada y sin Bordar 00–5XL; Pantalón hasta 48; Falda, Pantalonera y Short con Logotipo
   00–5XL (equivalen a "Short falda", "Pants" y "Short deportivo" de Microsip).
 - No se dieron de alta los artículos "TALLA ESPECIAL" de Microsip (no hay talla equivalente).
+
+### 2026-10-06 — Inventario: las tallas "sugeridas" (huecos de V92) ya no mezclan TALL con (NN)
+
+`InventarioPage.jsx` (`fillTallaGaps`), sin SQL. Al completar los catálogos de Avenue y Tricio aparecieron
+chips en gris de tallas que no existen: TALL en la Chamarra sin Bordar de Tricio (por tener 1(20)/2(22)) y
+1(20)/2(22) en el Pantalón de Avenue (por tener TALL). La regla trataba "TALL" y "(NN)" como un solo estilo.
+Ahora `estiloVariante` los separa (una variante solo se sugiere si la prenda ya usa ESE estilo) y
+`TALLAS_SIN_RELLENO` (`3`, `3 TALL`) nunca se sugieren. Las 1(20) y 2(22) reales de la Chamarra sin Bordar
+se quedan (así están etiquetadas las prendas; Alfredo las va a mandar reetiquetar). Comprobado con una
+simulación de solo lectura sobre los datos reales: Tricio, Avenue y Nexus quedan sin tallas sugeridas de más.
