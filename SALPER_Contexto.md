@@ -5977,9 +5977,7 @@ a ninguna estación de fábrica.
 ### V136 — Tipos de orden con candados y cliente fijo en Venta Mostrador (rama `venta-mostrador-plantilla`)
 
 **ESTADO: SQL aplicado en Supabase el 2026-10-05** (`supabase/schema_v136_tipos_orden_candados.sql`,
-hash verificado). **El frontend está en la rama `venta-mostrador-plantilla` (sale de `main` en V134), SIN
-fusionar.** Mientras no se fusione, el "+ Nuevo tipo…" de producción responde "Elige al menos una
-etapa…" (manda la llamada vieja sin etapas); el resto de producción no cambia.
+hash verificado). **Frontend fusionado a `main` el 2026-10-05** (rama `venta-mostrador-plantilla`).
 
 **SQL (V136):**
 - `order_type_puede_administrar()`: `admin_tienda`, `admin_fabrica`, `admin_general` ("super_admin" no
@@ -6032,7 +6030,7 @@ folios). La primera orden real de Venta Mostrador será la prueba del cliente fi
 
 **ESTADO: `supabase/schema_v137_orden_creada_por.sql` aplicado el 2026-10-05** (hash verificado;
 comprobado: las 82 órdenes quedaron con nombre — Jose Alfredo Otero 70, Giss 10, Alfredo Pérez 2).
-Frontend en la rama, sin fusionar: en producción el nombre no se ve hasta fusionar.
+Frontend fusionado a `main` el 2026-10-05.
 - **Órdenes:** `orders.created_by` ya existía, pero `profiles` solo lo lee el propio usuario o un admin,
   así que los demás roles no podían ver el nombre. V137 agrega `orders.created_by_nombre` (texto), lo
   rellena en las órdenes existentes desde `profiles.full_name` y un trigger before insert
@@ -6042,3 +6040,13 @@ Frontend en la rama, sin fusionar: en producción el nombre no se ve hasta fusio
 - **Pendientes:** `pf_pendientes.creado_por_nombre` ya existía (V78); ahora sale "Creado por: Nombre" en
   la tarjeta (`PendienteCard`) y el detalle dice "Creado por" en vez de "Creó". No necesita SQL.
 - No se agregó a los PDFs. `npm run build` limpio; no probado en pantalla.
+
+### Detalle de orden: se quita la nota del cambio de estado (2026-10-05)
+
+`StatusChanger` ya no tiene el campo "Nota opcional sobre este cambio…" (pedido de Alfredo: sobra, para
+eso están las Notas internas). `update_order_status` se sigue llamando con nota vacía; las notas viejas
+del historial se siguen mostrando. Sin SQL.
+
+**V135, V136, V137 y este cambio se fusionaron a `main` el 2026-10-05** (rama
+`venta-mostrador-plantilla`). Las pantallas no se probaron en local antes de fusionar (pedía sesión);
+quedan por confirmar en producción.

@@ -10,7 +10,6 @@ import { canChangeStatus, canCompleteOrder, canConfirmOrder } from '../../utils/
 // producción, bordado, terminado) vive en OrderEtapasCard, no aquí.
 export default function StatusChanger({ order, onUpdated }) {
   const { role } = useAuth()
-  const [notes, setNotes] = useState('')
   const [overrideStatus, setOverrideStatus] = useState(order.status)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -30,14 +29,13 @@ export default function StatusChanger({ order, onUpdated }) {
   async function handleChange(newStatus) {
     setSaving(true)
     setError(null)
-    const { error: updateError } = await updateOrderStatus(order.id, newStatus, notes.trim() || null)
+    const { error: updateError } = await updateOrderStatus(order.id, newStatus, null)
     setSaving(false)
 
     if (updateError) {
       setError(updateError)
       return
     }
-    setNotes('')
     onUpdated?.()
   }
 
@@ -56,14 +54,6 @@ export default function StatusChanger({ order, onUpdated }) {
           ✓ Lista para entregar. Cuando se entregue al cliente, confirma la entrega para cerrarla.
         </p>
       )}
-
-      <textarea
-        className="input"
-        placeholder="Nota opcional sobre este cambio…"
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        rows={2}
-      />
 
       <div className="status-changer__row" style={{ flexWrap: 'wrap', gap: 8 }}>
         {canConfirm && (
