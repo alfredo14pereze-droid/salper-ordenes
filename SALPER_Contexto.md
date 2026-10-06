@@ -6071,8 +6071,10 @@ tarjeta existía siempre por el aviso. Sin SQL. Subido a `main`.
 
 ### V138 — Pendientes de cliente: "Dado de baja" / "Pendiente de baja" en inventario (rama `venta-mostrador-plantilla`)
 
-**ESTADO: `supabase/schema_v138_pendientes_baja_inventario.sql` escrito, NO aplicado todavía**
-(pendiente de que Alfredo lo confirme). Frontend en la rama, sin fusionar.
+**ESTADO: `supabase/schema_v138_pendientes_baja_inventario.sql` aplicado el 2026-10-06** (hash
+verificado) **y frontend fusionado a `main`.** Comprobado: 12 pendientes de cliente en `false`, 4 de
+tienda en `null`; `anon` sin acceso a `pf_marcar_baja`; id inexistente y pendiente de tienda rechazados.
+No se probó marcar una baja real (escribiría en un pendiente real) ni las pantallas.
 - Solo aplica a pendientes `es_para_cliente` (los que se quedan en tienda siguen con
   "Inventariado / No inventariado"). Columnas nuevas en `pf_pendientes`: `baja_inventario` (true = dado
   de baja, false = pendiente de baja, null = no es de cliente), `baja_en`, `baja_por`, `baja_por_nombre`.
@@ -6085,4 +6087,4 @@ tarjeta existía siempre por el aviso. Sin SQL. Subido a `main`.
 - Frontend: en `PendienteForm` (bloque de cliente) botones obligatorios "Dado de baja / Pendiente de
   baja"; `PendienteCard` y el detalle muestran "Inventario: …"; en `PendienteDetailPage` tienda puede
   cambiarlo con los dos botones en cualquier estado. `marcarBaja` y `textoBaja` en `pendientesService`.
-- `npm run build` limpio; no probado en pantalla ni contra la base.
+- `npm run build` limpio.
