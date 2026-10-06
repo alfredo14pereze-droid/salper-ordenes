@@ -6062,3 +6062,9 @@ del historial se siguen mostrando. Sin SQL.
 **V135, V136, V137 y este cambio se fusionaron a `main` el 2026-10-05** (rama
 `venta-mostrador-plantilla`). Las pantallas no se probaron en local antes de fusionar (pedía sesión);
 quedan por confirmar en producción.
+
+### Detalle de orden: se quita el aviso "Próximamente — Link compartible" (2026-10-05)
+
+Pedido de Alfredo. `ComingSoonCard` se borró (no se usaba en ningún otro lado). La tarjeta de "Zona de
+administrador" (cancelar/eliminar) ahora solo se dibuja para quien puede cancelar o eliminar; antes la
+tarjeta existía siempre por el aviso. Sin SQL. Subido a `main`.

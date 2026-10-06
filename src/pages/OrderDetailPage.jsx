@@ -20,7 +20,6 @@ import OrderEtapasCard from '../components/orders/OrderEtapasCard'
 import OrderBordadosCard from '../components/orders/OrderBordadosCard'
 import OrderDisenosCard from '../components/orders/OrderDisenosCard'
 import OrderSurtidoCard from '../components/orders/OrderSurtidoCard'
-import ComingSoonCard from '../components/orders/ComingSoonCard'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import { Loading, ErrorState } from '../components/common/States'
 import {
@@ -38,6 +37,8 @@ import {
   canViewEtapas,
   canViewFinanzas,
   canGestionarInventarioTela,
+  canCancelOrder,
+  canDeleteOrder,
 } from '../utils/permissions'
 import { esRolDeEstacion } from '../config/vistasPorRol'
 import EstacionOrderPage from './EstacionOrderPage'
@@ -288,13 +289,11 @@ function OrderDetailContent() {
           <StatusHistoryList history={history} />
         </section>
 
-        <section className="card card--placeholders">
-          <ComingSoonCard
-            title="Link compartible"
-            description="Cada orden ya tiene un token único listo para generar un link de solo lectura sin necesidad de iniciar sesión."
-          />
-          <CancelOrderCard order={order} onUpdated={refresh} />
-        </section>
+        {(canCancelOrder(role) || canDeleteOrder(role)) && !order.eliminada_en && (
+          <section className="card card--placeholders">
+            <CancelOrderCard order={order} onUpdated={refresh} />
+          </section>
+        )}
       </div>
     </div>
   )
