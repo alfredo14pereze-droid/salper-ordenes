@@ -6088,3 +6088,18 @@ No se probó marcar una baja real (escribiría en un pendiente real) ni las pant
   baja"; `PendienteCard` y el detalle muestran "Inventario: …"; en `PendienteDetailPage` tienda puede
   cambiarlo con los dos botones en cualquier estado. `marcarBaja` y `textoBaja` en `pendientesService`.
 - `npm run build` limpio.
+
+### 2026-10-06 — Inventario: catálogos de Nexus, Avenue School e Instituto Tricio (solo datos, sin código)
+
+Hecho con las RPC de V121 (`inv_guardar_talla`, `inv_crear_modelo`, `inv_modelo_agregar_talla`) y la cuenta
+admin_general; todo en 0, sin tocar existencias. Fuente: los Excel de artículos de Microsip que pasó Alfredo.
+- **Tallas nuevas en el catálogo:** `00` (orden -10), `3`, `3 TALL`, `8 TALL`, `10 TALL`, `12 TALL`, `14 TALL`,
+  `46`, `48`. Decisiones de Alfredo: se crea la `00` (Microsip trae 00, 0, 01, 02); XCH de Microsip = `XS`.
+- **Nexus** (sección que creó Alfredo): Playera polo 6–3XL y Sudadera 6–4XL (sin tallas 0–4).
+- **Avenue School:** Pantalón 0–10, 30, 32; Pantalón Tall 0–10 TALL; Vestido Marinero 0–14 (incluye la 3) con
+  su Tall de cada talla, en el mismo modelo; Bermuda 0–10; Falda Envolvente (nuevo) 0–14; Playera polo ya
+  estaba completa. 30 y 32 sin Tall.
+- **Instituto Tricio:** Playera polo Gen 2029 a 2038 (2029, 2031 y 2038 nuevos) y "sin generacion", todas
+  00–3XL; Chamarra Bordada y sin Bordar 00–5XL; Pantalón hasta 48; Falda, Pantalonera y Short con Logotipo
+  00–5XL (equivalen a "Short falda", "Pants" y "Short deportivo" de Microsip).
+- No se dieron de alta los artículos "TALLA ESPECIAL" de Microsip (no hay talla equivalente).
