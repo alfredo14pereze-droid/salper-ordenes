@@ -6030,8 +6030,9 @@ folios). La primera orden real de Venta Mostrador será la prueba del cliente fi
 
 ### V137 — "Creada por" en órdenes y pendientes (rama `venta-mostrador-plantilla`)
 
-**ESTADO: `supabase/schema_v137_orden_creada_por.sql` escrito, NO aplicado todavía** (pendiente de que
-Alfredo lo confirme). Frontend en la rama, sin fusionar.
+**ESTADO: `supabase/schema_v137_orden_creada_por.sql` aplicado el 2026-10-05** (hash verificado;
+comprobado: las 82 órdenes quedaron con nombre — Jose Alfredo Otero 70, Giss 10, Alfredo Pérez 2).
+Frontend en la rama, sin fusionar: en producción el nombre no se ve hasta fusionar.
 - **Órdenes:** `orders.created_by` ya existía, pero `profiles` solo lo lee el propio usuario o un admin,
   así que los demás roles no podían ver el nombre. V137 agrega `orders.created_by_nombre` (texto), lo
   rellena en las órdenes existentes desde `profiles.full_name` y un trigger before insert
