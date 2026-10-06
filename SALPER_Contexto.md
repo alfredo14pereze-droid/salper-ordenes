@@ -5953,6 +5953,18 @@ estado propio en `orders.status`. No se redefinieron `create_order` ni `set_orde
 **No probado en vivo:** crear una orden con impresión ni los dos tipos de pendiente (gastarían folios
 reales). Sí: el formulario (lista de impresiones y validación) y la verificación del SQL por consulta.
 
+### 2026-10-05 — Juanis no podía capturar: la semana 30 sep–6 oct estaba "en revisión" por un cierre manual
+
+Síntoma: "Ya no se puede capturar en esta semana" con la semana del 30 sep al 6 oct. Diagnóstico (solo lectura):
+`prod_cerrar_vencidas` viva sí tiene la regla de V106 (fecha_fin + 2 días a las 11:00 hora Monterrey) y a esa
+semana le tocaba cerrar el **jueves 8 oct 11:00**; no hay cron (el cierre automático corre al abrir la pantalla
+de Revisión). Por tanto alguien la pasó a `en_revision` a mano con **"Pasar a revisión"** (Revisión producción →
+`prod_cerrar_semana`; pide un `confirm()` que avisa que se bloquea la captura de Juanis). No hay registro de quién
+(prod_semanas no guarda quién/cuándo cierra). La semana tenía 208 registros, 0 premios, no aprobada, no importada.
+Arreglo (dato, 1 fila, con guarda): `update prod_semanas set estado='abierta'` para esa semana. Nota: la UI solo
+permite "Reabrir…" semanas **aprobadas** (→ en_revision); de en_revision a abierta no hay botón, por eso fue SQL.
+Pendiente ofrecido al usuario: advertir/bloquear "Pasar a revisión" antes de la hora de cierre.
+
 ### V135 — "Venta Mostrador": plantilla de etapas, backfill y cliente Salper (2026-10-05)
 
 `supabase/schema_v135_venta_mostrador_plantilla.sql` (aplicado 2026-10-05 desde el SQL Editor, hash
