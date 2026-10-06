@@ -1,7 +1,7 @@
 import { prendasDe, resumenPrendas, textoPago } from '../utils/pendientesPago'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { fetchPendiente, fetchHistorial, cambiarEstado, ESTADOS, SIGUIENTE, sinRecibirAlerta, urgenciaFecha, diasEsperandoEntrega } from '../services/pendientesService'
+import { fetchPendiente, fetchHistorial, cambiarEstado, marcarBaja, textoBaja, ESTADOS, SIGUIENTE, sinRecibirAlerta, urgenciaFecha, diasEsperandoEntrega } from '../services/pendientesService'
 import PendienteForm from '../components/pendientes/PendienteForm'
 import EntregarModal from '../components/pendientes/EntregarModal'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
@@ -66,6 +66,8 @@ export default function PendienteDetailPage() {
   const urg = urgenciaFecha(p)
   const puedeEntregar = canMarcarEntregado(role) && p.estado === 'recibido_en_tienda' && p.es_para_cliente
   const diasEsperando = diasEsperandoEntrega(p)
+  // V138 — baja en inventario: solo pendientes de cliente, la marca tienda.
+  const puedeMarcarBaja = pfEsTienda(role) && p.es_para_cliente && p.baja_inventario != null
 
   return (
     <div className="page page--narrow">
@@ -108,6 +110,12 @@ export default function PendienteDetailPage() {
             <span>{textoPago(p)}</span>
           ) : (
             <span>{p.inventariado === null ? 'Inventariado: —' : p.inventariado ? 'Inventariado' : 'No inventariado'}</span>
+          )}
+          {textoBaja(p) && (
+            <span>
+              Inventario: {textoBaja(p)}
+              {p.baja_inventario && p.baja_en ? ` · ${formatDateTime(p.baja_en)} · ${p.baja_por_nombre || '—'}` : ''}
+            </span>
           )}
           {p.es_para_cliente ? (
             <>
@@ -159,6 +167,31 @@ export default function PendienteDetailPage() {
             </button>
           </div>
           {actionError && <p className="form-error">{actionError.message}</p>}
+        </section>
+      )}
+
+      {puedeMarcarBaja && (
+        <section className="card">
+          <span className="pf-label">¿Ya se dio de baja en el inventario?</span>
+          <div className="pf-modo">
+            <button
+              type="button"
+              className={'btn ' + (p.baja_inventario ? 'btn--primary' : 'btn--ghost')}
+              disabled={busy || p.baja_inventario}
+              onClick={() => run(() => marcarBaja(p.id, true))}
+            >
+              Dado de baja
+            </button>
+            <button
+              type="button"
+              className={'btn ' + (!p.baja_inventario ? 'btn--primary' : 'btn--ghost')}
+              disabled={busy || !p.baja_inventario}
+              onClick={() => run(() => marcarBaja(p.id, false))}
+            >
+              Pendiente de baja
+            </button>
+          </div>
+          {!puedeSig && actionError && <p className="form-error">{actionError.message}</p>}
         </section>
       )}
 

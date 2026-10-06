@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { SIGUIENTE, sinRecibirAlerta, urgenciaFecha, diasEsperandoEntrega, partesDe, partesFaltantes } from '../../services/pendientesService'
+import { SIGUIENTE, sinRecibirAlerta, urgenciaFecha, diasEsperandoEntrega, partesDe, partesFaltantes, textoBaja } from '../../services/pendientesService'
 import { formatDate, formatDateTime } from '../../utils/dates'
 import { resumenPrendas, textoPago } from '../../utils/pendientesPago'
 
@@ -46,6 +46,7 @@ export default function PendienteCard({ p, puedeActuar, puedeEntregar, selected,
           {p.estado === 'recibido_en_fabrica' && partesDe(p).length > 0 && (
             <span>{partesFaltantes(p).length > 0 ? `Falta: ${partesFaltantes(p).join(' y ')}` : 'Todo listo'}</span>
           )}
+          {textoBaja(p) && <span>Inventario: {textoBaja(p)}</span>}
           {p.es_para_cliente ? (
             <span>{textoPago(p)}</span>
           ) : (

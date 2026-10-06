@@ -6068,3 +6068,21 @@ quedan por confirmar en producción.
 Pedido de Alfredo. `ComingSoonCard` se borró (no se usaba en ningún otro lado). La tarjeta de "Zona de
 administrador" (cancelar/eliminar) ahora solo se dibuja para quien puede cancelar o eliminar; antes la
 tarjeta existía siempre por el aviso. Sin SQL. Subido a `main`.
+
+### V138 — Pendientes de cliente: "Dado de baja" / "Pendiente de baja" en inventario (rama `venta-mostrador-plantilla`)
+
+**ESTADO: `supabase/schema_v138_pendientes_baja_inventario.sql` escrito, NO aplicado todavía**
+(pendiente de que Alfredo lo confirme). Frontend en la rama, sin fusionar.
+- Solo aplica a pendientes `es_para_cliente` (los que se quedan en tienda siguen con
+  "Inventariado / No inventariado"). Columnas nuevas en `pf_pendientes`: `baja_inventario` (true = dado
+  de baja, false = pendiente de baja, null = no es de cliente), `baja_en`, `baja_por`, `baja_por_nombre`.
+  Los pendientes de cliente existentes quedan en "Pendiente de baja".
+- Trigger `pf_pendientes_baja_coherente_trg`: de cliente nunca queda null (por defecto false); si se
+  edita a "se queda en tienda", se limpia.
+- RPC `pf_marcar_baja(id, bool)` (`pf_es_tienda()`): marca o regresa, y deja renglón en `pf_historial`
+  (mismo estado antes/después, la nota dice qué pasó). **No se tocaron `pf_crear`/`pf_editar`**: el
+  formulario guarda el pendiente y, si se eligió "Dado de baja", llama después a `pf_marcar_baja`.
+- Frontend: en `PendienteForm` (bloque de cliente) botones obligatorios "Dado de baja / Pendiente de
+  baja"; `PendienteCard` y el detalle muestran "Inventario: …"; en `PendienteDetailPage` tienda puede
+  cambiarlo con los dos botones en cualquier estado. `marcarBaja` y `textoBaja` en `pendientesService`.
+- `npm run build` limpio; no probado en pantalla ni contra la base.

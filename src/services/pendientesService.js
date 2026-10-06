@@ -183,6 +183,19 @@ export async function marcarEntregado(id, recogio) {
   return supabase.rpc('pf_marcar_entregado', { p_id: id, p_recogio: recogio || null }).single()
 }
 
+// V138 — pendientes de cliente: ¿ya se dio de baja la prenda en el inventario?
+// true = "Dado de baja", false = "Pendiente de baja". Solo roles de tienda.
+export async function marcarBaja(id, dadoDeBaja) {
+  const { error } = ensureClient()
+  if (error) return { data: null, error }
+  return supabase.rpc('pf_marcar_baja', { p_id: id, p_dado_de_baja: dadoDeBaja }).single()
+}
+
+export function textoBaja(p) {
+  if (!p?.es_para_cliente || p.baja_inventario == null) return null
+  return p.baja_inventario ? 'Dado de baja' : 'Pendiente de baja'
+}
+
 export function subscribeToPendientes(onChange) {
   if (!supabase) return () => {}
   // V97 — mismo canal único por llamada que subscribeToOrderChanges (ver

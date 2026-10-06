@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import PhotoPicker from '../orders/PhotoPicker'
 import { fetchClientes } from '../../services/clientesService'
-import { crearPendiente, editarPendiente, fetchTipos, uploadPendientePhoto } from '../../services/pendientesService'
+import { crearPendiente, editarPendiente, fetchTipos, uploadPendientePhoto, marcarBaja } from '../../services/pendientesService'
 import { estadoPago, formatoDinero, prendasDe } from '../../utils/pendientesPago'
 
 const LINEA_VACIA = { prenda: '', talla: '', cantidad: '1' }
@@ -28,6 +28,8 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
   const [lineas, setLineas] = useState(() => lineasIniciales(pendiente))
   const [inventariado, setInventariado] = useState(pendiente?.inventariado ?? null)
   const [pagoEstado, setPagoEstado] = useState(() => estadoPago(pendiente))
+  // V138 — baja en inventario (solo de cliente): true/false; null = sin elegir.
+  const [baja, setBaja] = useState(pendiente?.es_para_cliente ? pendiente.baja_inventario ?? false : null)
   const [pagoTotal, setPagoTotal] = useState(pendiente?.pago_total != null ? String(pendiente.pago_total) : '')
   const [pagoAnticipo, setPagoAnticipo] = useState(pendiente?.pago_anticipo != null ? String(pendiente.pago_anticipo) : '')
   const [fotosGuardadas, setFotosGuardadas] = useState(pendiente?.fotos || [])
@@ -71,6 +73,10 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
     }
     if (!esCliente && inventariado === null) {
       setError(new Error('Indica si ya quedó inventariado o no.'))
+      return
+    }
+    if (esCliente && baja === null) {
+      setError(new Error('Indica si la prenda ya se dio de baja en el inventario o sigue pendiente de baja.'))
       return
     }
     if (esCliente && !pagoEstado) {
@@ -118,12 +124,25 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
       fotos: [...fotosGuardadas, ...nuevas],
     }
     const { data, error: saveErr } = editing ? await editarPendiente({ id: pendiente.id, ...payload }) : await crearPendiente(payload)
-    setSaving(false)
     if (saveErr) {
+      setSaving(false)
       setError(saveErr)
       return
     }
-    onSaved?.(data)
+    // V138 — la baja en inventario se guarda aparte (pf_marcar_baja), sin tocar
+    // pf_crear/pf_editar; el pendiente nace "pendiente de baja".
+    let guardado = data
+    if (esCliente && data?.id && (data.baja_inventario ?? false) !== baja) {
+      const { data: conBaja, error: bajaErr } = await marcarBaja(data.id, baja)
+      if (bajaErr) {
+        setSaving(false)
+        setError(new Error(`El pendiente se guardó, pero no se pudo registrar la baja en inventario: ${bajaErr.message}`))
+        return
+      }
+      guardado = conBaja || data
+    }
+    setSaving(false)
+    onSaved?.(guardado)
   }
 
   return (
@@ -239,6 +258,17 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
                   </button>
                   <button type="button" className={'btn ' + (pagoEstado === 'anticipo' ? 'btn--primary' : 'btn--ghost')} onClick={() => setPagoEstado('anticipo')}>
                     Anticipo
+                  </button>
+                </div>
+              </div>
+              <div>
+                <span className="pf-label">¿Ya se dio de baja en el inventario? *</span>
+                <div className="pf-modo">
+                  <button type="button" className={'btn ' + (baja === true ? 'btn--primary' : 'btn--ghost')} onClick={() => setBaja(true)}>
+                    Dado de baja
+                  </button>
+                  <button type="button" className={'btn ' + (baja === false ? 'btn--primary' : 'btn--ghost')} onClick={() => setBaja(false)}>
+                    Pendiente de baja
                   </button>
                 </div>
               </div>
