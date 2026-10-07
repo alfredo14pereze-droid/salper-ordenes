@@ -6166,9 +6166,11 @@ nuevo en esa sección: Pantalón JSV (variante "JSV"), solo talla 32, en 0.
 
 ### V140 — Estaciones: cada quien ve lo que ya le toca + pausa del cronómetro (rama `pausa-etapas`, 2026-10-07)
 
-**ESTADO: solo en la rama `pausa-etapas` (sale de `main`), sin commit ni push.
-`supabase/schema_v140_pausa_etapas.sql` NO está aplicado.** Sin el SQL el frontend funciona igual: el
-filtro de órdenes no necesita base y el botón de pausa simplemente no aparece.
+**ESTADO: en `main`/producción desde el 2026-10-07 (despliegue confirmado: el bundle servido es el de
+`dist/`). `supabase/schema_v140_pausa_etapas.sql` aplicado el 2026-10-07 desde el SQL Editor (hash
+verificado) y comprobado por consulta: 3 columnas, trigger activo, `anon` sin acceso, 0 filas con pausa.**
+Al aplicar, con el filtro nuevo: bordado ve 22 de 31 órdenes (9 esperan corte), costura 28 de 40 (12
+esperan) y terminado 14 de 48 (34 esperan a que costura o bordado empiecen).
 
 Salió de un prompt armado fuera (tablas `ordenes`, `etapa_nombre`, `inicio_en`/`fin_en`, vistas
 `CosturaView`/`BordadoView`, RPC `get_ordenes_por_rol`, deploy a `fase-2`). Contra el sistema real:
@@ -6196,6 +6198,5 @@ Salió de un prompt armado fuera (tablas `ordenes`, `etapa_nombre`, `inicio_en`/
     la fila (`etapa={et}`) y se pone gris "En pausa"; `medirEtapa` y el reporte descuentan las pausas
     (motivo nuevo "Todo el tiempo en pausa"). `fetchEtapasTerminadas` pide `*` para no romperse sin V140.
 - Probado: `node --test src/utils/*.test.js` (18), `npm run build`, y pausar/reanudar en el ejemplo local
-  (`salper-tiempos-harness`, puerto 5198). **No probado**: con sesión real ni contra Supabase, ni el SQL.
-  No se contó cuántas órdenes reales pasan a "en espera" con el filtro (la llave pública no lee
-  `orden_etapas`).
+  (`salper-tiempos-harness`, puerto 5198). **No probado**: con sesión real de bordado/terminado (nadie
+  ha tocado Pausar en producción todavía; `pausar_orden_etapa` no se ha ejecutado nunca).
