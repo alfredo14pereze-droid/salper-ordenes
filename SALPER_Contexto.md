@@ -6163,3 +6163,25 @@ nueva `17` (orden 170, creada en el catálogo de tallas), todas en 0.
 
 Renombrada con `inv_guardar_seccion` (mismo id, mismos artículos, misma clasificación y orden). Producto
 nuevo en esa sección: Pantalón JSV (variante "JSV"), solo talla 32, en 0.
+
+### Inventario: "Nuevo producto" en una sola pantalla (rama `venta-mostrador-plantilla`, SIN subir a `main`)
+
+Pedido de Alfredo (2026-10-07): "está muy difícil agregar un producto con sus tallas, no es práctico". El
+asistente de 6 pasos de V121 (`NuevoModeloModal`, borrado) solo dejaba elegir entre los dos juegos de tallas,
+así que cualquier producto con otras tallas había que pedirlo por fuera.
+- `NuevoProductoModal.jsx` (botón "+ Nuevo producto"): un solo formulario con Categoría (arranca en la
+  pestaña abierta; "+ Nueva categoría…" pide nombre y clasificación), Tipo de prenda ("+ Otro tipo…"),
+  Nombre o variante, y **Tallas escritas a mano**: `32, 34, 38`, `28-48`, `6 a 3XL`, con botones de atajo.
+  Muestra el nombre que tendrá y avisa si el producto ya existe.
+- `utils/inventarioTallasTexto.js` (`parsearTallas`): un rango sigue la serie de siempre (00, 0, 1, 2, 4…14,
+  XS…5XL; pantalón 28…48), no todo el catálogo; acepta "T.02", S = CH, XCH = XS. Una talla numérica que no
+  existe se crea al guardar (`ordenTallaNueva`: 0–20 → n×10; 28+ → 2000 + (n−28)×5); una de texto
+  desconocida marca error.
+- Opcional: piezas por talla. Si se capturan, tras `inv_crear_modelo` se llama a `inv_entrada_modelo`
+  (ubicación y motivo se piden solo en ese caso; nota "Alta del producto"). Si la entrada falla, el
+  producto queda creado y se avisa.
+- Sin SQL: usa las RPC de V121. Los productos nuevos se crean sin juego de tallas.
+- `npm run build` limpio y el lector de tallas probado con casos sueltos. **No probado en pantalla.**
+
+Datos del mismo día en "Pantalón Variado": Pantalón de Vigilancia (32, 34, 38) y Pantalón Seguridad Bies
+Verde (34), en 0.

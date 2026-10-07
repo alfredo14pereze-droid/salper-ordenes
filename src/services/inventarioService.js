@@ -283,6 +283,14 @@ export async function clasificarSeccion({ seccionId, clasificacionId, clienteId 
     .single()
 }
 
+// Artículos (uno por talla) de un modelo — para darle entrada justo después
+// de crearlo, sin esperar a que se recargue todo el catálogo.
+export async function fetchArticulosModelo(modeloId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.from('inv_articulos').select('id, talla_id').eq('modelo_id', modeloId)
+}
+
 // Regresa { modelo_id, ya_existia, creados, vinculados }.
 export async function crearModelo({ seccionId, tipoPrendaId, variante, juegoTallasId, tallaIds }) {
   const { error: cfgError } = ensureClient()

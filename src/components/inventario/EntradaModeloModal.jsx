@@ -59,7 +59,7 @@ export default function EntradaModeloModal({ modelos, modeloInicial = null, ubic
           />
           {modelos.length === 0 ? (
             <p className="pantone-hint">
-              Todavía no hay modelos. Crea uno con “Nuevo modelo”, o clasifica los artículos que ya existen.
+              Todavía no hay modelos. Crea uno con “Nuevo producto”, o clasifica los artículos que ya existen.
             </p>
           ) : (
             <ul className="inv-search-results inv-search-results--alto">

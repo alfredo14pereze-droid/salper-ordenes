@@ -11,7 +11,7 @@ import HistorialModal from '../components/inventario/HistorialModal'
 import ReporteModal from '../components/inventario/ReporteModal'
 import ArticuloBuscador from '../components/inventario/ArticuloBuscador'
 import EntradaModeloModal from '../components/inventario/EntradaModeloModal'
-import NuevoModeloModal from '../components/inventario/NuevoModeloModal'
+import NuevoProductoModal from '../components/inventario/NuevoProductoModal'
 import ModeloOpcionesModal from '../components/inventario/ModeloOpcionesModal'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import { buildReporteBlob, reporteFileName } from '../utils/generateInventarioReportePdf'
@@ -293,7 +293,7 @@ function InventarioContent() {
           )}
           {canEditar && estructuraLista && (
             <button type="button" className="btn btn--primary btn--small" onClick={() => setModal({ kind: 'nuevoModelo' })}>
-              + Nuevo modelo
+              + Nuevo producto
             </button>
           )}
           {seccionActivaId && (
@@ -545,14 +545,17 @@ function InventarioContent() {
         />
       )}
       {modal?.kind === 'nuevoModelo' && (
-        <NuevoModeloModal
+        <NuevoProductoModal
           secciones={secciones}
           clasificaciones={clasificaciones}
           tipos={tipos}
-          juegos={juegos}
           tallas={tallas}
           modelos={modelos}
-          articulos={articulos}
+          ubicaciones={ubicacionesActivas}
+          motivos={motivosDisponibles}
+          seccionInicialId={seccionActivaId}
+          defaultUbicacionId={viewMode !== 'total' ? viewMode : ubicacionesActivas[0]?.id}
+          canMover={canMover}
           refreshCatalogos={refreshCatalogos}
           refreshEstructura={refreshEstructura}
           onClose={() => setModal(null)}
