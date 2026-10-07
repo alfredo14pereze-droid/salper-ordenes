@@ -6159,6 +6159,7 @@ Qué hay:
 Sección "Pantalon Industrial". Tenía 34–42 con existencia; se agregaron 28, 30, 32, 44, 46, 48 y la talla
 nueva `17` (orden 170, creada en el catálogo de tallas), todas en 0.
 
-### 2026-10-07 — Inventario: la sección "Pantalon Industrial" ahora se llama "Pantalon Variado" (solo datos)
+### 2026-10-07 — Inventario: la sección "Pantalon Industrial" ahora se llama "Pantalón Variado" (solo datos)
 
-Renombrada con `inv_guardar_seccion` (mismo id, mismos artículos, misma clasificación y orden).
+Renombrada con `inv_guardar_seccion` (mismo id, mismos artículos, misma clasificación y orden). Producto
+nuevo en esa sección: Pantalón JSV (variante "JSV"), solo talla 32, en 0.
