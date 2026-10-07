@@ -4278,6 +4278,31 @@ h4 {
     animation: none;
   }
 }
+/* V140 — pausa: el cronómetro se pone gris y deja de pulsar. */
+.estacion-btn--pausar {
+  background: var(--color-orange);
+  border-color: var(--color-orange);
+  color: #fff;
+}
+.etapa-crono--pausada {
+  border-color: var(--color-text-muted);
+  background: var(--color-border);
+  color: var(--color-text-muted);
+  animation: none;
+}
+.etapa-crono--pausada .etapa-crono__punto,
+.etapa-crono--pausada.etapa-crono--compacto .etapa-crono__punto {
+  background: var(--color-text-muted);
+  animation: none;
+}
+.estacion-card__estado {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+.estacion-card__estado--pausada {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+}
 .etapa-tiempo {
   display: flex;
   flex-direction: column;

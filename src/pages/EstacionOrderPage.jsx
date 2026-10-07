@@ -2,7 +2,7 @@ import BordadosMiniaturas from '../components/orders/BordadosMiniaturas'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useOrder } from '../hooks/useOrder'
-import { fetchOrdenEtapas, updateOrdenEtapa, updateOrderStatus, setItemSurtido } from '../services/ordersService'
+import { fetchOrdenEtapas, updateOrdenEtapa, pausarOrdenEtapa, updateOrderStatus, setItemSurtido } from '../services/ordersService'
 import { fetchInventarioTelas, marcarCorte } from '../services/movimientosTelaService'
 import { fetchOrdenBordados } from '../services/bordadosService'
 import { buildRemisionPdfBlob, remisionPdfFileName } from '../utils/generateOrderPdf'
@@ -15,6 +15,7 @@ import Modal from '../components/talleros/Modal'
 import OrderDisenosCard from '../components/orders/OrderDisenosCard'
 import EtapaCronometro from '../components/orders/EtapaCronometro'
 import { medirEtapa } from '../utils/tiemposEtapas'
+import { estaPausada, soportaPausa } from '../utils/pausasEtapa'
 import { formatMinutosHabiles } from '../utils/horasHabiles'
 import { formatDateTime } from '../utils/dates'
 
@@ -525,6 +526,17 @@ export default function EstacionOrderPage() {
     refresh()
   }
 
+  // V140 — pausar / reanudar: la etapa sigue "en proceso", solo deja de
+  // contar el cronómetro.
+  async function handlePausa(etapa, pausar) {
+    setBusy(true)
+    setError(null)
+    const { error: err } = await pausarOrdenEtapa(order.id, etapa, pausar)
+    setBusy(false)
+    if (err) return setError(err)
+    refresh()
+  }
+
   return (
     <div className="page estacion-page">
       <Link to="/" className="back-link">
@@ -557,6 +569,8 @@ export default function EstacionOrderPage() {
             const enProceso = et.estado === 'en_proceso'
             const terminada = et.estado === 'completado'
             const esPrincipal = et.etapa === estacion.etapa
+            const pausada = estaPausada(et)
+            const puedePausar = enProceso && estacion.pausa && soportaPausa(et)
             const finalLabel = estacion.finalLabels?.[et.etapa] || (esPrincipal && estacion.finalLabel) || 'Terminar'
             return (
               <div key={et.etapa} className="estacion-acciones">
@@ -565,7 +579,19 @@ export default function EstacionOrderPage() {
                 {terminada ? (
                   <EtapaTiempoReal etapa={et} />
                 ) : enProceso ? (
-                  <EtapaCronometro iniciadoEn={et.iniciado_en} />
+                  <>
+                    <EtapaCronometro etapa={et} />
+                    {puedePausar && (
+                      <button
+                        type="button"
+                        className={'btn estacion-btn ' + (pausada ? 'estacion-btn--iniciar' : 'estacion-btn--pausar')}
+                        disabled={busy}
+                        onClick={() => handlePausa(et.etapa, !pausada)}
+                      >
+                        {pausada ? '▶ Reanudar' : '⏸ Pausar'}
+                      </button>
+                    )}
+                  </>
                 ) : (
                   <button
                     type="button"

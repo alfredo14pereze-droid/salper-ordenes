@@ -4,6 +4,8 @@ import { useAllOrdenEtapas } from '../hooks/useAllOrdenEtapas'
 import { useAuth } from '../contexts/AuthContext'
 import { estacionDeRol, etapasDeEstacion } from '../config/vistasPorRol'
 import { ETAPA_LABELS } from '../lib/constants'
+import { situacionEnEstacion } from '../utils/ordenesDeEstacion'
+import { estaPausada } from '../utils/pausasEtapa'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import EstacionCard from '../components/orders/EstacionCard'
 import SublimadoHomePage from './SublimadoHomePage'
@@ -18,6 +20,10 @@ import { coincideBusquedaOrden } from '../utils/ordenesBusqueda'
 // confirmado todavía (create_order ya les crea la fila en 'pendiente'):
 // se muestran igual para que no se pierdan, y es EstacionOrderPage quien
 // decide si el botón dice "Confirmar" o la acción de la etapa.
+// V140 — costura y bordado solo ven la orden cuando corte ya terminó, y
+// terminado cuando costura o bordado ya empezaron (`situacionEnEstacion`).
+// Las que todavía esperan el paso anterior solo se cuentan al pie de la
+// lista; el buscador las sigue encontrando.
 // V120 — el rol sublimado tiene su propio dashboard (todas las órdenes de
 // sublimación + diseños); el branch vive en este wrapper para no romper
 // las reglas de hooks.
@@ -25,6 +31,17 @@ export default function EstacionHomePage() {
   const { role } = useAuth()
   if (estacionDeRol(role)?.dashboardSublimado) return <SublimadoHomePage />
   return <SiguientesOrdenes />
+}
+
+// V140 — para encontrar de un vistazo lo que ya empecé y lo que dejé en pausa.
+function EstadoDeMiEtapa({ etapa }) {
+  if (etapa?.estado !== 'en_proceso') return null
+  const pausada = estaPausada(etapa)
+  return (
+    <span className="estacion-card__chips">
+      <span className={'badge estacion-card__estado' + (pausada ? ' estacion-card__estado--pausada' : '')}>{pausada ? '⏸ En pausa' : 'En proceso'}</span>
+    </span>
+  )
 }
 
 function SiguientesOrdenes() {
@@ -38,14 +55,15 @@ function SiguientesOrdenes() {
   // reporta sublimado): una lista por etapa, en el orden del flujo.
   const secciones = useMemo(
     () =>
-      etapasDeEstacion(estacion).map((etapa) => ({
-        etapa,
-        ordenes: orders.filter((o) => {
-          if (o.cancelled_at) return false
-          const miEtapa = (etapasPorOrden[o.id] || []).find((e) => e.etapa === etapa)
-          return miEtapa && (miEtapa.estado === 'pendiente' || miEtapa.estado === 'en_proceso')
-        }),
-      })),
+      etapasDeEstacion(estacion).map((etapa) => {
+        const vivas = orders.filter((o) => !o.cancelled_at)
+        const situacion = (o) => situacionEnEstacion(etapa, etapasPorOrden[o.id])
+        return {
+          etapa,
+          ordenes: vivas.filter((o) => situacion(o) === 'lista'),
+          enEspera: vivas.filter((o) => situacion(o) === 'espera').length,
+        }
+      }),
     [orders, etapasPorOrden, estacion]
   )
 
@@ -89,7 +107,7 @@ function SiguientesOrdenes() {
             ))}
           </div>
         ))}
-      {!encontradas && secciones.map(({ etapa, ordenes }) => (
+      {!encontradas && secciones.map(({ etapa, ordenes, enEspera }) => (
         <div key={etapa} className="estacion-seccion">
           {variasEtapas && (
             <h2 className="section-title">
@@ -103,9 +121,16 @@ function SiguientesOrdenes() {
           ) : (
             <div className="estacion-list">
               {ordenes.map((o) => (
-                <EstacionCard key={o.id} order={o} />
+                <EstacionCard key={o.id} order={o}>
+                  <EstadoDeMiEtapa etapa={(etapasPorOrden[o.id] || []).find((e) => e.etapa === etapa)} />
+                </EstacionCard>
               ))}
             </div>
+          )}
+          {enEspera > 0 && (
+            <p className="pantone-hint">
+              {enEspera === 1 ? 'Hay 1 orden más que todavía espera' : `Hay ${enEspera} órdenes más que todavía esperan`} el paso anterior. Te aparecerá{enEspera === 1 ? '' : 'n'} aquí cuando esté{enEspera === 1 ? '' : 'n'} lista{enEspera === 1 ? '' : 's'}.
+            </p>
           )}
         </div>
       ))}

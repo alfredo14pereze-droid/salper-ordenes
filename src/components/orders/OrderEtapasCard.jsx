@@ -148,7 +148,7 @@ export default function OrderEtapasCard({ orderId, onUpdated }) {
                 )}
                 {et.estado === 'en_proceso' && et.iniciado_en && (
                   <p style={{ marginTop: 4 }}>
-                    <EtapaCronometro iniciadoEn={et.iniciado_en} compacto />
+                    <EtapaCronometro etapa={et} compacto />
                   </p>
                 )}
                 {et.estado === 'completado' && tiempoReal != null && (

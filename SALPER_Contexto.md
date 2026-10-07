@@ -6163,3 +6163,39 @@ nueva `17` (orden 170, creada en el catálogo de tallas), todas en 0.
 
 Renombrada con `inv_guardar_seccion` (mismo id, mismos artículos, misma clasificación y orden). Producto
 nuevo en esa sección: Pantalón JSV (variante "JSV"), solo talla 32, en 0.
+
+### V140 — Estaciones: cada quien ve lo que ya le toca + pausa del cronómetro (rama `pausa-etapas`, 2026-10-07)
+
+**ESTADO: solo en la rama `pausa-etapas` (sale de `main`), sin commit ni push.
+`supabase/schema_v140_pausa_etapas.sql` NO está aplicado.** Sin el SQL el frontend funciona igual: el
+filtro de órdenes no necesita base y el botón de pausa simplemente no aparece.
+
+Salió de un prompt armado fuera (tablas `ordenes`, `etapa_nombre`, `inicio_en`/`fin_en`, vistas
+`CosturaView`/`BordadoView`, RPC `get_ordenes_por_rol`, deploy a `fase-2`). Contra el sistema real:
+- **"Terminado marca solo la etapa" y "trabajo simultáneo" ya existían** (V23 + V139: Iniciar/Terminar
+  por etapa, etapas en paralelo). No se rehízo nada de eso.
+- **Filtro por estación** — sin SQL ni RPC, en el cliente (`src/utils/ordenesDeEstacion.js`,
+  `situacionEnEstacion`, usado por `EstacionHomePage.jsx`):
+  - costura (etapa `produccion`) y bordado: la orden sale cuando **corte está terminado**;
+  - terminado: cuando **costura o bordado ya empezaron o terminaron**;
+  - la condición solo aplica si la orden tiene esa etapa previa (tipo "bordado", sin corte, le sale a
+    bordado de inmediato); una etapa ya iniciada nunca se esconde; corte, impresión, sublimado e
+    "impresión por prenda" no cambian.
+  - Las que esperan el paso anterior se cuentan al pie ("Hay N órdenes más que todavía esperan…") y el
+    buscador las sigue encontrando. Las tarjetas marcan "En proceso" / "⏸ En pausa".
+- **Pausa** (no es un estado: la etapa sigue `en_proceso`): columnas `pausada_en`, `tiempo_pausado_ms` y
+  además `pausas` (jsonb `[{inicio, fin}]`, que el prompt no traía: hace falta para descontar tiempo
+  **hábil**; con solo los milisegundos una pausa de toda la noche restaría 16 h). RPC
+  `pausar_orden_etapa(orden, etapa, pausar)` con el mismo permiso que `update_orden_etapa`; trigger
+  `orden_etapas_pausa_guard_trg` (terminar cierra la pausa abierta; volver a pendiente borra las pausas).
+  No toca funciones existentes ni depende del V139 de tiempos.
+  - Botón **⏸ Pausar / ▶ Reanudar** solo en bordado y terminado (`pausa: true` en `vistasPorRol.js`);
+    costura no, como pidió. El servidor sí lo permitiría a cualquier dueño de etapa: dárselo a otra
+    estación es agregar esa bandera, sin SQL.
+  - `src/utils/pausasEtapa.js`: `msTrabajados`, `minutosHabilesTrabajados`. `EtapaCronometro` ahora recibe
+    la fila (`etapa={et}`) y se pone gris "En pausa"; `medirEtapa` y el reporte descuentan las pausas
+    (motivo nuevo "Todo el tiempo en pausa"). `fetchEtapasTerminadas` pide `*` para no romperse sin V140.
+- Probado: `node --test src/utils/*.test.js` (18), `npm run build`, y pausar/reanudar en el ejemplo local
+  (`salper-tiempos-harness`, puerto 5198). **No probado**: con sesión real ni contra Supabase, ni el SQL.
+  No se contó cuántas órdenes reales pasan a "en espera" con el filtro (la llave pública no lee
+  `orden_etapas`).

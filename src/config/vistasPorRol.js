@@ -23,7 +23,9 @@ export const ESTACIONES = {
   corte: { etapa: 'corte', consumoPlaceholder: true },
   // V134 — `pendientesTipo` también es la "parte" que le toca a la estación en
   // los tipos compuestos (p. ej. "Arreglo y bordado" lleva Arreglo y Bordado).
-  bordado: { etapa: 'bordado', pendientesTipo: 'Bordado' },
+  // V140 — `pausa`: la estación puede pausar y reanudar el cronómetro de sus
+  // etapas (bordado y terminado saltan de una orden a otra).
+  bordado: { etapa: 'bordado', pendientesTipo: 'Bordado', pausa: true },
   sublimado: {
     etapa: 'sublimado',
     etapasExtra: ['impresion'],
@@ -48,6 +50,7 @@ export const ESTACIONES = {
     finalLabels: { impresion_prenda: 'Impresa' },
     pendientesCompleto: true,
     surtidoFinal: true,
+    pausa: true,
   },
 }
 

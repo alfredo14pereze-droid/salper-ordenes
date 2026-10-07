@@ -205,7 +205,8 @@ export async function fetchEtapasTerminadas(desdeIso, hastaIso) {
 
   return supabase
     .from('orden_etapas')
-    .select('id, order_id, etapa, iniciado_en, completado_en, responsable_id, orders!inner(order_number, client_name, items, eliminada_en)')
+    // '*' y no la lista de columnas: `pausas` (V140) puede no existir todavía.
+    .select('*, orders!inner(order_number, client_name, items, eliminada_en)')
     .eq('estado', 'completado')
     .gte('completado_en', desdeIso)
     .lt('completado_en', hastaIso)
@@ -243,6 +244,21 @@ export async function updateOrdenEtapa(orderId, etapa, nuevoEstado) {
       p_order_id: orderId,
       p_etapa: etapa,
       p_nuevo_estado: nuevoEstado,
+    })
+    .single()
+}
+
+// V140 — pausa o reanuda una etapa en proceso (el cronómetro deja de contar;
+// la etapa sigue "en proceso"). Mismo permiso que updateOrdenEtapa.
+export async function pausarOrdenEtapa(orderId, etapa, pausar) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase
+    .rpc('pausar_orden_etapa', {
+      p_order_id: orderId,
+      p_etapa: etapa,
+      p_pausar: pausar,
     })
     .single()
 }

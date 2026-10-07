@@ -1,4 +1,5 @@
-import { calcularHorasHabiles, JORNADA } from './horasHabiles.js'
+import { JORNADA } from './horasHabiles.js'
+import { minutosHabilesTrabajados } from './pausasEtapa.js'
 
 // V139 — Tiempos reales por etapa. Todo sale de orden_etapas (iniciado_en /
 // completado_en / responsable_id); aquí solo se mide y se agrupa.
@@ -11,16 +12,19 @@ export const MOTIVO_SIN_MEDIR = {
   sin_inicio: 'No se marcó el inicio',
   de_corrido: 'Inicio y fin de corrido',
   fuera_horario: 'Todo fuera de horario',
+  en_pausa: 'Todo el tiempo en pausa',
 }
 
 // { minutos, motivo }: minutos hábiles si la etapa se puede medir; si no,
-// minutos = null y el motivo.
-export function medirEtapa({ iniciado_en: inicio, completado_en: fin }) {
+// minutos = null y el motivo. V140 — las pausas no cuentan.
+export function medirEtapa(etapa) {
+  const { iniciado_en: inicio, completado_en: fin } = etapa
   if (!inicio || !fin) return { minutos: null, motivo: 'sin_inicio' }
   const corridos = (new Date(fin) - new Date(inicio)) / 60000
   if (!(corridos >= UMBRAL_DE_CORRIDO_MIN)) return { minutos: null, motivo: 'de_corrido' }
-  const minutos = calcularHorasHabiles(inicio, fin)
-  if (minutos <= 0) return { minutos: null, motivo: 'fuera_horario' }
+  if (minutosHabilesTrabajados({ iniciado_en: inicio, completado_en: fin }) <= 0) return { minutos: null, motivo: 'fuera_horario' }
+  const minutos = minutosHabilesTrabajados(etapa)
+  if (minutos <= 0) return { minutos: null, motivo: 'en_pausa' }
   return { minutos, motivo: null }
 }
 
