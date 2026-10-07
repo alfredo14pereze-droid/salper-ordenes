@@ -6153,3 +6153,8 @@ Qué hay:
   entorno local sin base (`.claude/harness-tiempos/`, servidor `salper-tiempos-harness`, puerto 5198).
   **No probado**: con sesión real ni contra Supabase (solo una lectura de la consulta del reporte), ni el
   SQL (no se ha corrido).
+
+### 2026-10-06 — Inventario: Pantalón de Gabardina Marino con tallas 17 y 28–48 (solo datos)
+
+Sección "Pantalon Industrial". Tenía 34–42 con existencia; se agregaron 28, 30, 32, 44, 46, 48 y la talla
+nueva `17` (orden 170, creada en el catálogo de tallas), todas en 0.
