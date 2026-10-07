@@ -6185,3 +6185,15 @@ así que cualquier producto con otras tallas había que pedirlo por fuera.
 
 Datos del mismo día en "Pantalón Variado": Pantalón de Vigilancia (32, 34, 38) y Pantalón Seguridad Bies
 Verde (34), en 0.
+
+### V139 — Producción: editar/borrar registros hasta el cierre real de la semana (aplicado 2026-10-07)
+
+`supabase/schema_v139_produccion_editar_hasta_cierre.sql` (aplicado desde el SQL Editor, hash verificado).
+Síntoma: a Juanis le salía "Esta semana ya no está abierta para captura." un miércoles, con la semana
+30 sep–6 oct en `abierta`. Ese mensaje es el de **editar/borrar** (`prod_editar_registro`/borrar), no el de
+capturar. Causa: `prod_puede_editar_semana` conservaba la regla de V69 para quien no es administrador y con
+el interruptor de semanas cerradas apagado (estaba en 0 desde el 2-oct): `p_fin >= hoy`, o sea hasta el
+martes, mientras que capturar sigue abierto hasta el jueves 11:00 (V104/V106). Era la observación que V123
+dejó anotada "sin tocar". Arreglo: esa línea ahora es `ahora < (p_fin + 2) a las 11:00` hora Monterrey, igual
+que `prod_cerrar_vencidas`. Misma firma y permisos. Verificado por consulta: la función viva tiene la regla
+nueva, `anon` sin acceso, y la semana actual evalúa como editable. No probado con la cuenta de Juanis.
