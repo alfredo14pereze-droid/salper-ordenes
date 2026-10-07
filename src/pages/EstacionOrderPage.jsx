@@ -13,6 +13,10 @@ import { Loading, ErrorState } from '../components/common/States'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import Modal from '../components/talleros/Modal'
 import OrderDisenosCard from '../components/orders/OrderDisenosCard'
+import EtapaCronometro from '../components/orders/EtapaCronometro'
+import { medirEtapa } from '../utils/tiemposEtapas'
+import { formatMinutosHabiles } from '../utils/horasHabiles'
+import { formatDateTime } from '../utils/dates'
 
 const conTalla = (talla) => (talla ? `T.${talla}` : '')
 
@@ -446,8 +450,23 @@ function EstacionSurtidoTerminado({ order, onConfirmado }) {
   )
 }
 
+// V139 — resumen de tiempos de una etapa ya terminada (solo lectura).
+function EtapaTiempoReal({ etapa }) {
+  const { minutos } = medirEtapa(etapa)
+  return (
+    <div className="etapa-tiempo">
+      <span className="etapa-tiempo__titulo">✓ Terminada</span>
+      {minutos != null && <span className="etapa-tiempo__real">Tiempo real: {formatMinutosHabiles(minutos)} hábiles</span>}
+      <span className="etapa-tiempo__horas">
+        {etapa.iniciado_en ? `Inició: ${formatDateTime(etapa.iniciado_en)} · ` : ''}
+        Terminó: {formatDateTime(etapa.completado_en)}
+      </span>
+    </div>
+  )
+}
+
 // V96/V97 — vista de estación (Parte 1): folio, cliente, prenda+tela+color,
-// tallas, y dos botones — "En progreso" / "Finalizado" (pendiente ->
+// tallas, y dos botones — "Iniciar" / "Terminar" (pendiente ->
 // en_proceso -> completado en orden_etapas) — o "Confirmar" si la orden
 // todavía no arranca. Nada de precios/saldos/PDFs/facturación — eso vive
 // en OrderDetailPage.jsx, que es donde llegan los demás roles.
@@ -538,17 +557,25 @@ export default function EstacionOrderPage() {
             const enProceso = et.estado === 'en_proceso'
             const terminada = et.estado === 'completado'
             const esPrincipal = et.etapa === estacion.etapa
+            const finalLabel = estacion.finalLabels?.[et.etapa] || (esPrincipal && estacion.finalLabel) || 'Terminar'
             return (
               <div key={et.etapa} className="estacion-acciones">
                 {misEtapas.length > 1 && <h3 className="section-title section-title--small">{ETAPA_LABELS[et.etapa] || et.etapa}</h3>}
-                <button
-                  type="button"
-                  className={'btn estacion-btn' + (enProceso || terminada ? ' btn--primary' : ' btn--secondary')}
-                  disabled={busy}
-                  onClick={() => handleCambiarEtapa(et.etapa, 'en_proceso')}
-                >
-                  En progreso
-                </button>
+                {/* V139 — Iniciar / cronómetro / tiempo real. Una etapa terminada ya no se reabre desde aquí. */}
+                {terminada ? (
+                  <EtapaTiempoReal etapa={et} />
+                ) : enProceso ? (
+                  <EtapaCronometro iniciadoEn={et.iniciado_en} />
+                ) : (
+                  <button
+                    type="button"
+                    className="btn estacion-btn estacion-btn--iniciar"
+                    disabled={busy}
+                    onClick={() => handleCambiarEtapa(et.etapa, 'en_proceso')}
+                  >
+                    Iniciar
+                  </button>
+                )}
                 {esPrincipal && estacion.consumoPlaceholder ? (
                   terminada ? (
                     <button type="button" className="btn btn--primary estacion-btn" disabled>
@@ -568,11 +595,11 @@ export default function EstacionOrderPage() {
                 ) : (
                   <button
                     type="button"
-                    className={'btn estacion-btn' + (terminada ? ' btn--primary' : ' btn--secondary')}
-                    disabled={busy}
+                    className={'btn estacion-btn' + (terminada ? ' btn--primary' : enProceso ? ' estacion-btn--terminar' : ' btn--secondary')}
+                    disabled={busy || terminada}
                     onClick={() => handleCambiarEtapa(et.etapa, 'completado')}
                   >
-                    {estacion.finalLabels?.[et.etapa] || (esPrincipal && estacion.finalLabel) || 'Finalizado'}
+                    {finalLabel}
                   </button>
                 )}
               </div>

@@ -6115,3 +6115,41 @@ Ahora `estiloVariante` los separa (una variante solo se sugiere si la prenda ya 
 `TALLAS_SIN_RELLENO` (`3`, `3 TALL`) nunca se sugieren. Las 1(20) y 2(22) reales de la Chamarra sin Bordar
 se quedan (así están etiquetadas las prendas; Alfredo las va a mandar reetiquetar). Comprobado con una
 simulación de solo lectura sobre los datos reales: Tricio, Avenue y Nexus quedan sin tallas sugeridas de más.
+
+### V139 — Tiempos reales por etapa: cronómetro en estaciones y reporte (rama `tiempos-etapas`, 2026-10-06)
+
+**ESTADO: frontend subido a `main` el 2026-10-06 (rama `tiempos-etapas`).
+`supabase/schema_v139_tiempos_etapas.sql` NO está aplicado.** El frontend funciona sin el SQL, salvo
+"Corregir horas" (necesita la función nueva).
+
+Salió de un prompt que pedía columnas `hora_inicio`/`hora_fin`/`operario_id`, tiempos estándar del Excel y
+valor/premios en el mismo reporte. Decisiones de Alfredo después de ver el estado real:
+- **No hay columnas nuevas de tiempo**: se usan `iniciado_en`/`completado_en`/`responsable_id` de V23.
+- **Sin tiempo estándar por ahora** (el Excel solo trae segundos por operación de costura, no por etapa):
+  el reporte muestra solo tiempos reales; varianza y % de cumplimiento quedan para cuando haya estándar.
+- **Operario = la cuenta que tocó Iniciar** (sin selector).
+- **Valor generado y premios siguen separados** (no hay relación entre `prod_registros` y órdenes/etapas).
+
+Qué hay:
+- `src/utils/horasHabiles.js`: `calcularHorasHabiles(inicio, fin)` → minutos de 8:00 a 18:00, lunes a
+  viernes, en hora de Torreón (no la del dispositivo). No descuenta comida ni festivos (v2).
+  `src/utils/tiemposEtapas.js`: medición y resúmenes del reporte. Pruebas: `node --test src/utils/*.test.js`.
+- **Estaciones** (`EstacionOrderPage.jsx`): "En progreso"/"Finalizado" → **Iniciar** (verde) y
+  **Terminar**; mientras corre se ve el cronómetro (`EtapaCronometro.jsx`, rojo, con el tiempo hábil);
+  al terminar, el tiempo real y las horas, ya sin poder reabrir. Corte y terminado conservan su formulario
+  de cierre.
+- **Detalle de orden** (`OrderEtapasCard.jsx`): cronómetro, operario, tiempo real y, solo `admin_general`,
+  "Corregir horas" (pide motivo).
+- **Reporte** (`components/produccion/TiemposEtapas.jsx`, al final de Estadísticas de producción): periodo
+  (semana lunes–domingo, mes, rango) por fecha de fin de la etapa, filtros de operario y etapa, tablas por
+  etapa y por operario (promedio, mediana, más rápida/lenta, minutos por pieza), detalle, Imprimir y CSV.
+  No entran al promedio las etapas sin inicio, las de inicio y fin de corrido (< 2 min) ni las hechas
+  todas fuera de horario. Al 2026-10-06 la mayoría del historial es "de corrido" (p. ej. corte: 48 de 66).
+- **SQL V139** (pendiente de aplicar): trigger `orden_etapas_tiempos_guard_trg` (la estación no reabre
+  una etapa terminada; re-terminar no pisa la hora de fin; el operario queda fijo en quien inició; volver
+  a "pendiente" limpia inicio/fin/operario), tabla `orden_etapas_correcciones` y RPC
+  `corregir_tiempos_etapa` (solo `admin_general`). No modifica `update_orden_etapa` ni filas existentes.
+- Probado: pruebas de las utilidades, `npm run build` y las pantallas nuevas con datos de ejemplo en un
+  entorno local sin base (`.claude/harness-tiempos/`, servidor `salper-tiempos-harness`, puerto 5198).
+  **No probado**: con sesión real ni contra Supabase (solo una lectura de la consulta del reporte), ni el
+  SQL (no se ha corrido).

@@ -197,6 +197,39 @@ export async function fetchAllOrdenEtapas() {
   return supabase.from('orden_etapas').select('*')
 }
 
+// V139 — etapas terminadas dentro de un periodo, con el folio, el cliente y
+// las prendas de su orden (para el reporte de tiempos por etapa).
+export async function fetchEtapasTerminadas(desdeIso, hastaIso) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase
+    .from('orden_etapas')
+    .select('id, order_id, etapa, iniciado_en, completado_en, responsable_id, orders!inner(order_number, client_name, items, eliminada_en)')
+    .eq('estado', 'completado')
+    .gte('completado_en', desdeIso)
+    .lt('completado_en', hastaIso)
+    .is('orders.eliminada_en', null)
+    .order('completado_en', { ascending: false })
+}
+
+// V139 — corrige las horas de una etapa ya terminada (solo admin_general; el
+// servidor deja registro en orden_etapas_correcciones).
+export async function corregirTiemposEtapa(orderId, etapa, iniciadoEn, completadoEn, motivo) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase
+    .rpc('corregir_tiempos_etapa', {
+      p_order_id: orderId,
+      p_etapa: etapa,
+      p_iniciado_en: iniciadoEn,
+      p_completado_en: completadoEn,
+      p_motivo: motivo,
+    })
+    .single()
+}
+
 // Avanza UNA etapa de UNA orden (pendiente -> en_proceso -> completado, o
 // para corregir, cualquier valor directo). El servidor valida que el rol
 // coincida con el nombre de la etapa (o sea admin_fabrica/admin_general)

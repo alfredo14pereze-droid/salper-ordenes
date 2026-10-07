@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import RequireRole from '../components/common/RequireRole'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { TrendChart, LineChart } from '../components/produccion/StatsCharts'
+import TiemposEtapas from '../components/produccion/TiemposEtapas'
 import { canViewProduccionMontos } from '../utils/permissions'
 import {
   fetchOperadorasTodas,
@@ -470,6 +471,9 @@ function Contenido() {
           </div>
         )}
       </Seccion>
+
+      {/* 9) V139 — tiempos reales por etapa (orden_etapas); no depende de las semanas de premios */}
+      <TiemposEtapas />
     </div>
   )
 }

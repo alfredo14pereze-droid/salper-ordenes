@@ -4192,3 +4192,152 @@ h4 {
 .bordado-miniaturas__item { display: flex; flex-direction: column; align-items: center; gap: 2px; max-width: 96px; color: inherit; text-decoration: none; }
 .bordado-miniaturas__item img { width: 90px; height: 90px; object-fit: cover; border-radius: 6px; display: block; }
 .bordado-miniaturas__lugar { font-size: 12px; text-align: center; }
+
+/* V139 — tiempos por etapa: Iniciar (verde), cronómetro (rojo, pulsa
+   mientras corre), tiempo real al terminar, y la sección del reporte. */
+.estacion-btn--iniciar {
+  background: var(--color-good);
+  border-color: var(--color-good);
+  color: #fff;
+}
+.estacion-btn--terminar {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #fff;
+}
+.etapa-crono {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px;
+  border: 2px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  animation: etapa-crono-pulso 1.6s ease-in-out infinite;
+}
+.etapa-crono__estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.etapa-crono__punto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-danger);
+}
+.etapa-crono__reloj {
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.etapa-crono__habil {
+  font-size: 14px;
+  color: var(--color-text);
+}
+.etapa-crono--compacto {
+  display: inline-flex;
+  flex-direction: row;
+  gap: 6px;
+  padding: 2px 8px;
+  border-width: 1px;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  animation: none;
+}
+.etapa-crono--compacto .etapa-crono__punto {
+  width: 8px;
+  height: 8px;
+  animation: etapa-crono-punto 1.6s ease-in-out infinite;
+}
+@keyframes etapa-crono-pulso {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(199, 53, 31, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(199, 53, 31, 0);
+  }
+}
+@keyframes etapa-crono-punto {
+  50% {
+    opacity: 0.25;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .etapa-crono,
+  .etapa-crono--compacto .etapa-crono__punto {
+    animation: none;
+  }
+}
+.etapa-tiempo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-good);
+  border-radius: var(--radius-md);
+  background: var(--color-good-soft);
+  text-align: center;
+}
+.etapa-tiempo__titulo {
+  font-weight: 700;
+  color: var(--color-good);
+}
+.etapa-tiempo__real {
+  font-size: 20px;
+  font-weight: 800;
+}
+.etapa-tiempo__horas {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+.etapa-corregir-link {
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.etapa-corregir {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.etapa-corregir label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+.etapa-corregir__motivo {
+  flex: 1 1 220px;
+}
+.etapa-corregir__acciones {
+  display: flex;
+  gap: 8px;
+}
+.tiempos-etapas__scroll {
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+.tiempos-etapas__cliente,
+.tiempos-etapas__sin {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
