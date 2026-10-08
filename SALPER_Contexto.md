@@ -6203,9 +6203,10 @@ Salió de un prompt armado fuera (tablas `ordenes`, `etapa_nombre`, `inicio_en`/
 
 ### V141 — Ventas edita órdenes ya confirmadas; el Asistente vuelve a leer órdenes (rama `pausa-etapas`, 2026-10-07)
 
-**ESTADO: en la rama `pausa-etapas`, sin commit ni push. `supabase/schema_v141_ventas_edita_ordenes.sql`
-NO está aplicado.** Aplicar el SQL antes de subir el frontend (si no, ventas ve "Editar" y el servidor
-lo rechaza).
+**ESTADO: en `main`/producción desde el 2026-10-07. `schema_v141_ventas_edita_ordenes.sql` y
+`schema_v142_corte_sin_unidad.sql` aplicados ese día desde el SQL Editor (hash verificado) y comprobados
+por consulta: las 4 funciones parcheadas, una sola copia de cada una, `anon` sin acceso,
+`movimientos_tela.unidad` opcional y el trigger de telas activo.**
 
 - **Ventas edita en cualquier estado** (pedido de Alfredo): `canEditOrder` ya no mira el estado para
   `ventas`. En el servidor el candado es la misma línea en tres funciones (`update_order_details`,
