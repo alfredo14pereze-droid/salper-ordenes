@@ -6243,3 +6243,15 @@ terminar sus cortes desde ya; cuando el catálogo tenga unidades, que los datos 
 - **Órdenes con etapa de sublimado**: el formulario de corte ya no pide "Número de hojas" (vale 1: una
   sola hoja larga); los campos se llaman "Largo de la hoja" y "Piezas en la hoja".
 - `npm run build` limpio. **No probado en pantalla** ni con la cuenta de Pancho.
+
+### 2026-10-07 — Consumos por prenda: primera carga (solo datos)
+
+El catálogo `consumos_prenda` estaba vacío. Se cargaron 31 consumos de corte que mandó el hermano de
+Alfredo (`supabase/datos_2026-10-07_consumos_corte.sql`, insert directo desde el SQL Editor; todos en
+metros, promedio general sin tallas). Las "Falda short" de Tricio/Domus/Beckmann quedaron en dos renglones
+cada una: la falda y "(short)" 0.25. Pendientes sin dato: faldas tableadas (Lerdo Contemporáneo, IMES),
+short falda IMES, y las de tela por peso (polos, chamarra y pants de felpilla Tricio, pantalonera niño).
+**Ojo:** el consumo se aplica solo si el nombre coincide EXACTO con la prenda de la orden, y hoy las
+órdenes usan nombres genéricos ("Camisa", "Pantalón", "Playera"…): casi ninguno de los 31 coincide todavía,
+así que el estimado de tela por orden sigue sin calcularse. Se edita en la app: menú "Consumos por prenda"
+(`/consumos-prenda`, admin_fabrica y admin_general).
