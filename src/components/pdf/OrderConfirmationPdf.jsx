@@ -18,8 +18,10 @@ import { rosterParaPdf } from '../../utils/pagosPdf'
 //   mandarle al cliente.
 //
 // En las dos variantes: la lista de nombres, tallas y números de cada prenda
-// que la lleve (sublimación), y "Total y anticipo" cuando llega `pagos` (solo
-// se manda si quien genera el PDF puede ver dinero; ver resumenPagosPdf).
+// que la lleve (sublimación), "Total y anticipo" cuando llega `pagos` (solo
+// se manda si quien genera el PDF puede ver dinero; ver resumenPagosPdf) y
+// las fotos de referencia (`fotos`, ya convertidas a JPG; ver
+// prepararFotosParaPdf).
 
 const COLOR_INK = '#1a1a1a'
 const COLOR_MUTED = '#6b6558'
@@ -122,6 +124,11 @@ const styles = StyleSheet.create({
   rosterTalla: { width: 34, fontSize: 8.5 },
   rosterNumero: { width: 32, fontSize: 8.5, fontFamily: 'Helvetica-Bold', textAlign: 'right' },
 
+  // Fotos de referencia: hasta 3 por renglón, completas (sin recortar).
+  fotosLine: { flexDirection: 'row', marginBottom: 6 },
+  fotoBox: { flex: 1, border: `1pt solid ${COLOR_BORDER}`, borderRadius: 3, padding: 4, alignItems: 'center', justifyContent: 'center' },
+  foto: { width: '100%', objectFit: 'contain' },
+
   // Dinero e historial van lado a lado al final.
   cierre: { flexDirection: 'row' },
   cierreCol: { flex: 1 },
@@ -223,6 +230,40 @@ function Roster({ roster }) {
   )
 }
 
+// Fotos de referencia en renglones de hasta 3; una sola o dos salen más
+// grandes. Cada renglón va completo en una hoja (no se parte una foto).
+function FotosReferencia({ fotos }) {
+  const porRenglon = fotos.length === 1 ? 1 : fotos.length === 2 || fotos.length === 4 ? 2 : 3
+  const alto = porRenglon === 1 ? 260 : porRenglon === 2 ? 210 : 150
+  const renglones = []
+  for (let i = 0; i < fotos.length; i += porRenglon) renglones.push(fotos.slice(i, i + porRenglon))
+  return (
+    <>
+      {renglones.map((renglon, r) => (
+        // Cada renglón es hijo directo de la hoja (así el salto de hoja lo
+        // decide renglón por renglón) y el título va dentro del primero para
+        // que nunca quede solo al pie de una hoja.
+        <View key={r} wrap={false} style={r === 0 ? { marginTop: 11 } : null}>
+          {r === 0 && <Text style={styles.sectionTitle}>Fotos de referencia</Text>}
+          <View style={styles.fotosLine}>
+            {Array.from({ length: porRenglon }, (_, c) => {
+              const f = renglon[c]
+              const margen = c > 0 ? { marginLeft: 6 } : null
+              // Hueco invisible para que la última fila conserve el ancho de las demás.
+              if (!f) return <View key={c} style={[{ flex: 1 }, margen]} />
+              return (
+                <View key={c} style={[styles.fotoBox, margen, { height: alto + 10 }]}>
+                  <Image src={f.src} style={[styles.foto, { height: alto }]} />
+                </View>
+              )
+            })}
+          </View>
+        </View>
+      ))}
+    </>
+  )
+}
+
 function InfoField({ label, value }) {
   return (
     <View style={styles.infoField}>
@@ -232,7 +273,7 @@ function InfoField({ label, value }) {
   )
 }
 
-export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 'interno', history = [], pagos = null }) {
+export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 'interno', history = [], pagos = null, fotos = [] }) {
   const isInternal = variant === 'interno'
   const items = order.items || []
   const grandTotal = items.reduce(
@@ -382,6 +423,10 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 
             )}
           </View>
         )}
+
+        {/* Al final: así dinero e historial quedan junto a las prendas y las
+            fotos pueden ir grandes (si no caben, pasan completas a otra hoja). */}
+        {fotos.length > 0 && <FotosReferencia fotos={fotos} />}
 
         {pending && <Text style={styles.footnote}>Orden sujeta a confirmación de fábrica</Text>}
       </Page>

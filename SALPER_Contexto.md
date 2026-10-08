@@ -6405,3 +6405,18 @@ Pedido de Alfredo: un identificador extra y opcional junto al cliente, con el no
 - De paso: el PDF de la orden muestra el número de corte en las órdenes de maquila (quedaba pendiente en V143).
 - Probado: SQL en PGlite (guarda, vacío = null, permisos), `npm run build`, y que el campo aparece solo en
   sublimación en el ejemplo local. No probado: crear una orden real con equipo.
+
+### 2026-10-08 — PDF de la orden: fotos de referencia
+
+Pedido de Alfredo. El PDF de la orden (interno y de cliente) incluye al final "Fotos de referencia"
+(`orders.reference_photos`): una sola foto sale grande, dos lado a lado, y de tres en adelante en renglones
+de tres; se ven completas (sin recortar) y un renglón nunca se parte entre hojas. Quedan después de
+"Total y anticipo" / "Historial". Sin SQL.
+- El PDF solo acepta JPG/PNG y las fotos pueden venir en cualquier formato y muy pesadas: antes de armarlo,
+  `prepararFotosParaPdf` (`utils/generateOrderPdf.jsx`) baja cada foto, la reduce (lado mayor 1400 px) y la
+  convierte a JPG en el navegador. La que no se pueda leer (enlace roto, formato que el navegador no abre,
+  como HEIC en Chrome) se omite y el PDF sale con las demás.
+- Al crear la orden, el PDF ya trae las fotos recién subidas.
+- No se incluyen las fotos de bordados ni de impresiones por prenda (solo las de referencia de la orden).
+- Probado: PDFs de ejemplo con 1, 2 y 5 fotos de distintas proporciones; la conversión en el navegador con
+  un webp de 3000×2000, un PNG transparente y un enlace roto. No probado con fotos reales de una orden.

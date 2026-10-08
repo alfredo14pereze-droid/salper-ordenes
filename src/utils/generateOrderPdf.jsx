@@ -11,11 +11,52 @@ import { resumenPagosPdf } from './pagosPdf'
 // 'cliente' (lo mismo sin el tiempo estimado — para mandarle al
 // cliente). `history` es el arreglo de order_status_history de la orden
 // (ver fetchOrderHistory) — opcional. `pagos` (ver fetchPagosParaPdf) agrega
-// la sección "Total y anticipo"; sin él, el PDF sale sin dinero.
+// la sección "Total y anticipo"; sin él, el PDF sale sin dinero. Las fotos de
+// referencia de la orden se incluyen solas (ver prepararFotosParaPdf).
 export async function buildOrderConfirmationPdfBlob(order, { orderTypeLabel, variant = 'interno', history = [], pagos = null } = {}) {
+  const fotos = await prepararFotosParaPdf(order)
   return pdf(
-    <OrderConfirmationPdf order={order} orderTypeLabel={orderTypeLabel} variant={variant} history={history} pagos={pagos} />
+    <OrderConfirmationPdf order={order} orderTypeLabel={orderTypeLabel} variant={variant} history={history} pagos={pagos} fotos={fotos} />
   ).toBlob()
+}
+
+// Fotos de referencia de la orden, listas para el PDF. El PDF solo acepta
+// JPG/PNG y las fotos pueden venir en cualquier formato (webp del celular,
+// por ejemplo) y muy pesadas: cada una se baja, se reduce (lado mayor de
+// 1400 px) y se convierte a JPG aquí. La que no se pueda leer se omite: el
+// PDF sale con las demás.
+const FOTO_PDF_LADO_MAX = 1400
+
+async function fotoParaPdf(url) {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const bitmap = await createImageBitmap(await res.blob())
+  const escala = Math.min(1, FOTO_PDF_LADO_MAX / Math.max(bitmap.width, bitmap.height))
+  const width = Math.max(1, Math.round(bitmap.width * escala))
+  const height = Math.max(1, Math.round(bitmap.height * escala))
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  // Fondo blanco: un PNG con transparencia saldría negro al pasar a JPG.
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, width, height)
+  ctx.drawImage(bitmap, 0, 0, width, height)
+  bitmap.close?.()
+  return { src: canvas.toDataURL('image/jpeg', 0.85), width, height }
+}
+
+export async function prepararFotosParaPdf(order) {
+  const urls = (order?.reference_photos || []).map((f) => f?.url).filter(Boolean)
+  const resultados = await Promise.all(
+    urls.map((url) =>
+      fotoParaPdf(url).catch((err) => {
+        console.error('No se pudo incluir una foto de referencia en el PDF:', url, err)
+        return null
+      })
+    )
+  )
+  return resultados.filter(Boolean)
 }
 
 // Total, anticipos y restante de la orden para su PDF. Llamar solo si el

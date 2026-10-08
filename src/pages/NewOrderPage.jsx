@@ -577,8 +577,10 @@ function NewOrderForm() {
     }
 
     if (photoFiles.length > 0) {
-      const { error: uploadError } = await uploadOrderPhotos(data.id, photoFiles)
+      const { data: conFotos, error: uploadError } = await uploadOrderPhotos(data.id, photoFiles)
       if (uploadError) photoError = uploadError.message
+      // Para que el PDF de abajo ya traiga las fotos recién subidas.
+      else if (conFotos?.reference_photos) data = { ...data, reference_photos: conFotos.reference_photos }
     }
 
     // V41 — mismo criterio que las fotos: cotización/orden de compra/
