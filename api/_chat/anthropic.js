@@ -17,7 +17,7 @@ const toolDefinitions = TOOLS.map(({ name, description, input_schema }) => ({ na
 // con texto final. Cada pregunta arranca su propio ciclo de tools "de
 // cero" — no se arrastran llamadas de tools de turnos anteriores, así
 // el contrato con el frontend se queda simple (solo texto).
-export async function runChat({ message, history }) {
+export async function runChat({ message, history, db }) {
   const messages = [...history.map((m) => ({ role: m.role, content: m.content })), { role: 'user', content: message }]
 
   for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
@@ -44,7 +44,7 @@ export async function runChat({ message, history }) {
       let resultPayload
       try {
         resultPayload = tool
-          ? await tool.handler(block.input || {})
+          ? await tool.handler(block.input || {}, db)
           : { error: `Herramienta desconocida: ${block.name}` }
       } catch (err) {
         resultPayload = { error: err.message || 'Error al ejecutar la herramienta.' }

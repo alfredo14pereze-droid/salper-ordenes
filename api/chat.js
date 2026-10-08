@@ -1,4 +1,5 @@
 import { verifyUser } from './_chat/auth.js'
+import { supabaseDeUsuario } from './_chat/supabaseServer.js'
 import { runChat } from './_chat/anthropic.js'
 import { checkRateLimit } from './_chat/rateLimit.js'
 
@@ -53,7 +54,7 @@ export default async function handler(req, res) {
     : []
 
   try {
-    const reply = await runChat({ message: message.trim(), history: safeHistory })
+    const reply = await runChat({ message: message.trim(), history: safeHistory, db: supabaseDeUsuario(req.headers.authorization) })
     res.status(200).json({ reply })
   } catch (err) {
     console.error('[api/chat] error:', err)

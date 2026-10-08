@@ -64,11 +64,12 @@ export function canCreateOrder(role) {
   return role === 'ventas' || role === 'admin_tienda' || role === 'admin_general'
 }
 
-// ventas solo mientras la orden sigue "en_confirmacion"; admin_tienda/admin_general siempre.
-export function canEditOrder(role, order) {
-  if (role === 'admin_tienda' || role === 'admin_general') return true
-  if (role === 'ventas') return order?.status === 'en_confirmacion'
-  return false
+// V141 — ventas edita la orden en cualquier estado, igual que admin_tienda/
+// admin_general (antes solo mientras seguía "en_confirmacion"). Si la orden
+// ya estaba confirmada, el cambio de datos o prendas le pide a fábrica
+// reconfirmar (V38), como cuando edita un administrador.
+export function canEditOrder(role) {
+  return role === 'ventas' || role === 'admin_tienda' || role === 'admin_general'
 }
 
 // Documentos de la orden (cotización/orden de compra/factura): espejo de

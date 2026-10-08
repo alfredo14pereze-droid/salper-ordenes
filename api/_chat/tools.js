@@ -1,11 +1,10 @@
-import { supabaseServer } from './supabaseServer.js'
-
 // Registro de "tools" que el modelo puede usar — cada una es una
 // consulta de solo lectura a Supabase, nunca acceso directo a la base.
 // Para agregar una tool nueva (inventario de tela, tiempos de
 // producción, cotizador...) solo hay que agregar un objeto más a este
 // arreglo con { name, description, input_schema, handler } — nada más
-// del módulo de chat necesita tocarse.
+// del módulo de chat necesita tocarse. Cada handler recibe (input, db):
+// `db` es el cliente de Supabase con la sesión de quien pregunta.
 
 const ETAPAS = ['en_confirmacion', 'confirmado', 'cortado', 'sublimado', 'en_produccion', 'completado']
 
@@ -58,8 +57,8 @@ export const TOOLS = [
         limite: { type: 'integer', description: 'Máximo de resultados a devolver (default 30, máx 100).' },
       },
     },
-    handler: async (input) => {
-      let query = supabaseServer.from('orders').select('*').is('cancelled_at', null)
+    handler: async (input, db) => {
+      let query = db.from('orders').select('*').is('cancelled_at', null)
 
       if (input.cliente) query = query.ilike('client_name', `%${input.cliente}%`)
       if (input.tipo) query = query.eq('order_type_key', input.tipo)
@@ -81,8 +80,8 @@ export const TOOLS = [
     name: 'contar_ordenes_por_etapa',
     description: 'Cuenta cuántas órdenes activas (no canceladas) hay en cada etapa de producción ahora mismo.',
     input_schema: { type: 'object', properties: {} },
-    handler: async () => {
-      const { data, error } = await supabaseServer.from('orders').select('status').is('cancelled_at', null)
+    handler: async (_input, db) => {
+      const { data, error } = await db.from('orders').select('status').is('cancelled_at', null)
       if (error) throw new Error(error.message)
 
       const conteo = Object.fromEntries(ETAPAS.map((e) => [e, 0]))
@@ -98,9 +97,9 @@ export const TOOLS = [
       'Devuelve las órdenes cuya fecha de entrega ya pasó y que todavía no están completadas ni canceladas, ' +
       'con los días de atraso de cada una.',
     input_schema: { type: 'object', properties: {} },
-    handler: async () => {
+    handler: async (_input, db) => {
       const hoy = new Date().toISOString().slice(0, 10)
-      const { data, error } = await supabaseServer
+      const { data, error } = await db
         .from('orders')
         .select('*')
         .is('cancelled_at', null)

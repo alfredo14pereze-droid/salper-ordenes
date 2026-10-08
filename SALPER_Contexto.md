@@ -6200,3 +6200,44 @@ Salió de un prompt armado fuera (tablas `ordenes`, `etapa_nombre`, `inicio_en`/
 - Probado: `node --test src/utils/*.test.js` (18), `npm run build`, y pausar/reanudar en el ejemplo local
   (`salper-tiempos-harness`, puerto 5198). **No probado**: con sesión real de bordado/terminado (nadie
   ha tocado Pausar en producción todavía; `pausar_orden_etapa` no se ha ejecutado nunca).
+
+### V141 — Ventas edita órdenes ya confirmadas; el Asistente vuelve a leer órdenes (rama `pausa-etapas`, 2026-10-07)
+
+**ESTADO: en la rama `pausa-etapas`, sin commit ni push. `supabase/schema_v141_ventas_edita_ordenes.sql`
+NO está aplicado.** Aplicar el SQL antes de subir el frontend (si no, ventas ve "Editar" y el servidor
+lo rechaza).
+
+- **Ventas edita en cualquier estado** (pedido de Alfredo): `canEditOrder` ya no mira el estado para
+  `ventas`. En el servidor el candado es la misma línea en tres funciones (`update_order_details`,
+  `set_order_items`, `set_order_total`): `if v_role = 'ventas' and v_current_status <> 'en_confirmacion'`.
+  V141 parchea solo esa línea en la función viva (técnica de V131/V134, con guardas). La reconfirmación de
+  fábrica (V38) sigue igual. Cancelar, borrar y factura no cambian.
+- **Asistente SALPER: "permission denied for table orders"**. No estaba apagado: la API contestaba, pero
+  sus consultas leían con la llave pública SIN sesión, y V29 le quitó a `anon` todo acceso a `public`.
+  Quedó roto desde V29 sin que nadie lo notara. Arreglo: las tools reciben un cliente con la sesión de
+  quien pregunta (`supabaseDeUsuario` en `api/_chat/supabaseServer.js`; `handler(input, db)`).
+  **No probado** (necesita sesión real en Vercel). Pendiente aparte: el asistente solo conoce la tabla
+  `orders` (3 tools); no tiene herramienta para Pedidos colegio ni Inventario, y su lista de etapas es la
+  vieja de V1.
+- **Corte no podía terminar (diagnóstico; el arreglo es V142, abajo)**: no es por consumos ni por existencia
+  de tela (el corte no exige ninguno de los dos; el inventario puede quedar negativo). Es porque
+  **las 27 telas del catálogo tienen `unidad` vacía** y `marcar_corte` rechaza el corte con "Una de las
+  telas de esta orden no tiene unidad de medida definida". Nunca se ha registrado un corte (0 movimientos
+  `consumo_corte`). Se arregla en Catálogos → Telas → "Editar unidad" (metro o kilo; ventas, admin_fabrica
+  o admin_general). Además 2 de las 11 órdenes pendientes de corte no tienen tela en sus prendas
+  (IND-007 y VEN-004): a esas hay que asignarles tela desde la orden.
+
+### V142 — Corte no se atora: tela sin unidad, orden sin tela, y una sola hoja en sublimado (2026-10-07)
+
+Pedido de Alfredo: las unidades de medida de las telas se van a cargar poco a poco y Pancho tiene que poder
+terminar sus cortes desde ya; cuando el catálogo tenga unidades, que los datos se actualicen.
+- **SQL `schema_v142_corte_sin_unidad.sql`**: `movimientos_tela.unidad` deja de ser obligatoria; se quita
+  de `marcar_corte` (parche de una línea en la función viva) el rechazo por tela sin unidad; trigger
+  `telas_unidad_a_movimientos_trg`: al definir la unidad de una tela en Catálogos, sus movimientos sin
+  unidad la reciben. Las cantidades no se convierten: lo capturado se queda tal cual. Entradas y ajustes
+  de inventario siguen exigiendo unidad.
+- **Orden sin tela asignada**: la pantalla de corte ya no la bloquea; muestra un aviso y un botón
+  "Cortado" que solo completa la etapa (`update_orden_etapa`), sin movimiento de tela.
+- **Órdenes con etapa de sublimado**: el formulario de corte ya no pide "Número de hojas" (vale 1: una
+  sola hoja larga); los campos se llaman "Largo de la hoja" y "Piezas en la hoja".
+- `npm run build` limpio. **No probado en pantalla** ni con la cuenta de Pancho.

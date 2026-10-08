@@ -7,9 +7,8 @@ import OrderTypeSelect from './OrderTypeSelect'
 import { TIPO_VENTA_MOSTRADOR } from '../../lib/constants'
 import FoliosExternosField from './FoliosExternosField'
 
-// Datos generales de la orden. Si el rol actual puede editarla (tienda
-// solo mientras sigue "en_confirmacion"; admin siempre — ver
-// canEditOrder), aparece un botón "Editar" que cambia a un formulario;
+// Datos generales de la orden. Si el rol actual puede editarla (ventas y
+// administradores de tienda — ver canEditOrder), aparece un botón "Editar" que cambia a un formulario;
 // si no, es de solo lectura. La validación real vive en el servidor
 // (update_order_details), esto solo decide qué mostrar.
 export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {

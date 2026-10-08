@@ -61,13 +61,22 @@ function PrendaResumen({ item }) {
 // vivos). El servidor suma los cortes de cada tela en un solo movimiento y
 // guarda las descripciones en su nota (ver marcar_corte en
 // schema_v131_corte_multiple_sublimado_samuel.sql).
+//
+// V142 — tres ajustes para que corte no se quede atorado:
+// - Una tela sin unidad de medida ya no bloquea el corte (el catálogo se va
+//   llenando poco a poco): se guarda la cantidad y la unidad se completa
+//   sola cuando se defina en Catálogos.
+// - Una orden sin tela asignada se puede marcar cortada, sin registrar tela.
+// - `unaHoja` (órdenes con sublimado): es una sola hoja larga, así que no
+//   se pregunta el número de hojas (vale 1).
 let cortePk = 0
-const nuevoCorte = (telaId, extra = false) => ({ key: ++cortePk, telaId, extra, descripcion: '', largo: '', piezas: '', hojas: '' })
+const nuevoCorte = (telaId, extra = false, hojas = '') => ({ key: ++cortePk, telaId, extra, descripcion: '', largo: '', piezas: '', hojas })
 
-function TelaUsadaCorte({ order, onCortado }) {
+function TelaUsadaCorte({ order, unaHoja = false, onCortado, onCortadoSinTela }) {
   const telaIds = useMemo(() => [...new Set((order.items || []).map((i) => i.tela_id).filter(Boolean))], [order.items])
   const [telas, setTelas] = useState({})
-  const [cortes, setCortes] = useState(() => telaIds.map((id) => nuevoCorte(id)))
+  const hojasInicial = unaHoja ? '1' : ''
+  const [cortes, setCortes] = useState(() => telaIds.map((id) => nuevoCorte(id, false, hojasInicial)))
   const [confirmando, setConfirmando] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
@@ -81,11 +90,22 @@ function TelaUsadaCorte({ order, onCortado }) {
   }, [])
 
   if (telaIds.length === 0) {
-    return <p className="form-error">Esta orden no tiene ninguna tela asignada a sus prendas — avisa a tienda antes de cortar.</p>
+    return (
+      <div className="estacion-consumo">
+        <p className="pantone-hint">
+          Esta orden no tiene tela asignada a sus prendas. Puedes marcarla como cortada, pero no se va a registrar la tela usada — avisa a tienda para que
+          le pongan la tela.
+        </p>
+        <button type="button" className="btn btn--primary estacion-btn" onClick={onCortadoSinTela}>
+          Cortado
+        </button>
+      </div>
+    )
   }
 
   const nombreTela = (id) => telas[id]?.nombre || 'Tela'
   const unidadTela = (id) => telas[id]?.unidad || ''
+  const cantidadTxt = (id, n) => `${n.toFixed(2)} ${unidadTela(id)}`.trim()
 
   function actualizar(key, patch) {
     setCortes((prev) => prev.map((c) => (c.key === key ? { ...c, ...patch } : c)))
@@ -112,7 +132,7 @@ function TelaUsadaCorte({ order, onCortado }) {
     const consumos = completos.map((c) => ({
       tela_id: c.telaId,
       cantidad: metrosDe(c),
-      nota: c.extra || c.descripcion.trim() ? `${c.descripcion.trim() || 'Corte'}: ${metrosDe(c).toFixed(2)} ${unidadTela(c.telaId)}`.trim() : null,
+      nota: c.extra || c.descripcion.trim() ? `${c.descripcion.trim() || 'Corte'}: ${cantidadTxt(c.telaId, metrosDe(c))}` : null,
     }))
     const { error: err } = await marcarCorte(order.id, consumos)
     setBusy(false)
@@ -155,23 +175,25 @@ function TelaUsadaCorte({ order, onCortado }) {
                 </label>
               </div>
             )}
-            <div className="form-row-3">
+            <div className={unaHoja ? 'form-row' : 'form-row-3'}>
               <label>
-                Largo del trazo {unidad ? `(${unidad})` : ''}
+                {unaHoja ? 'Largo de la hoja' : 'Largo del trazo'} {unidad ? `(${unidad})` : ''}
                 <input type="number" inputMode="decimal" min="0.01" step="0.01" className="input" value={c.largo} onChange={(e) => actualizar(c.key, { largo: e.target.value })} />
               </label>
               <label>
-                Piezas por trazo
+                {unaHoja ? 'Piezas en la hoja' : 'Piezas por trazo'}
                 <input type="number" inputMode="numeric" min="1" step="1" className="input" value={c.piezas} onChange={(e) => actualizar(c.key, { piezas: e.target.value })} />
               </label>
-              <label>
-                Número de hojas
-                <input type="number" inputMode="numeric" min="1" step="1" className="input" value={c.hojas} onChange={(e) => actualizar(c.key, { hojas: e.target.value })} />
-              </label>
+              {!unaHoja && (
+                <label>
+                  Número de hojas
+                  <input type="number" inputMode="numeric" min="1" step="1" className="input" value={c.hojas} onChange={(e) => actualizar(c.key, { hojas: e.target.value })} />
+                </label>
+              )}
             </div>
             {(metros != null || piezas != null) && (
               <p className="estacion-trazo__total">
-                {metros != null && `= ${metros.toFixed(2)} ${unidad} de tela`}
+                {metros != null && `= ${cantidadTxt(c.telaId, metros)} de tela`}
                 {metros != null && piezas != null && ' · '}
                 {piezas != null && `${piezas} piezas cortadas`}
               </p>
@@ -184,7 +206,7 @@ function TelaUsadaCorte({ order, onCortado }) {
           </div>
         )
       })}
-      <button type="button" className="btn btn--secondary estacion-btn" onClick={() => setCortes((prev) => [...prev, nuevoCorte(telaIds[0], true)])}>
+      <button type="button" className="btn btn--secondary estacion-btn" onClick={() => setCortes((prev) => [...prev, nuevoCorte(telaIds[0], true, hojasInicial)])}>
         + Agregar otro corte
       </button>
       {error && <p className="form-error">{error.message}</p>}
@@ -195,7 +217,7 @@ function TelaUsadaCorte({ order, onCortado }) {
       ) : (
         <div className="estacion-acciones">
           <p>
-            ¿Confirmas que se usaron {telasUsadas.map((id) => `${totalDeTela(id).toFixed(2)} ${unidadTela(id)} de ${nombreTela(id)}`).join(', ')} y la orden está cortada?
+            ¿Confirmas que se usaron {telasUsadas.map((id) => `${cantidadTxt(id, totalDeTela(id))} de ${nombreTela(id)}`).join(', ')} y la orden está cortada?
           </p>
           <button type="button" className="btn btn--primary estacion-btn" disabled={busy} onClick={handleConfirmar}>
             {busy ? 'Guardando…' : 'Sí, confirmar'}
@@ -608,7 +630,12 @@ export default function EstacionOrderPage() {
                       Cortado
                     </button>
                   ) : (
-                    <TelaUsadaCorte order={order} onCortado={refresh} />
+                    <TelaUsadaCorte
+                      order={order}
+                      unaHoja={etapas.some((e) => e.etapa === 'sublimado')}
+                      onCortado={refresh}
+                      onCortadoSinTela={() => handleCambiarEtapa('corte', 'completado')}
+                    />
                   )
                 ) : esPrincipal && estacion.surtidoFinal ? (
                   terminada ? (

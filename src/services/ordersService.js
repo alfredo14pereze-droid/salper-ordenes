@@ -263,8 +263,8 @@ export async function pausarOrdenEtapa(orderId, etapa, pausar) {
     .single()
 }
 
-// Edita los datos generales de una orden ya creada (tienda solo mientras
-// sigue "en_confirmacion"; admin siempre — ver update_order_details).
+// Edita los datos generales de una orden ya creada (ventas y
+// administradores de tienda, en cualquier estado — ver update_order_details).
 export async function updateOrderDetails(
   orderId,
   { clientName, orderTypeKey, description, requestedDeliveryDate, clientTelefono, clientCorreo, foliosExternos }
