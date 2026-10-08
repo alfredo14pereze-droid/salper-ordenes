@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { updateOrderDetails, setOrdenNumeroCorte } from '../../services/ordersService'
+import { updateOrderDetails, setOrdenNumeroCorte, setOrdenEquipo } from '../../services/ordersService'
 import { formatDate, computeProductionWindow } from '../../utils/dates'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditOrder } from '../../utils/permissions'
@@ -24,6 +24,7 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
     requestedDeliveryDate: order.requested_delivery_date,
     foliosExternos: order.folios_externos || [],
     numeroCorte: order.numero_corte || '',
+    equipo: order.equipo || '',
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -48,6 +49,7 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
       requestedDeliveryDate: order.requested_delivery_date,
       foliosExternos: order.folios_externos || [],
       numeroCorte: order.numero_corte || '',
+      equipo: order.equipo || '',
     })
     setError(null)
     setEditing(true)
@@ -68,6 +70,15 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
       if (corteError) {
         setSaving(false)
         setError(corteError)
+        return
+      }
+    }
+
+    if (form.equipo.trim() !== (order.equipo || '')) {
+      const { error: equipoError } = await setOrdenEquipo(order.id, form.equipo.trim())
+      if (equipoError) {
+        setSaving(false)
+        setError(equipoError)
         return
       }
     }
@@ -104,6 +115,12 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
             }
           />
         </label>
+        {(order.order_type_key === 'sublimacion' || !!order.equipo) && (
+          <label>
+            Equipo
+            <input type="text" className="input" value={form.equipo} onChange={(e) => updateField('equipo', e.target.value)} placeholder="Opcional" />
+          </label>
+        )}
         {esMaquila && (
           <label>
             Número de corte
@@ -198,6 +215,12 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
         )}
       </div>
       <dl className="detail-list">
+        {order.equipo && (
+          <div>
+            <dt>Equipo</dt>
+            <dd>{order.equipo}</dd>
+          </div>
+        )}
         {order.numero_corte && (
           <div>
             <dt>Número de corte</dt>

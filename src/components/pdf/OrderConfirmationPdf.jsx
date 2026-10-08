@@ -271,6 +271,8 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 
           <View style={styles.infoGrid}>
             <InfoField label="Cliente" value={order.client_name} />
             <InfoField label="Tipo de orden" value={orderTypeLabel || order.order_type_key} />
+            {!!order.equipo && <InfoField label="Equipo" value={order.equipo} />}
+            {!!order.numero_corte && <InfoField label="Número de corte" value={order.numero_corte} />}
             <InfoField label="Fecha de entrega solicitada" value={formatDate(order.requested_delivery_date)} />
             {isInternal && (
               <InfoField

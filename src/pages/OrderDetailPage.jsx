@@ -129,6 +129,7 @@ function OrderDetailContent() {
             )}
           </h2>
           <p className="order-detail__client">{order.client_name}</p>
+          {order.equipo && <p className="order-detail__client">Equipo: {order.equipo}</p>}
           {order.numero_corte && <p className="order-detail__client">Corte: {order.numero_corte}</p>}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -159,6 +160,9 @@ function OrderDetailContent() {
         </div>
       </div>
       {pdfError && <p className="form-error">No se pudo generar el PDF: {pdfError.message}</p>}
+      {location.state?.equipoError && (
+        <p className="form-error">La orden se creó, pero no se guardó el equipo: {location.state.equipoError}. Captúralo en "Editar".</p>
+      )}
       {order.eliminada_en && (
         <p className="form-error">Esta orden fue eliminada — ya no admite cambios de ningún rol.</p>
       )}

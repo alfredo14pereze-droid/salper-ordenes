@@ -11,7 +11,7 @@ import { useOrders } from '../hooks/useOrders'
 import { buildDemandMap, getLoadForDate } from '../utils/demand'
 import { parseDate } from '../utils/dates'
 import { isActiveStatus } from '../utils/status'
-import { createOrder, createOrderMaquila, fetchOrdenPorNumeroCorte } from '../services/ordersService'
+import { createOrder, createOrderMaquila, fetchOrdenPorNumeroCorte, setOrdenEquipo } from '../services/ordersService'
 import { fetchPlantillasEtapas } from '../services/orderTypesService'
 import { TIPO_VENTA_MOSTRADOR, CLIENTE_SALPER_NOMBRE } from '../lib/constants'
 import { uploadOrderPhotos } from '../services/photosService'
@@ -53,6 +53,8 @@ const initialForm = {
   // V143 — solo órdenes de maquila.
   productoId: '',
   numeroCorte: '',
+  // V145 — solo sublimación: nombre del equipo (opcional).
+  equipo: '',
 }
 
 const emptyItem = () => ({
@@ -558,11 +560,21 @@ function NewOrderForm() {
 
   // Lo que sigue a crear la orden, igual para todos los tipos: fotos,
   // documentos, anticipo y la vista previa del PDF.
-  async function terminarCreacion(data, anticipoMontoNum) {
+  async function terminarCreacion(creada, anticipoMontoNum) {
+    let data = creada
     // La orden ya existe (tiene id): subimos las fotos elegidas a mano. Si
     // esto falla, no se cancela la creación de la orden — se puede
     // reintentar desde el detalle.
     let photoError = null
+
+    // V145 — el equipo se guarda aparte (create_order no lo recibe). Si
+    // falla, la orden ya existe: se avisa y se captura desde el detalle.
+    let equipoError = null
+    if (form.orderTypeKey === 'sublimacion' && form.equipo.trim()) {
+      const { data: conEquipo, error: eqErr } = await setOrdenEquipo(data.id, form.equipo.trim())
+      if (eqErr) equipoError = eqErr.message
+      else data = { ...data, equipo: conEquipo.equipo }
+    }
 
     if (photoFiles.length > 0) {
       const { error: uploadError } = await uploadOrderPhotos(data.id, photoFiles)
@@ -623,7 +635,7 @@ function NewOrderForm() {
       console.error('No se pudo generar el PDF de confirmación:', pdfErr)
     }
 
-    navigate(`/orden/${data.id}`, { state: { photoUploadError: photoError, documentError, anticipoError, pdfPreview } })
+    navigate(`/orden/${data.id}`, { state: { photoUploadError: photoError, documentError, anticipoError, equipoError, pdfPreview } })
   }
 
   if (loading) return <Loading label="Cargando tipos de orden…" />
@@ -698,6 +710,19 @@ function NewOrderForm() {
             soloCatalogo={esMaquila}
           />
         </div>
+
+        {form.orderTypeKey === 'sublimacion' && (
+          <label>
+            Equipo
+            <input
+              type="text"
+              className="input"
+              value={form.equipo}
+              onChange={(e) => updateField('equipo', e.target.value)}
+              placeholder="Opcional — nombre del equipo"
+            />
+          </label>
+        )}
 
         {esMaquila && (
           <>

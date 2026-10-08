@@ -160,6 +160,14 @@ export async function createOrderMaquila({ clientId, productoId, numeroCorte, re
     .single()
 }
 
+// V145 — "Equipo": identificador extra y opcional de la orden (sublimación).
+export async function setOrdenEquipo(orderId, equipo) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('set_orden_equipo', { p_order_id: orderId, p_equipo: equipo || null }).single()
+}
+
 // V143 — ¿ese cliente ya tiene una orden de maquila con ese número de corte?
 // Es solo el aviso antes de guardar; el servidor lo vuelve a validar.
 export async function fetchOrdenPorNumeroCorte(clientId, numeroCorte) {

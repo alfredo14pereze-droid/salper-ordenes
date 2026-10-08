@@ -6390,3 +6390,17 @@ sigue en la hoja siguiente sin cortar renglones. Revisado con PDFs de ejemplo (2
 
 Tres prendas más en la lista cerrada de sublimación (`GARMENT_OPTIONS_SUBLIMACION`), además de "Playera", que
 se conserva. Son prenda de arriba: piden nombres y números igual que Playera. Sin SQL.
+
+### V145 — "Equipo" en las órdenes de sublimación (2026-10-08)
+
+Pedido de Alfredo: un identificador extra y opcional junto al cliente, con el nombre del equipo.
+- SQL `schema_v145_orden_equipo.sql`: columna `orders.equipo` (texto, opcional) y RPC `set_orden_equipo(orden,
+  equipo)` (ventas / admin_tienda / admin_general). No se redefinió `create_order` ni `update_order_details`:
+  el equipo se guarda con esa RPC justo después de crear la orden y al editarla. No pide reconfirmación.
+- Nueva orden: campo "Equipo" debajo del cliente, solo con tipo Sublimación. En "Editar orden" sale en
+  sublimación (o si la orden ya trae equipo).
+- Se ve en la tarjeta del Dashboard, la tarjeta y la pantalla de estación, el encabezado y los Detalles de la
+  orden, y en "Datos generales" del PDF de la orden. El buscador también encuentra por equipo.
+- De paso: el PDF de la orden muestra el número de corte en las órdenes de maquila (quedaba pendiente en V143).
+- Probado: SQL en PGlite (guarda, vacío = null, permisos), `npm run build`, y que el campo aparece solo en
+  sublimación en el ejemplo local. No probado: crear una orden real con equipo.

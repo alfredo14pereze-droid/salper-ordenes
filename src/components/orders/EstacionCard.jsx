@@ -21,6 +21,7 @@ export default function EstacionCard({ order, children }) {
     <button type="button" className={'estacion-card' + (sev.cls ? ` order-card--${sev.cls}` : '')} onClick={() => navigate(`/orden/${order.id}`)}>
       <span className="estacion-card__folio">#{order.order_number}</span>
       <span className="estacion-card__cliente">{order.client_name}</span>
+      {order.equipo && <span className="estacion-card__prendas">Equipo: <b>{order.equipo}</b></span>}
       {order.numero_corte && <span className="estacion-card__prendas">Corte: <b>{order.numero_corte}</b></span>}
       {prendas && <span className="estacion-card__prendas">{prendas}</span>}
       {children}

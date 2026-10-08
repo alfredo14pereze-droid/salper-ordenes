@@ -83,6 +83,7 @@ export default function OrderCard({ order, orderType }) {
           {order.cancelled_at ? <span className="badge badge--danger">Cancelada</span> : <StatusBadge status={order.status} />}
         </div>
         <h3 className="order-card__client">{order.client_name}</h3>
+        {order.equipo && <p className="order-card__prendas">Equipo: <b>{order.equipo}</b></p>}
         {order.numero_corte && <p className="order-card__prendas">Corte: <b>{order.numero_corte}</b></p>}
         {prendas && <p className="order-card__prendas">{prendas}</p>}
         {needsReconfirm && <p className="order-card__reconfirm-notice">✎ Se modificó después de confirmarse</p>}
@@ -111,6 +112,7 @@ export default function OrderCard({ order, orderType }) {
           <span className="order-card__compact-sub">
             {order.client_name} · {dueLabel}
           </span>
+          {order.equipo && <span className="order-card__compact-prendas">Equipo: {order.equipo}</span>}
           {order.numero_corte && <span className="order-card__compact-prendas">Corte: {order.numero_corte}</span>}
           {prendas && <span className="order-card__compact-prendas">{prendas}</span>}
         </div>
