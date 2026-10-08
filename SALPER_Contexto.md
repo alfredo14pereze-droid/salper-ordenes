@@ -6374,3 +6374,14 @@ Son prenda de arriba: llevan nombres y números igual que Playera.
 reales de V77 (`orden_faltantes`, `orden_totales`, `set_orden_facturacion`, `fin_validar_entrega`): 14
 comprobaciones; pantalla de factura y lista de prendas en el ejemplo local (`salper-maquila-harness`).
 **No probado:** contra Supabase ni con sesión real; el PDF con una orden real.
+
+### 2026-10-08 — PDF de la orden: reacomodo para que quepa en una hoja
+
+Alfredo generó el PDF de SUB-023 (26 nombres) y no le gustó: la primera hoja casi vacía, la lista en una
+sola columna a todo lo ancho (una hoja entera) y el historial partido con un renglón solo en la tercera.
+Cambios en `OrderConfirmationPdf` (sin SQL): la lista de nombres y números va en **2 columnas** (3 si pasa
+de 45, 1 si son 6 o menos), llenando hacia abajo, con el número en negritas; "Piezas" va en el mismo
+renglón que las tallas; **"Total y anticipo" e "Historial de estado" van lado a lado** y no se parten entre
+hojas; márgenes y espacios más compactos. Con esa misma orden ahora es una hoja. Una lista muy larga (70)
+sigue en la hoja siguiente sin cortar renglones. Revisado con PDFs de ejemplo (26 nombres; 3 prendas con
+26 + 70 nombres; escolar sin dinero).
