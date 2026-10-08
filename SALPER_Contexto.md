@@ -6445,3 +6445,19 @@ da el programa de impresión (que la muestra en cc: es el mismo número). El **t
 - Todavía no hay reporte ni totales de tinta por periodo; los datos ya quedan guardados para hacerlo.
 - Probado: SQL en PGlite (10 comprobaciones), pruebas de la suma (el ejemplo 2.653 + 1.166 + 0.368 + 1.839 =
   6.026), y la pantalla en el ejemplo local con rol sublimado. No probado con la cuenta de Samuel.
+
+### 2026-10-08 — Maquila: la foto del producto no salía en la orden
+
+Alfredo cargó el catálogo de Jumaco (Blusa Mezclilla y Camisa Mezclilla, cada una con foto y procesos
+costura + terminado) y al capturar la orden no veía la foto. Faltaba en V143: el producto se elegía en una
+lista de texto y la orden no se llevaba la foto. Sin SQL.
+- Nueva orden (Maquila): el producto se elige en **tarjetas con la foto**, el nombre y sus procesos (mismas
+  tarjetas del catálogo del cliente).
+- Al crear la orden, **las fotos del producto se copian como fotos de referencia de la orden**
+  (`fotosDeProducto`, `copyTemplatePhotosToOrder` + `attachExistingPhotos`, igual que las plantillas): se
+  ven en el detalle, en las estaciones y en el PDF. Son copias: borrar una en la orden no la quita del
+  catálogo, y cambiar la foto del catálogo no cambia órdenes ya creadas. Si la copia falla, la orden se crea
+  igual y se avisa.
+- Al momento del arreglo no existía ninguna orden de maquila (no hubo nada que corregir hacia atrás).
+- Probado en el ejemplo local (tarjetas con foto, copia al crear). No probado contra Supabase: la primera
+  orden real de Jumaco es la prueba de la copia en el almacenamiento.

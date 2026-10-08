@@ -14,7 +14,8 @@ import { isActiveStatus } from '../utils/status'
 import { createOrder, createOrderMaquila, fetchOrdenPorNumeroCorte, setOrdenEquipo } from '../services/ordersService'
 import { fetchPlantillasEtapas } from '../services/orderTypesService'
 import { TIPO_VENTA_MOSTRADOR, CLIENTE_SALPER_NOMBRE } from '../lib/constants'
-import { uploadOrderPhotos } from '../services/photosService'
+import { uploadOrderPhotos, attachExistingPhotos } from '../services/photosService'
+import { copyTemplatePhotosToOrder } from '../services/templatesService'
 import { uploadOrderDocument } from '../services/documentsService'
 import { createAnticipo, METODOS_PAGO } from '../services/anticiposService'
 import { recognizeDocument } from '../services/documentOcrService'
@@ -25,7 +26,7 @@ import ClienteSelect from '../components/orders/ClienteSelect'
 import PhotoPicker from '../components/orders/PhotoPicker'
 import OrderItemsEditor from '../components/orders/OrderItemsEditor'
 import MaquilaItemsEditor from '../components/orders/MaquilaItemsEditor'
-import { esOrdenMaquila, etiquetaProcesos, nuevaPrendaMaquila, prendaMaquila, procesosDeLaOrden, productoBorda, validarOrdenMaquila } from '../utils/maquila'
+import { esOrdenMaquila, etiquetaProcesos, fotosDeProducto, nuevaPrendaMaquila, prendaMaquila, procesosDeLaOrden, productoBorda, validarOrdenMaquila } from '../utils/maquila'
 import FoliosExternosField from '../components/orders/FoliosExternosField'
 import RequireRole from '../components/common/RequireRole'
 import FileDropLabel from '../components/common/FileDropLabel'
@@ -555,17 +556,30 @@ function NewOrderForm() {
       return
     }
 
-    await terminarCreacion(data, anticipoMontoNum)
+    // Las fotos del producto pasan a ser fotos de referencia de la orden (se
+    // COPIAN, como las de una plantilla: borrar una en la orden no la quita
+    // del catálogo). Así las ven las estaciones y salen en el PDF.
+    let conFotosDelProducto = data
+    let fotoProductoError = null
+    const fotosProducto = fotosDeProducto(productoMaquila)
+    if (fotosProducto.length > 0) {
+      const { data: copiadas, error: copiaError } = await copyTemplatePhotosToOrder(data.id, fotosProducto)
+      const { data: orden, error: adjuntarError } = copiaError ? { data: null, error: copiaError } : await attachExistingPhotos(data.id, copiadas)
+      if (adjuntarError) fotoProductoError = adjuntarError.message
+      else if (orden?.reference_photos) conFotosDelProducto = { ...data, reference_photos: orden.reference_photos }
+    }
+
+    await terminarCreacion(conFotosDelProducto, anticipoMontoNum, fotoProductoError)
   }
 
   // Lo que sigue a crear la orden, igual para todos los tipos: fotos,
   // documentos, anticipo y la vista previa del PDF.
-  async function terminarCreacion(creada, anticipoMontoNum) {
+  async function terminarCreacion(creada, anticipoMontoNum, fotoProductoError = null) {
     let data = creada
     // La orden ya existe (tiene id): subimos las fotos elegidas a mano. Si
     // esto falla, no se cancela la creación de la orden — se puede
     // reintentar desde el detalle.
-    let photoError = null
+    let photoError = fotoProductoError
 
     // V145 — el equipo se guarda aparte (create_order no lo recibe). Si
     // falla, la orden ya existe: se avisa y se captura desde el detalle.
@@ -728,24 +742,31 @@ function NewOrderForm() {
 
         {esMaquila && (
           <>
-            <label>
-              Producto *
-              <select
-                className="input"
-                value={form.productoId}
-                onChange={(e) => updateField('productoId', e.target.value)}
-                disabled={!form.clientId}
-              >
-                <option value="">
-                  {!form.clientId ? 'Primero elige el cliente' : productos.length === 0 ? 'Este cliente no tiene productos en su catálogo' : 'Selecciona un producto…'}
-                </option>
-                {productos.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nombre}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div>
+              <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+                Producto *
+              </span>
+              {!form.clientId ? (
+                <p className="pantone-hint">Primero elige el cliente.</p>
+              ) : (
+                // Tarjetas con la foto del catálogo (igual que en el catálogo del cliente).
+                <div className="producto-picker__grid">
+                  {productos.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className={'producto-card' + (p.id === form.productoId ? ' producto-card--activo' : '')}
+                      aria-pressed={p.id === form.productoId}
+                      onClick={() => updateField('productoId', p.id)}
+                    >
+                      {p.foto_url ? <img src={p.foto_url} alt="" loading="lazy" /> : <span className="producto-card__sin-foto">Sin foto</span>}
+                      <span className="producto-card__nombre">{p.nombre}</span>
+                      <span className="producto-card__prenda">{etiquetaProcesos(p.procesos) || '⚠️ Sin procesos'}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             {form.clientId && productos.length === 0 && (
               <p className="pantone-hint">Agrega sus productos en Catálogos → Clientes → "Ver catálogo de prendas".</p>
             )}

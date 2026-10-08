@@ -1,7 +1,7 @@
 // node --test src/utils/maquila.test.js
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { etiquetaProcesos, ordenarProcesos, prendaMaquila, procesosDeLaOrden, validarOrdenMaquila } from './maquila.js'
+import { etiquetaProcesos, fotosDeProducto, ordenarProcesos, prendaMaquila, procesosDeLaOrden, validarOrdenMaquila } from './maquila.js'
 import { filtrarClientesPorTipo } from './clientes.js'
 import { situacionEnEstacion } from './ordenesDeEstacion.js'
 
@@ -58,4 +58,11 @@ test('estaciones: una etapa previa que la orden no tiene cuenta como cumplida', 
   assert.equal(situacionEnEstacion('terminado', etapas(['terminado'])), 'lista')
   // Con corte, costura sí espera.
   assert.equal(situacionEnEstacion('produccion', etapas(['corte', 'produccion'])), 'espera')
+})
+
+test('fotos del producto que se copian a la orden', () => {
+  assert.deepEqual(fotosDeProducto({ nombre: 'Blusa', fotos: [{ url: 'u1', path: 'productos/c/1.jpg' }, { url: 'u2' }] }), [{ url: 'u1', path: 'productos/c/1.jpg', name: 'Blusa' }])
+  assert.deepEqual(fotosDeProducto({ nombre: 'Vieja', fotos: [], foto_url: 'u', foto_path: 'p.jpg' }), [{ url: 'u', path: 'p.jpg', name: 'Vieja' }])
+  assert.deepEqual(fotosDeProducto({ nombre: 'Sin foto' }), [])
+  assert.deepEqual(fotosDeProducto(null), [])
 })

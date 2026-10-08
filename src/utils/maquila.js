@@ -58,3 +58,10 @@ export function validarOrdenMaquila({ cliente, producto, numeroCorte, item, llev
   }
   return null
 }
+
+// Fotos del producto que se llevan a la orden: `fotos` ([{url, path}], V133) o,
+// en productos viejos, solo la principal. Sin `path` no se puede copiar.
+export function fotosDeProducto(producto) {
+  const fotos = Array.isArray(producto?.fotos) && producto.fotos.length > 0 ? producto.fotos : producto?.foto_path ? [{ url: producto.foto_url, path: producto.foto_path }] : []
+  return fotos.filter((f) => f?.path).map((f) => ({ url: f.url, path: f.path, name: producto.nombre }))
+}

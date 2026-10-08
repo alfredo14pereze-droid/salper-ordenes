@@ -4411,3 +4411,8 @@ h4 {
 .impresion-reporte__datos .impresion-reporte__total {
   grid-column: 1 / -1;
 }
+
+/* Producto elegido en "Nueva orden" de maquila: que se note cuál es. */
+.producto-card[aria-pressed='true'] {
+  box-shadow: 0 0 0 2px var(--color-black);
+}
