@@ -6430,6 +6430,8 @@ de tres; se ven completas (sin recortar) y un renglón nunca se parte entre hoja
 Pedido de Alfredo para Samuel (rol `sublimado`): al marcar **"Impresa"** (etapa `impresion`) se capturan el
 **largo del trazo en metros** y la **tinta gastada en mL** por color (azul, magenta, amarillo, negro), como lo
 da el programa de impresión (que la muestra en cc: es el mismo número). El **total se suma solo**.
+- **ESTADO: SQL aplicado el 2026-10-08 (hash verificado; 6 columnas, `anon` sin acceso) y frontend en
+  `main`/producción.**
 - SQL `schema_v146_reporte_impresion.sql`: columnas `imp_largo_m`, `imp_tinta_azul_ml`, `…_magenta_ml`,
   `…_amarillo_ml`, `…_negro_ml` e `imp_tinta_total_ml` (generada: la suma) en `orden_etapas` (solo se llenan
   en la fila `impresion`). RPC `reportar_impresion(orden, largo, azul, magenta, amarillo, negro)` (sublimado /
