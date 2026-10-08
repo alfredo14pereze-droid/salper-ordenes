@@ -1,7 +1,7 @@
 // node --test src/utils/pagosPdf.test.js
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { resumenPagosPdf, rosterParaPdf } from './pagosPdf.js'
+import { marcasDePrenda, resumenPagosPdf, rosterParaPdf } from './pagosPdf.js'
 
 test('sin total ni anticipos no hay sección', () => {
   assert.equal(resumenPagosPdf({ total_orden: null }, { anticipos: 0, renglones: [] }), null)
@@ -27,4 +27,17 @@ test('roster: solo filas con nombre o número, y solo si la prenda lo lleva', ()
   assert.equal(rosterParaPdf({ tiene_roster: true, roster }).length, 2)
   assert.deepEqual(rosterParaPdf({ tiene_roster: false, roster }), [])
   assert.deepEqual(rosterParaPdf({}), [])
+})
+
+test('bordados e impresiones: solo si la prenda los lleva y traen foto o lugar', () => {
+  const item = {
+    lleva_bordado: true,
+    bordados: [{ foto_url: 'a.jpg', ubicacion: 'Pecho' }, { foto_url: '', ubicacion: '  ' }, { ubicacion: 'Manga' }, null],
+    lleva_impresion: false,
+    impresiones: [{ foto_url: 'b.jpg', ubicacion: 'Espalda' }],
+  }
+  assert.equal(marcasDePrenda(item, 'bordado').length, 2)
+  assert.deepEqual(marcasDePrenda(item, 'impresion'), [])
+  assert.equal(marcasDePrenda({ ...item, lleva_impresion: true }, 'impresion').length, 1)
+  assert.deepEqual(marcasDePrenda({}, 'bordado'), [])
 })

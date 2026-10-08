@@ -23,3 +23,12 @@ export function rosterParaPdf(item) {
   if (!item?.tiene_roster || !Array.isArray(item.roster)) return []
   return item.roster.filter((r) => String(r?.nombre ?? '').trim() || String(r?.numero ?? '').trim())
 }
+
+// Bordados (tipo 'bordado') o impresiones (tipo 'impresion') de una prenda
+// que van al PDF: solo si la prenda los lleva y traen foto o lugar.
+export function marcasDePrenda(item, tipo) {
+  const lleva = tipo === 'bordado' ? item?.lleva_bordado : item?.lleva_impresion
+  const lista = tipo === 'bordado' ? item?.bordados : item?.impresiones
+  if (!lleva || !Array.isArray(lista)) return []
+  return lista.filter((m) => m && (m.foto_url || String(m.ubicacion ?? '').trim()))
+}

@@ -2,7 +2,7 @@ import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/render
 import logo from '../../assets/salper-logo.png'
 import { getStatus } from '../../utils/status'
 import { formatDateTime, parseDate } from '../../utils/dates'
-import { rosterParaPdf } from '../../utils/pagosPdf'
+import { marcasDePrenda, rosterParaPdf } from '../../utils/pagosPdf'
 
 // PDF de confirmación de orden — versión simple: logo, folio (asignado
 // automáticamente por la base de datos) y la información que ya se llenó
@@ -21,7 +21,8 @@ import { rosterParaPdf } from '../../utils/pagosPdf'
 // que la lleve (sublimación), "Total y anticipo" cuando llega `pagos` (solo
 // se manda si quien genera el PDF puede ver dinero; ver resumenPagosPdf) y
 // las fotos de referencia (`fotos`, ya convertidas a JPG; ver
-// prepararFotosParaPdf).
+// prepararFotosParaPdf). En cada prenda, las fotos de sus bordados e
+// impresiones con el lugar donde van (`fotosPrendas`).
 
 const COLOR_INK = '#1a1a1a'
 const COLOR_MUTED = '#6b6558'
@@ -123,6 +124,14 @@ const styles = StyleSheet.create({
   rosterNombre: { flex: 1, fontSize: 8.5 },
   rosterTalla: { width: 34, fontSize: 8.5 },
   rosterNumero: { width: 32, fontSize: 8.5, fontFamily: 'Helvetica-Bold', textAlign: 'right' },
+
+  // Bordados e impresiones de una prenda: miniatura con su lugar debajo.
+  marcasLine: { flexDirection: 'row', flexWrap: 'wrap' },
+  marca: { width: 96, marginRight: 6, marginBottom: 4, border: `0.8pt solid ${COLOR_BORDER}`, borderRadius: 2, padding: 3 },
+  marcaFoto: { width: '100%', height: 72, objectFit: 'contain' },
+  marcaSinFoto: { height: 72, alignItems: 'center', justifyContent: 'center' },
+  marcaTexto: { fontSize: 7.5, textAlign: 'center', marginTop: 2 },
+  marcaMuted: { fontSize: 7, color: COLOR_MUTED },
 
   // Fotos de referencia: hasta 3 por renglón, completas (sin recortar).
   fotosLine: { flexDirection: 'row', marginBottom: 6 },
@@ -230,6 +239,37 @@ function Roster({ roster }) {
   )
 }
 
+// Bordados o impresiones de una prenda: la foto de cada uno (ya convertida,
+// ver prepararFotosDePrendasParaPdf) con su lugar debajo. Si la foto no se
+// pudo leer o no hay, queda el recuadro con el lugar.
+function Marcas({ titulo, marcas, fotosPrendas }) {
+  if (marcas.length === 0) return null
+  return (
+    <View wrap={false}>
+      <Text style={styles.rosterTitle}>
+        {titulo} ({marcas.length})
+      </Text>
+      <View style={styles.marcasLine}>
+        {marcas.map((m, i) => {
+          const foto = m.foto_url ? fotosPrendas[m.foto_url] : null
+          return (
+            <View key={m.id || i} style={styles.marca}>
+              {foto ? (
+                <Image src={foto.src} style={styles.marcaFoto} />
+              ) : (
+                <View style={styles.marcaSinFoto}>
+                  <Text style={styles.marcaMuted}>Sin foto</Text>
+                </View>
+              )}
+              <Text style={styles.marcaTexto}>{String(m.ubicacion ?? '').trim() || '—'}</Text>
+            </View>
+          )
+        })}
+      </View>
+    </View>
+  )
+}
+
 // Fotos de referencia en renglones de hasta 3; una sola o dos salen más
 // grandes. Cada renglón va completo en una hoja (no se parte una foto).
 function FotosReferencia({ fotos }) {
@@ -273,7 +313,7 @@ function InfoField({ label, value }) {
   )
 }
 
-export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 'interno', history = [], pagos = null, fotos = [] }) {
+export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 'interno', history = [], pagos = null, fotos = [], fotosPrendas = {} }) {
   const isInternal = variant === 'interno'
   const items = order.items || []
   const grandTotal = items.reduce(
@@ -357,6 +397,8 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 
                       Piezas: <Text style={styles.itemTotal_b}>{itemTotal}</Text>
                     </Text>
                   </View>
+                  <Marcas titulo="Bordados" marcas={marcasDePrenda(item, 'bordado')} fotosPrendas={fotosPrendas} />
+                  <Marcas titulo="Impresiones" marcas={marcasDePrenda(item, 'impresion')} fotosPrendas={fotosPrendas} />
                   {roster.length > 0 && <Roster roster={roster} />}
                 </View>
               )

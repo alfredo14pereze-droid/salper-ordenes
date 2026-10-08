@@ -6417,6 +6417,10 @@ de tres; se ven completas (sin recortar) y un renglón nunca se parte entre hoja
   convierte a JPG en el navegador. La que no se pueda leer (enlace roto, formato que el navegador no abre,
   como HEIC en Chrome) se omite y el PDF sale con las demás.
 - Al crear la orden, el PDF ya trae las fotos recién subidas.
-- No se incluyen las fotos de bordados ni de impresiones por prenda (solo las de referencia de la orden).
+- **Bordados e impresiones por prenda** (pedido aparte, mismo día): dentro de cada prenda que los lleve salen
+  "Bordados (N)" e "Impresiones (N)" con la miniatura de cada uno y debajo el lugar donde va
+  (`items[].bordados` / `items[].impresiones`; `marcasDePrenda`, `prepararFotosDePrendasParaPdf`). Si la foto
+  no se pudo leer queda el recuadro "Sin foto" con el lugar. No incluye las fotos que sube el bordador en
+  `orden_bordados`.
 - Probado: PDFs de ejemplo con 1, 2 y 5 fotos de distintas proporciones; la conversión en el navegador con
   un webp de 3000×2000, un PNG transparente y un enlace roto. No probado con fotos reales de una orden.

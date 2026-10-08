@@ -2,7 +2,7 @@ import { pdf } from '@react-pdf/renderer'
 import OrderConfirmationPdf from '../components/pdf/OrderConfirmationPdf'
 import RemisionPdf from '../components/pdf/RemisionPdf'
 import { fetchOrdenTotales } from '../services/finanzasService'
-import { resumenPagosPdf } from './pagosPdf'
+import { marcasDePrenda, resumenPagosPdf } from './pagosPdf'
 
 // Genera el blob del PDF de confirmación de una orden (sin descargarlo —
 // ver PdfPreviewModal.jsx, que se encarga de mostrarlo y de la descarga
@@ -14,9 +14,17 @@ import { resumenPagosPdf } from './pagosPdf'
 // la sección "Total y anticipo"; sin él, el PDF sale sin dinero. Las fotos de
 // referencia de la orden se incluyen solas (ver prepararFotosParaPdf).
 export async function buildOrderConfirmationPdfBlob(order, { orderTypeLabel, variant = 'interno', history = [], pagos = null } = {}) {
-  const fotos = await prepararFotosParaPdf(order)
+  const [fotos, fotosPrendas] = await Promise.all([prepararFotosParaPdf(order), prepararFotosDePrendasParaPdf(order)])
   return pdf(
-    <OrderConfirmationPdf order={order} orderTypeLabel={orderTypeLabel} variant={variant} history={history} pagos={pagos} fotos={fotos} />
+    <OrderConfirmationPdf
+      order={order}
+      orderTypeLabel={orderTypeLabel}
+      variant={variant}
+      history={history}
+      pagos={pagos}
+      fotos={fotos}
+      fotosPrendas={fotosPrendas}
+    />
   ).toBlob()
 }
 
@@ -46,17 +54,35 @@ async function fotoParaPdf(url) {
   return { src: canvas.toDataURL('image/jpeg', 0.85), width, height }
 }
 
+function fotoParaPdfSegura(url) {
+  return fotoParaPdf(url).catch((err) => {
+    console.error('No se pudo incluir una foto en el PDF:', url, err)
+    return null
+  })
+}
+
 export async function prepararFotosParaPdf(order) {
   const urls = (order?.reference_photos || []).map((f) => f?.url).filter(Boolean)
-  const resultados = await Promise.all(
-    urls.map((url) =>
-      fotoParaPdf(url).catch((err) => {
-        console.error('No se pudo incluir una foto de referencia en el PDF:', url, err)
-        return null
-      })
-    )
-  )
-  return resultados.filter(Boolean)
+  return (await Promise.all(urls.map(fotoParaPdfSegura))).filter(Boolean)
+}
+
+// Fotos de los bordados e impresiones de cada prenda (items[].bordados /
+// items[].impresiones): regresa { [url original]: foto lista para el PDF }.
+// El PDF busca ahí cada foto por su url; la que no se pudo leer no está.
+export async function prepararFotosDePrendasParaPdf(order) {
+  const urls = [
+    ...new Set(
+      (order?.items || [])
+        .flatMap((item) => [...urlsDeMarcas(item, 'bordado'), ...urlsDeMarcas(item, 'impresion')])
+        .filter(Boolean)
+    ),
+  ]
+  const listas = await Promise.all(urls.map(fotoParaPdfSegura))
+  return Object.fromEntries(urls.map((url, i) => [url, listas[i]]).filter(([, foto]) => foto))
+}
+
+function urlsDeMarcas(item, tipo) {
+  return marcasDePrenda(item, tipo).map((m) => m.foto_url)
 }
 
 // Total, anticipos y restante de la orden para su PDF. Llamar solo si el
