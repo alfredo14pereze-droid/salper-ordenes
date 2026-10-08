@@ -6258,8 +6258,10 @@ así que el estimado de tela por orden sigue sin calcularse. Se edita en la app:
 
 ### V143 — Órdenes de tipo "Maquila": servicio a clientes externos (rama `maquila`, 2026-10-08)
 
-**ESTADO: solo en la rama `maquila` (sale de `main`), sin commit ni push. `supabase/schema_v143_maquila.sql`
-NO está aplicado.** Sin el SQL, el tipo Maquila no existe y nada de esto aparece; el resto de la app no cambia.
+**ESTADO: en `main`/producción desde el 2026-10-08 (rama `maquila`). `supabase/schema_v143_maquila.sql`
+aplicado el 2026-10-08 desde el SQL Editor (hash verificado) y comprobado por consulta: tipo `maquila` activo
+con prefijo MQ, secuencia en 1 sin usar, 3 columnas nuevas, funciones con `anon` sin acceso, una sola copia de
+cada función parcheada, triggers `orders_maquila_*` antes de `trg_assign_order_folio`, 0 órdenes de maquila.**
 
 Salió de un prompt armado fuera (rama `fase-2`, tablas `ordenes`, `procesos_catalogo`, `producto_procesos`,
 `clientes.es_maquila`, `ordenes.bordado`). Contra el sistema real, decisiones de Alfredo:
@@ -6333,7 +6335,7 @@ de confirmación de la orden no lo muestra.
 
 ### 2026-10-08 — PDF de la orden con total y anticipo, nombres y números; factura para cliente no registrado (V144); camisolas (rama `maquila`)
 
-Cuatro pedidos de Alfredo en la misma sesión que V143, en la misma rama (sin commit ni push).
+Cuatro pedidos de Alfredo en la misma sesión que V143, en la misma rama; en `main`/producción desde el 2026-10-08.
 
 **PDF de la orden** (`OrderConfirmationPdf`, las dos variantes: interno y para cliente; sin SQL):
 - **"Total y anticipo"**: total de la orden, anticipo recibido y restante por pagar. Si la orden tiene precios
@@ -6347,7 +6349,9 @@ Cuatro pedidos de Alfredo en la misma sesión que V143, en la misma rama (sin co
   medianoche UTC; en México es el 29). Ahora usa `parseDate`. Estaba así desde el primer PDF.
 
 **V144 — "¿Requiere factura?" en órdenes de un cliente no registrado**
-(`supabase/schema_v144_factura_cliente_no_registrado.sql`, **NO aplicado**):
+(`supabase/schema_v144_factura_cliente_no_registrado.sql`, **aplicado el 2026-10-08**, hash verificado;
+comprobado: `orden_faltantes` parcheada y funcionando, función nueva sin acceso para `anon`, 0 órdenes con
+factura y sin razón social, o sea ninguna orden cambió de situación):
 - Antes la casilla estaba bloqueada si la orden no tenía cliente del catálogo (la razón social se elige de
   las del cliente). Ahora, en una orden con "Otro cliente (no registrado)", se puede marcar y capturar los
   datos fiscales a mano (razón social, RFC, régimen, CP, uso de CFDI, correo): viven solo en la orden
