@@ -6394,6 +6394,7 @@ se conserva. Son prenda de arriba: piden nombres y números igual que Playera. S
 ### V145 — "Equipo" en las órdenes de sublimación (2026-10-08)
 
 Pedido de Alfredo: un identificador extra y opcional junto al cliente, con el nombre del equipo.
+- **ESTADO: SQL aplicado el 2026-10-08 (hash verificado) y frontend en `main`/producción.**
 - SQL `schema_v145_orden_equipo.sql`: columna `orders.equipo` (texto, opcional) y RPC `set_orden_equipo(orden,
   equipo)` (ventas / admin_tienda / admin_general). No se redefinió `create_order` ni `update_order_details`:
   el equipo se guarda con esa RPC justo después de crear la orden y al editarla. No pide reconfirmación.
