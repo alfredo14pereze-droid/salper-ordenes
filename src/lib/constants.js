@@ -197,11 +197,32 @@ export const CLIENTE_TIPO_ORDEN_OPTIONS = [
 // para lo mismo, pedido explícito del usuario). Los demás tipos de orden
 // (escolar, industrial) se quedan con el campo de texto libre de siempre
 // — ver isSublimacion en OrderItemsEditor.jsx.
-export const GARMENT_OPTIONS_SUBLIMACION = ['Playera', 'Camisola abierta', 'Camisola cerrada', 'Short', 'Chamarra', 'Sudadera', 'Pantalonera']
+export const GARMENT_OPTIONS_SUBLIMACION = [
+  'Playera',
+  'Playera dama',
+  'Playera caballero',
+  'Playera infantil',
+  'Camisola abierta',
+  'Camisola cerrada',
+  'Short',
+  'Chamarra',
+  'Sudadera',
+  'Pantalonera',
+]
 
 // De esas 5, solo estas 3 llevan cuello y manga ("las de arriba") — short
 // y pantalonera no. Short (y solo short) además lleva su propia lista de
 // números sin nombre — ver GARMENT_TOP_KEYS_SUBLIMACION/roster en
 // OrderItemsEditor.jsx.
-// Las camisolas (2026-10-08) son prenda de arriba: llevan nombres y números.
-export const GARMENT_TOP_KEYS_SUBLIMACION = ['Playera', 'Camisola abierta', 'Camisola cerrada', 'Chamarra', 'Sudadera']
+// Las camisolas y las playeras dama/caballero/infantil (2026-10-08) son
+// prenda de arriba: llevan nombres y números.
+export const GARMENT_TOP_KEYS_SUBLIMACION = [
+  'Playera',
+  'Playera dama',
+  'Playera caballero',
+  'Playera infantil',
+  'Camisola abierta',
+  'Camisola cerrada',
+  'Chamarra',
+  'Sudadera',
+]

@@ -6385,3 +6385,8 @@ renglón que las tallas; **"Total y anticipo" e "Historial de estado" van lado a
 hojas; márgenes y espacios más compactos. Con esa misma orden ahora es una hoja. Una lista muy larga (70)
 sigue en la hoja siguiente sin cortar renglones. Revisado con PDFs de ejemplo (26 nombres; 3 prendas con
 26 + 70 nombres; escolar sin dinero).
+
+### 2026-10-08 — Sublimación: Playera dama, Playera caballero y Playera infantil
+
+Tres prendas más en la lista cerrada de sublimación (`GARMENT_OPTIONS_SUBLIMACION`), además de "Playera", que
+se conserva. Son prenda de arriba: piden nombres y números igual que Playera. Sin SQL.
