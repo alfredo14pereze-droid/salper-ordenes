@@ -6217,7 +6217,8 @@ por consulta: las 4 funciones parcheadas, una sola copia de cada una, `anon` sin
   sus consultas leían con la llave pública SIN sesión, y V29 le quitó a `anon` todo acceso a `public`.
   Quedó roto desde V29 sin que nadie lo notara. Arreglo: las tools reciben un cliente con la sesión de
   quien pregunta (`supabaseDeUsuario` en `api/_chat/supabaseServer.js`; `handler(input, db)`).
-  **No probado** (necesita sesión real en Vercel). Pendiente aparte: el asistente solo conoce la tabla
+  Probado en producción el 2026-10-07 con la sesión de Alfredo: "¿cuántas órdenes activas hay en cada
+  etapa?" ya contesta con datos. Pendiente aparte: el asistente solo conoce la tabla
   `orders` (3 tools); no tiene herramienta para Pedidos colegio ni Inventario, y su lista de etapas es la
   vieja de V1.
 - **Corte no podía terminar (diagnóstico; el arreglo es V142, abajo)**: no es por consumos ni por existencia
