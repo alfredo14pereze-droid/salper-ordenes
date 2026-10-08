@@ -4371,3 +4371,43 @@ h4 {
   color: var(--color-text-muted);
   font-size: 13px;
 }
+
+/* V146 — reporte de impresión de sublimación (largo del trazo y tinta) */
+.impresion-reporte {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.impresion-reporte__tintas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.impresion-reporte__total--form {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--color-orange-soft);
+  font-size: 1.05rem;
+}
+.impresion-reporte__datos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  margin: 0;
+}
+.impresion-reporte__datos dt {
+  font-size: 0.75rem;
+  color: var(--color-muted, #6b6558);
+}
+.impresion-reporte__datos dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.impresion-reporte__datos > div:first-child,
+.impresion-reporte__datos .impresion-reporte__total {
+  grid-column: 1 / -1;
+}

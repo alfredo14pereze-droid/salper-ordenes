@@ -301,6 +301,25 @@ export async function updateOrdenEtapa(orderId, etapa, nuevoEstado) {
     .single()
 }
 
+// V146 — reporte de impresión de sublimación: guarda el largo del trazo (m)
+// y la tinta por color (mL) y termina la etapa 'impresion'. Si ya estaba
+// terminada, solo corrige los datos.
+export async function reportarImpresion(orderId, { largo, azul, magenta, amarillo, negro }) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase
+    .rpc('reportar_impresion', {
+      p_order_id: orderId,
+      p_largo_m: largo,
+      p_azul_ml: azul,
+      p_magenta_ml: magenta,
+      p_amarillo_ml: amarillo,
+      p_negro_ml: negro,
+    })
+    .single()
+}
+
 // V140 — pausa o reanuda una etapa en proceso (el cronómetro deja de contar;
 // la etapa sigue "en proceso"). Mismo permiso que updateOrdenEtapa.
 export async function pausarOrdenEtapa(orderId, etapa, pausar) {

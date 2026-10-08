@@ -2,7 +2,8 @@ import BordadosMiniaturas from '../components/orders/BordadosMiniaturas'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useOrder } from '../hooks/useOrder'
-import { fetchOrdenEtapas, updateOrdenEtapa, pausarOrdenEtapa, updateOrderStatus, setItemSurtido } from '../services/ordersService'
+import { fetchOrdenEtapas, updateOrdenEtapa, pausarOrdenEtapa, updateOrderStatus, setItemSurtido, reportarImpresion } from '../services/ordersService'
+import { TINTAS, formatMl, numero, reporteDeEtapa, totalTinta, validarReporteImpresion } from '../utils/impresionReporte'
 import { fetchInventarioTelas, marcarCorte } from '../services/movimientosTelaService'
 import { fetchOrdenBordados } from '../services/bordadosService'
 import { buildRemisionPdfBlob, remisionPdfFileName } from '../utils/generateOrderPdf'
@@ -488,6 +489,103 @@ function EtapaTiempoReal({ etapa }) {
   )
 }
 
+// V146 — reporte de impresión (Samuel): al marcar "Impresa" captura el largo
+// del trazo y la tinta de cada color; el total se suma solo. Ya impresa,
+// muestra lo reportado y deja corregirlo.
+function ImpresionReporte({ order, etapa, onGuardado }) {
+  const guardado = reporteDeEtapa(etapa)
+  const terminada = etapa.estado === 'completado'
+  const [editando, setEditando] = useState(false)
+  const [v, setV] = useState(() => ({
+    largo: guardado ? String(guardado.largo) : '',
+    ...Object.fromEntries(TINTAS.map((t) => [t.key, guardado ? String(guardado[t.key]) : ''])),
+  }))
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+  const set = (campo, valor) => {
+    setError(null)
+    setV((prev) => ({ ...prev, [campo]: valor }))
+  }
+
+  async function handleGuardar() {
+    const falta = validarReporteImpresion(v)
+    if (falta) return setError(new Error(falta))
+    setSaving(true)
+    setError(null)
+    const { error: err } = await reportarImpresion(order.id, {
+      largo: numero(v.largo),
+      ...Object.fromEntries(TINTAS.map((t) => [t.key, numero(v[t.key])])),
+    })
+    setSaving(false)
+    if (err) return setError(err)
+    setEditando(false)
+    onGuardado?.()
+  }
+
+  if (terminada && !editando) {
+    return (
+      <div className="impresion-reporte">
+        {guardado ? (
+          <dl className="impresion-reporte__datos">
+            <div>
+              <dt>Largo del trazo</dt>
+              <dd>{guardado.largo} m</dd>
+            </div>
+            {TINTAS.map((t) => (
+              <div key={t.key}>
+                <dt>{t.label}</dt>
+                <dd>{formatMl(guardado[t.key])}</dd>
+              </div>
+            ))}
+            <div className="impresion-reporte__total">
+              <dt>Total de tinta</dt>
+              <dd>{formatMl(guardado.total)}</dd>
+            </div>
+          </dl>
+        ) : (
+          <p className="pantone-hint">Esta impresión se marcó sin reporte de trazo ni tinta.</p>
+        )}
+        <button type="button" className="btn btn--ghost btn--small" onClick={() => setEditando(true)}>
+          {guardado ? 'Corregir reporte' : 'Capturar trazo y tinta'}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="impresion-reporte">
+      <label>
+        Largo del trazo (metros)
+        <input type="text" inputMode="decimal" className="input" value={v.largo} onChange={(e) => set('largo', e.target.value)} placeholder="0.00" />
+      </label>
+      <span className="field-label" style={{ display: 'block', marginTop: 10 }}>
+        Consumo de tinta (mL)
+      </span>
+      <div className="impresion-reporte__tintas">
+        {TINTAS.map((t) => (
+          <label key={t.key}>
+            {t.label}
+            <input type="text" inputMode="decimal" className="input" value={v[t.key]} onChange={(e) => set(t.key, e.target.value)} placeholder="0.000" />
+          </label>
+        ))}
+      </div>
+      <div className="impresion-reporte__total impresion-reporte__total--form">
+        <span>Total de tinta</span>
+        <b>{formatMl(totalTinta(v))}</b>
+      </div>
+      {error && <p className="form-error">{error.message}</p>}
+      <button type="button" className="btn estacion-btn estacion-btn--terminar" disabled={saving} onClick={handleGuardar}>
+        {saving ? 'Guardando…' : terminada ? 'Guardar corrección' : 'Impresa'}
+      </button>
+      {terminada && (
+        <button type="button" className="btn btn--ghost btn--small" disabled={saving} onClick={() => setEditando(false)}>
+          Cancelar
+        </button>
+      )}
+    </div>
+  )
+}
+
 // V96/V97 — vista de estación (Parte 1): folio, cliente, prenda+tela+color,
 // tallas, y dos botones — "Iniciar" / "Terminar" (pendiente ->
 // en_proceso -> completado en orden_etapas) — o "Confirmar" si la orden
@@ -639,6 +737,9 @@ export default function EstacionOrderPage() {
                       onCortadoSinTela={() => handleCambiarEtapa('corte', 'completado')}
                     />
                   )
+                ) : et.etapa === 'impresion' ? (
+                  // V146 — "Impresa" pide el largo del trazo y la tinta.
+                  <ImpresionReporte order={order} etapa={et} onGuardado={refresh} />
                 ) : esPrincipal && estacion.surtidoFinal ? (
                   terminada ? (
                     <button type="button" className="btn btn--primary estacion-btn" disabled>

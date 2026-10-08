@@ -6424,3 +6424,22 @@ de tres; se ven completas (sin recortar) y un renglón nunca se parte entre hoja
   `orden_bordados`.
 - Probado: PDFs de ejemplo con 1, 2 y 5 fotos de distintas proporciones; la conversión en el navegador con
   un webp de 3000×2000, un PNG transparente y un enlace roto. No probado con fotos reales de una orden.
+
+### V146 — Reporte de impresión de sublimación: largo del trazo y tinta (2026-10-08)
+
+Pedido de Alfredo para Samuel (rol `sublimado`): al marcar **"Impresa"** (etapa `impresion`) se capturan el
+**largo del trazo en metros** y la **tinta gastada en mL** por color (azul, magenta, amarillo, negro), como lo
+da el programa de impresión (que la muestra en cc: es el mismo número). El **total se suma solo**.
+- SQL `schema_v146_reporte_impresion.sql`: columnas `imp_largo_m`, `imp_tinta_azul_ml`, `…_magenta_ml`,
+  `…_amarillo_ml`, `…_negro_ml` e `imp_tinta_total_ml` (generada: la suma) en `orden_etapas` (solo se llenan
+  en la fila `impresion`). RPC `reportar_impresion(orden, largo, azul, magenta, amarillo, negro)` (sublimado /
+  admin_fabrica / admin_general): valida (largo > 0, los cuatro colores, 0 se vale), guarda y termina la etapa
+  llamando a `update_orden_etapa` (no se redefinió). Si la etapa ya estaba terminada, solo corrige los datos.
+- Pantalla de estación (`EstacionOrderPage`, `ImpresionReporte`; `utils/impresionReporte.js`): en la etapa
+  Impresión, el botón "Impresa" va debajo del formulario; acepta coma o punto decimal. Ya impresa, se ve lo
+  reportado y "Corregir reporte". El detalle de la orden (`OrderEtapasCard`) muestra trazo y tinta.
+- Un reporte por orden: si se imprime en varias tandas, se captura la suma. Desde el detalle, un administrador
+  aún puede marcar la impresión como completada sin reporte (queda "sin reporte" y se puede capturar después).
+- Todavía no hay reporte ni totales de tinta por periodo; los datos ya quedan guardados para hacerlo.
+- Probado: SQL en PGlite (10 comprobaciones), pruebas de la suma (el ejemplo 2.653 + 1.166 + 0.368 + 1.839 =
+  6.026), y la pantalla en el ejemplo local con rol sublimado. No probado con la cuenta de Samuel.

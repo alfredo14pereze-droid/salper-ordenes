@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { TINTAS, formatMl, reporteDeEtapa } from '../../utils/impresionReporte'
 import { format } from 'date-fns'
 import { fetchOrdenEtapas, updateOrdenEtapa, corregirTiemposEtapa } from '../../services/ordersService'
 import { fetchProfiles } from '../../services/usersService'
@@ -144,6 +145,13 @@ export default function OrderEtapasCard({ orderId, onUpdated }) {
                     {et.iniciado_en && et.completado_en ? ' · ' : ''}
                     {et.completado_en && `Terminó: ${formatDateTime(et.completado_en)}`}
                     {nombres[et.responsable_id] ? ` · ${nombres[et.responsable_id]}` : ''}
+                  </p>
+                )}
+                {reporteDeEtapa(et) && (
+                  // V146 — lo que reportó sublimado al marcar "Impresa".
+                  <p className="document-row__empty" style={{ marginTop: 2 }}>
+                    Trazo: {reporteDeEtapa(et).largo} m · Tinta: {formatMl(reporteDeEtapa(et).total)} (
+                    {TINTAS.map((t) => `${t.label.toLowerCase()} ${reporteDeEtapa(et)[t.key]}`).join(', ')})
                   </p>
                 )}
                 {et.estado === 'en_proceso' && et.iniciado_en && (
