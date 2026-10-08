@@ -123,3 +123,12 @@ export async function guardarProducto({
     })
     .single()
 }
+
+// V143 — procesos que SALPER le hace a un producto de un cliente de maquila
+// (ver set_producto_procesos en schema_v143_maquila.sql).
+export async function setProductoProcesos(id, procesos) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('set_producto_procesos', { p_id: id, p_procesos: procesos || [] }).single()
+}

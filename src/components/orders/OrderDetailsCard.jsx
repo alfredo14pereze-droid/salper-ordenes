@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { updateOrderDetails } from '../../services/ordersService'
+import { updateOrderDetails, setOrdenNumeroCorte } from '../../services/ordersService'
 import { formatDate, computeProductionWindow } from '../../utils/dates'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditOrder } from '../../utils/permissions'
 import OrderTypeSelect from './OrderTypeSelect'
 import { TIPO_VENTA_MOSTRADOR } from '../../lib/constants'
+import { esOrdenMaquila } from '../../utils/maquila'
 import FoliosExternosField from './FoliosExternosField'
 
 // Datos generales de la orden. Si el rol actual puede editarla (ventas y
@@ -22,12 +23,16 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
     description: order.description || '',
     requestedDeliveryDate: order.requested_delivery_date,
     foliosExternos: order.folios_externos || [],
+    numeroCorte: order.numero_corte || '',
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
   const productionWindow = computeProductionWindow(order)
   const editable = canEditOrder(role, order)
+  // V143 — maquila: el cliente y el tipo no se cambian (el producto y sus
+  // procesos son de ese cliente); sí se puede corregir el número de corte.
+  const esMaquila = esOrdenMaquila(order.order_type_key)
 
   function updateField(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
@@ -42,6 +47,7 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
       description: order.description || '',
       requestedDeliveryDate: order.requested_delivery_date,
       foliosExternos: order.folios_externos || [],
+      numeroCorte: order.numero_corte || '',
     })
     setError(null)
     setEditing(true)
@@ -51,6 +57,20 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
     e.preventDefault()
     setSaving(true)
     setError(null)
+
+    if (esMaquila && form.numeroCorte.trim() !== (order.numero_corte || '')) {
+      if (!form.numeroCorte.trim()) {
+        setSaving(false)
+        setError(new Error('Falta el número de corte.'))
+        return
+      }
+      const { error: corteError } = await setOrdenNumeroCorte(order.id, form.numeroCorte.trim())
+      if (corteError) {
+        setSaving(false)
+        setError(corteError)
+        return
+      }
+    }
 
     const { error: saveError } = await updateOrderDetails(order.id, form)
     setSaving(false)
@@ -74,10 +94,22 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
             className="input"
             value={form.clientName}
             onChange={(e) => updateField('clientName', e.target.value)}
-            disabled={order.order_type_key === TIPO_VENTA_MOSTRADOR}
-            title={order.order_type_key === TIPO_VENTA_MOSTRADOR ? 'Las órdenes de Venta Mostrador siempre van al cliente Salper.' : undefined}
+            disabled={order.order_type_key === TIPO_VENTA_MOSTRADOR || esMaquila}
+            title={
+              order.order_type_key === TIPO_VENTA_MOSTRADOR
+                ? 'Las órdenes de Venta Mostrador siempre van al cliente Salper.'
+                : esMaquila
+                  ? 'En una orden de maquila el cliente no se cambia: el producto es de su catálogo.'
+                  : undefined
+            }
           />
         </label>
+        {esMaquila && (
+          <label>
+            Número de corte
+            <input type="text" className="input" value={form.numeroCorte} onChange={(e) => updateField('numeroCorte', e.target.value)} />
+          </label>
+        )}
         <div className="form-row">
           <label>
             Teléfono del cliente
@@ -110,7 +142,15 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
             Tipo de orden
           </span>
-          <OrderTypeSelect orderTypes={orderTypes} value={form.orderTypeKey} onChange={(key) => updateField('orderTypeKey', key)} />
+          {esMaquila ? (
+            <input type="text" className="input" value="Maquila" disabled readOnly />
+          ) : (
+            <OrderTypeSelect
+              orderTypes={orderTypes.filter((t) => !esOrdenMaquila(t.key))}
+              value={form.orderTypeKey}
+              onChange={(key) => updateField('orderTypeKey', key)}
+            />
+          )}
         </div>
         <label>
           Fecha de entrega solicitada
@@ -158,6 +198,12 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
         )}
       </div>
       <dl className="detail-list">
+        {order.numero_corte && (
+          <div>
+            <dt>Número de corte</dt>
+            <dd>{order.numero_corte}</dd>
+          </div>
+        )}
         {order.folios_externos?.length > 0 && (
           <div>
             <dt>Folios externos (control anterior)</dt>

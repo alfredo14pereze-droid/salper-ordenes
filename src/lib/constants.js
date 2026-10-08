@@ -111,6 +111,18 @@ export const ETAPAS_PLANTILLA_DEFAULT = ['corte', 'produccion', 'terminado']
 export const TIPO_VENTA_MOSTRADOR = 'venta_mostrador'
 export const CLIENTE_SALPER_NOMBRE = 'Salper'
 
+// V143 — órdenes de "Maquila" (servicio a clientes externos): sus etapas no
+// salen de la plantilla del tipo sino de los procesos del producto del
+// cliente. Mismas claves que las etapas; van en el orden del flujo.
+export const TIPO_MAQUILA = 'maquila'
+export const PROCESOS_MAQUILA_OPTIONS = [
+  { key: 'sublimado', label: 'Sublimado' },
+  { key: 'corte', label: 'Corte' },
+  { key: 'produccion', label: 'Costura' },
+  { key: 'bordado', label: 'Bordado' },
+  { key: 'terminado', label: 'Terminado' },
+]
+
 export const ETAPA_ESTADO_LABELS = {
   pendiente: 'Pendiente',
   en_proceso: 'En proceso',
@@ -176,6 +188,8 @@ export const CLIENTE_TIPO_ORDEN_OPTIONS = [
   { key: 'escolar', label: 'Escolar' },
   { key: 'industrial', label: 'Industrial' },
   { key: 'sublimacion', label: 'Sublimación' },
+  // V143 — cliente externo al que se le maquila (ver utils/maquila.js).
+  { key: 'maquila', label: 'Maquila' },
 ]
 
 // V39 — en sublimación casi siempre son las mismas 5 prendas: cerrado en
@@ -183,10 +197,11 @@ export const CLIENTE_TIPO_ORDEN_OPTIONS = [
 // para lo mismo, pedido explícito del usuario). Los demás tipos de orden
 // (escolar, industrial) se quedan con el campo de texto libre de siempre
 // — ver isSublimacion en OrderItemsEditor.jsx.
-export const GARMENT_OPTIONS_SUBLIMACION = ['Playera', 'Short', 'Chamarra', 'Sudadera', 'Pantalonera']
+export const GARMENT_OPTIONS_SUBLIMACION = ['Playera', 'Camisola abierta', 'Camisola cerrada', 'Short', 'Chamarra', 'Sudadera', 'Pantalonera']
 
 // De esas 5, solo estas 3 llevan cuello y manga ("las de arriba") — short
 // y pantalonera no. Short (y solo short) además lleva su propia lista de
 // números sin nombre — ver GARMENT_TOP_KEYS_SUBLIMACION/roster en
 // OrderItemsEditor.jsx.
-export const GARMENT_TOP_KEYS_SUBLIMACION = ['Playera', 'Chamarra', 'Sudadera']
+// Las camisolas (2026-10-08) son prenda de arriba: llevan nombres y números.
+export const GARMENT_TOP_KEYS_SUBLIMACION = ['Playera', 'Camisola abierta', 'Camisola cerrada', 'Chamarra', 'Sudadera']

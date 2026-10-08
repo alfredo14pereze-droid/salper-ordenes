@@ -567,6 +567,7 @@ export default function EstacionOrderPage() {
 
       <h2 className="estacion-order__folio">#{order.order_number}</h2>
       <p className="estacion-order__cliente">{order.client_name}</p>
+      {order.numero_corte && <p className="estacion-order__cliente">Corte: {order.numero_corte}</p>}
       {order.created_by_nombre && <p className="pantone-hint">Creada por: {order.created_by_nombre}</p>}
 
       <div className="estacion-list" style={{ marginTop: 14 }}>

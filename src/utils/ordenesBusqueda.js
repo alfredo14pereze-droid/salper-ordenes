@@ -10,7 +10,8 @@ export function coincideBusquedaOrden(order, texto) {
   const q = String(texto ?? '').trim().toLowerCase()
   if (!q) return true
   const qp = plano(q)
-  const campos = [order.order_number, order.client_name, ...(order.folios_externos || [])]
+  // V143: también el número de corte de las órdenes de maquila.
+  const campos = [order.order_number, order.client_name, order.numero_corte, ...(order.folios_externos || [])]
   return campos.some((c) => {
     const v = String(c ?? '').toLowerCase()
     return v.includes(q) || (qp !== '' && plano(v).includes(qp))

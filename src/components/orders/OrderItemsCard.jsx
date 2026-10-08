@@ -2,6 +2,8 @@ import { esOrdenBordado, normalizarItemsBordado, validarItemsBordado } from '../
 import { limpiarRoster } from '../../utils/roster'
 import { useState } from 'react'
 import OrderItemsEditor from './OrderItemsEditor'
+import MaquilaItemsEditor from './MaquilaItemsEditor'
+import { esOrdenMaquila } from '../../utils/maquila'
 import { setOrderItems } from '../../services/ordersService'
 import { createOrderTemplate } from '../../services/templatesService'
 import { useAuth } from '../../contexts/AuthContext'
@@ -319,17 +321,22 @@ export default function OrderItemsCard({ order, onUpdated }) {
       {templateSaved && <p className="template-hint">✓ Plantilla guardada — ya aparece en "Nueva orden".</p>}
 
       <div data-enter-next>
-        <OrderItemsEditor
-          items={items}
-          onChange={setItems}
-          orderTypeKey={order.order_type_key}
-          telas={telas}
-          onTelaCreated={refreshTelas}
-          clienteId={order.client_id}
-          clienteNombre={order.client_name}
-          productos={productos}
-          onProductoCreated={refreshProductos}
-        />
+        {esOrdenMaquila(order.order_type_key) ? (
+          // V143 — en maquila solo se corrigen tallas y bordado; el producto no cambia.
+          <MaquilaItemsEditor items={items} onChange={setItems} />
+        ) : (
+          <OrderItemsEditor
+            items={items}
+            onChange={setItems}
+            orderTypeKey={order.order_type_key}
+            telas={telas}
+            onTelaCreated={refreshTelas}
+            clienteId={order.client_id}
+            clienteNombre={order.client_name}
+            productos={productos}
+            onProductoCreated={refreshProductos}
+          />
+        )}
       </div>
 
       {error && <p className="form-error">{error.message}</p>}

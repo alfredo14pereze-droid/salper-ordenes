@@ -1,6 +1,8 @@
 import { pdf } from '@react-pdf/renderer'
 import OrderConfirmationPdf from '../components/pdf/OrderConfirmationPdf'
 import RemisionPdf from '../components/pdf/RemisionPdf'
+import { fetchOrdenTotales } from '../services/finanzasService'
+import { resumenPagosPdf } from './pagosPdf'
 
 // Genera el blob del PDF de confirmación de una orden (sin descargarlo —
 // ver PdfPreviewModal.jsx, que se encarga de mostrarlo y de la descarga
@@ -8,11 +10,24 @@ import RemisionPdf from '../components/pdf/RemisionPdf'
 // (todo, incluyendo tiempo estimado de producción — para SALPER) o
 // 'cliente' (lo mismo sin el tiempo estimado — para mandarle al
 // cliente). `history` es el arreglo de order_status_history de la orden
-// (ver fetchOrderHistory) — opcional.
-export async function buildOrderConfirmationPdfBlob(order, { orderTypeLabel, variant = 'interno', history = [] } = {}) {
+// (ver fetchOrderHistory) — opcional. `pagos` (ver fetchPagosParaPdf) agrega
+// la sección "Total y anticipo"; sin él, el PDF sale sin dinero.
+export async function buildOrderConfirmationPdfBlob(order, { orderTypeLabel, variant = 'interno', history = [], pagos = null } = {}) {
   return pdf(
-    <OrderConfirmationPdf order={order} orderTypeLabel={orderTypeLabel} variant={variant} history={history} />
+    <OrderConfirmationPdf order={order} orderTypeLabel={orderTypeLabel} variant={variant} history={history} pagos={pagos} />
   ).toBlob()
+}
+
+// Total, anticipos y restante de la orden para su PDF. Llamar solo si el
+// usuario puede ver dinero (canViewFinanzas): orden_totales rechaza a los
+// demás. Si la consulta falla, el PDF se genera sin la sección.
+export async function fetchPagosParaPdf(order) {
+  const { data, error } = await fetchOrdenTotales(order.id)
+  if (error) {
+    console.error('No se pudieron leer los totales para el PDF:', error)
+    return resumenPagosPdf(order, null)
+  }
+  return resumenPagosPdf(order, data)
 }
 
 // Remisión de entrega (V26, Parte 4) — solo tiene sentido con la orden

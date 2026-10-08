@@ -128,6 +128,7 @@ export default function RemisionPdf({ order, orderTypeLabel }) {
           <View style={styles.infoGrid}>
             <InfoField label="Cliente" value={order.client_name} />
             <InfoField label="Tipo de orden" value={orderTypeLabel || order.order_type_key} />
+            {order.numero_corte && <InfoField label="Número de corte" value={order.numero_corte} />}
           </View>
         </View>
 

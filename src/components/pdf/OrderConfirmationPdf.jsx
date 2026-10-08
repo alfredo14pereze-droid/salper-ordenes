@@ -1,7 +1,8 @@
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
 import logo from '../../assets/salper-logo.png'
 import { getStatus } from '../../utils/status'
-import { formatDateTime } from '../../utils/dates'
+import { formatDateTime, parseDate } from '../../utils/dates'
+import { rosterParaPdf } from '../../utils/pagosPdf'
 
 // PDF de confirmación de orden — versión simple: logo, folio (asignado
 // automáticamente por la base de datos) y la información que ya se llenó
@@ -15,6 +16,10 @@ import { formatDateTime } from '../../utils/dates'
 //   uso de SALPER.
 // - "cliente": lo mismo pero sin el tiempo estimado de producción — para
 //   mandarle al cliente.
+//
+// En las dos variantes: la lista de nombres, tallas y números de cada prenda
+// que la lleve (sublimación), y "Total y anticipo" cuando llega `pagos` (solo
+// se manda si quien genera el PDF puede ver dinero; ver resumenPagosPdf).
 
 const COLOR_INK = '#1a1a1a'
 const COLOR_MUTED = '#6b6558'
@@ -104,6 +109,28 @@ const styles = StyleSheet.create({
   grandTotalLabel: { fontSize: 9.5 },
   grandTotalValue: { fontFamily: 'Helvetica-Bold', fontSize: 15, color: COLOR_ORANGE },
 
+  rosterTitle: { fontSize: 7.5, color: COLOR_MUTED, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8, marginBottom: 3 },
+  rosterRow: { flexDirection: 'row', borderBottom: `0.6pt solid ${COLOR_BORDER}`, paddingVertical: 2.5 },
+  rosterHeader: { fontFamily: 'Helvetica-Bold', fontSize: 8 },
+  rosterN: { width: 24, fontSize: 8.5, color: COLOR_MUTED },
+  rosterNombre: { flex: 1, fontSize: 8.5 },
+  rosterTalla: { width: 60, fontSize: 8.5 },
+  rosterNumero: { width: 60, fontSize: 8.5 },
+
+  pagosRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 },
+  pagosLabel: { fontSize: 9.5 },
+  pagosValue: { fontSize: 9.5 },
+  pagosTotal: { fontFamily: 'Helvetica-Bold', fontSize: 11 },
+  pagosSaldo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#fdf2e0',
+    borderLeft: `3pt solid ${COLOR_ORANGE}`,
+    padding: 10,
+    marginTop: 6,
+  },
+
   footnote: {
     marginTop: 18,
     fontSize: 8,
@@ -129,9 +156,15 @@ const styles = StyleSheet.create({
 
 function formatDate(value) {
   if (!value) return '—'
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return '—'
+  // parseDate y no new Date(): una fecha sola ("2026-10-30") se leería como
+  // medianoche UTC y en México saldría un día antes.
+  const d = parseDate(value)
+  if (!d || Number.isNaN(d.getTime())) return '—'
   return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })
+}
+
+function formatMxn(n) {
+  return Number(n || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })
 }
 
 function InfoField({ label, value }) {
@@ -143,7 +176,7 @@ function InfoField({ label, value }) {
   )
 }
 
-export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 'interno', history = [] }) {
+export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 'interno', history = [], pagos = null }) {
   const isInternal = variant === 'interno'
   const items = order.items || []
   const grandTotal = items.reduce(
@@ -203,6 +236,7 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 
             <Text style={styles.sectionTitle}>Prendas, tallas y colores</Text>
             {items.map((item, i) => {
               const itemTotal = (item.sizes || []).reduce((s, sz) => s + (Number(sz.cantidad) || 0), 0)
+              const roster = rosterParaPdf(item)
               return (
                 <View key={i} style={styles.itemCard}>
                   <View style={styles.itemHeader}>
@@ -222,6 +256,25 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 
                   <Text style={styles.itemTotal}>
                     Piezas en esta prenda: <Text style={styles.itemTotal_b}>{itemTotal}</Text>
                   </Text>
+                  {roster.length > 0 && (
+                    <View>
+                      <Text style={styles.rosterTitle}>Nombres y números ({roster.length})</Text>
+                      <View style={styles.rosterRow} wrap={false}>
+                        <Text style={[styles.rosterN, styles.rosterHeader]}>#</Text>
+                        <Text style={[styles.rosterNombre, styles.rosterHeader]}>Nombre</Text>
+                        <Text style={[styles.rosterTalla, styles.rosterHeader]}>Talla</Text>
+                        <Text style={[styles.rosterNumero, styles.rosterHeader]}>Número</Text>
+                      </View>
+                      {roster.map((r, j) => (
+                        <View key={j} style={styles.rosterRow} wrap={false}>
+                          <Text style={styles.rosterN}>{j + 1}</Text>
+                          <Text style={styles.rosterNombre}>{r.nombre || '—'}</Text>
+                          <Text style={styles.rosterTalla}>{r.talla || '—'}</Text>
+                          <Text style={styles.rosterNumero}>{r.numero || '—'}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
               )
             })}
@@ -230,6 +283,40 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 
               <Text style={styles.grandTotalLabel}>Total de piezas en la orden</Text>
               <Text style={styles.grandTotalValue}>{grandTotal}</Text>
             </View>
+          </View>
+        )}
+
+        {pagos && (
+          <View style={styles.section} wrap={false}>
+            <Text style={styles.sectionTitle}>Total y anticipo</Text>
+            {pagos.subtotal != null && (
+              <View style={styles.pagosRow}>
+                <Text style={styles.pagosLabel}>Subtotal</Text>
+                <Text style={styles.pagosValue}>{formatMxn(pagos.subtotal)}</Text>
+              </View>
+            )}
+            {pagos.iva != null && (
+              <View style={styles.pagosRow}>
+                <Text style={styles.pagosLabel}>IVA 16%</Text>
+                <Text style={styles.pagosValue}>{formatMxn(pagos.iva)}</Text>
+              </View>
+            )}
+            {pagos.total != null && (
+              <View style={styles.pagosRow}>
+                <Text style={[styles.pagosLabel, styles.pagosTotal]}>Total de la orden</Text>
+                <Text style={styles.pagosTotal}>{formatMxn(pagos.total)}</Text>
+              </View>
+            )}
+            <View style={styles.pagosRow}>
+              <Text style={styles.pagosLabel}>Anticipo recibido</Text>
+              <Text style={styles.pagosValue}>{formatMxn(pagos.anticipos)}</Text>
+            </View>
+            {pagos.saldo != null && (
+              <View style={styles.pagosSaldo}>
+                <Text style={styles.grandTotalLabel}>Restante por pagar</Text>
+                <Text style={styles.grandTotalValue}>{formatMxn(pagos.saldo)}</Text>
+              </View>
+            )}
           </View>
         )}
 

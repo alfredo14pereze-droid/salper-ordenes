@@ -1,4 +1,4 @@
-import { CLIENTE_TIPO_ORDEN_OPTIONS } from '../lib/constants'
+import { CLIENTE_TIPO_ORDEN_OPTIONS, TIPO_MAQUILA } from '../lib/constants.js'
 
 // V60 — valor especial del selector de cliente de "Nueva orden": "Otro
 // cliente (no registrado)". No es un id real — significa que se va a
@@ -13,7 +13,10 @@ const FIXED_TIPO_KEYS = CLIENTE_TIPO_ORDEN_OPTIONS.map((o) => o.key)
 // tipos — para no esconder de golpe a clientes reales que aún no se han
 // clasificado en Catálogos. Si el tipo de orden es uno personalizado
 // (agregado con "+ Nuevo tipo") o no hay tipo elegido, se muestran todos.
+// V143 — Maquila es la excepción: solo los clientes marcados como de maquila
+// (un cliente sin clasificar no es de maquila).
 export function filtrarClientesPorTipo(clientes, orderTypeKey) {
+  if (orderTypeKey === TIPO_MAQUILA) return clientes.filter((c) => c.tipo_orden?.includes(TIPO_MAQUILA))
   if (!orderTypeKey || !FIXED_TIPO_KEYS.includes(orderTypeKey)) return clientes
   return clientes.filter((c) => !c.tipo_orden?.length || c.tipo_orden.includes(orderTypeKey))
 }

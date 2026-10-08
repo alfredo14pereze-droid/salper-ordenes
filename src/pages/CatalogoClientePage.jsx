@@ -6,8 +6,10 @@ import { useAuth } from '../contexts/AuthContext'
 import { canCreateProducto, canManageCatalogs, canViewCatalogos } from '../utils/permissions'
 import { fetchClienteById } from '../services/clientesService'
 import { fetchTelas } from '../services/telasService'
-import { fetchProductosByCliente, guardarProducto, uploadProductoFoto, deleteProducto } from '../services/productosService'
+import { fetchProductosByCliente, guardarProducto, setProductoProcesos, uploadProductoFoto, deleteProducto } from '../services/productosService'
 import { resumenProducto } from '../utils/productoCatalogo'
+import { PROCESOS_MAQUILA_OPTIONS } from '../lib/constants'
+import { esClienteMaquila, etiquetaProcesos, ordenarProcesos } from '../utils/maquila'
 
 // V133 — catálogo de UN cliente (colegio): se entra desde Catálogos y aquí se
 // ven sus productos con foto, se abre la ficha completa de cada uno y se
@@ -18,7 +20,9 @@ const bordadoVacio = () => ({ ubicacion: '', descripcion: '', foto_url: '', foto
 // Alta y edición con el mismo formulario (guardar_producto crea o actualiza).
 // Lo que no se edita aquí (pantone, proveedor, técnicas, rango original de
 // tallas…) se conserva tal cual.
-function ProductoForm({ producto = null, clienteId, telas, onSaved, onCancel }) {
+// V143 — en un cliente de maquila el producto lleva además sus procesos
+// (casillas libres: ninguno es obligatorio, tampoco corte).
+function ProductoForm({ producto = null, clienteId, telas, esMaquila = false, onSaved, onCancel }) {
   const esp = producto?.especificaciones || {}
   const [v, setV] = useState({
     nombre: producto?.nombre || '',
@@ -33,6 +37,8 @@ function ProductoForm({ producto = null, clienteId, telas, onSaved, onCancel }) 
     tallas: (producto?.tallas || []).join(', '),
     validado: !producto?.pendiente_validar,
   })
+  const [procesos, setProcesos] = useState(producto?.procesos || [])
+  const toggleProceso = (key) => setProcesos((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
   const [fotos, setFotos] = useState(producto?.fotos || [])
   const [bordados, setBordados] = useState(() => (producto?.bordados || []).map((b) => ({ ...bordadoVacio(), ...b })))
   const [subiendo, setSubiendo] = useState(false)
@@ -85,7 +91,7 @@ function ProductoForm({ producto = null, clienteId, telas, onSaved, onCancel }) 
       else delete especificaciones[campo]
     }
 
-    const { error: saveError } = await guardarProducto({
+    const { data: guardado, error: saveError } = await guardarProducto({
       id: producto?.id || null,
       clienteId,
       nombre: v.nombre.trim(),
@@ -103,11 +109,20 @@ function ProductoForm({ producto = null, clienteId, telas, onSaved, onCancel }) 
       pendienteValidar: !v.validado,
       notasValidacion: v.validado ? null : producto?.notas_validacion,
     })
-    setSaving(false)
     if (saveError) {
+      setSaving(false)
       setError(saveError)
       return
     }
+    if (esMaquila) {
+      const { error: procesosError } = await setProductoProcesos(guardado.id, ordenarProcesos(procesos))
+      if (procesosError) {
+        setSaving(false)
+        setError(new Error(`El producto se guardó, pero no sus procesos: ${procesosError.message}`))
+        return
+      }
+    }
+    setSaving(false)
     onSaved?.()
   }
 
@@ -121,6 +136,22 @@ function ProductoForm({ producto = null, clienteId, telas, onSaved, onCancel }) 
   return (
     <form className="order-form" onSubmit={handleSubmit}>
       {campoTexto('nombre', 'Nombre del producto', 'Ej. Playera polo blanca')}
+      {esMaquila && (
+        <div>
+          <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+            Procesos que se le hacen
+          </span>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            {PROCESOS_MAQUILA_OPTIONS.map((opt) => (
+              <label key={opt.key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 400 }}>
+                <input type="checkbox" checked={procesos.includes(opt.key)} onChange={() => toggleProceso(opt.key)} />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+          <p className="pantone-hint">Las órdenes de maquila de este producto nacen con estas etapas. Cambiarlas no afecta a las órdenes ya creadas.</p>
+        </div>
+      )}
       <div className="form-row">
         {campoTexto('garment', 'Prenda', 'Ej. Playera polo, Short…')}
         {campoTexto('color', 'Color')}
@@ -237,7 +268,7 @@ function ProductoForm({ producto = null, clienteId, telas, onSaved, onCancel }) 
 }
 
 // Ficha completa de un producto: todas las fotos, especificaciones y bordados.
-function ProductoDetalle({ producto, telas, canEdit, canDelete, onChanged, onClose }) {
+function ProductoDetalle({ producto, telas, esMaquila = false, canEdit, canDelete, onChanged, onClose }) {
   const [editing, setEditing] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -247,6 +278,7 @@ function ProductoDetalle({ producto, telas, canEdit, canDelete, onChanged, onClo
   const fotos = producto.fotos?.length ? producto.fotos : producto.foto_url ? [{ url: producto.foto_url }] : []
 
   const filas = [
+    esMaquila && ['Procesos', etiquetaProcesos(producto.procesos) || 'Sin procesos marcados'],
     producto.garment && ['Prenda', producto.garment],
     producto.color && ['Color', producto.color],
     (tela || esp.tela_extra) && ['Tela', [tela?.nombre, esp.tela_extra].filter(Boolean).join(', ')],
@@ -283,6 +315,7 @@ function ProductoDetalle({ producto, telas, canEdit, canDelete, onChanged, onClo
           producto={producto}
           clienteId={producto.cliente_id}
           telas={telas}
+          esMaquila={esMaquila}
           onCancel={() => setEditing(false)}
           onSaved={() => {
             setEditing(false)
@@ -419,6 +452,7 @@ function CatalogoClienteContent() {
   const pendientes = productos.filter((p) => p.pendiente_validar).length
   const visibles = soloPendientes ? productos.filter((p) => p.pendiente_validar) : productos
   const abierto = productos.find((p) => p.id === abiertoId)
+  const esMaquila = esClienteMaquila(cliente)
 
   return (
     <div className="page">
@@ -429,6 +463,7 @@ function CatalogoClienteContent() {
       <p className="page-subtitle">
         {productos.length} producto(s) en el catálogo{pendientes > 0 ? ` · ${pendientes} con datos por validar` : ''}
       </p>
+      {esMaquila && <p className="pantone-hint">Cliente de maquila: cada producto indica qué procesos se le hacen.</p>}
 
       <div className="catalogo-cliente__barra">
         <label className="producto-validado">
@@ -448,6 +483,7 @@ function CatalogoClienteContent() {
           <ProductoForm
             clienteId={clienteId}
             telas={telas}
+            esMaquila={esMaquila}
             onCancel={() => setCreando(false)}
             onSaved={() => {
               setCreando(false)
@@ -462,6 +498,7 @@ function CatalogoClienteContent() {
           key={abierto.id}
           producto={abierto}
           telas={telas}
+          esMaquila={esMaquila}
           canEdit={canEdit}
           canDelete={canDelete}
           onChanged={load}
@@ -488,6 +525,7 @@ function CatalogoClienteContent() {
               {p.foto_url ? <img src={p.foto_url} alt="" loading="lazy" /> : <span className="producto-card__sin-foto">Sin foto</span>}
               <span className="producto-card__nombre">{p.nombre}</span>
               <span className="producto-card__prenda">{resumenProducto(p, telas)}</span>
+              {esMaquila && <span className="producto-card__prenda">{etiquetaProcesos(p.procesos) || '⚠️ Sin procesos'}</span>}
               {p.pendiente_validar && <span className="producto-aviso">⚠️ Datos por validar</span>}
             </button>
           ))}

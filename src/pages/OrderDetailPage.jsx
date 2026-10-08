@@ -24,6 +24,7 @@ import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import { Loading, ErrorState } from '../components/common/States'
 import {
   buildOrderConfirmationPdfBlob,
+  fetchPagosParaPdf,
   buildRemisionPdfBlob,
   orderConfirmationPdfFileName,
   remisionPdfFileName,
@@ -81,10 +82,13 @@ function OrderDetailContent() {
     setGeneratingPdf(variant)
     setPdfError(null)
     try {
+      // Total y anticipo: solo si quien lo genera puede ver dinero.
+      const pagos = user && canViewFinanzas(role) ? await fetchPagosParaPdf(order) : null
       const blob = await buildOrderConfirmationPdfBlob(order, {
         orderTypeLabel: typesByKey[order.order_type_key]?.label,
         variant,
         history,
+        pagos,
       })
       setPreview({ blob, fileName: orderConfirmationPdfFileName(order, variant) })
     } catch (err) {
@@ -125,6 +129,7 @@ function OrderDetailContent() {
             )}
           </h2>
           <p className="order-detail__client">{order.client_name}</p>
+          {order.numero_corte && <p className="order-detail__client">Corte: {order.numero_corte}</p>}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {order.eliminada_en && <span className="badge badge--danger">Eliminada</span>}

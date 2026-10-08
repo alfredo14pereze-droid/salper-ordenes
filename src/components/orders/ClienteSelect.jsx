@@ -25,6 +25,7 @@ export default function ClienteSelect({
   onSelectIncidental,
   onField,
   bloqueado = false,
+  soloCatalogo = false,
 }) {
   const clientesFiltrados = useMemo(() => filtrarClientesPorTipo(clientes, orderTypeKey), [clientes, orderTypeKey])
   const seleccionado = clientesFiltrados.find((c) => c.id === clientId)
@@ -64,8 +65,14 @@ export default function ClienteSelect({
             {c.nombre}
           </option>
         ))}
-        <option value={CLIENTE_OTRO}>Otro cliente (no registrado)</option>
+        {/* V143 — una orden de maquila siempre es de un cliente del catálogo (ahí viven sus productos). */}
+        {!soloCatalogo && <option value={CLIENTE_OTRO}>Otro cliente (no registrado)</option>}
       </select>
+      {soloCatalogo && orderTypeKey && clientesFiltrados.length === 0 && (
+        <p className="pantone-hint" style={{ marginTop: 6 }}>
+          Todavía no hay clientes de maquila: marca la categoría "Maquila" en Catálogos → Clientes.
+        </p>
+      )}
 
       {seleccionado && (seleccionado.telefono || seleccionado.correo) && (
         <p className="pantone-hint" style={{ marginTop: 6 }}>

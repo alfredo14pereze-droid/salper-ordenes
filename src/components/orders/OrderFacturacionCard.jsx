@@ -8,13 +8,20 @@ import {
   fetchResumenEntrega,
   setOrdenPrecios,
   setOrdenFacturacion,
+  setOrdenFacturacionManual,
   formatMxn,
+  REGIMENES_FISCALES,
+  USOS_CFDI,
 } from '../../services/finanzasService'
 import RazonesSocialesManager from '../finanzas/RazonesSocialesManager'
 import PdfPreviewModal from '../pdf/PdfPreviewModal'
 import { buildEntregaPdfBlob, entregaPdfFileName } from '../../utils/generateEntregaPdf'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditFinanzas } from '../../utils/permissions'
+
+// V144 — datos fiscales capturados a mano (orden de un cliente no registrado).
+const FISCAL_VACIO = { razon_social: '', rfc: '', regimen_fiscal: '', cp_fiscal: '', uso_cfdi: '', correo_factura: '' }
+const FISCAL_OBLIGATORIOS = ['razon_social', 'rfc', 'regimen_fiscal', 'cp_fiscal', 'uso_cfdi']
 
 function cantidadDe(item) {
   return (item?.sizes || []).reduce((s, sz) => s + (Number(sz.cantidad) || 0), 0)
@@ -44,6 +51,7 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
   const [razonId, setRazonId] = useState('')
   const [razones, setRazones] = useState([])
   const [snapshot, setSnapshot] = useState(null)
+  const [fiscal, setFiscal] = useState(FISCAL_VACIO)
   const [totales, setTotales] = useState(null)
   const [loading, setLoading] = useState(true)
   const [dirty, setDirty] = useState(false)
@@ -96,6 +104,7 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
     setIncluyeIva(f.data ? f.data.precios_incluyen_iva : true)
     setRazonId(f.data?.razon_social_id || '')
     setSnapshot(f.data?.fiscal_snapshot || null)
+    setFiscal(Object.fromEntries(Object.keys(FISCAL_VACIO).map((k) => [k, f.data?.fiscal_snapshot?.[k] || ''])))
     setTotales(t.data || null)
     setDirty(false)
     setLoading(false)
@@ -138,12 +147,16 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
       setError(pErr)
       return
     }
-    const { error: fErr } = await setOrdenFacturacion({
-      orderId: order.id,
-      requiere,
-      incluyeIva,
-      razonSocialId: requiere ? razonId : null,
-    })
+    // Sin cliente del catálogo y con factura: datos fiscales a mano (V144).
+    const { error: fErr } =
+      !order.client_id && requiere
+        ? await setOrdenFacturacionManual({ orderId: order.id, requiere, incluyeIva, fiscal })
+        : await setOrdenFacturacion({
+            orderId: order.id,
+            requiere,
+            incluyeIva,
+            razonSocialId: requiere ? razonId : null,
+          })
     setSaving(false)
     if (fErr) {
       setError(fErr)
@@ -175,6 +188,11 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
   const faltantes = totales?.faltantes
   const sinPrecio = faltantes?.renglones_sin_precio || []
   const conSugerencia = renglones.some((r) => rows[r.index]?.sugerido)
+  const fiscalIncompleto = FISCAL_OBLIGATORIOS.some((k) => !fiscal[k].trim())
+  const setFiscalCampo = (campo, valor) => {
+    setFiscal((prev) => ({ ...prev, [campo]: valor }))
+    setDirty(true)
+  }
 
   return (
     <div>
@@ -260,15 +278,62 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
 
       <div className="order-form" style={{ marginTop: 12 }}>
         <label className="fin-check">
-          <input type="checkbox" checked={requiere} disabled={readOnly || sinCliente} onChange={(e) => handleRequiere(e.target.checked)} />
+          <input type="checkbox" checked={requiere} disabled={readOnly} onChange={(e) => handleRequiere(e.target.checked)} />
           <strong>¿Requiere factura?</strong>
         </label>
-        {sinCliente && <p className="page-subtitle">Para facturar, la orden debe ser de un cliente del catálogo (esta tiene un cliente capturado a mano).</p>}
         <label className="fin-check">
           <input type="checkbox" checked={incluyeIva} disabled={readOnly} onChange={(e) => { setIncluyeIva(e.target.checked); setDirty(true) }} />
           Los precios ya incluyen IVA <span className="page-subtitle">(si no, se les suma 16% cuando hay factura)</span>
         </label>
-        {requiere && (
+        {requiere && sinCliente && (
+          <div className="order-form">
+            <p className="page-subtitle">
+              Cliente no registrado: captura aquí sus datos fiscales (se guardan solo en esta orden). Puedes dejarlos para después, pero se necesitan completos para marcar la orden como entregada.
+            </p>
+            <div className="form-row">
+              <label>
+                Razón social
+                <input type="text" className="input" value={fiscal.razon_social} disabled={readOnly} onChange={(e) => setFiscalCampo('razon_social', e.target.value)} />
+              </label>
+              <label>
+                RFC
+                <input type="text" className="input" value={fiscal.rfc} disabled={readOnly} onChange={(e) => setFiscalCampo('rfc', e.target.value.toUpperCase())} />
+              </label>
+            </div>
+            <div className="form-row">
+              <label>
+                Régimen fiscal
+                <select className="input" value={fiscal.regimen_fiscal} disabled={readOnly} onChange={(e) => setFiscalCampo('regimen_fiscal', e.target.value)}>
+                  <option value="">Selecciona…</option>
+                  {[...new Set([fiscal.regimen_fiscal, ...REGIMENES_FISCALES])].filter(Boolean).map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Código postal fiscal
+                <input type="text" inputMode="numeric" className="input" value={fiscal.cp_fiscal} disabled={readOnly} onChange={(e) => setFiscalCampo('cp_fiscal', e.target.value)} />
+              </label>
+            </div>
+            <div className="form-row">
+              <label>
+                Uso de CFDI
+                <select className="input" value={fiscal.uso_cfdi} disabled={readOnly} onChange={(e) => setFiscalCampo('uso_cfdi', e.target.value)}>
+                  <option value="">Selecciona…</option>
+                  {[...new Set([fiscal.uso_cfdi, ...USOS_CFDI])].filter(Boolean).map((u) => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Correo para la factura
+                <input type="email" className="input" value={fiscal.correo_factura} disabled={readOnly} onChange={(e) => setFiscalCampo('correo_factura', e.target.value)} placeholder="Opcional" />
+              </label>
+            </div>
+            {fiscalIncompleto && <p className="fin-missing">Faltan datos fiscales (razón social, RFC, régimen, código postal y uso de CFDI).</p>}
+          </div>
+        )}
+        {requiere && !sinCliente && (
           <label>
             Razón social para la factura *
             <div style={{ display: 'flex', gap: 8 }}>
@@ -288,7 +353,7 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
             </div>
           </label>
         )}
-        {requiere && snapshot && !dirty && (
+        {requiere && !sinCliente && snapshot && !dirty && (
           <p className="razon-row__meta">
             Datos fiscales guardados en la orden: {snapshot.razon_social} · {snapshot.rfc} · {snapshot.regimen_fiscal} · CP {snapshot.cp_fiscal} · {snapshot.uso_cfdi}
           </p>
@@ -318,7 +383,7 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
               Para poder entregarla falta:{' '}
               {[
                 sinPrecio.length > 0 && `precio en ${sinPrecio.map((s) => s.prenda || `prenda ${s.item_index + 1}`).join(', ')}`,
-                faltantes?.falta_razon_social && 'la razón social de la factura',
+                faltantes?.falta_razon_social && (sinCliente ? 'los datos fiscales de la factura' : 'la razón social de la factura'),
               ].filter(Boolean).join(' y ')}
               .
             </p>

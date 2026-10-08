@@ -6255,3 +6255,118 @@ short falda IMES, y las de tela por peso (polos, chamarra y pants de felpilla Tr
 órdenes usan nombres genéricos ("Camisa", "Pantalón", "Playera"…): casi ninguno de los 31 coincide todavía,
 así que el estimado de tela por orden sigue sin calcularse. Se edita en la app: menú "Consumos por prenda"
 (`/consumos-prenda`, admin_fabrica y admin_general).
+
+### V143 — Órdenes de tipo "Maquila": servicio a clientes externos (rama `maquila`, 2026-10-08)
+
+**ESTADO: solo en la rama `maquila` (sale de `main`), sin commit ni push. `supabase/schema_v143_maquila.sql`
+NO está aplicado.** Sin el SQL, el tipo Maquila no existe y nada de esto aparece; el resto de la app no cambia.
+
+Salió de un prompt armado fuera (rama `fase-2`, tablas `ordenes`, `procesos_catalogo`, `producto_procesos`,
+`clientes.es_maquila`, `ordenes.bordado`). Contra el sistema real, decisiones de Alfredo:
+- **Rama nueva desde `main`** (`fase-2` es del 2-sep, no tiene nada de V60 en adelante).
+- **Cliente de maquila = categoría `maquila` en `clientes.tipo_orden`** (V45), no una columna `es_maquila`.
+  Excepción al filtro de V45: en Maquila solo salen los clientes marcados (un cliente sin categoría no es de
+  maquila) y no hay "Otro cliente (no registrado)".
+- **Procesos = las etapas que ya existen**, sin tablas nuevas: `productos.procesos text[]` en el catálogo de
+  productos por cliente (V133). Claves: `sublimado`, `corte`, `produccion` (Costura), `bordado`, `terminado`.
+  Ninguno es obligatorio (tampoco corte).
+- **La copia de los procesos en la orden son sus filas de `orden_etapas`**: nacen al crear la orden y no
+  dependen del catálogo. **El bordado por orden es `items[].lleva_bordado`**, como en los demás tipos (no hay
+  `orders.bordado`); `set_order_items` ya agrega/quita la etapa al editar.
+- **Color**: Maquila es el único tipo con insignia propia (negro con amarillo, `badge--maquila` en
+  `TypeBadge`); los demás siguen iguales (regla de identidad: sin color por tipo).
+- **Remisión**: una sola línea nueva en `RemisionPdf` ("Número de corte", solo si la orden lo tiene). El
+  prompt pedía a la vez mostrarlo y no tocar el PDF.
+
+**SQL (V143), todo aditivo:**
+- `orders.numero_corte` (text) y `orders.producto_id` (→ `productos`, solo maquila). `productos.procesos`.
+- Tipo `maquila` ("Maquila"), prefijo **MQ**, secuencia `folio_seq_maquila` (MQ-001…; una secuencia no repite
+  números). Su plantilla (corte, costura, terminado) existe solo porque un tipo activo debe tener etapas
+  (V136): las órdenes de maquila no la usan.
+- `create_order_maquila(cliente, producto, numero_corte, fecha, items, descripción, folios, total)`: valida
+  (cliente de maquila, producto de ese cliente, corte, al menos un proceso), llama a `create_order` (no se
+  redefinió) y cambia las etapas de la plantilla por los procesos del producto + bordado si alguna prenda
+  lo lleva. Secuencias: sublimado 0, corte 1, costura 2, bordado 3, terminado 4.
+- Trigger `orders_maquila_guard` (`orders_maquila_ins` / `orders_maquila_upd`): corre antes de
+  `trg_assign_order_folio`, así un rechazo no gasta folio. El número de corte y el producto le llegan por
+  variables de la transacción (`salper.maquila_*`); una orden de maquila creada con `create_order` directo
+  se rechaza. Número de corte **único por cliente** (sin distinguir mayúsculas ni espacios; las órdenes
+  eliminadas no cuentan), con el índice `orders_maquila_numero_corte_uq` de respaldo. El tipo Maquila no se
+  puede poner ni quitar en una orden ya creada.
+- `set_producto_procesos(id, procesos[])` (ventas / admin_general; aparte de `guardar_producto` para no
+  cambiarle la firma) y `set_orden_numero_corte(orden, corte)` (ventas / admin_tienda / admin_general).
+- Parche de una línea, con guarda, en `create_cliente` y `set_cliente_tipo_orden`: aceptan `maquila`.
+
+**Frontend:**
+- `utils/maquila.js`, `components/orders/MaquilaItemsEditor.jsx`, constantes `TIPO_MAQUILA` y
+  `PROCESOS_MAQUILA_OPTIONS`.
+- **Catálogos → Clientes**: categoría "Maquila". En el catálogo de prendas de un cliente de maquila
+  (`CatalogoClientePage`) cada producto tiene las casillas "Procesos que se le hacen"; se ven en la tarjeta
+  y en la ficha.
+- **Nueva orden** con tipo Maquila: cliente de maquila → producto de su catálogo (muestra "Procesos de esta
+  orden: …") → número de corte (obligatorio; se revisa que no esté repetido antes de guardar) → tallas y
+  cantidades → "Lleva bordado" (marcado y bloqueado si el producto ya borda). Una orden = un producto.
+  Cotización, total, anticipo, notas y fotos siguen igual.
+- **Número de corte** visible en la tarjeta del Dashboard (`OrderCard`), la tarjeta de estación
+  (`EstacionCard`), el detalle (encabezado y Detalles), la pantalla de estación y la remisión. El buscador
+  también encuentra por número de corte. En "Editar orden" de una maquila se corrige el número de corte;
+  cliente y tipo quedan fijos; las prendas se editan con el editor simple (tallas y bordado).
+- **Visibilidad por estación: no hubo que cambiar nada.** V140 ya considera cumplida una etapa previa que la
+  orden no tiene (`situacionEnEstacion`), y bordado solo ve órdenes con etapa de bordado. Quedó cubierto con
+  pruebas: costura ve de inmediato una orden costura + terminado sin corte; a bordado no le aparece.
+
+**No se tocó:** cobro, precios, pausas, roles ni permisos; del PDF de remisión, solo la línea descrita.
+
+**Probado:** `node --test src/utils/*.test.js` (24), `npm run build`; el SQL completo en un Postgres en
+memoria (PGlite) con las definiciones reales de `create_order`, `set_order_items`, `create_cliente`,
+`set_cliente_tipo_orden` y el trigger de folios: 31 comprobaciones (etapas por producto, bordado, corte
+repetido, rechazos sin gastar folio, edición de prendas, permisos, se puede correr dos veces); y las
+pantallas reales (Nueva orden y catálogo del cliente) en un ejemplo local sin base
+(`.claude/harness-maquila/`, servidor `salper-maquila-harness`, puerto 5197).
+**No probado:** contra Supabase (el SQL no se ha corrido; las tablas del ensayo eran una réplica mínima, sin
+los triggers de V134/V136/V137), con sesión real, la remisión impresa, ni el detalle de una orden de maquila
+real. No probar `create_order_maquila` en producción "a ver si funciona": gasta folios MQ.
+
+**Pendiente / para decidir:** una orden de maquila lleva un solo producto (varios productos del mismo corte
+serían varias órdenes, y el corte es único por cliente); el Asistente no conoce el número de corte; el PDF
+de confirmación de la orden no lo muestra.
+
+### 2026-10-08 — PDF de la orden con total y anticipo, nombres y números; factura para cliente no registrado (V144); camisolas (rama `maquila`)
+
+Cuatro pedidos de Alfredo en la misma sesión que V143, en la misma rama (sin commit ni push).
+
+**PDF de la orden** (`OrderConfirmationPdf`, las dos variantes: interno y para cliente; sin SQL):
+- **"Total y anticipo"**: total de la orden, anticipo recibido y restante por pagar. Si la orden tiene precios
+  por prenda (V77) usa los totales de `orden_totales` (con subtotal e IVA cuando pide factura); si no, el
+  total capturado a mano (`orders.total_orden`, V42). Sin total ni anticipos la sección no sale
+  (`utils/pagosPdf.js`, `fetchPagosParaPdf`). **Solo aparece si quien genera el PDF puede ver dinero**
+  (`canViewFinanzas`): un PDF generado desde una cuenta de estación sale sin dinero, igual que antes.
+  También en el PDF que se arma al crear la orden (ya con el anticipo registrado).
+- **"Nombres y números"**: en cada prenda que lleve lista (sublimación), tabla con nombre, talla y número.
+- **Arreglo de paso**: la fecha de entrega salía **un día antes** en el PDF (`new Date('2026-10-30')` es
+  medianoche UTC; en México es el 29). Ahora usa `parseDate`. Estaba así desde el primer PDF.
+
+**V144 — "¿Requiere factura?" en órdenes de un cliente no registrado**
+(`supabase/schema_v144_factura_cliente_no_registrado.sql`, **NO aplicado**):
+- Antes la casilla estaba bloqueada si la orden no tenía cliente del catálogo (la razón social se elige de
+  las del cliente). Ahora, en una orden con "Otro cliente (no registrado)", se puede marcar y capturar los
+  datos fiscales a mano (razón social, RFC, régimen, CP, uso de CFDI, correo): viven solo en la orden
+  (`orden_facturacion.fiscal_snapshot`, con `manual: true` y `razon_social_id` vacío). No se da de alta nada
+  en el catálogo.
+- Se puede marcar la factura **sin** datos fiscales y llenarlos después; el candado de entrega (V77) sigue
+  exigiéndolos completos. Para eso `orden_faltantes` recibe un parche de una línea (con guarda): con factura
+  y sin razón social del catálogo, falta solo si el snapshot no está completo (`fin_fiscal_completo`).
+- RPC nueva `set_orden_facturacion_manual(orden, requiere, incluye_iva, fiscal jsonb)` (`fin_puede_editar`;
+  rechaza órdenes con cliente del catálogo). `set_orden_facturacion` no se tocó.
+- Frontend: `OrderFacturacionCard`. La factura se marca en el detalle de la orden (como siempre), no en
+  "Nueva orden". **Sin el SQL aplicado**, guardar con factura en una orden sin cliente da error de función
+  inexistente; todo lo demás funciona igual.
+
+**Sublimación:** prendas nuevas **"Camisola abierta"** y **"Camisola cerrada"** en la lista cerrada (V39).
+Son prenda de arriba: llevan nombres y números igual que Playera.
+
+**Probado:** `node --test src/utils/*.test.js` (29), `npm run build`; PDFs de ejemplo generados y revisados
+(sublimación con 12 nombres + total/anticipo; escolar con IVA; sin dinero); V144 en PGlite con las funciones
+reales de V77 (`orden_faltantes`, `orden_totales`, `set_orden_facturacion`, `fin_validar_entrega`): 14
+comprobaciones; pantalla de factura y lista de prendas en el ejemplo local (`salper-maquila-harness`).
+**No probado:** contra Supabase ni con sesión real; el PDF con una orden real.

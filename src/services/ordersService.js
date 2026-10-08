@@ -139,6 +139,51 @@ export async function createOrder({
     .single()
 }
 
+// V143 — orden de maquila: el servidor toma el nombre del cliente del
+// catálogo y genera las etapas con los procesos del producto (ver
+// create_order_maquila en schema_v143_maquila.sql).
+export async function createOrderMaquila({ clientId, productoId, numeroCorte, requestedDeliveryDate, items, description, foliosExternos, totalOrden }) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase
+    .rpc('create_order_maquila', {
+      p_client_id: clientId,
+      p_producto_id: productoId,
+      p_numero_corte: numeroCorte,
+      p_requested_delivery_date: requestedDeliveryDate,
+      p_items: items || [],
+      p_description: description || null,
+      p_folios_externos: foliosExternos || [],
+      p_total_orden: totalOrden || null,
+    })
+    .single()
+}
+
+// V143 — ¿ese cliente ya tiene una orden de maquila con ese número de corte?
+// Es solo el aviso antes de guardar; el servidor lo vuelve a validar.
+export async function fetchOrdenPorNumeroCorte(clientId, numeroCorte) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id, order_number, numero_corte')
+    .eq('order_type_key', 'maquila')
+    .eq('client_id', clientId)
+    .is('eliminada_en', null)
+  if (error) return { data: null, error }
+  const buscado = String(numeroCorte || '').trim().toUpperCase()
+  return { data: (data || []).find((o) => String(o.numero_corte || '').trim().toUpperCase() === buscado) || null, error: null }
+}
+
+export async function setOrdenNumeroCorte(orderId, numeroCorte) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('set_orden_numero_corte', { p_order_id: orderId, p_numero_corte: numeroCorte }).single()
+}
+
 // Reemplaza por completo el arreglo de prendas de una orden ya creada
 // (ver función SQL set_order_items).
 export async function setOrderItems(orderId, items) {

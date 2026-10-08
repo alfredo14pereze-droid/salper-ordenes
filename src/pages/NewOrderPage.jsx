@@ -11,7 +11,7 @@ import { useOrders } from '../hooks/useOrders'
 import { buildDemandMap, getLoadForDate } from '../utils/demand'
 import { parseDate } from '../utils/dates'
 import { isActiveStatus } from '../utils/status'
-import { createOrder } from '../services/ordersService'
+import { createOrder, createOrderMaquila, fetchOrdenPorNumeroCorte } from '../services/ordersService'
 import { fetchPlantillasEtapas } from '../services/orderTypesService'
 import { TIPO_VENTA_MOSTRADOR, CLIENTE_SALPER_NOMBRE } from '../lib/constants'
 import { uploadOrderPhotos } from '../services/photosService'
@@ -24,13 +24,16 @@ import OrderTypeSelect from '../components/orders/OrderTypeSelect'
 import ClienteSelect from '../components/orders/ClienteSelect'
 import PhotoPicker from '../components/orders/PhotoPicker'
 import OrderItemsEditor from '../components/orders/OrderItemsEditor'
+import MaquilaItemsEditor from '../components/orders/MaquilaItemsEditor'
+import { esOrdenMaquila, etiquetaProcesos, nuevaPrendaMaquila, prendaMaquila, procesosDeLaOrden, productoBorda, validarOrdenMaquila } from '../utils/maquila'
 import FoliosExternosField from '../components/orders/FoliosExternosField'
 import RequireRole from '../components/common/RequireRole'
 import FileDropLabel from '../components/common/FileDropLabel'
 import { canCreateOrder } from '../utils/permissions'
 import { useAuth } from '../contexts/AuthContext'
 import { Loading, ErrorState } from '../components/common/States'
-import { buildOrderConfirmationPdfBlob, orderConfirmationPdfFileName } from '../utils/generateOrderPdf'
+import { buildOrderConfirmationPdfBlob, fetchPagosParaPdf, orderConfirmationPdfFileName } from '../utils/generateOrderPdf'
+import { canViewFinanzas } from '../utils/permissions'
 import { CAPTURA_FECHA_CREACION_HABILITADA } from '../utils/featureFlags'
 
 const initialForm = {
@@ -47,6 +50,9 @@ const initialForm = {
   foliosExternos: [],
   createdAt: '',
   totalOrden: '',
+  // V143 — solo órdenes de maquila.
+  productoId: '',
+  numeroCorte: '',
 }
 
 const emptyItem = () => ({
@@ -180,7 +186,7 @@ function DocumentosPicker({ label, files, onChange }) {
 }
 
 function NewOrderForm() {
-  const { profile } = useAuth()
+  const { profile, role } = useAuth()
   const { orderTypes, loading, error, refresh } = useOrderTypes()
   const { clientes } = useClientes()
   const { telas, refresh: refreshTelas } = useTelas()
@@ -252,6 +258,11 @@ function NewOrderForm() {
         : { ...f, clientId: clienteSalper.id, clienteIncidental: false, clientName: clienteSalper.nombre, clientTelefono: '', clientCorreo: '' }
     )
   }, [esVentaMostrador, clienteSalper])
+
+  // V143 — Maquila: un producto del catálogo del cliente + número de corte.
+  const esMaquila = esOrdenMaquila(form.orderTypeKey)
+  const productoMaquila = esMaquila ? productos.find((p) => p.id === form.productoId) || null : null
+  const llevaBordadoMaquila = !!items[0]?.lleva_bordado || productoBorda(productoMaquila)
 
   function discardDraft() {
     clearDraft()
@@ -341,7 +352,16 @@ function NewOrderForm() {
   // elegido no pertenece al nuevo tipo, se limpia (un "otro cliente" a mano
   // se conserva, no depende del catálogo).
   function handleTypeChange(key) {
+    // V143 — la prenda de maquila tiene otra forma: al entrar o salir de
+    // Maquila se empieza con la prenda en blanco.
+    if (esOrdenMaquila(key) !== esOrdenMaquila(form.orderTypeKey)) {
+      setItems([esOrdenMaquila(key) ? nuevaPrendaMaquila() : emptyItem()])
+    }
     setForm((f) => {
+      if (esOrdenMaquila(key) !== esOrdenMaquila(f.orderTypeKey)) {
+        // Los clientes de maquila son otros: se vuelve a elegir.
+        return { ...f, orderTypeKey: key, clientId: '', clienteIncidental: false, clientName: '', clientTelefono: '', clientCorreo: '', productoId: '', numeroCorte: '' }
+      }
       // Al salir de Venta Mostrador se suelta el cliente Salper puesto a la fuerza.
       if (f.orderTypeKey === TIPO_VENTA_MOSTRADOR && key !== TIPO_VENTA_MOSTRADOR) {
         return { ...f, orderTypeKey: key, clientId: '', clienteIncidental: false, clientName: '', clientTelefono: '', clientCorreo: '' }
@@ -361,6 +381,8 @@ function NewOrderForm() {
       clientName: c?.nombre || '',
       clientTelefono: c?.telefono || '',
       clientCorreo: c?.correo || '',
+      // El producto es del catálogo del cliente: cambia el cliente, se vuelve a elegir.
+      productoId: c?.id === f.clientId ? f.productoId : '',
     }))
   }
 
@@ -401,6 +423,11 @@ function NewOrderForm() {
     const totalOrdenNum = Number(form.totalOrden)
     if (form.totalOrden && (!totalOrdenNum || totalOrdenNum <= 0)) {
       setSubmitError(new Error('El total de la orden debe ser mayor a cero.'))
+      return
+    }
+
+    if (esMaquila) {
+      await handleSubmitMaquila(totalOrdenNum, anticipoMontoNum)
       return
     }
 
@@ -476,6 +503,62 @@ function NewOrderForm() {
       return
     }
 
+    await terminarCreacion(data, anticipoMontoNum)
+  }
+
+  // V143 — orden de maquila: cliente de maquila → producto → número de corte
+  // (único por cliente) → tallas → bordado. Las etapas las arma el servidor
+  // con los procesos del producto.
+  async function handleSubmitMaquila(totalOrdenNum, anticipoMontoNum) {
+    const cliente = clientes.find((c) => c.id === form.clientId) || null
+    const faltaMaquila = validarOrdenMaquila({
+      cliente,
+      producto: productoMaquila,
+      numeroCorte: form.numeroCorte,
+      item: items[0],
+      llevaBordado: llevaBordadoMaquila,
+    })
+    if (faltaMaquila) {
+      setSubmitError(new Error(faltaMaquila))
+      return
+    }
+
+    setSubmitting(true)
+    setSubmitError(null)
+
+    const numeroCorte = form.numeroCorte.trim()
+    const { data: repetida, error: repetidaError } = await fetchOrdenPorNumeroCorte(cliente.id, numeroCorte)
+    if (repetidaError || repetida) {
+      setSubmitting(false)
+      setSubmitError(
+        repetidaError || new Error(`${cliente.nombre} ya tiene una orden con el número de corte "${repetida.numero_corte}" (${repetida.order_number}).`)
+      )
+      return
+    }
+
+    const { data, error: createError } = await createOrderMaquila({
+      clientId: cliente.id,
+      productoId: productoMaquila.id,
+      numeroCorte,
+      requestedDeliveryDate: form.requestedDeliveryDate,
+      items: [prendaMaquila(items[0], productoMaquila, llevaBordadoMaquila)],
+      description: form.description.trim(),
+      foliosExternos: form.foliosExternos,
+      totalOrden: totalOrdenNum > 0 ? totalOrdenNum : null,
+    })
+
+    if (createError) {
+      setSubmitting(false)
+      setSubmitError(createError)
+      return
+    }
+
+    await terminarCreacion(data, anticipoMontoNum)
+  }
+
+  // Lo que sigue a crear la orden, igual para todos los tipos: fotos,
+  // documentos, anticipo y la vista previa del PDF.
+  async function terminarCreacion(data, anticipoMontoNum) {
     // La orden ya existe (tiene id): subimos las fotos elegidas a mano. Si
     // esto falla, no se cancela la creación de la orden — se puede
     // reintentar desde el detalle.
@@ -532,7 +615,9 @@ function NewOrderForm() {
     const initialHistory = [{ status: data.status, changed_at: data.created_at, notes: 'Orden creada' }]
     let pdfPreview = null
     try {
-      const blob = await buildOrderConfirmationPdfBlob(data, { orderTypeLabel, history: initialHistory })
+      // El anticipo (si hubo) ya se registró arriba: sale en el PDF.
+      const pagos = canViewFinanzas(role) ? await fetchPagosParaPdf(data) : null
+      const blob = await buildOrderConfirmationPdfBlob(data, { orderTypeLabel, history: initialHistory, pagos })
       pdfPreview = { blob, fileName: orderConfirmationPdfFileName(data, 'interno') }
     } catch (pdfErr) {
       console.error('No se pudo generar el PDF de confirmación:', pdfErr)
@@ -610,8 +695,53 @@ function NewOrderForm() {
             onSelectIncidental={handleSelectIncidental}
             onField={updateField}
             bloqueado={esVentaMostrador}
+            soloCatalogo={esMaquila}
           />
         </div>
+
+        {esMaquila && (
+          <>
+            <label>
+              Producto *
+              <select
+                className="input"
+                value={form.productoId}
+                onChange={(e) => updateField('productoId', e.target.value)}
+                disabled={!form.clientId}
+              >
+                <option value="">
+                  {!form.clientId ? 'Primero elige el cliente' : productos.length === 0 ? 'Este cliente no tiene productos en su catálogo' : 'Selecciona un producto…'}
+                </option>
+                {productos.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {form.clientId && productos.length === 0 && (
+              <p className="pantone-hint">Agrega sus productos en Catálogos → Clientes → "Ver catálogo de prendas".</p>
+            )}
+            {productoMaquila && (
+              <p className="pantone-hint">
+                {procesosDeLaOrden(productoMaquila, llevaBordadoMaquila).length > 0
+                  ? `Procesos de esta orden: ${etiquetaProcesos(procesosDeLaOrden(productoMaquila, llevaBordadoMaquila))}`
+                  : '⚠️ Este producto no tiene procesos marcados: márcalos en el catálogo del cliente.'}
+              </p>
+            )}
+
+            <label>
+              Número de corte *
+              <input
+                type="text"
+                className="input"
+                value={form.numeroCorte}
+                onChange={(e) => updateField('numeroCorte', e.target.value)}
+                placeholder="El número de corte del cliente"
+              />
+            </label>
+          </>
+        )}
 
         {CAPTURA_FECHA_CREACION_HABILITADA && (
           <label>
@@ -651,19 +781,23 @@ function NewOrderForm() {
 
         <div>
           <span className="field-label" style={{ marginBottom: 8, display: 'block' }}>
-            Prendas
+            {esMaquila ? 'Cantidades' : 'Prendas'}
           </span>
-          <OrderItemsEditor
-            items={items}
-            onChange={setItems}
-            orderTypeKey={form.orderTypeKey}
-            telas={telas}
-            onTelaCreated={refreshTelas}
-            clienteId={form.clienteIncidental ? '' : form.clientId}
-            clienteNombre={form.clientName}
-            productos={productos}
-            onProductoCreated={refreshProductos}
-          />
+          {esMaquila ? (
+            <MaquilaItemsEditor items={items} onChange={setItems} bordadoObligado={productoBorda(productoMaquila)} />
+          ) : (
+            <OrderItemsEditor
+              items={items}
+              onChange={setItems}
+              orderTypeKey={form.orderTypeKey}
+              telas={telas}
+              onTelaCreated={refreshTelas}
+              clienteId={form.clienteIncidental ? '' : form.clientId}
+              clienteNombre={form.clientName}
+              productos={productos}
+              onProductoCreated={refreshProductos}
+            />
+          )}
         </div>
 
         <details className="form-optional">

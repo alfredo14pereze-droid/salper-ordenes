@@ -91,6 +91,20 @@ export async function setOrdenFacturacion({ orderId, requiere, incluyeIva, razon
   })
 }
 
+// V144 — orden de un cliente NO registrado (sin client_id): los datos
+// fiscales se capturan a mano y viven en la orden. Pueden ir vacíos al
+// marcar la factura; se exigen completos para entregar.
+export async function setOrdenFacturacionManual({ orderId, requiere, incluyeIva, fiscal }) {
+  const { error } = ensureClient()
+  if (error) return { data: null, error }
+  return supabase.rpc('set_orden_facturacion_manual', {
+    p_order_id: orderId,
+    p_requiere: requiere,
+    p_incluye_iva: incluyeIva,
+    p_fiscal: fiscal || null,
+  })
+}
+
 export async function fetchOrdenTotales(orderId) {
   const { error } = ensureClient()
   if (error) return { data: null, error }
