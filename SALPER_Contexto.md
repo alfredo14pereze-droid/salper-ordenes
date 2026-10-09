@@ -6494,7 +6494,16 @@ frontend (el estado lo calcula el servidor):
   terminado y luego termina costura, queda "Costura" (lo último que pasó).
 - Regresar una etapa a pendiente (corrección de administradores) la saca de la cuenta: el resumen vuelve al
   cambio anterior más reciente.
-- Al aplicar se recalculó el resumen de todas las órdenes activas.
+- **ESTADO: aplicado el 2026-10-08 desde el SQL Editor (hash verificado) y comprobado por consulta** (función
+  parcheada y con la línea de V66b, una sola copia, trigger activo, ninguna etapa activa sin fecha).
+- Al aplicar se recalculó el resumen de las 60 órdenes activas; **cambiaron 3**: ESC-024 (Bordado → Cortado:
+  bordado terminó el 2-oct; el 3-oct se inició costura y segundos después se marcó corte completo, así que lo
+  último fue corte, aunque costura sigue en proceso), IND-021 (Confirmada → Cortado: tenía corte completo y el
+  resumen atrasado) y VEN-005 (Terminado → Bordado: terminado se completó a las 16:29 y bordado a las 17:49 del
+  8-oct).
+- Pendiente de decidir con Alfredo: la regla es literal ("lo último que cambió"), y por eso ESC-024 dice
+  "Cortado" con costura en proceso. Alternativa ofrecida: que una etapa EN PROCESO gane siempre a una
+  completada (y entre varias en proceso, la que empezó más tarde).
 - **Lo que NO cambia:** qué órdenes le aparecen a cada estación (`ordenesDeEstacion.js`), ni la barra de
   pasos del detalle, que sigue siendo lineal y solo marca el estado actual.
 - Probado en PGlite con las funciones reales (`recompute_order_status` de V23 y `update_orden_etapa`): 18
