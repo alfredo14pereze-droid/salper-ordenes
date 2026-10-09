@@ -205,10 +205,15 @@ export const GARMENT_OPTIONS_SUBLIMACION = [
   'Camisola abierta',
   'Camisola cerrada',
   'Short',
+  'Falda short',
   'Chamarra',
   'Sudadera',
   'Pantalonera',
 ]
+
+// Prendas que se capturan como el short: solo números (sin nombre) y la
+// pregunta "¿Lleva bolsas?". La falda short (2026-10-09) va aquí.
+export const GARMENT_SHORT_KEYS_SUBLIMACION = ['Short', 'Falda short']
 
 // De esas 5, solo estas 3 llevan cuello y manga ("las de arriba") — short
 // y pantalonera no. Short (y solo short) además lleva su propia lista de

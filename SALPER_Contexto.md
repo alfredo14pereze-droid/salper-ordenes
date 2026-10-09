@@ -6526,3 +6526,9 @@ columna), **Copiar nombres** y **Copiar números** (una columna, mismo orden). E
 seleccionar a mano. Sale en cualquier estación que abra una orden con lista, no solo sublimado. Sin SQL
 (`utils/roster.js`: `rosterDePrenda`, `textoRoster`). Probado en el ejemplo local con rol sublimado; no con
 la cuenta de Samuel ni pegando en su programa de diseño.
+
+### 2026-10-09 — Sublimación: prenda "Falda short"
+
+Nueva en la lista cerrada de prendas de sublimación. Se captura igual que "Short"
+(`GARMENT_SHORT_KEYS_SUBLIMACION`): lista de solo números (sin nombre) y la pregunta "¿Lleva bolsas?"; sin
+cuello ni manga. Sin SQL.

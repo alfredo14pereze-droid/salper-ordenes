@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { GARMENT_COLORS, GARMENT_OPTIONS_SUBLIMACION, GARMENT_TOP_KEYS_SUBLIMACION, ORDER_TYPES_REQUIRING_PANTONE } from '../../lib/constants'
+import { GARMENT_COLORS, GARMENT_OPTIONS_SUBLIMACION, GARMENT_SHORT_KEYS_SUBLIMACION, GARMENT_TOP_KEYS_SUBLIMACION, ORDER_TYPES_REQUIRING_PANTONE } from '../../lib/constants'
 import TelaSelect from './TelaSelect'
 import ProductoAutocomplete from './ProductoAutocomplete'
 import OrderTelaResumen from './OrderTelaResumen'
@@ -192,7 +192,7 @@ function OrderItemsEditorGeneral({
         // Solo aplica dentro de sublimación (fuera de ahí "Prenda" sigue
         // siendo texto libre, así que esto no significa nada).
         const isTopGarment = isSublimacion && GARMENT_TOP_KEYS_SUBLIMACION.includes(item.garment)
-        const isShort = isSublimacion && item.garment === 'Short'
+        const isShort = isSublimacion && GARMENT_SHORT_KEYS_SUBLIMACION.includes(item.garment)
         const showCuelloManga = !isSublimacion || isTopGarment
         // V126 — el roster se ve siempre en sublimación (menos pantalonera, que no lleva).
         const showRoster = isSublimacion && item.garment !== 'Pantalonera'
