@@ -6461,3 +6461,18 @@ lista de texto y la orden no se llevaba la foto. Sin SQL.
 - Al momento del arreglo no existía ninguna orden de maquila (no hubo nada que corregir hacia atrás).
 - Probado en el ejemplo local (tarjetas con foto, copia al crear). No probado contra Supabase: la primera
   orden real de Jumaco es la prueba de la copia en el almacenamiento.
+
+### 2026-10-08 — Regresar una etapa marcada por error (administradores)
+
+Alfredo preguntó cómo corregir etapas marcadas completas por error: no había forma en la app (una etapa
+completada no tenía botón). El servidor ya lo permitía a `admin_fabrica` / `admin_general`
+(`update_orden_etapa` acepta volver a `pendiente` o `en_proceso` y recalcula el estado de la orden; el
+candado de V139 solo se lo impide a las estaciones). Solo frontend, sin SQL: en el detalle de la orden,
+"Etapas de producción" (`OrderEtapasCard`), esos dos roles ven **Regresar a "en proceso"** y **Regresar a
+"pendiente"** en cada etapa completada o en proceso, con confirmación.
+- Regresar a pendiente borra inicio, fin y operario de la etapa; regresar a en proceso borra solo el fin.
+- **No deshace lo que el cierre registró aparte**: la tela descontada al cortar (`movimientos_tela`), las
+  cantidades surtidas de terminado ni el reporte de impresión (ese se corrige con "Corregir reporte").
+- Una orden ya **entregada** (`completado`) no cambia de estado por regresar una etapa: eso se corrige con el
+  selector de corrección manual del estado (mismos roles).
+- No probado en pantalla ni con una orden real; `npm run build` limpio.

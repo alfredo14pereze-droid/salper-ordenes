@@ -113,6 +113,22 @@ export default function OrderEtapasCard({ orderId, onUpdated }) {
     onUpdated?.()
   }
 
+  // Una etapa marcada por error se regresa aquí: solo admin_fabrica y
+  // admin_general (el servidor lo permite solo a ellos). No deshace lo que el
+  // cierre haya registrado aparte (tela descontada en corte, cantidades de
+  // terminado, reporte de impresión).
+  const puedeRegresar = role === 'admin_fabrica' || role === 'admin_general'
+
+  function handleRegresar(et, nuevoEstado) {
+    const nombre = ETAPA_LABELS[et.etapa] || et.etapa
+    const aviso =
+      nuevoEstado === 'pendiente'
+        ? `¿Regresar ${nombre} a "pendiente"? Se borran sus horas de inicio y fin, y vuelve a salirle a la estación como no empezada.`
+        : `¿Regresar ${nombre} a "en proceso"? Se borra su hora de fin y la estación la verá otra vez como empezada.`
+    if (!window.confirm(aviso)) return
+    handleAdvance(et.etapa, nuevoEstado)
+  }
+
   if (loading) return null
   if (etapas.length === 0) return null
 
@@ -162,6 +178,19 @@ export default function OrderEtapasCard({ orderId, onUpdated }) {
                 {et.estado === 'completado' && tiempoReal != null && (
                   <p className="document-row__empty" style={{ marginTop: 2 }}>
                     Tiempo real: <strong>{formatMinutosHabiles(tiempoReal)} hábiles</strong>
+                  </p>
+                )}
+                {puedeRegresar && et.estado !== 'pendiente' && (
+                  // Corrección de una etapa marcada por error (solo administradores).
+                  <p style={{ marginTop: 4, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    {et.estado === 'completado' && (
+                      <button type="button" className="etapa-corregir-link" disabled={savingEtapa === et.etapa} onClick={() => handleRegresar(et, 'en_proceso')}>
+                        Regresar a "en proceso"
+                      </button>
+                    )}
+                    <button type="button" className="etapa-corregir-link" disabled={savingEtapa === et.etapa} onClick={() => handleRegresar(et, 'pendiente')}>
+                      Regresar a "pendiente"
+                    </button>
                   </p>
                 )}
                 {et.estado === 'completado' && role === 'admin_general' && corrigiendo !== et.etapa && (
