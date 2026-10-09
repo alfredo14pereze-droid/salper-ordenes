@@ -6476,3 +6476,25 @@ candado de V139 solo se lo impide a las estaciones). Solo frontend, sin SQL: en 
 - Una orden ya **entregada** (`completado`) no cambia de estado por regresar una etapa: eso se corrige con el
   selector de corrección manual del estado (mismos roles).
 - No probado en pantalla ni con una orden real; `npm run build` limpio.
+
+### V147 — El estado de la orden muestra el cambio de etapa más reciente (2026-10-08)
+
+Pedido de Alfredo: las órdenes no siempre son lineales (a veces se borda antes de coser) y el Dashboard seguía
+mostrando la etapa de mayor secuencia. `supabase/schema_v147_estado_cambio_reciente.sql`, sin cambios de
+frontend (el estado lo calcula el servidor):
+- `orden_etapas.estado_cambiado_en`: cuándo cambió el estado de la etapa por última vez (trigger
+  `orden_etapas_estado_cambiado_trg`, solo cuando cambia `estado`; pausar, corregir horas o el reporte de
+  impresión no lo mueven). Las filas existentes se rellenaron con la hora de fin o de inicio.
+- `recompute_order_status` (única redefinición; con guarda de que la viva era la de V23): entre las etapas en
+  proceso o completadas con estado propio (corte, sublimado, costura, bordado, terminado) gana **la que cambió
+  más recientemente**; la secuencia solo desempata. Lo demás igual: no toca órdenes canceladas, por confirmar
+  ni entregadas; impresión de sublimación e impresión por prenda siguen sin estado propio.
+- Ejemplo: corte → bordado → empieza costura: antes "Bordado", ahora "En costura". Si después empieza
+  terminado y luego termina costura, queda "Costura" (lo último que pasó).
+- Regresar una etapa a pendiente (corrección de administradores) la saca de la cuenta: el resumen vuelve al
+  cambio anterior más reciente.
+- Al aplicar se recalculó el resumen de todas las órdenes activas.
+- **Lo que NO cambia:** qué órdenes le aparecen a cada estación (`ordenesDeEstacion.js`), ni la barra de
+  pasos del detalle, que sigue siendo lineal y solo marca el estado actual.
+- Probado en PGlite con las funciones reales (`recompute_order_status` de V23 y `update_orden_etapa`): 18
+  comprobaciones.
