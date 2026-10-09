@@ -6501,9 +6501,16 @@ frontend (el estado lo calcula el servidor):
   último fue corte, aunque costura sigue en proceso), IND-021 (Confirmada → Cortado: tenía corte completo y el
   resumen atrasado) y VEN-005 (Terminado → Bordado: terminado se completó a las 16:29 y bordado a las 17:49 del
   8-oct).
-- Pendiente de decidir con Alfredo: la regla es literal ("lo último que cambió"), y por eso ESC-024 dice
-  "Cortado" con costura en proceso. Alternativa ofrecida: que una etapa EN PROCESO gane siempre a una
-  completada (y entre varias en proceso, la que empezó más tarde).
+- **V148 (mismo día, pedido de Alfredo: "si ya se hizo el corte y se empezó costura, que diga en costura"):**
+  `schema_v148_estado_en_proceso_primero.sql`, parche de una línea sobre la misma función: **una etapa en
+  proceso le gana siempre a una completada** (entre varias en proceso, la que empezó más recientemente; sin
+  ninguna en proceso, la que se completó más recientemente). Aplicado el 2026-10-08 (hash verificado, función
+  con V147 + V148 + la línea de V66b, una sola copia). Al recalcular cambiaron 2 de 60: ESC-024 (Cortado → En
+  costura) y SUB-022 (Terminado → En costura).
+- **Consecuencia a tener presente:** una etapa que se quedó "en proceso" sin cerrarse manda sobre todo lo
+  completado. SUB-022 tiene terminado completo pero costura nunca se marcó terminada, y por eso ahora dice
+  "En costura". Se corrige cerrando esa etapa (la estación, o un administrador desde el detalle).
+- Probado en PGlite sobre V147: 14 comprobaciones.
 - **Lo que NO cambia:** qué órdenes le aparecen a cada estación (`ordenesDeEstacion.js`), ni la barra de
   pasos del detalle, que sigue siendo lineal y solo marca el estado actual.
 - Probado en PGlite con las funciones reales (`recompute_order_status` de V23 y `update_orden_etapa`): 18
