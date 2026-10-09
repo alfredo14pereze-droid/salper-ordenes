@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useOrder } from '../hooks/useOrder'
 import { fetchOrdenEtapas, updateOrdenEtapa, pausarOrdenEtapa, updateOrderStatus, setItemSurtido, reportarImpresion } from '../services/ordersService'
+import { rosterDePrenda, textoRoster } from '../utils/roster'
 import { TINTAS, formatMl, numero, reporteDeEtapa, totalTinta, validarReporteImpresion } from '../utils/impresionReporte'
 import { fetchInventarioTelas, marcarCorte } from '../services/movimientosTelaService'
 import { fetchOrdenBordados } from '../services/bordadosService'
@@ -21,6 +22,74 @@ import { formatMinutosHabiles } from '../utils/horasHabiles'
 import { formatDateTime } from '../utils/dates'
 
 const conTalla = (talla) => (talla ? `T.${talla}` : '')
+
+// Lista de nombres y números de la prenda (sublimación), para que quien
+// diseña la copie y la pegue: toda la lista (cada dato en su columna), solo
+// los nombres o solo los números. El texto de la tabla también se puede
+// seleccionar a mano.
+function RosterEstacion({ item }) {
+  const filas = rosterDePrenda(item)
+  const [copiado, setCopiado] = useState(null)
+  if (filas.length === 0) return null
+
+  async function copiar(modo) {
+    const texto = textoRoster(filas, modo)
+    try {
+      await navigator.clipboard.writeText(texto)
+    } catch {
+      // Sin permiso de portapapeles (o navegador viejo): el método de siempre.
+      const area = document.createElement('textarea')
+      area.value = texto
+      area.style.position = 'fixed'
+      area.style.opacity = '0'
+      document.body.appendChild(area)
+      area.select()
+      document.execCommand('copy')
+      document.body.removeChild(area)
+    }
+    setCopiado(modo)
+    setTimeout(() => setCopiado((actual) => (actual === modo ? null : actual)), 2000)
+  }
+
+  const boton = (modo, etiqueta) => (
+    <button type="button" className="btn btn--secondary btn--small" onClick={() => copiar(modo)}>
+      {copiado === modo ? '✓ Copiado' : etiqueta}
+    </button>
+  )
+
+  return (
+    <div className="estacion-roster">
+      <p className="estacion-prenda__detalle">
+        <strong>Nombres y números ({filas.length})</strong>
+      </p>
+      <div className="estacion-roster__botones">
+        {boton('lista', 'Copiar lista')}
+        {boton('nombres', 'Copiar nombres')}
+        {boton('numeros', 'Copiar números')}
+      </div>
+      <table className="estacion-roster__tabla">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Nombre</th>
+            <th>Talla</th>
+            <th>Número</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filas.map((r, i) => (
+            <tr key={i}>
+              <td className="estacion-roster__n">{i + 1}</td>
+              <td>{r.nombre || '—'}</td>
+              <td>{r.talla || '—'}</td>
+              <td>{r.numero || '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
 
 function PrendaResumen({ item }) {
   const sizesText = (item.sizes || [])
@@ -44,6 +113,7 @@ function PrendaResumen({ item }) {
           <BordadosMiniaturas bordados={item.impresiones} />
         </>
       )}
+      <RosterEstacion item={item} />
     </div>
   )
 }

@@ -6515,3 +6515,14 @@ frontend (el estado lo calcula el servidor):
   pasos del detalle, que sigue siendo lineal y solo marca el estado actual.
 - Probado en PGlite con las funciones reales (`recompute_order_status` de V23 y `update_orden_etapa`): 18
   comprobaciones.
+
+### 2026-10-09 — Estaciones: lista de nombres y números para copiar (Samuel)
+
+Pedido de Alfredo: que Samuel vea la lista de nombres y números de las órdenes de sublimación y pueda
+copiarla para sus diseños. En la pantalla de la orden de la estación (`EstacionOrderPage`, `RosterEstacion`),
+dentro de cada prenda que lleve lista: tabla con #, nombre, talla y número, y tres botones — **Copiar lista**
+(nombre, talla y número separados por tabulador: al pegar en Excel o en una tabla cada dato cae en su
+columna), **Copiar nombres** y **Copiar números** (una columna, mismo orden). El texto también se puede
+seleccionar a mano. Sale en cualquier estación que abra una orden con lista, no solo sublimado. Sin SQL
+(`utils/roster.js`: `rosterDePrenda`, `textoRoster`). Probado en el ejemplo local con rol sublimado; no con
+la cuenta de Samuel ni pegando en su programa de diseño.

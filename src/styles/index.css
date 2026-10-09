@@ -4416,3 +4416,37 @@ h4 {
 .producto-card[aria-pressed='true'] {
   box-shadow: 0 0 0 2px var(--color-black);
 }
+
+/* Lista de nombres y números en la pantalla de estación (para copiar y pegar) */
+.estacion-roster {
+  margin-top: 8px;
+}
+.estacion-roster__botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 8px;
+}
+.estacion-roster__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  user-select: text;
+}
+.estacion-roster__tabla th {
+  text-align: left;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted, #6b6558);
+  padding: 4px 6px;
+}
+.estacion-roster__tabla td {
+  padding: 5px 6px;
+  border-top: 1px solid var(--color-border, #e5e0d5);
+}
+.estacion-roster__n {
+  width: 28px;
+  color: var(--color-muted, #6b6558);
+  user-select: none;
+}
