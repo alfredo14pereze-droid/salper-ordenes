@@ -6485,7 +6485,8 @@ frontend (el estado lo calcula el servidor):
 - `orden_etapas.estado_cambiado_en`: cuándo cambió el estado de la etapa por última vez (trigger
   `orden_etapas_estado_cambiado_trg`, solo cuando cambia `estado`; pausar, corregir horas o el reporte de
   impresión no lo mueven). Las filas existentes se rellenaron con la hora de fin o de inicio.
-- `recompute_order_status` (única redefinición; con guarda de que la viva era la de V23): entre las etapas en
+- `recompute_order_status` (parche de dos trozos sobre la función VIVA, con guarda; no se redefinió porque la
+  viva trae además la línea de seguridad de V66b que bloquea a `captura_produccion`, y se conserva): entre las etapas en
   proceso o completadas con estado propio (corte, sublimado, costura, bordado, terminado) gana **la que cambió
   más recientemente**; la secuencia solo desempata. Lo demás igual: no toca órdenes canceladas, por confirmar
   ni entregadas; impresión de sublimación e impresión por prenda siguen sin estado propio.
