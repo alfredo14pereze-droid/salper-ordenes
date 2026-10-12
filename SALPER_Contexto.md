@@ -6532,3 +6532,25 @@ la cuenta de Samuel ni pegando en su programa de diseño.
 Nueva en la lista cerrada de prendas de sublimación. Se captura igual que "Short"
 (`GARMENT_SHORT_KEYS_SUBLIMACION`): lista de solo números (sin nombre) y la pregunta "¿Lleva bolsas?"; sin
 cuello ni manga. Sin SQL.
+
+### V149 — Estado de la orden: terminado completo manda (2026-10-12)
+
+El hermano de Alfredo reportó que "las cobijas" (VEN-005) le salían en "Bordado" estando terminadas, y que
+"en algunas sí se actualiza y en otras no". Diagnóstico (solo lectura): la regla de V147/V148 estaba bien
+aplicada y las 62 órdenes activas coincidían con ella; el problema es que el estado depende de la hora en que
+cada estación toca su botón. En VEN-005 terminado se completó el 8-oct a las 16:29 y bordado se cerró a las
+17:49, así que "lo último" era bordado.
+- `schema_v149_estado_terminado_manda.sql` (parche de una línea sobre la función viva, mismas guardas):
+  **si terminado está completado, el estado es "Terminado" siempre**; si no, la etapa en proceso más reciente;
+  si no hay ninguna en proceso, la completada más reciente.
+- **Aplicado el 2026-10-12** (hash verificado; función con V147 + V148 + V149 + la línea de V66b, una sola
+  copia). Al recalcular cambiaron 2 de 62: SUB-022 y SUB-027 (Costura terminada → Terminado).
+- Contra aceptada por Alfredo: una orden terminada que regresa a una etapa anterior por un arreglo sigue
+  diciendo "Terminado" hasta que un administrador regrese la etapa de terminado.
+- Probado en PGlite sobre V147 + V148: 14 comprobaciones.
+- **Pendiente (NO hecho): estados "En impresión" / "Impresa".** Las etapas `impresion` (sublimación) e
+  `impresion_prenda` no tienen estado propio, así que no mueven el resumen (ESC-044 con impresión en proceso
+  dice "Cortado"). Agregarlos pide cambiar el CHECK de `orders.status` y el frontend, y tiene un riesgo: una
+  app instalada sin actualizar (la PWA no se actualiza sola) no conoce el estado nuevo y lo pinta como
+  "Por Confirmar" en rojo (`getStatus` cae al primero de la lista). Conviene hacerlo junto con la
+  actualización automática de la app, o cambiando antes ese valor por omisión.
