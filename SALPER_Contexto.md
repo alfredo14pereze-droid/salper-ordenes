@@ -6554,3 +6554,35 @@ cada estación toca su botón. En VEN-005 terminado se completó el 8-oct a las 
   app instalada sin actualizar (la PWA no se actualiza sola) no conoce el estado nuevo y lo pinta como
   "Por Confirmar" en rojo (`getStatus` cae al primero de la lista). Conviene hacerlo junto con la
   actualización automática de la app, o cambiando antes ese valor por omisión.
+
+### 2026-10-12 — La app se actualiza sola; estados "En impresión" / "Impresa" (frontend listo, V150 SIN aplicar)
+
+Decisión de Alfredo: agregar los estados de impresión, pero junto con la actualización automática de la app,
+porque una versión vieja pinta un estado desconocido como "Por Confirmar".
+
+**La app se actualiza sola** (en `main` desde el 2026-10-12):
+- `vite.config.js`: `registerType: 'autoUpdate'` + `workbox.skipWaiting` / `clientsClaim` explícitos. **Ojo:**
+  con `injectRegister: false` el plugin NO los activa solo aunque diga `autoUpdate`; sin esas dos líneas la
+  versión nueva se queda en espera y nadie se actualiza (se comprobó en el `sw.js` generado).
+- `UpdatePrompt.jsx`: busca versión nueva solo **al abrir la app y al cambiar de pantalla**; ya no cada 30
+  minutos ni al volver a la pestaña (que es cuando alguien regresa a seguir capturando). Al encontrarla, la
+  página se recarga sola. El aviso "Hay una nueva versión" queda solo como respaldo.
+- Apps que todavía tienen la versión vieja (modo aviso): reciben el service worker nuevo sin recargarse de
+  golpe y sin aviso; toman la versión nueva **la siguiente vez que abran o recarguen la app**. De ahí en
+  adelante se actualizan solas.
+- Probado de verdad en local con el build de producción (`salper-dist-preview`, puerto 5196): versión vieja
+  instalada → llega la nueva (no recarga, no avisa) → al reabrir carga la nueva → con la nueva, un tercer
+  build se aplicó solo al cambiar de pantalla.
+- `getStatus`: un estado que la app no conoce sale en gris con su nombre (antes caía en "Por Confirmar").
+
+**Estados nuevos** (`en_impresion` "En impresión", `impreso` "Impresa", familia índigo; filtro "Impresión"):
+ya están en `STATUSES` / `STATUS_GROUPS`, así que salen en la barra de pasos, los filtros y el selector de
+corrección manual, pero **ninguna orden los tendrá hasta aplicar V150**.
+
+**`supabase/schema_v150_estados_impresion.sql` — NO aplicado, a propósito.** Agrega los dos valores al CHECK
+de `orders.status`, hace que `update_order_status` los acepte y que `recompute_order_status` cuente las
+etapas `impresion` e `impresion_prenda` (parches con guarda sobre lo vivo), y recalcula las órdenes activas.
+Probado en PGlite (15 comprobaciones) y verificado por consulta que la base viva tiene el texto que los
+parches esperan (CHECK con los 13 valores, una sola copia de cada función). **Aplicarlo cuando la versión
+nueva lleve al menos un día desplegada** (a partir del 2026-10-13), para que las apps instaladas ya la tengan.
+Hasta entonces el corrector manual rechaza "En impresión"/"Impresa" si alguien los elige.
