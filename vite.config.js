@@ -9,13 +9,14 @@ import { VitePWA } from 'vite-plugin-pwa'
 //
 // PWA: el service worker SOLO precachea los archivos de la app (JS, CSS, HTML,
 // íconos). No hay runtimeCaching, así que Supabase y cualquier API van siempre
-// directo a la red (datos en vivo). registerType 'prompt': un deploy nuevo no
-// se aplica solo; la app muestra el aviso "Hay una nueva versión" (UpdatePrompt).
+// directo a la red (datos en vivo). registerType 'autoUpdate' (V150): un deploy nuevo
+// se aplica solo y la página se recarga; cuándo se busca la versión nueva lo
+// decide UpdatePrompt (al abrir la app y al cambiar de pantalla).
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       injectRegister: false,
       includeAssets: ['favicon.ico', 'favicon-16x16.png', 'favicon-32x32.png', 'apple-touch-icon.png'],
       manifest: {
@@ -40,6 +41,11 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
+        // Con injectRegister: false el plugin NO activa esto solo, aunque
+        // registerType sea 'autoUpdate': sin estas dos líneas la versión nueva
+        // se quedaría "en espera" y nadie se actualizaría.
+        skipWaiting: true,
+        clientsClaim: true,
         // Sin runtimeCaching a propósito: nada de Supabase/API en caché.
       },
     }),

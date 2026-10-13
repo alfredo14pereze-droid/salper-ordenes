@@ -1,25 +1,29 @@
 import { useRegisterSW } from 'virtual:pwa-register/react'
 
-const CHECK_EVERY_MS = 30 * 60 * 1000
-
-// Aviso de nueva versión: el service worker nuevo queda "en espera" hasta que
-// la persona pulse Actualizar (así nunca se queda pegada una versión vieja ni
-// se recarga sola a media captura).
+// La app se actualiza SOLA (V150, registerType 'autoUpdate' en vite.config.js):
+// cuando hay una versión nueva, el service worker la instala y la página se
+// recarga. Antes había que pulsar "Actualizar" y mucha gente se quedaba con
+// versiones viejas sin saberlo.
+//
+// Para no recargar a media captura, solo se busca versión nueva en dos
+// momentos: al abrir la app y al cambiar de pantalla (un formulario a medio
+// llenar no sobrevive a un cambio de pantalla de todos modos; "Nueva orden"
+// guarda su borrador). Ya no se busca cada 30 minutos ni al volver a la
+// pestaña, que es justo cuando alguien regresa a seguir capturando.
 export default function UpdatePrompt() {
   const {
     needRefresh: [needRefresh],
     updateServiceWorker,
   } = useRegisterSW({
+    immediate: true,
     onRegisteredSW(_url, registration) {
       if (!registration) return
-      const check = () => registration.update().catch(() => {})
-      setInterval(check, CHECK_EVERY_MS)
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') check()
-      })
+      window.addEventListener('hashchange', () => registration.update().catch(() => {}))
     },
   })
 
+  // Con autoUpdate no debería hacer falta; se queda por si un navegador deja
+  // la versión nueva en espera.
   if (!needRefresh) return null
   return (
     <div className="update-banner" role="status">

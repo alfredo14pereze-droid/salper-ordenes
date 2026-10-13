@@ -36,6 +36,12 @@
 export const STATUSES = [
   { key: 'en_confirmacion', label: 'Por Confirmar', color: '#c7351f', textColor: '#ffffff' },
   { key: 'confirmado', label: 'Confirmada', color: '#64748b', textColor: '#ffffff' },
+  // V150 — impresión (la de papel de sublimación y la impresión por prenda):
+  // antes no tenían estado propio y la orden se quedaba en el anterior.
+  // Familia índigo, sin usar antes. Van aquí porque en sublimación la
+  // impresión es el primer paso.
+  { key: 'en_impresion', label: 'En impresión', color: '#d3dbfa', textColor: '#16130f' },
+  { key: 'impreso', label: 'Impresa', color: '#4a5bd0', textColor: '#ffffff' },
   { key: 'en_corte', label: 'En corte', color: '#bfe3fa', textColor: '#16130f' },
   { key: 'cortado', label: 'Cortado', color: '#1f7dc4', textColor: '#ffffff' },
   { key: 'en_sublimado', label: 'En sublimado', color: '#f8cfe3', textColor: '#16130f' },
@@ -64,6 +70,7 @@ export const STATUS_KEYS = STATUSES.map((s) => s.key)
 // filtrar, no cambia lo que se guarda ni lo que se muestra por orden.
 export const STATUS_GROUPS = [
   { key: 'confirmado', label: 'Confirmación', keys: ['en_confirmacion', 'confirmado'] },
+  { key: 'impresion', label: 'Impresión', keys: ['en_impresion', 'impreso'] },
   { key: 'cortado', label: 'Cortado', keys: ['en_corte', 'cortado'] },
   { key: 'sublimado', label: 'Sublimado', keys: ['en_sublimado', 'sublimado'] },
   { key: 'produccion', label: 'Costura', keys: ['en_produccion', 'produccion'] },

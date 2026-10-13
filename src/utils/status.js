@@ -1,7 +1,14 @@
 import { STATUSES, STATUS_GROUPS } from '../lib/constants'
 
+// Un estado que esta versión de la app no conoce (uno nuevo que todavía no
+// llega a este dispositivo) se muestra en gris con su nombre tal cual. Antes
+// caía en el primero de la lista y se pintaba como "Por Confirmar" en rojo.
 export function getStatus(key) {
-  return STATUSES.find((s) => s.key === key) || STATUSES[0]
+  const conocido = STATUSES.find((s) => s.key === key)
+  if (conocido) return conocido
+  if (!key) return STATUSES[0]
+  const label = String(key).replace(/_/g, ' ')
+  return { key, label: label.charAt(0).toUpperCase() + label.slice(1), color: '#64748b', textColor: '#ffffff' }
 }
 
 export function getStatusLabel(key) {
