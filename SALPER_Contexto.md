@@ -6579,7 +6579,12 @@ porque una versión vieja pinta un estado desconocido como "Por Confirmar".
 ya están en `STATUSES` / `STATUS_GROUPS`, así que salen en la barra de pasos, los filtros y el selector de
 corrección manual, pero **ninguna orden los tendrá hasta aplicar V150**.
 
-**`supabase/schema_v150_estados_impresion.sql` — NO aplicado, a propósito.** Agrega los dos valores al CHECK
+**ACTUALIZACIÓN 2026-10-13: V150 APLICADO** (pedido de Alfredo; hash verificado; comprobado por consulta: CHECK
+con los dos valores, `update_order_status` y `recompute_order_status` parcheadas, una sola copia de cada una,
+la línea de V66b intacta). Al recalcular cambiaron 2 de 66 órdenes activas: ESC-044 (Cortado → En impresión)
+y ESC-037 (Costura terminada → Impresa). Lo que sigue describe cómo quedó preparado el día anterior.
+
+**`supabase/schema_v150_estados_impresion.sql` — (el 2026-10-12) NO aplicado, a propósito.** Agrega los dos valores al CHECK
 de `orders.status`, hace que `update_order_status` los acepte y que `recompute_order_status` cuente las
 etapas `impresion` e `impresion_prenda` (parches con guarda sobre lo vivo), y recalcula las órdenes activas.
 Probado en PGlite (15 comprobaciones) y verificado por consulta que la base viva tiene el texto que los
