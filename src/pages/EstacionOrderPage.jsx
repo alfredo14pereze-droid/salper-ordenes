@@ -475,15 +475,20 @@ function EstacionSurtidoTerminado({ order, onConfirmado }) {
     setBusy(true)
     setError(null)
 
-    const guardadas = []
-    order.items.forEach((item, itemIndex) => {
-      ;(item.sizes || []).forEach((size, sizeIndex) => {
+    // V151 — una por una, no todas a la vez: cada llamada reescribe la lista
+    // completa de prendas de la orden, y en paralelo unas pisaban a otras.
+    let saveError = null
+    for (const [itemIndex, item] of order.items.entries()) {
+      for (const [sizeIndex, size] of (item.sizes || []).entries()) {
         const edit = ediciones[itemIndex][sizeIndex]
-        guardadas.push(setItemSurtido(order.id, itemIndex, size.talla, edit.cantidad === '' ? null : Number(edit.cantidad), edit.comentario))
-      })
-    })
-    const resultados = await Promise.all(guardadas)
-    const saveError = resultados.find((r) => r.error)?.error
+        const { error: err } = await setItemSurtido(order.id, itemIndex, size.talla, edit.cantidad === '' ? null : Number(edit.cantidad), edit.comentario)
+        if (err) {
+          saveError = err
+          break
+        }
+      }
+      if (saveError) break
+    }
     if (saveError) {
       setBusy(false)
       setError(saveError)
