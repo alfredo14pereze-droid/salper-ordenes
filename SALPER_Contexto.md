@@ -6591,3 +6591,22 @@ Probado en PGlite (15 comprobaciones) y verificado por consulta que la base viva
 parches esperan (CHECK con los 13 valores, una sola copia de cada función). **Aplicarlo cuando la versión
 nueva lleve al menos un día desplegada** (a partir del 2026-10-13), para que las apps instaladas ya la tengan.
 Hasta entonces el corrector manual rechaza "En impresión"/"Impresa" si alguien los elige.
+
+### V151 — URGENTE: "Confirmar y generar reporte" de terminado borraba tallas (2026-10-14)
+
+Terminado reportó "No se encontró la talla indicada en esa prenda" al confirmar SUB-026. Causa (viene de V26,
+septiembre): `set_item_surtido` guarda con `jsonb_set(..., to_jsonb(valor))`; `jsonb_set` es estricta y con
+valor SQL NULL regresa NULL, así que **una talla marcada "Correcta" sin comentario quedaba en null** dentro de
+`orders.items` (se perdía la talla y su cantidad). La app lo escondía porque `limpiarItems` filtra los nulls al
+leer. Además la pantalla mandaba todas las tallas en paralelo y cada llamada reescribía la lista completa.
+- **Daño encontrado: 16 órdenes, 65 de 145 tallas borradas** (10 ya entregadas). Lista y pistas en
+  `.claude/tallas-borradas-2026-10-14.xlsx` (worktree `salper-ordenes-catalogo`, no está en git porque trae
+  datos de clientes). Se corrigen a mano editando las prendas desde el detalle (ventas / administradores),
+  con la orden en papel o el PDF de confirmación. SUB-028 se recupera completa con su lista de nombres;
+  SUB-026 en parte con la foto que mandó terminado (XL×10, 2XL×5, 3XL×3, XS×3, CH×12).
+- **`schema_v151_surtido_no_borra_tallas.sql` APLICADO el 2026-10-14** (hash verificado; parche con guarda
+  sobre la función viva): `coalesce(..., 'null'::jsonb)` en los dos `jsonb_set` y `for update` al leer la
+  orden. Verificado: una sola copia, `anon` sin acceso, y las tallas borradas siguen en 65 (no hubo más).
+  Reproducido y probado en PGlite con la función real de V26.
+- Frontend (en `main`): la pantalla de terminado manda las tallas una por una.
+- **Lección:** en jsonb, nunca `jsonb_set(x, path, to_jsonb(valor_que_puede_ser_null))` sin `coalesce`.
