@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient'
+import { contarTallasDanadas } from '../utils/tallasDanadas'
 
 // Toda esta capa asume que `supabase` puede ser null (si faltan las env vars,
 // ver lib/supabaseClient.js). Cada función revisa eso primero para devolver
@@ -30,7 +31,7 @@ function limpiarItems(items) {
 }
 
 function limpiarOrden(order) {
-  return order ? { ...order, items: limpiarItems(order.items) } : order
+  return order ? { ...order, items: limpiarItems(order.items), tallas_danadas: contarTallasDanadas(order.items) } : order
 }
 
 // Dashboard/Resumen/Calendario/Órdenes pasadas viven todos de este hook

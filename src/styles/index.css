@@ -4450,3 +4450,12 @@ h4 {
   color: var(--color-muted, #6b6558);
   user-select: none;
 }
+
+/* V152 — aviso de tallas borradas en una orden */
+.aviso-tallas-danadas {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid currentColor;
+  font-weight: 600;
+}

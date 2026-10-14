@@ -14,6 +14,7 @@ import OrderFacturacionCard from '../components/orders/OrderFacturacionCard'
 import OrderDetailsCard from '../components/orders/OrderDetailsCard'
 import OrderNotesCard from '../components/orders/OrderNotesCard'
 import OrderReconfirmBanner from '../components/orders/OrderReconfirmBanner'
+import AvisoTallasDanadas from '../components/orders/AvisoTallasDanadas'
 import EstimatedDaysCard from '../components/orders/EstimatedDaysCard'
 import CancelOrderCard from '../components/orders/CancelOrderCard'
 import OrderEtapasCard from '../components/orders/OrderEtapasCard'
@@ -168,6 +169,7 @@ function OrderDetailContent() {
       )}
       {preview && <PdfPreviewModal blob={preview.blob} fileName={preview.fileName} onClose={() => setPreview(null)} />}
 
+      <AvisoTallasDanadas order={order} />
       <OrderReconfirmBanner order={order} onUpdated={refresh} />
 
       <StatusStepper status={order.status} />

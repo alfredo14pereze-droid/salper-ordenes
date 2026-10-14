@@ -4,6 +4,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useOrder } from '../hooks/useOrder'
 import { fetchOrdenEtapas, updateOrdenEtapa, pausarOrdenEtapa, updateOrderStatus, setItemSurtido, reportarImpresion } from '../services/ordersService'
 import { rosterDePrenda, textoRoster } from '../utils/roster'
+import AvisoTallasDanadas from '../components/orders/AvisoTallasDanadas'
 import { TINTAS, formatMl, numero, reporteDeEtapa, totalTinta, validarReporteImpresion } from '../utils/impresionReporte'
 import { fetchInventarioTelas, marcarCorte } from '../services/movimientosTelaService'
 import { fetchOrdenBordados } from '../services/bordadosService'
@@ -743,6 +744,7 @@ export default function EstacionOrderPage() {
       {order.equipo && <p className="estacion-order__cliente">Equipo: {order.equipo}</p>}
       {order.numero_corte && <p className="estacion-order__cliente">Corte: {order.numero_corte}</p>}
       {order.created_by_nombre && <p className="pantone-hint">Creada por: {order.created_by_nombre}</p>}
+      <AvisoTallasDanadas order={order} paraEstacion />
 
       <div className="estacion-list" style={{ marginTop: 14 }}>
         {(order.items || []).map((item, i) => (
