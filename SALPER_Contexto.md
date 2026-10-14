@@ -6610,3 +6610,25 @@ leer. Además la pantalla mandaba todas las tallas en paralelo y cada llamada re
   Reproducido y probado en PGlite con la función real de V26.
 - Frontend (en `main`): la pantalla de terminado manda las tallas una por una.
 - **Lección:** en jsonb, nunca `jsonb_set(x, path, to_jsonb(valor_que_puede_ser_null))` sin `coalesce`.
+
+### V152 — Protección de las prendas: historial, candado y aviso (2026-10-14)
+
+Pedido de Alfredo después de V151, para que no vuelva a pasar ni pase en silencio.
+- **`schema_v152_proteccion_prendas.sql` APLICADO el 2026-10-14** (hash verificado; comprobado: 3 triggers,
+  tabla creada, `anon` sin acceso). Aditivo, no toca funciones existentes:
+  - **Historial** `orden_items_historial`: cada cambio de `orders.items` guarda cómo estaban antes y después,
+    quién (`auth.uid()` + nombre) y cuándo; también cuando se borra la orden (sin llave hacia `orders`, para
+    que sobreviva). Lo leen admin_general, admin_fabrica y admin_tienda. Sirve para recuperar a mano: todavía
+    no hay pantalla para verlo.
+  - **Candado** `orders_items_candado_trg` (before insert/update of items; corre antes del folio, así que un
+    rechazo no gasta folio): rechaza el guardado si deja MÁS tallas o prendas null que antes
+    (`orders_items_vacios(items)`). Las órdenes ya dañadas se pueden seguir moviendo y editando, y al
+    recapturar sus prendas quedan limpias. Probado en PGlite con la función de V26 (la del error): ahora
+    falla con mensaje en vez de borrar.
+- **Aviso** (frontend, en `main`): `AvisoTallasDanadas` en el detalle de la orden y en la pantalla de
+  estación (para estaciones: "avisa a ventas antes de terminarla"). El conteo sale de `contarTallasDanadas`
+  (`utils/tallasDanadas.js`), que `limpiarOrden` agrega como `tallas_danadas`.
+- Al aplicar, SUB-026 ya no tenía tallas dañadas (la repusieron antes); quedaban 15 órdenes con 53 tallas
+  (consulta: `select order_number, orders_items_vacios(items) from orders where orders_items_vacios(items) > 0`).
+- **Pendiente para decidir (de Alfredo):** respaldos diarios de la base (plan Pro de Supabase o un respaldo
+  nocturno propio).
