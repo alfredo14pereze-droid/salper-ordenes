@@ -6632,3 +6632,23 @@ Pedido de Alfredo después de V151, para que no vuelva a pasar ni pase en silenc
   (consulta: `select order_number, orders_items_vacios(items) from orders where orders_items_vacios(items) > 0`).
 - **Pendiente para decidir (de Alfredo):** respaldos diarios de la base (plan Pro de Supabase o un respaldo
   nocturno propio).
+
+### V153 — Corte: elegir la tela si la orden no trae, y registrar el corte después (2026-10-16)
+
+Pancho no pudo capturar trazo/hojas en VEN-004 ni IND-007: sus prendas no tienen tela asignada y, desde V142,
+la pantalla de corte en ese caso solo ofrecía "Cortado" sin registrar tela (`marcar_corte` rechazaba la orden
+sin tela). Las dos quedaron cortadas (16-oct y 14-oct) sin movimiento de tela. Al 16-oct había 9 órdenes más
+pendientes de corte sin tela (IND-024, -025, -026, -030, -031, -032, -033, ESC-053, ESC-054).
+- **`schema_v153_corte_sin_tela_y_despues.sql` APLICADO el 2026-10-16** (hash verificado; parche con guarda
+  sobre la función viva, conserva V142; una sola copia, `anon` sin acceso): una orden sin tela en sus prendas
+  se puede cortar registrando la tela que elija corte (debe traer al menos una tela con cantidad), y el corte
+  de una orden **no se registra dos veces** (si ya tiene `consumo_corte`, se rechaza). Si la etapa ya estaba
+  completada, se queda así (V139 no mueve sus horas). Probado en PGlite con la función viva (V131 + V142).
+- Pantalla de corte (`EstacionOrderPage`, en `main`):
+  - Orden sin tela: el formulario normal con un selector **"Tela"** al inicio (corte "libre"). Queda un enlace
+    chico "Marcar cortada sin registrar la tela" como último recurso.
+  - Orden ya cortada sin registro (`CorteTerminado`, lee `v_movimientos_tela`): aviso + botón **"Registrar el
+    corte"**, que abre el mismo formulario y guarda con `marcar_corte`. Ojo: aparece en TODAS las órdenes
+    cortadas sin movimiento, incluidas ~50 viejas de antes de que existiera el registro de tela.
+- Probado en el ejemplo local con rol corte (registrar después en VEN-004 con 12.5 m; orden sin tela por cortar).
+- Pendiente sugerido: exigir tela al crear órdenes que llevan corte (hoy se puede crear sin tela).
