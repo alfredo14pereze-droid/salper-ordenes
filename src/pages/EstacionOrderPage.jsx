@@ -6,7 +6,7 @@ import { fetchOrdenEtapas, updateOrdenEtapa, pausarOrdenEtapa, updateOrderStatus
 import { rosterDePrenda, textoRoster } from '../utils/roster'
 import AvisoTallasDanadas from '../components/orders/AvisoTallasDanadas'
 import { TINTAS, formatMl, numero, reporteDeEtapa, totalTinta, validarReporteImpresion } from '../utils/impresionReporte'
-import { fetchInventarioTelas, marcarCorte } from '../services/movimientosTelaService'
+import { fetchInventarioTelas, fetchMovimientosPorOrden, marcarCorte } from '../services/movimientosTelaService'
 import { fetchOrdenBordados } from '../services/bordadosService'
 import { buildRemisionPdfBlob, remisionPdfFileName } from '../utils/generateOrderPdf'
 import { useAuth } from '../contexts/AuthContext'
@@ -142,13 +142,21 @@ function PrendaResumen({ item }) {
 // - `unaHoja` (órdenes con sublimado): es una sola hoja larga, así que no
 //   se pregunta el número de hojas (vale 1).
 let cortePk = 0
-const nuevoCorte = (telaId, extra = false, hojas = '') => ({ key: ++cortePk, telaId, extra, descripcion: '', largo: '', piezas: '', hojas })
+const nuevoCorte = (telaId, extra = false, hojas = '', libre = false) => ({ key: ++cortePk, telaId, extra, libre, descripcion: '', largo: '', piezas: '', hojas })
 
-function TelaUsadaCorte({ order, unaHoja = false, onCortado, onCortadoSinTela }) {
+//
+// V153 — una orden SIN tela en sus prendas ya no se queda sin registro: corte
+// elige la tela en el mismo formulario (corte "libre"). Y con `despues`, el
+// formulario sirve para registrar el corte de una orden que ya se marcó
+// cortada sin registrar tela (el servidor no deja registrarlo dos veces).
+function TelaUsadaCorte({ order, unaHoja = false, onCortado, onCortadoSinTela, despues = false }) {
   const telaIds = useMemo(() => [...new Set((order.items || []).map((i) => i.tela_id).filter(Boolean))], [order.items])
+  const sinTela = telaIds.length === 0
   const [telas, setTelas] = useState({})
   const hojasInicial = unaHoja ? '1' : ''
-  const [cortes, setCortes] = useState(() => telaIds.map((id) => nuevoCorte(id, false, hojasInicial)))
+  const [cortes, setCortes] = useState(() =>
+    sinTela ? [nuevoCorte('', false, hojasInicial, true)] : telaIds.map((id) => nuevoCorte(id, false, hojasInicial))
+  )
   const [confirmando, setConfirmando] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
@@ -160,20 +168,6 @@ function TelaUsadaCorte({ order, unaHoja = false, onCortado, onCortadoSinTela })
       setTelas(map)
     })
   }, [])
-
-  if (telaIds.length === 0) {
-    return (
-      <div className="estacion-consumo">
-        <p className="pantone-hint">
-          Esta orden no tiene tela asignada a sus prendas. Puedes marcarla como cortada, pero no se va a registrar la tela usada — avisa a tienda para que
-          le pongan la tela.
-        </p>
-        <button type="button" className="btn btn--primary estacion-btn" onClick={onCortadoSinTela}>
-          Cortado
-        </button>
-      </div>
-    )
-  }
 
   const nombreTela = (id) => telas[id]?.nombre || 'Tela'
   const unidadTela = (id) => telas[id]?.unidad || ''
@@ -188,11 +182,14 @@ function TelaUsadaCorte({ order, unaHoja = false, onCortado, onCortadoSinTela })
 
   const metrosDe = (c) => (Number(c.largo) > 0 && Number(c.hojas) > 0 ? Number(c.largo) * Number(c.hojas) : null)
   const piezasDe = (c) => (Number(c.piezas) > 0 && Number(c.hojas) > 0 ? Number(c.piezas) * Number(c.hojas) : null)
-  const completo = (c) => metrosDe(c) != null && piezasDe(c) != null && (!c.extra || c.descripcion.trim() !== '')
+  const completo = (c) => metrosDe(c) != null && piezasDe(c) != null && !!c.telaId && (!c.extra || c.descripcion.trim() !== '')
 
   // Cada tela de la orden necesita al menos un corte completo; los cortes
   // agregados tienen que estar completos (o quitarse).
-  const todasCapturadas = telaIds.every((id) => cortes.some((c) => !c.extra && c.telaId === id && completo(c))) && cortes.filter((c) => c.extra).every(completo)
+  // Sin tela en la orden: basta un corte completo con su tela elegida.
+  const todasCapturadas = sinTela
+    ? cortes.length > 0 && cortes.every(completo)
+    : telaIds.every((id) => cortes.some((c) => !c.extra && c.telaId === id && completo(c))) && cortes.filter((c) => c.extra).every(completo)
 
   const completos = cortes.filter(completo)
   const telasUsadas = [...new Set(completos.map((c) => c.telaId))]
@@ -214,6 +211,12 @@ function TelaUsadaCorte({ order, unaHoja = false, onCortado, onCortadoSinTela })
 
   return (
     <div className="estacion-consumo">
+      {sinTela && (
+        <p className="pantone-hint">
+          {despues ? 'Esta orden se marcó cortada sin registrar la tela. ' : ''}
+          Las prendas de esta orden no tienen tela asignada: elige aquí la tela que usaste.
+        </p>
+      )}
       {cortes.map((c, i) => {
         const unidad = unidadTela(c.telaId)
         const metros = metrosDe(c)
@@ -221,8 +224,21 @@ function TelaUsadaCorte({ order, unaHoja = false, onCortado, onCortadoSinTela })
         return (
           <div key={c.key} className="estacion-trazo">
             <p className="field-label">
-              {c.extra ? `Corte ${i + 1}` : nombreTela(c.telaId)} {!c.extra && unidad ? `(${unidad})` : ''}
+              {c.extra ? `Corte ${i + 1}` : c.libre ? 'Tela usada' : nombreTela(c.telaId)} {!c.extra && !c.libre && unidad ? `(${unidad})` : ''}
             </p>
+            {c.libre && (
+              <label>
+                Tela *
+                <select className="input" value={c.telaId} onChange={(e) => actualizar(c.key, { telaId: e.target.value })}>
+                  <option value="">Elige la tela…</option>
+                  {Object.keys(telas).map((id) => (
+                    <option key={id} value={id}>
+                      {nombreTela(id)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             {c.extra && (
               <div className="form-row">
                 <label>
@@ -238,6 +254,7 @@ function TelaUsadaCorte({ order, unaHoja = false, onCortado, onCortadoSinTela })
                 <label>
                   Tela
                   <select className="input" value={c.telaId} onChange={(e) => actualizar(c.key, { telaId: e.target.value })}>
+                    {!c.telaId && <option value="">Elige la tela…</option>}
                     {[...new Set([...telaIds, ...Object.keys(telas)])].map((id) => (
                       <option key={id} value={id}>
                         {nombreTela(id)}
@@ -270,7 +287,7 @@ function TelaUsadaCorte({ order, unaHoja = false, onCortado, onCortadoSinTela })
                 {piezas != null && `${piezas} piezas cortadas`}
               </p>
             )}
-            {c.extra && (
+            {(c.extra || (c.libre && cortes.length > 1)) && (
               <button type="button" className="btn btn--ghost btn--small" onClick={() => quitar(c.key)}>
                 Quitar este corte
               </button>
@@ -278,18 +295,28 @@ function TelaUsadaCorte({ order, unaHoja = false, onCortado, onCortadoSinTela })
           </div>
         )
       })}
-      <button type="button" className="btn btn--secondary estacion-btn" onClick={() => setCortes((prev) => [...prev, nuevoCorte(telaIds[0], true, hojasInicial)])}>
+      <button type="button" className="btn btn--secondary estacion-btn" onClick={() => setCortes((prev) => [...prev, nuevoCorte(telaIds[0] || '', true, hojasInicial)])}>
         + Agregar otro corte
       </button>
       {error && <p className="form-error">{error.message}</p>}
       {!confirmando ? (
-        <button type="button" className="btn btn--primary estacion-btn" disabled={!todasCapturadas} onClick={() => setConfirmando(true)}>
-          Cortado
-        </button>
+        <>
+          <button type="button" className="btn btn--primary estacion-btn" disabled={!todasCapturadas} onClick={() => setConfirmando(true)}>
+            {despues ? 'Registrar corte' : 'Cortado'}
+          </button>
+          {sinTela && !despues && onCortadoSinTela && (
+            // Último recurso (p. ej. tela que no está en el catálogo): se puede
+            // registrar después desde esta misma pantalla.
+            <button type="button" className="btn btn--ghost btn--small" onClick={onCortadoSinTela}>
+              Marcar cortada sin registrar la tela
+            </button>
+          )}
+        </>
       ) : (
         <div className="estacion-acciones">
           <p>
-            ¿Confirmas que se usaron {telasUsadas.map((id) => `${cantidadTxt(id, totalDeTela(id))} de ${nombreTela(id)}`).join(', ')} y la orden está cortada?
+            ¿Confirmas que se usaron {telasUsadas.map((id) => `${cantidadTxt(id, totalDeTela(id))} de ${nombreTela(id)}`).join(', ')}
+            {despues ? ' en el corte de esta orden?' : ' y la orden está cortada?'}
           </p>
           <button type="button" className="btn btn--primary estacion-btn" disabled={busy} onClick={handleConfirmar}>
             {busy ? 'Guardando…' : 'Sí, confirmar'}
@@ -300,6 +327,49 @@ function TelaUsadaCorte({ order, unaHoja = false, onCortado, onCortadoSinTela })
         </div>
       )}
     </div>
+  )
+}
+
+// V153 — corte ya marcado. Si se marcó sin registrar la tela (orden sin tela
+// en sus prendas, o "Cortado" de antes de V153), se puede registrar ahora.
+function CorteTerminado({ order, unaHoja, onRegistrado }) {
+  const [registrado, setRegistrado] = useState(null)
+  const [abierto, setAbierto] = useState(false)
+
+  useEffect(() => {
+    fetchMovimientosPorOrden(order.id).then(({ data, error }) => {
+      // Si no se pudo leer, mejor no ofrecer registrar (evita duplicar).
+      setRegistrado(error ? true : (data || []).some((m) => m.tipo === 'consumo_corte'))
+    })
+  }, [order.id])
+
+  if (registrado !== false) {
+    return (
+      <button type="button" className="btn btn--primary estacion-btn" disabled>
+        Cortado
+      </button>
+    )
+  }
+  if (!abierto) {
+    return (
+      <div className="estacion-consumo">
+        <p className="pantone-hint">Esta orden se marcó cortada sin registrar la tela usada.</p>
+        <button type="button" className="btn btn--secondary estacion-btn" onClick={() => setAbierto(true)}>
+          Registrar el corte
+        </button>
+      </div>
+    )
+  }
+  return (
+    <TelaUsadaCorte
+      order={order}
+      unaHoja={unaHoja}
+      despues
+      onCortado={() => {
+        setRegistrado(true)
+        onRegistrado?.()
+      }}
+    />
   )
 }
 
@@ -803,9 +873,7 @@ export default function EstacionOrderPage() {
                 )}
                 {esPrincipal && estacion.consumoPlaceholder ? (
                   terminada ? (
-                    <button type="button" className="btn btn--primary estacion-btn" disabled>
-                      Cortado
-                    </button>
+                    <CorteTerminado order={order} unaHoja={etapas.some((e) => e.etapa === 'sublimado')} onRegistrado={refresh} />
                   ) : (
                     <TelaUsadaCorte
                       order={order}
