@@ -6672,9 +6672,11 @@ corte; desde el detalle de la orden (administradores) no había forma.
 
 ### V155 — Frisa: catálogo de productos con secuencia de procesos propia (rama `frisa-productos`, 2026-10-16)
 
-**ESTADO: rama `frisa-productos` (sale de `main` en V154), SIN subir a `main`. `supabase/schema_v155_frisa_productos.sql`
-SIN aplicar en Supabase.** El frontend necesita el SQL aplicado antes de desplegarse (Catálogos → Frisa lee
-`productos_frisa`).
+**ESTADO: en `main`/producción desde el 2026-10-16 (rama `frisa-productos`). `supabase/schema_v155_frisa_productos.sql`
+aplicado el 2026-10-16 desde el SQL Editor (hash verificado) y comprobado por consulta: tipo `frisa` activo con
+prefijo FR, `folio_seq_frisa` en 1 sin usar, 8 procesos, los 8 productos con su secuencia, una sola copia de cada
+función, parches de `update_orden_etapa`/`pausar_orden_etapa` (descosido → terminado, reflejante → costura),
+`anon` sin acceso a las funciones nuevas, `orders_frisa_ins/upd` antes de `trg_assign_order_folio`, 0 órdenes Frisa.**
 
 **Decisión: secuencia de procesos por producto.** Para Frisa, las etapas de una orden ya no salen del orden
 fijo del tipo (corte → costura → bordado → terminado) sino de la secuencia de su producto, en el orden
@@ -6751,7 +6753,7 @@ con las funciones reales (`create_order`, `set_order_items`, `update_order_detai
 secuencia, cliente/precio fijos, órdenes abiertas no cambian, escolar intacto, se puede correr dos veces); y
 las pantallas reales en un ejemplo local sin base (`.claude/harness-frisa/`, servidor `salper-frisa-harness`,
 puerto 5195).
-**No probado:** contra Supabase (el SQL no se ha corrido), con sesión real, ni el PDF de la orden Frisa. No
+**No probado:** crear una orden Frisa real (gastaría un folio FR), con sesión real, ni el PDF de la orden Frisa. No
 probar `create_order_frisa` en producción "a ver si funciona": gasta folios FR.
 
 **Pendiente / para decidir:** número de corte de Frisa; proveedor de FR-PLA-OM-MC y FR-PLA-VE-MC; confirmar
