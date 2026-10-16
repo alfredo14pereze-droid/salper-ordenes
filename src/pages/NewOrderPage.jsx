@@ -35,6 +35,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { Loading, ErrorState } from '../components/common/States'
 import { buildOrderConfirmationPdfBlob, fetchPagosParaPdf, orderConfirmationPdfFileName } from '../utils/generateOrderPdf'
 import { canViewFinanzas } from '../utils/permissions'
+import { faltaTela, tipoLlevaCorte } from '../utils/telaObligatoria'
 import { CAPTURA_FECHA_CREACION_HABILITADA } from '../utils/featureFlags'
 
 const initialForm = {
@@ -474,6 +475,13 @@ function NewOrderForm() {
       const generaEtapas =
         (plantillas || []).some((p) => p.order_type_key === form.orderTypeKey && p.etapa !== 'bordado') ||
         cleanItems.some((item) => item.lleva_bordado)
+      // V154 — tela obligatoria si la orden pasa por corte.
+      const sinTela = tipoLlevaCorte(form.orderTypeKey, plantillas || []) ? faltaTela(cleanItems) : null
+      if (sinTela) {
+        setSubmitError(new Error(sinTela))
+        setSubmitting(false)
+        return
+      }
       if (!generaEtapas) {
         const tipoLabel = orderTypes.find((t) => t.key === form.orderTypeKey)?.label || form.orderTypeKey
         setSubmitError(

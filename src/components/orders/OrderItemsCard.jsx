@@ -4,7 +4,8 @@ import { useState } from 'react'
 import OrderItemsEditor from './OrderItemsEditor'
 import MaquilaItemsEditor from './MaquilaItemsEditor'
 import { esOrdenMaquila } from '../../utils/maquila'
-import { setOrderItems } from '../../services/ordersService'
+import { setOrderItems, fetchOrdenEtapas } from '../../services/ordersService'
+import { faltaTela } from '../../utils/telaObligatoria'
 import { createOrderTemplate } from '../../services/templatesService'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditOrder } from '../../utils/permissions'
@@ -195,6 +196,17 @@ export default function OrderItemsCard({ order, onUpdated }) {
   }
 
   async function handleSave() {
+    // V154 — mientras la orden no se haya cortado, sus prendas necesitan tela
+    // (una orden ya cortada se puede seguir corrigiendo sin pedirla).
+    if (!esOrdenBordado(order.order_type_key) && order.order_type_key !== 'maquila') {
+      const { data: etapas } = await fetchOrdenEtapas(order.id)
+      const corte = (etapas || []).find((e) => e.etapa === 'corte')
+      const sinTela = corte && corte.estado !== 'completado' ? faltaTela(items) : null
+      if (sinTela) {
+        setError(new Error(sinTela))
+        return
+      }
+    }
     if (esOrdenBordado(order.order_type_key)) {
       const bordadoError = validarItemsBordado(items)
       if (bordadoError) {

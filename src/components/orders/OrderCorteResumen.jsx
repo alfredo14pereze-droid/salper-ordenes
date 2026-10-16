@@ -1,18 +1,35 @@
 import { useEffect, useState } from 'react'
 import { fetchMovimientosPorOrden } from '../../services/movimientosTelaService'
+import { fetchOrdenEtapas } from '../../services/ordersService'
+import { CorteTerminado } from './CorteRegistro'
 
 // V102 — Parte 4: consumo estimado vs. real de corte, exclusivo
 // admin_fabrica/admin_general (gateado por el padre en OrderDetailPage).
 // Solo aparece si esta orden YA fue cortada (tiene movimientos
 // consumo_corte) — antes de eso no hay nada que comparar.
-export default function OrderCorteResumen({ orderId }) {
+//
+// V153 — si la orden ya se marcó cortada SIN registrar la tela, aquí mismo se
+// puede registrar el corte (el mismo formulario de la pantalla de corte).
+export default function OrderCorteResumen({ order, onUpdated }) {
+  const orderId = order.id
   const [movimientos, setMovimientos] = useState(null)
+  const [corte, setCorte] = useState(null)
 
   useEffect(() => {
     fetchMovimientosPorOrden(orderId).then(({ data }) => setMovimientos((data || []).filter((m) => m.tipo === 'consumo_corte')))
+    fetchOrdenEtapas(orderId).then(({ data }) => setCorte((data || []).find((e) => e.etapa === 'corte') || false))
   }, [orderId])
 
-  if (!movimientos || movimientos.length === 0) return null
+  if (!movimientos) return null
+  if (movimientos.length === 0) {
+    if (!corte || corte.estado !== 'completado') return null
+    return (
+      <div>
+        <h3 className="section-title section-title--small">Corte</h3>
+        <CorteTerminado order={order} onRegistrado={onUpdated} />
+      </div>
+    )
+  }
 
   return (
     <div>

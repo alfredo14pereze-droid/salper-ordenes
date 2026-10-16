@@ -395,7 +395,7 @@ function OrderItemsEditorGeneral({
               </label>
               <div>
                 <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
-                  Tela
+                  Tela *
                 </span>
               <TelaSelect
                 telas={telas}

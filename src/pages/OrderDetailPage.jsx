@@ -264,7 +264,7 @@ function OrderDetailContent() {
             no se ha cortado. */}
         {user && canGestionarInventarioTela(role) && (
           <section className="card">
-            <OrderCorteResumen orderId={order.id} />
+            <OrderCorteResumen order={order} onUpdated={refresh} />
           </section>
         )}
 
