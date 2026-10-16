@@ -6652,3 +6652,20 @@ pendientes de corte sin tela (IND-024, -025, -026, -030, -031, -032, -033, ESC-0
     cortadas sin movimiento, incluidas ~50 viejas de antes de que existiera el registro de tela.
 - Probado en el ejemplo local con rol corte (registrar después en VEN-004 con 12.5 m; orden sin tela por cortar).
 - Pendiente sugerido: exigir tela al crear órdenes que llevan corte (hoy se puede crear sin tela).
+
+### V154 — Tela obligatoria; registrar el corte también desde el detalle (2026-10-16)
+
+Pedido de Alfredo: "que la tela sea a fuerza, no se puede hacer una orden sin especificar tela". Y no le salía
+"Registrar el corte" en VEN-004 / IND-007: ese botón (V153) solo existía en la pantalla de la estación de
+corte; desde el detalle de la orden (administradores) no había forma.
+- **`schema_v154_tela_obligatoria.sql` APLICADO el 2026-10-16** (hash verificado; trigger comprobado):
+  `orders_tela_obligatoria_ins` (before insert, antes del folio): si el tipo tiene corte en su plantilla
+  (salvo `maquila` y `bordado`), cada prenda con contenido necesita `tela_id`. Solo al CREAR; las órdenes
+  existentes sin tela se siguen pudiendo mover y editar. Probado en PGlite (7 casos).
+- Frontend: "Tela *" en el editor de prendas; Nueva orden no guarda sin tela (`utils/telaObligatoria.js`:
+  `tipoLlevaCorte`, `faltaTela`, con pruebas); al editar prendas se pide tela mientras la etapa de corte no
+  esté completada.
+- El formulario de corte pasó a `components/orders/CorteRegistro.jsx` (`TelaUsadaCorte`, `CorteTerminado`) y
+  el detalle de la orden lo ofrece en la tarjeta de corte (`OrderCorteResumen`, admin_fabrica/admin_general)
+  cuando la orden está cortada sin registro de tela.
+- Al aplicar, VEN-004 e IND-007 seguían sin registro de corte.
