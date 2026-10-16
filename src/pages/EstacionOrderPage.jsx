@@ -12,6 +12,9 @@ import { buildRemisionPdfBlob, remisionPdfFileName } from '../utils/generateOrde
 import { useAuth } from '../contexts/AuthContext'
 import { estacionDeRol, etapasDeEstacion } from '../config/vistasPorRol'
 import { ETAPA_LABELS } from '../lib/constants'
+import { esOrdenFrisa, secuenciaDeOrden } from '../utils/frisa'
+import { etapaAnteriorEnSecuencia } from '../utils/ordenesDeEstacion'
+import FrisaSecuencia from '../components/orders/FrisaSecuencia'
 import { Loading, ErrorState } from '../components/common/States'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import Modal from '../components/talleros/Modal'
@@ -559,6 +562,13 @@ export default function EstacionOrderPage() {
       <p className="estacion-order__cliente">{order.client_name}</p>
       {order.equipo && <p className="estacion-order__cliente">Equipo: {order.equipo}</p>}
       {order.numero_corte && <p className="estacion-order__cliente">Corte: {order.numero_corte}</p>}
+      {/* V155 — Frisa: producto y su secuencia (las completadas con ✓). */}
+      {order.frisa_producto && (
+        <div style={{ margin: '6px 0' }}>
+          <p className="estacion-order__cliente">Producto: {order.frisa_producto.codigo}</p>
+          <FrisaSecuencia order={order} etapas={etapas} />
+        </div>
+      )}
       {order.created_by_nombre && <p className="pantone-hint">Creada por: {order.created_by_nombre}</p>}
       <AvisoTallasDanadas order={order} paraEstacion />
 
@@ -587,11 +597,24 @@ export default function EstacionOrderPage() {
             const pausada = estaPausada(et)
             const puedePausar = enProceso && estacion.pausa && soportaPausa(et)
             const finalLabel = estacion.finalLabels?.[et.etapa] || (esPrincipal && estacion.finalLabel) || 'Terminar'
+            // V155 — Frisa: el paso de la secuencia (impresiones, notas) y si ya le toca.
+            const pasoFrisa = secuenciaDeOrden(order).find((p) => p.etapa === et.etapa)
+            const anterior = esOrdenFrisa(order.order_type_key) ? etapaAnteriorEnSecuencia(et.etapa, etapas) : null
+            const esperaAnterior = et.estado === 'pendiente' && !!anterior && anterior.estado !== 'completado'
             return (
               <div key={et.etapa} className="estacion-acciones">
                 {misEtapas.length > 1 && <h3 className="section-title section-title--small">{ETAPA_LABELS[et.etapa] || et.etapa}</h3>}
+                {pasoFrisa && (pasoFrisa.impresiones || pasoFrisa.notas) && (
+                  <p className="pantone-hint">
+                    {pasoFrisa.impresiones ? <b>{pasoFrisa.impresiones} {pasoFrisa.impresiones === 1 ? 'impresión' : 'impresiones'}</b> : null}
+                    {pasoFrisa.impresiones && pasoFrisa.notas ? ' · ' : ''}
+                    {pasoFrisa.notas}
+                  </p>
+                )}
                 {/* V139 — Iniciar / cronómetro / tiempo real. Una etapa terminada ya no se reabre desde aquí. */}
-                {terminada ? (
+                {esperaAnterior ? (
+                  <p className="pantone-hint">Todavía no le toca: falta terminar {(ETAPA_LABELS[anterior.etapa] || anterior.etapa).toLowerCase()}.</p>
+                ) : terminada ? (
                   <EtapaTiempoReal etapa={et} />
                 ) : enProceso ? (
                   <>
@@ -617,7 +640,7 @@ export default function EstacionOrderPage() {
                     Iniciar
                   </button>
                 )}
-                {esPrincipal && estacion.consumoPlaceholder ? (
+                {esperaAnterior ? null : esPrincipal && estacion.consumoPlaceholder ? (
                   terminada ? (
                     <CorteTerminado order={order} unaHoja={etapas.some((e) => e.etapa === 'sublimado')} onRegistrado={refresh} />
                   ) : (

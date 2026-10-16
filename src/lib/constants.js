@@ -99,6 +99,9 @@ export const ETAPA_LABELS = {
   // en la misma orden, por eso comparten etiqueta).
   impresion_prenda: 'Impresión',
   terminado: 'Terminado',
+  // V155 — etapas de los productos de Frisa; las reporta costura.
+  descosido: 'Descosido',
+  reflejante: 'Reflejante',
 }
 
 // V136 — etapas que se pueden poner en la plantilla de un tipo de orden, en
@@ -128,6 +131,24 @@ export const PROCESOS_MAQUILA_OPTIONS = [
   { key: 'produccion', label: 'Costura' },
   { key: 'bordado', label: 'Bordado' },
   { key: 'terminado', label: 'Terminado' },
+]
+
+// V155 — órdenes de Frisa: sin cliente del catálogo (el cliente es "Frisa"),
+// sin precio, y sus etapas son la secuencia del producto de Frisa, en el
+// orden guardado. Mismas claves que procesos_catalogo (ver
+// schema_v155_frisa_productos.sql); "impresion" es la etapa
+// 'impresion_prenda' y "costura" la etapa 'produccion'.
+export const TIPO_FRISA = 'frisa'
+export const CLIENTE_FRISA_NOMBRE = 'Frisa'
+export const PROCESOS_FRISA_OPTIONS = [
+  { key: 'descosido', label: 'Descosido', etapa: 'descosido' },
+  { key: 'corte', label: 'Corte', etapa: 'corte' },
+  { key: 'sublimado', label: 'Sublimado', etapa: 'sublimado' },
+  { key: 'costura', label: 'Costura', etapa: 'produccion' },
+  { key: 'reflejante', label: 'Reflejante', etapa: 'reflejante' },
+  { key: 'bordado', label: 'Bordado', etapa: 'bordado' },
+  { key: 'impresion', label: 'Impresión', etapa: 'impresion_prenda' },
+  { key: 'terminado', label: 'Terminado', etapa: 'terminado' },
 ]
 
 export const ETAPA_ESTADO_LABELS = {

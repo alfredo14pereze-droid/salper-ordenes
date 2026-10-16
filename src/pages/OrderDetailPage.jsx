@@ -132,6 +132,7 @@ function OrderDetailContent() {
           <p className="order-detail__client">{order.client_name}</p>
           {order.equipo && <p className="order-detail__client">Equipo: {order.equipo}</p>}
           {order.numero_corte && <p className="order-detail__client">Corte: {order.numero_corte}</p>}
+          {order.frisa_producto?.codigo && <p className="order-detail__client">Producto: {order.frisa_producto.codigo}</p>}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {order.eliminada_en && <span className="badge badge--danger">Eliminada</span>}
@@ -242,7 +243,8 @@ function OrderDetailContent() {
           </section>
         )}
 
-        {user && canViewFinanzas(role) && (
+        {/* V155 — las órdenes de Frisa no llevan precio ni anticipos. */}
+        {user && canViewFinanzas(role) && order.order_type_key !== 'frisa' && (
           <section className="card">
             {location.state?.anticipoError && (
               <p className="form-error">

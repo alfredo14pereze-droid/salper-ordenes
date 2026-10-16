@@ -22,6 +22,8 @@ import { coincideBusquedaOrden } from '../utils/ordenesBusqueda'
 // decide si el botón dice "Confirmar" o la acción de la etapa.
 // V140 — costura y bordado solo ven la orden cuando corte ya terminó, y
 // terminado cuando costura o bordado ya empezaron (`situacionEnEstacion`).
+// V155 — en órdenes de Frisa, cuando la etapa anterior de su secuencia ya
+// está completada.
 // Las que todavía esperan el paso anterior solo se cuentan al pie de la
 // lista; el buscador las sigue encontrando.
 // V120 — el rol sublimado tiene su propio dashboard (todas las órdenes de
@@ -57,7 +59,7 @@ function SiguientesOrdenes() {
     () =>
       etapasDeEstacion(estacion).map((etapa) => {
         const vivas = orders.filter((o) => !o.cancelled_at)
-        const situacion = (o) => situacionEnEstacion(etapa, etapasPorOrden[o.id])
+        const situacion = (o) => situacionEnEstacion(etapa, etapasPorOrden[o.id], o)
         return {
           etapa,
           ordenes: vivas.filter((o) => situacion(o) === 'lista'),

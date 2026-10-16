@@ -13,14 +13,33 @@ export const ETAPAS_PREVIAS = {
   terminado: { etapas: ['produccion', 'bordado'], estados: ['en_proceso', 'completado'] },
 }
 
+// V155 — órdenes de Frisa: regla estricta, en el orden de la secuencia de su
+// producto (orden_secuencia 1..n): una etapa le toca cuando la anterior está
+// completada, o si es la primera. El servidor tiene el mismo candado
+// (orden_etapas_frisa_secuencia). Los demás tipos siguen con ETAPAS_PREVIAS.
+export function etapaAnteriorEnSecuencia(etapa, etapasDeLaOrden = []) {
+  const mia = etapasDeLaOrden.find((e) => e.etapa === etapa)
+  if (!mia) return null
+  return (
+    etapasDeLaOrden
+      .filter((e) => e.orden_secuencia < mia.orden_secuencia)
+      .sort((a, b) => b.orden_secuencia - a.orden_secuencia)[0] || null
+  )
+}
+
 // 'lista'    → sale en "Siguientes órdenes" de la estación.
 // 'espera'   → es de la estación pero falta el paso anterior.
 // null       → no es de la estación (no tiene la etapa o ya la terminó).
-export function situacionEnEstacion(etapa, etapasDeLaOrden = []) {
+// `orden` (opcional): con order_type_key 'frisa' aplica la regla estricta.
+export function situacionEnEstacion(etapa, etapasDeLaOrden = [], orden = null) {
   const mia = etapasDeLaOrden.find((e) => e.etapa === etapa)
   if (!mia || (mia.estado !== 'pendiente' && mia.estado !== 'en_proceso')) return null
   // Lo que ya se empezó nunca se esconde.
   if (mia.estado === 'en_proceso') return 'lista'
+  if (orden?.order_type_key === 'frisa') {
+    const anterior = etapaAnteriorEnSecuencia(etapa, etapasDeLaOrden)
+    return !anterior || anterior.estado === 'completado' ? 'lista' : 'espera'
+  }
   const regla = ETAPAS_PREVIAS[etapa]
   if (!regla) return 'lista'
   const previas = etapasDeLaOrden.filter((e) => regla.etapas.includes(e.etapa))

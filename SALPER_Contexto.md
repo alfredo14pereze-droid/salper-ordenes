@@ -6669,3 +6669,90 @@ corte; desde el detalle de la orden (administradores) no había forma.
   el detalle de la orden lo ofrece en la tarjeta de corte (`OrderCorteResumen`, admin_fabrica/admin_general)
   cuando la orden está cortada sin registro de tela.
 - Al aplicar, VEN-004 e IND-007 seguían sin registro de corte.
+
+### V155 — Frisa: catálogo de productos con secuencia de procesos propia (rama `frisa-productos`, 2026-10-16)
+
+**ESTADO: rama `frisa-productos` (sale de `main` en V154), SIN subir a `main`. `supabase/schema_v155_frisa_productos.sql`
+SIN aplicar en Supabase.** El frontend necesita el SQL aplicado antes de desplegarse (Catálogos → Frisa lee
+`productos_frisa`).
+
+**Decisión: secuencia de procesos por producto.** Para Frisa, las etapas de una orden ya no salen del orden
+fijo del tipo (corte → costura → bordado → terminado) sino de la secuencia de su producto, en el orden
+guardado. El mecanismo (`procesos_catalogo` + secuencia por producto + copia a la orden) está pensado para que
+Maquila lo use después; hoy Maquila sigue con `productos.procesos` (V143).
+
+Salió de un prompt armado fuera (rama `fase-2`, `procesos_catalogo` "existente", `costura` como etapa).
+Contra el sistema real, decisiones de Alfredo:
+- **Tablas aparte, como pedía el prompt** (no el catálogo `productos` por cliente): `productos_frisa` y
+  `producto_frisa_procesos`. Las órdenes Frisa **no llevan `client_id`**: `client_name` = "Frisa" fijo.
+- **Descosido y Reflejante son etapas nuevas** de `orden_etapas`. **Descosido lo hace el personal de
+  terminado** y **Reflejante, costura** (roles `costura`/`produccion`) — corrección de Alfredo al revisar.
+  **"Impresión" es la etapa `impresion_prenda`** (V134), que también reporta terminado. En terminado salen
+  como "Pendientes de descosido", "Pendientes de impresión" y su lista de siempre; en costura, "Pendientes de
+  reflejante". Sin roles nuevos. Sin serigrafía.
+- **Regla estricta solo en órdenes Frisa**: una etapa le toca a su estación cuando la anterior de la
+  secuencia está **completada** (o es la primera). Los demás tipos siguen con la regla de V140 (terminado
+  trabaja en paralelo con costura/bordado).
+- Número de corte para Frisa: pendiente de confirmar, no se implementó.
+
+**SQL (V155), aditivo, se puede correr dos veces:**
+- Etapas `descosido` y `reflejante` en los CHECK de `orden_etapas`/`plantillas_etapas`; parche con guarda
+  (replace sobre la función viva) de `update_orden_etapa` y `pausar_orden_etapa`: descosido → rol `terminado`,
+  reflejante → roles de costura.
+- `procesos_catalogo (codigo, nombre, etapa, orden_sugerido, activo)`: descosido, corte, sublimado, costura
+  (→ `produccion`), reflejante, bordado, impresion (→ `impresion_prenda`), terminado.
+- `productos_frisa` (código único sin distinguir mayúsculas, origen `confeccionada`/`comprada`, tallas_rango,
+  color, tela, proveedor, descripción, activo) y `producto_frisa_procesos` (orden 1..n, impresiones solo en
+  impresión, notas; único por producto+orden y por producto+proceso). Lectura pública; escritura solo con
+  `guardar_producto_frisa(...)` (ventas, admin_tienda, admin_fabrica, admin_general), que guarda datos y
+  secuencia completa en una llamada.
+- Seed de los 8 productos (FR-CAM-BAS, FR-CAM-NI, FR-PLA-AM-MC, FR-PLA-AM-ML, FR-PLA-OM-MC, FR-PLA-VE-MC,
+  FR-PLA-RO-MC, FR-PLA-AM-SR-ML), idempotente por código: si ya existe no se toca. FR-PLA-RO-MC lleva en la
+  descripción "Por confirmar que es la de Frisa". OM y VE quedaron **sin proveedor** (el prompt solo decía
+  "igual que FR-PLA-AM-MC" para los procesos).
+- Tipo `frisa` ("Frisa"), folio **FR-001…** (`folio_seq_frisa`); su plantilla (solo terminado) existe porque
+  un tipo activo necesita etapas (V136) y así V154 no pide tela.
+- `orders.producto_frisa_id` y `orders.frisa_producto` (jsonb): **copia del producto y su secuencia** al crear
+  la orden (`procesos: [{orden, proceso, nombre, etapa, impresiones, notas}]`, `bordado_por_orden`). Editar
+  el producto después no cambia órdenes abiertas.
+- `create_order_frisa(producto, fecha, items, descripción, folios, lleva_bordado)`: envuelve `create_order`,
+  reemplaza las etapas por la secuencia (orden_secuencia 1..n) y guarda la copia. **Bordado por orden** solo si
+  el producto es confeccionada y su secuencia no lo trae: va justo antes de terminado; si ya lo trae no se
+  duplica.
+- Candados: `orders_frisa_ins/upd` (antes del folio: una orden frisa por otro camino se rechaza sin gastar
+  folio; siempre `client_id` nulo, nombre "Frisa", `total_orden` nulo; el tipo no se pone ni se quita);
+  `orden_etapas_frisa_protege` (en una orden Frisa ya copiada, `set_order_items`/el trigger de impresión no
+  agregan ni quitan etapas); `orden_etapas_frisa_secuencia` (no se puede iniciar una etapa si la anterior no
+  está completada; admin_fabrica/admin_general sí pueden, para correcciones).
+- `recompute_order_status` no se tocó: descosido y reflejante no cambian `orders.status`.
+
+**Frontend:**
+- `utils/frisa.js` (+ `frisa.test.js`), `services/frisaService.js`, constantes `TIPO_FRISA`,
+  `PROCESOS_FRISA_OPTIONS`, etiquetas Descosido/Reflejante.
+- **Catálogos → Frisa** (`components/catalogos/FrisaCatalogoSection.jsx`): lista con código, origen, tallas y la
+  secuencia en orden (con impresiones y notas); alta y edición con lista ordenable (↑ ↓ ×, "+ Agregar
+  proceso", impresiones solo en impresión). Permiso `canManageProductosFrisa`.
+- **Nueva orden → Frisa**: sin selector de cliente; producto (tarjetas con código y secuencia) → cantidades por
+  talla del rango del producto (`expandirTallas`, "S-3XL" → S…3XL) → "Lleva bordado" solo si aplica. Sin
+  total ni anticipo (sí cotización/orden de compra).
+- Lista (`OrderCard`), estaciones (`EstacionCard`) y detalle (`OrderDetailsCard`, encabezado): código del
+  producto y la secuencia; en el detalle con impresiones ("2 impresiones") y notas (`FrisaSecuencia`). El
+  detalle no muestra pagos en órdenes Frisa; al editar, cliente y tipo fijos y prendas solo tallas.
+- Estaciones: `situacionEnEstacion(etapa, etapas, orden)` aplica la regla estricta a Frisa; la pantalla de la
+  orden muestra la secuencia (✓ en las completadas), las impresiones/notas del paso y "Todavía no le toca:
+  falta terminar …" en vez de Iniciar. El buscador encuentra por código de producto.
+
+**Probado:** `node --test src/utils/*.test.js` (49, incluidas las 3 pruebas pedidas: FR-PLA-AM-MC solo
+descosido/reflejante/impresión/terminado y terminado hasta completar impresión; FR-CAM-BAS corte primero y
+costura hasta completar corte; FR-PLA-VE-MC con 2 impresiones), `npm run build`; el SQL completo en PGlite
+con las funciones reales (`create_order`, `set_order_items`, `update_order_details`, `set_order_total`,
+`update_orden_etapa` V120+V131+V134, `pausar_orden_etapa`, triggers de folio, impresión, tela y maquila):
+43 comprobaciones (seed, secuencias, regla estricta, permisos de cada etapa, sin gastar folio, editar prendas no cambia la
+secuencia, cliente/precio fijos, órdenes abiertas no cambian, escolar intacto, se puede correr dos veces); y
+las pantallas reales en un ejemplo local sin base (`.claude/harness-frisa/`, servidor `salper-frisa-harness`,
+puerto 5195).
+**No probado:** contra Supabase (el SQL no se ha corrido), con sesión real, ni el PDF de la orden Frisa. No
+probar `create_order_frisa` en producción "a ver si funciona": gasta folios FR.
+
+**Pendiente / para decidir:** número de corte de Frisa; proveedor de FR-PLA-OM-MC y FR-PLA-VE-MC; confirmar
+que FR-PLA-RO-MC es de Frisa; pasar Maquila al mismo mecanismo de secuencia.

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import OrderItemsEditor from './OrderItemsEditor'
 import MaquilaItemsEditor from './MaquilaItemsEditor'
 import { esOrdenMaquila } from '../../utils/maquila'
+import { esOrdenFrisa } from '../../utils/frisa'
 import { setOrderItems, fetchOrdenEtapas } from '../../services/ordersService'
 import { faltaTela } from '../../utils/telaObligatoria'
 import { createOrderTemplate } from '../../services/templatesService'
@@ -198,7 +199,7 @@ export default function OrderItemsCard({ order, onUpdated }) {
   async function handleSave() {
     // V154 — mientras la orden no se haya cortado, sus prendas necesitan tela
     // (una orden ya cortada se puede seguir corrigiendo sin pedirla).
-    if (!esOrdenBordado(order.order_type_key) && order.order_type_key !== 'maquila') {
+    if (!esOrdenBordado(order.order_type_key) && order.order_type_key !== 'maquila' && !esOrdenFrisa(order.order_type_key)) {
       const { data: etapas } = await fetchOrdenEtapas(order.id)
       const corte = (etapas || []).find((e) => e.etapa === 'corte')
       const sinTela = corte && corte.estado !== 'completado' ? faltaTela(items) : null
@@ -336,6 +337,9 @@ export default function OrderItemsCard({ order, onUpdated }) {
         {esOrdenMaquila(order.order_type_key) ? (
           // V143 — en maquila solo se corrigen tallas y bordado; el producto no cambia.
           <MaquilaItemsEditor items={items} onChange={setItems} />
+        ) : esOrdenFrisa(order.order_type_key) ? (
+          // V155 — en Frisa solo se corrigen tallas: el producto y su secuencia no cambian.
+          <MaquilaItemsEditor items={items} onChange={setItems} sinBordado />
         ) : (
           <OrderItemsEditor
             items={items}

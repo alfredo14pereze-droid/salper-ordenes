@@ -6,6 +6,7 @@ import { isCompleted } from '../../utils/status'
 import { resumenPrendas } from '../../utils/prendas'
 import { useAuth } from '../../contexts/AuthContext'
 import { canConfirmOrderChanges } from '../../utils/permissions'
+import { codigoProductoFrisa, etiquetaSecuencia, secuenciaDeOrden } from '../../utils/frisa'
 
 export default function OrderCard({ order, orderType }) {
   const navigate = useNavigate()
@@ -20,6 +21,9 @@ export default function OrderCard({ order, orderType }) {
   const days = daysUntil(order.requested_delivery_date)
   const completed = isCompleted(order.status)
   const prendas = resumenPrendas(order)
+  // V155 — órdenes de Frisa: código del producto y su secuencia de procesos.
+  const codigoFrisa = codigoProductoFrisa(order)
+  const secuenciaFrisa = etiquetaSecuencia(secuenciaDeOrden(order))
   // V38: una orden ya confirmada que se editó después queda marcada con
   // pending_reconfirmation_at — solo fábrica ve el cuadro completo en
   // azul (pedido explícito del usuario: "a los usuarios de la fábrica
@@ -85,6 +89,8 @@ export default function OrderCard({ order, orderType }) {
         <h3 className="order-card__client">{order.client_name}</h3>
         {order.equipo && <p className="order-card__prendas">Equipo: <b>{order.equipo}</b></p>}
         {order.numero_corte && <p className="order-card__prendas">Corte: <b>{order.numero_corte}</b></p>}
+        {codigoFrisa && <p className="order-card__prendas">Producto: <b>{codigoFrisa}</b></p>}
+        {secuenciaFrisa && <p className="order-card__prendas">{secuenciaFrisa}</p>}
         {prendas && <p className="order-card__prendas">{prendas}</p>}
         {needsReconfirm && <p className="order-card__reconfirm-notice">✎ Se modificó después de confirmarse</p>}
         {nota && <p className="order-card__nota-notice">✎ Nota: {nota}</p>}
@@ -114,6 +120,7 @@ export default function OrderCard({ order, orderType }) {
           </span>
           {order.equipo && <span className="order-card__compact-prendas">Equipo: {order.equipo}</span>}
           {order.numero_corte && <span className="order-card__compact-prendas">Corte: {order.numero_corte}</span>}
+          {codigoFrisa && <span className="order-card__compact-prendas">{codigoFrisa} · {secuenciaFrisa}</span>}
           {prendas && <span className="order-card__compact-prendas">{prendas}</span>}
         </div>
         {order.cancelled_at ? <span className="badge badge--danger">Cancelada</span> : <StatusBadge status={order.status} />}

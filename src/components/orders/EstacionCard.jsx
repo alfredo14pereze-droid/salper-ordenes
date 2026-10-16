@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { resumenPrendas } from '../../utils/prendas'
 import { daysUntil, formatDate } from '../../utils/dates'
+import { codigoProductoFrisa, etiquetaSecuencia, secuenciaDeOrden } from '../../utils/frisa'
 
 // Mismos colores de urgencia que OrderCard.jsx (clases order-card--*).
 function severidad(order) {
@@ -23,6 +24,11 @@ export default function EstacionCard({ order, children }) {
       <span className="estacion-card__cliente">{order.client_name}</span>
       {order.equipo && <span className="estacion-card__prendas">Equipo: <b>{order.equipo}</b></span>}
       {order.numero_corte && <span className="estacion-card__prendas">Corte: <b>{order.numero_corte}</b></span>}
+      {codigoProductoFrisa(order) && (
+        <span className="estacion-card__prendas">
+          <b>{codigoProductoFrisa(order)}</b> · {etiquetaSecuencia(secuenciaDeOrden(order))}
+        </span>
+      )}
       {prendas && <span className="estacion-card__prendas">{prendas}</span>}
       {children}
       <span className={'estacion-card__due' + (sev.cls ? ` order-card__due--${sev.cls}` : '')}>

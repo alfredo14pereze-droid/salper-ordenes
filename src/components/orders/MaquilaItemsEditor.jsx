@@ -2,7 +2,8 @@
 // bordado. El producto (y con él los procesos) se elige aparte, en "Nueva
 // orden". Misma interfaz controlada que OrderItemsEditor (items + onChange);
 // una orden de maquila tiene una sola prenda: items[0].
-export default function MaquilaItemsEditor({ items, onChange, bordadoObligado = false }) {
+// V155 — `sinBordado`: lo usa Frisa, donde el bordado es parte de la secuencia.
+export default function MaquilaItemsEditor({ items, onChange, bordadoObligado = false, sinBordado = false }) {
   const item = items[0] || { sizes: [{ talla: '', cantidad: '' }] }
   const sizes = item.sizes?.length > 0 ? item.sizes : [{ talla: '', cantidad: '' }]
   const update = (patch) => onChange([{ ...item, ...patch }, ...items.slice(1)])
@@ -57,6 +58,7 @@ export default function MaquilaItemsEditor({ items, onChange, bordadoObligado = 
           ))}
         </div>
 
+        {!sinBordado && (
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
           <input
             type="checkbox"
@@ -66,6 +68,7 @@ export default function MaquilaItemsEditor({ items, onChange, bordadoObligado = 
           />
           Lleva bordado
         </label>
+        )}
         {bordadoObligado && <p className="pantone-hint">Este producto siempre lleva bordado.</p>}
 
         <div className="item-block__total">

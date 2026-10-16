@@ -158,6 +158,9 @@ export function canChangeEtapa(role, etapa) {
   if (etapa === 'impresion_prenda') return role === 'terminado' // V134
   if (etapa === 'sublimado') return role === 'sublimado' // V131: antes 'corte'
   if (etapa === 'produccion') return role === 'produccion' || role === 'costura'
+  // V155 — etapas de Frisa: descosido lo hace terminado; reflejante, costura.
+  if (etapa === 'descosido') return role === 'terminado'
+  if (etapa === 'reflejante') return role === 'produccion' || role === 'costura'
   return role === etapa
 }
 
@@ -213,6 +216,12 @@ export function canCreateProducto(role) {
 // set_order_type_etapas / set_order_type_active.
 export function canManageOrderTypes(role) {
   return role === 'admin_tienda' || role === 'admin_fabrica' || role === 'admin_general'
+}
+
+// V155 — catálogo de productos de Frisa (alta, edición y secuencia de
+// procesos). Mismo candado en guardar_producto_frisa.
+export function canManageProductosFrisa(role) {
+  return ['ventas', 'admin_tienda', 'admin_fabrica', 'admin_general'].includes(role)
 }
 
 // Quién puede ENTRAR a la pantalla de Catálogos — más amplio que quién

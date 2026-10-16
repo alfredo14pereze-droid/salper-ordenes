@@ -6,6 +6,8 @@ import { canEditOrder } from '../../utils/permissions'
 import OrderTypeSelect from './OrderTypeSelect'
 import { TIPO_VENTA_MOSTRADOR } from '../../lib/constants'
 import { esOrdenMaquila } from '../../utils/maquila'
+import { esOrdenFrisa } from '../../utils/frisa'
+import FrisaSecuencia from './FrisaSecuencia'
 import FoliosExternosField from './FoliosExternosField'
 
 // Datos generales de la orden. Si el rol actual puede editarla (ventas y
@@ -34,6 +36,8 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
   // V143 — maquila: el cliente y el tipo no se cambian (el producto y sus
   // procesos son de ese cliente); sí se puede corregir el número de corte.
   const esMaquila = esOrdenMaquila(order.order_type_key)
+  // V155 — Frisa: cliente "Frisa" fijo y tipo fijo (el servidor lo fuerza).
+  const esFrisa = esOrdenFrisa(order.order_type_key)
 
   function updateField(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
@@ -105,13 +109,15 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
             className="input"
             value={form.clientName}
             onChange={(e) => updateField('clientName', e.target.value)}
-            disabled={order.order_type_key === TIPO_VENTA_MOSTRADOR || esMaquila}
+            disabled={order.order_type_key === TIPO_VENTA_MOSTRADOR || esMaquila || esFrisa}
             title={
               order.order_type_key === TIPO_VENTA_MOSTRADOR
                 ? 'Las órdenes de Venta Mostrador siempre van al cliente Salper.'
                 : esMaquila
                   ? 'En una orden de maquila el cliente no se cambia: el producto es de su catálogo.'
-                  : undefined
+                  : esFrisa
+                    ? 'Las órdenes de Frisa siempre van al cliente Frisa.'
+                    : undefined
             }
           />
         </label>
@@ -159,11 +165,11 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
             Tipo de orden
           </span>
-          {esMaquila ? (
-            <input type="text" className="input" value="Maquila" disabled readOnly />
+          {esMaquila || esFrisa ? (
+            <input type="text" className="input" value={esFrisa ? 'Frisa' : 'Maquila'} disabled readOnly />
           ) : (
             <OrderTypeSelect
-              orderTypes={orderTypes.filter((t) => !esOrdenMaquila(t.key))}
+              orderTypes={orderTypes.filter((t) => !esOrdenMaquila(t.key) && !esOrdenFrisa(t.key))}
               value={form.orderTypeKey}
               onChange={(key) => updateField('orderTypeKey', key)}
             />
@@ -219,6 +225,15 @@ export default function OrderDetailsCard({ order, orderTypes, onUpdated }) {
           <div>
             <dt>Equipo</dt>
             <dd>{order.equipo}</dd>
+          </div>
+        )}
+        {order.frisa_producto && (
+          <div>
+            <dt>Producto Frisa</dt>
+            <dd>
+              <b>{order.frisa_producto.codigo}</b> — {order.frisa_producto.nombre}
+              <FrisaSecuencia order={order} conNotas />
+            </dd>
           </div>
         )}
         {order.numero_corte && (

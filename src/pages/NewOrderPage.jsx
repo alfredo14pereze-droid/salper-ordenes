@@ -28,6 +28,9 @@ import OrderItemsEditor from '../components/orders/OrderItemsEditor'
 import MaquilaItemsEditor from '../components/orders/MaquilaItemsEditor'
 import { esOrdenMaquila, etiquetaProcesos, fotosDeProducto, nuevaPrendaMaquila, prendaMaquila, procesosDeLaOrden, productoBorda, validarOrdenMaquila } from '../utils/maquila'
 import FoliosExternosField from '../components/orders/FoliosExternosField'
+import { admiteBordadoPorOrden, esOrdenFrisa, etiquetaSecuencia, expandirTallas, prendaFrisa, procesosDeLaOrdenFrisa, validarOrdenFrisa } from '../utils/frisa'
+import { createOrderFrisa, fetchProductosFrisa } from '../services/frisaService'
+import { CLIENTE_FRISA_NOMBRE } from '../lib/constants'
 import RequireRole from '../components/common/RequireRole'
 import FileDropLabel from '../components/common/FileDropLabel'
 import { canCreateOrder } from '../utils/permissions'
@@ -57,6 +60,10 @@ const initialForm = {
   numeroCorte: '',
   // V145 — solo sublimación: nombre del equipo (opcional).
   equipo: '',
+  // V155 — solo órdenes de Frisa: producto, cantidades por talla y bordado por orden.
+  productoFrisaId: '',
+  cantidadesFrisa: {},
+  bordadoFrisa: false,
 }
 
 const emptyItem = () => ({
@@ -268,6 +275,21 @@ function NewOrderForm() {
   const productoMaquila = esMaquila ? productos.find((p) => p.id === form.productoId) || null : null
   const llevaBordadoMaquila = !!items[0]?.lleva_bordado || productoBorda(productoMaquila)
 
+  // V155 — Frisa: sin cliente del catálogo, un producto del catálogo Frisa,
+  // cantidades por talla (el rango del producto) y sin precio.
+  const esFrisa = esOrdenFrisa(form.orderTypeKey)
+  const [productosFrisa, setProductosFrisa] = useState([])
+  const [productosFrisaError, setProductosFrisaError] = useState(null)
+  useEffect(() => {
+    if (!esFrisa) return
+    fetchProductosFrisa().then(({ data, error: err }) => {
+      setProductosFrisa((data || []).filter((p) => p.activo))
+      setProductosFrisaError(err)
+    })
+  }, [esFrisa])
+  const productoFrisa = esFrisa ? productosFrisa.find((p) => p.id === form.productoFrisaId) || null : null
+  const bordadoFrisa = !!form.bordadoFrisa && admiteBordadoPorOrden(productoFrisa)
+
   function discardDraft() {
     clearDraft()
     setForm(initialForm)
@@ -362,6 +384,21 @@ function NewOrderForm() {
       setItems([esOrdenMaquila(key) ? nuevaPrendaMaquila() : emptyItem()])
     }
     setForm((f) => {
+      // V155 — Frisa no usa el catálogo de clientes: al entrar o salir se limpia.
+      if (esOrdenFrisa(key) !== esOrdenFrisa(f.orderTypeKey)) {
+        return {
+          ...f,
+          orderTypeKey: key,
+          clientId: '',
+          clienteIncidental: false,
+          clientName: esOrdenFrisa(key) ? CLIENTE_FRISA_NOMBRE : '',
+          clientTelefono: '',
+          clientCorreo: '',
+          productoFrisaId: '',
+          cantidadesFrisa: {},
+          bordadoFrisa: false,
+        }
+      }
       if (esOrdenMaquila(key) !== esOrdenMaquila(f.orderTypeKey)) {
         // Los clientes de maquila son otros: se vuelve a elegir.
         return { ...f, orderTypeKey: key, clientId: '', clienteIncidental: false, clientName: '', clientTelefono: '', clientCorreo: '', productoId: '', numeroCorte: '' }
@@ -401,6 +438,14 @@ function NewOrderForm() {
 
     if (!form.orderTypeKey) {
       setSubmitError(new Error('Elige el tipo de orden.'))
+      return
+    }
+    if (esFrisa) {
+      if (!form.requestedDeliveryDate) {
+        setSubmitError(new Error('Falta la fecha de entrega.'))
+        return
+      }
+      await handleSubmitFrisa()
       return
     }
     if (esVentaMostrador && form.clientId !== clienteSalper?.id) {
@@ -580,6 +625,33 @@ function NewOrderForm() {
     await terminarCreacion(conFotosDelProducto, anticipoMontoNum, fotoProductoError)
   }
 
+  // V155 — orden Frisa: producto → cantidades por talla. El servidor copia
+  // la secuencia del producto a la orden; no lleva cliente ni precio.
+  async function handleSubmitFrisa() {
+    const falta = validarOrdenFrisa({ producto: productoFrisa, cantidades: form.cantidadesFrisa })
+    if (falta) {
+      setSubmitError(new Error(falta))
+      return
+    }
+    setSubmitting(true)
+    setSubmitError(null)
+    const { data, error: createError } = await createOrderFrisa({
+      productoId: productoFrisa.id,
+      requestedDeliveryDate: form.requestedDeliveryDate,
+      items: [prendaFrisa(productoFrisa, form.cantidadesFrisa)],
+      description: form.description.trim(),
+      foliosExternos: form.foliosExternos,
+      llevaBordado: bordadoFrisa,
+    })
+    if (createError) {
+      setSubmitting(false)
+      setSubmitError(createError)
+      return
+    }
+    // Sin precio: no se registra anticipo.
+    await terminarCreacion(data, 0)
+  }
+
   // Lo que sigue a crear la orden, igual para todos los tipos: fotos,
   // documentos, anticipo y la vista previa del PDF.
   async function terminarCreacion(creada, anticipoMontoNum, fotoProductoError = null) {
@@ -719,6 +791,11 @@ function NewOrderForm() {
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
             Cliente *
           </span>
+          {esFrisa ? (
+            <p className="pantone-hint" style={{ margin: 0 }}>
+              <b>{CLIENTE_FRISA_NOMBRE}</b> — las órdenes de Frisa no usan el catálogo de clientes.
+            </p>
+          ) : (
           <ClienteSelect
             clientes={clientes}
             orderTypeKey={form.orderTypeKey}
@@ -733,7 +810,74 @@ function NewOrderForm() {
             bloqueado={esVentaMostrador}
             soloCatalogo={esMaquila}
           />
+          )}
         </div>
+
+        {esFrisa && (
+          <>
+            <div>
+              <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+                Producto *
+              </span>
+              {productosFrisaError && <p className="form-error">{productosFrisaError.message}</p>}
+              <div className="producto-picker__grid">
+                {productosFrisa.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className={'producto-card' + (p.id === form.productoFrisaId ? ' producto-card--activo' : '')}
+                    aria-pressed={p.id === form.productoFrisaId}
+                    onClick={() => setForm((f) => (f.productoFrisaId === p.id ? f : { ...f, productoFrisaId: p.id, cantidadesFrisa: {}, bordadoFrisa: false }))}
+                  >
+                    <span className="producto-card__nombre">{p.codigo}</span>
+                    <span className="producto-card__prenda">{p.nombre}</span>
+                    <span className="producto-card__prenda">{etiquetaSecuencia(p.procesos) || '⚠️ Sin procesos'}</span>
+                  </button>
+                ))}
+              </div>
+              {!productosFrisaError && productosFrisa.length === 0 && <p className="pantone-hint">No hay productos de Frisa activos. Agrégalos en Catálogos → Frisa.</p>}
+            </div>
+            {productoFrisa && (
+              <>
+                <p className="pantone-hint">
+                  {[productoFrisa.origen === 'comprada' ? 'Comprada' : 'Confeccionada', productoFrisa.color, productoFrisa.tela, productoFrisa.proveedor].filter(Boolean).join(' · ')}
+                  <br />
+                  Procesos de esta orden: <b>{etiquetaSecuencia(procesosDeLaOrdenFrisa(productoFrisa, bordadoFrisa))}</b>
+                </p>
+                <div>
+                  <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+                    Cantidades por talla * {productoFrisa.tallas_rango && <span className="pantone-hint">({productoFrisa.tallas_rango})</span>}
+                  </span>
+                  <div className="frisa-tallas">
+                    {(expandirTallas(productoFrisa.tallas_rango).length > 0 ? expandirTallas(productoFrisa.tallas_rango) : ['Unitalla']).map((t) => (
+                      <label key={t}>
+                        {t}
+                        <input
+                          type="number"
+                          min="0"
+                          inputMode="numeric"
+                          className="input"
+                          placeholder="0"
+                          value={form.cantidadesFrisa[t] ?? ''}
+                          onChange={(e) => setForm((f) => ({ ...f, cantidadesFrisa: { ...f.cantidadesFrisa, [t]: e.target.value } }))}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <p className="pantone-hint">
+                    Total de piezas: <b>{Object.values(form.cantidadesFrisa).reduce((n, c) => n + (Number(c) || 0), 0)}</b>
+                  </p>
+                </div>
+                {admiteBordadoPorOrden(productoFrisa) && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input type="checkbox" checked={!!form.bordadoFrisa} onChange={(e) => updateField('bordadoFrisa', e.target.checked)} />
+                    Lleva bordado (va antes de terminado)
+                  </label>
+                )}
+              </>
+            )}
+          </>
+        )}
 
         {form.orderTypeKey === 'sublimacion' && (
           <label>
@@ -835,6 +979,7 @@ function NewOrderForm() {
           <FoliosExternosField value={form.foliosExternos} onChange={(v) => updateField('foliosExternos', v)} />
         </div>
 
+        {!esFrisa && (
         <div>
           <span className="field-label" style={{ marginBottom: 8, display: 'block' }}>
             {esMaquila ? 'Cantidades' : 'Prendas'}
@@ -855,6 +1000,7 @@ function NewOrderForm() {
             />
           )}
         </div>
+        )}
 
         <details className="form-optional">
           <summary>Notas y fotos (opcional)</summary>
@@ -879,12 +1025,15 @@ function NewOrderForm() {
         </details>
 
         <details className="form-optional">
-          <summary>Cotización, total y anticipo (opcional)</summary>
+          <summary>{esFrisa ? 'Cotización y orden de compra (opcional)' : 'Cotización, total y anticipo (opcional)'}</summary>
           <div className="form-optional__body">
             <div className="form-row">
               <DocumentosPicker label="Cotización (PDF)" files={cotizacionFiles} onChange={setCotizacionFiles} />
               <DocumentosPicker label="Orden de compra (PDF)" files={ordenCompraFiles} onChange={setOrdenCompraFiles} />
             </div>
+            {/* V155 — las órdenes de Frisa no llevan precio. */}
+            {!esFrisa && (
+            <>
 
             <div className="form-row">
               <label>
@@ -951,6 +1100,8 @@ function NewOrderForm() {
                   />
                 </label>
               </>
+            )}
+            </>
             )}
           </div>
         </details>

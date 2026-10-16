@@ -4459,3 +4459,95 @@ h4 {
   border: 1px solid currentColor;
   font-weight: 600;
 }
+
+/* V155 — Frisa: secuencia de procesos (catálogo, nueva orden y detalle) */
+.frisa-pasos {
+  margin: 6px 0 0;
+  padding-left: 20px;
+  font-size: 13px;
+}
+
+.frisa-secuencia {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.frisa-secuencia__paso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.frisa-secuencia__n {
+  min-width: 20px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.frisa-secuencia__nombre {
+  min-width: 90px;
+}
+
+.frisa-secuencia__impresiones {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.frisa-secuencia__impresiones .input {
+  width: 64px;
+}
+
+.frisa-secuencia__notas {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.frisa-secuencia__botones {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.frisa-tallas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+
+.frisa-tallas label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.frisa-secuencia-orden {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.frisa-secuencia-orden li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 12px;
+  background: var(--color-surface);
+}
+
+.frisa-secuencia-orden li.is-completado {
+  border-color: var(--color-black);
+  font-weight: 600;
+}

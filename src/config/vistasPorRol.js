@@ -37,8 +37,10 @@ export const ESTACIONES = {
   // rol nuevo es 'costura' — misma etapa ('produccion', que no se
   // renombró) y mismo pendientesTipo. Se deja la entrada 'produccion'
   // tal cual por si alguna vez se necesita (aditivo, no se borra).
-  produccion: { etapa: 'produccion', pendientesTipo: 'Arreglo' },
-  costura: { etapa: 'produccion', pendientesTipo: 'Arreglo' },
+  // V155 — costura también reporta Reflejante (solo existe en órdenes de
+  // Frisa cuyo producto lo lleva).
+  produccion: { etapa: 'produccion', etapasExtra: ['reflejante'], pendientesTipo: 'Arreglo' },
+  costura: { etapa: 'produccion', etapasExtra: ['reflejante'], pendientesTipo: 'Arreglo' },
   // V105 — terminado ya no usa el botón genérico "Finalizado": captura
   // cantidades reales por talla y genera la remisión al confirmar (ver
   // EstacionOrderPage.jsx).
@@ -46,7 +48,8 @@ export const ESTACIONES = {
   // llevan (etapa 'impresion_prenda', antes de terminado): botón "Impresa".
   terminado: {
     etapa: 'terminado',
-    etapasExtra: ['impresion_prenda'],
+    // V155 — y el descosido de las playeras de Frisa (antes del reflejante).
+    etapasExtra: ['descosido', 'impresion_prenda'],
     finalLabels: { impresion_prenda: 'Impresa' },
     pendientesCompleto: true,
     surtidoFinal: true,

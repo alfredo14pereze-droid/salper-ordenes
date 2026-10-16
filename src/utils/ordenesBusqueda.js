@@ -11,7 +11,8 @@ export function coincideBusquedaOrden(order, texto) {
   if (!q) return true
   const qp = plano(q)
   // V143: también el número de corte de las órdenes de maquila. V145: y el equipo.
-  const campos = [order.order_number, order.client_name, order.equipo, order.numero_corte, ...(order.folios_externos || [])]
+  // V155: y el código del producto de Frisa.
+  const campos = [order.order_number, order.client_name, order.equipo, order.numero_corte, order.frisa_producto?.codigo, ...(order.folios_externos || [])]
   return campos.some((c) => {
     const v = String(c ?? '').toLowerCase()
     return v.includes(q) || (qp !== '' && plano(v).includes(qp))

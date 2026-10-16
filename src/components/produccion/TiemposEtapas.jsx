@@ -19,7 +19,7 @@ import {
   MOTIVO_SIN_MEDIR,
 } from '../../utils/tiemposEtapas'
 
-const ORDEN_ETAPAS = ['impresion', 'sublimado', 'corte', 'produccion', 'bordado', 'impresion_prenda', 'terminado']
+const ORDEN_ETAPAS = ['impresion', 'sublimado', 'descosido', 'corte', 'produccion', 'reflejante', 'bordado', 'impresion_prenda', 'terminado']
 const PERIODOS = [
   ['semana', 'Esta semana'],
   ['semana_pasada', 'Semana pasada'],

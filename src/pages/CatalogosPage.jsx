@@ -10,8 +10,10 @@ import {
   canViewFinanzas,
   canVerComprometidoTela,
   canManageOrderTypes,
+  canManageProductosFrisa,
 } from '../utils/permissions'
 import TiposOrdenSection from '../components/catalogos/TiposOrdenSection'
+import FrisaCatalogoSection from '../components/catalogos/FrisaCatalogoSection'
 import RazonesSocialesManager from '../components/finanzas/RazonesSocialesManager'
 import { PROVEEDORES_HABILITADO } from '../utils/featureFlags'
 import { Loading, ErrorState } from '../components/common/States'
@@ -595,6 +597,8 @@ function CatalogosPageContent() {
       </p>
 
       {canManageOrderTypes(role) && <TiposOrdenSection />}
+      {/* V155 — productos de Frisa con su secuencia de procesos. */}
+      <FrisaCatalogoSection canEdit={canManageProductosFrisa(role)} />
 
       {PROVEEDORES_HABILITADO && (
         <CatalogSection
