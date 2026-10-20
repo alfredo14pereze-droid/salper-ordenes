@@ -218,6 +218,12 @@ export function canManageOrderTypes(role) {
   return role === 'admin_tienda' || role === 'admin_fabrica' || role === 'admin_general'
 }
 
+// V157 — "Editar etapas" de una orden: los mismos que pueden regresar una
+// etapa. Mismo candado en set_orden_etapas.
+export function canEditEtapasOrden(role) {
+  return role === 'admin_fabrica' || role === 'admin_general'
+}
+
 // V155 — catálogo de productos de Frisa (alta, edición y secuencia de
 // procesos). Mismo candado en guardar_producto_frisa.
 export function canManageProductosFrisa(role) {

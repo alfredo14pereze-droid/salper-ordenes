@@ -6779,3 +6779,23 @@ que existiera el tipo Frisa (V155), así que nacieron con corte → costura → 
   Probado en PGlite (51 comprobaciones; las demás órdenes no se tocan, se puede correr dos veces).
 - Pendiente ofrecido: botón "Editar etapas" por orden para administradores (hoy no hay forma de quitar una
   etapa a una orden desde la app).
+
+### V157 — "Editar etapas" de una orden (administradores de fábrica, 2026-10-20)
+
+**ESTADO: rama `frisa-productos`, SIN subir a `main`. `supabase/schema_v157_editar_etapas_orden.sql` SIN aplicar.**
+Aplicar el SQL antes de subir el frontend (el botón llama a `set_orden_etapas`).
+
+Pedido de Alfredo: poder quitarle corte (o cualquier etapa) a una orden, o editar sus etapas.
+- **SQL:** `set_orden_etapas(orden, etapas[])` — la lista nueva en orden. Solo **admin_fabrica / admin_general**
+  (los mismos que regresan etapas). No se puede quitar una etapa ya iniciada o terminada (sí moverla); las
+  nuevas nacen pendientes; el orden queda 1..n. Al quitar o agregar bordado / impresión por prenda ajusta
+  `lleva_bordado` / `lleva_impresion` en las prendas, para que editar prendas o el surtido de terminado no las
+  regresen. En órdenes Frisa actualiza también `frisa_producto.procesos` (conserva impresiones y notas).
+  Deja registro en el historial ("Etapas editadas: antes → después") y recalcula `orders.status`.
+- **Frontend:** botón **"Editar etapas"** en la tarjeta "Etapas de producción" del detalle
+  (`OrderEtapasCard`, `canEditEtapasOrden`): lista con ↑ ↓ ×, "+ Agregar etapa" (`ETAPAS_ORDEN_OPTIONS`; las dos
+  impresiones se distinguen: "Impresión de sublimación" / "Impresión (prenda)"), confirmación antes de
+  guardar. `utils/etapasOrden.js` (+ pruebas).
+- **Probado:** PGlite (16 comprobaciones: permisos, quitar corte, agregar/quitar bordado e impresión y que no
+  regresen al editar prendas, no quitar iniciadas, reordenar, historial, Frisa), `node --test` (51),
+  `npm run build` y la pantalla en el ejemplo local (`/etapas`).

@@ -4551,3 +4551,11 @@ h4 {
   border-color: var(--color-black);
   font-weight: 600;
 }
+
+/* V157 — Editar etapas de una orden */
+.editar-etapas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}

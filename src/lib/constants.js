@@ -151,6 +151,20 @@ export const PROCESOS_FRISA_OPTIONS = [
   { key: 'terminado', label: 'Terminado', etapa: 'terminado' },
 ]
 
+// V157 — etapas que un administrador puede ponerle a una orden ("Editar
+// etapas"), en el orden habitual del flujo. Las dos "impresión" se distinguen.
+export const ETAPAS_ORDEN_OPTIONS = [
+  { key: 'impresion', label: 'Impresión de sublimación' },
+  { key: 'sublimado', label: 'Sublimado' },
+  { key: 'descosido', label: 'Descosido' },
+  { key: 'corte', label: 'Corte' },
+  { key: 'produccion', label: 'Costura' },
+  { key: 'reflejante', label: 'Reflejante' },
+  { key: 'bordado', label: 'Bordado' },
+  { key: 'impresion_prenda', label: 'Impresión (prenda)' },
+  { key: 'terminado', label: 'Terminado' },
+]
+
 export const ETAPA_ESTADO_LABELS = {
   pendiente: 'Pendiente',
   en_proceso: 'En proceso',

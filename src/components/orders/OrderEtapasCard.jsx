@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { TINTAS, formatMl, reporteDeEtapa } from '../../utils/impresionReporte'
 import { format } from 'date-fns'
-import { fetchOrdenEtapas, updateOrdenEtapa, corregirTiemposEtapa } from '../../services/ordersService'
+import { fetchOrdenEtapas, updateOrdenEtapa, corregirTiemposEtapa, setOrdenEtapas } from '../../services/ordersService'
 import { fetchProfiles } from '../../services/usersService'
 import { useAuth } from '../../contexts/AuthContext'
-import { canChangeEtapa } from '../../utils/permissions'
+import { canChangeEtapa, canEditEtapasOrden } from '../../utils/permissions'
+import { etapasParaAgregar, etiquetaEtapaOrden, resumenEtapas, sePuedeQuitar, validarEtapasOrden } from '../../utils/etapasOrden'
+import { moverProceso } from '../../utils/frisa'
 import { ETAPA_LABELS, ETAPA_ESTADO_LABELS, ETAPA_ESTADO_COLORS } from '../../lib/constants'
 import { formatDateTime, parseDate } from '../../utils/dates'
 import { medirEtapa } from '../../utils/tiemposEtapas'
@@ -64,6 +66,79 @@ function CorregirTiempos({ orderId, etapa, onListo, onCancelar }) {
   )
 }
 
+// V157 — "Editar etapas" (admin_fabrica / admin_general): quitar las que no
+// han empezado, agregar otras y cambiar el orden. Ver set_orden_etapas.
+function EditarEtapas({ orderId, etapas, onListo, onCancelar }) {
+  const [lista, setLista] = useState(etapas.map((e) => ({ etapa: e.etapa, estado: e.estado })))
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState(null)
+  const disponibles = etapasParaAgregar(lista)
+
+  async function handleGuardar() {
+    const falta = validarEtapasOrden(lista, etapas)
+    if (falta) return setError(new Error(falta))
+    if (!window.confirm(`¿Guardar las etapas de esta orden?\n\n${resumenEtapas(lista)}\n\nLas que quites dejan de aparecerle a su estación.`)) return
+    setGuardando(true)
+    setError(null)
+    const { error: err } = await setOrdenEtapas(orderId, lista.map((f) => f.etapa))
+    setGuardando(false)
+    if (err) return setError(err)
+    onListo()
+  }
+
+  return (
+    <div className="editar-etapas">
+      <div className="frisa-secuencia">
+        {lista.map((f, i) => (
+          <div key={f.etapa} className="frisa-secuencia__paso">
+            <span className="frisa-secuencia__n">{i + 1}</span>
+            <strong className="frisa-secuencia__nombre">{etiquetaEtapaOrden(f.etapa)}</strong>
+            <span className="pantone-hint">{f.estado ? ETAPA_ESTADO_LABELS[f.estado] || f.estado : 'Nueva'}</span>
+            <span className="frisa-secuencia__botones">
+              <button type="button" className="btn btn--ghost btn--small" onClick={() => setLista(moverProceso(lista, i, -1))} disabled={guardando || i === 0} aria-label="Subir">
+                ↑
+              </button>
+              <button type="button" className="btn btn--ghost btn--small" onClick={() => setLista(moverProceso(lista, i, 1))} disabled={guardando || i === lista.length - 1} aria-label="Bajar">
+                ↓
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost btn--small"
+                onClick={() => setLista(lista.filter((_, j) => j !== i))}
+                disabled={guardando || !sePuedeQuitar(f)}
+                title={sePuedeQuitar(f) ? 'Quitar' : 'Ya se empezó: no se puede quitar'}
+                aria-label="Quitar"
+              >
+                ×
+              </button>
+            </span>
+          </div>
+        ))}
+        {disponibles.length > 0 && (
+          <select className="input frisa-secuencia__agregar" value="" disabled={guardando} onChange={(e) => e.target.value && setLista([...lista, { etapa: e.target.value }])}>
+            <option value="">+ Agregar etapa…</option>
+            {disponibles.map((o) => (
+              <option key={o.key} value={o.key}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+      <p className="pantone-hint">Las etapas que ya empezaron no se pueden quitar (regrésalas a pendiente primero si fue un error). Las nuevas nacen pendientes.</p>
+      {error && <p className="form-error">{error.message}</p>}
+      <div style={{ display: 'flex', gap: 6 }}>
+        <button type="button" className="btn btn--primary btn--small" onClick={handleGuardar} disabled={guardando}>
+          {guardando ? 'Guardando…' : 'Guardar etapas'}
+        </button>
+        <button type="button" className="btn btn--ghost btn--small" onClick={onCancelar} disabled={guardando}>
+          Cancelar
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // Etapas paralelas (V23, ver supabase/schema_v23_etapas_paralelas.sql):
 // cada orden tiene una fila por etapa aplicable a su tipo — corte,
 // sublimado, producción, bordado, terminado — cada una con su propio
@@ -79,6 +154,7 @@ export default function OrderEtapasCard({ orderId, onUpdated }) {
   const [savingEtapa, setSavingEtapa] = useState(null)
   const [nombres, setNombres] = useState({})
   const [corrigiendo, setCorrigiendo] = useState(null)
+  const [editando, setEditando] = useState(false)
 
   useEffect(() => {
     fetchProfiles().then(({ data }) => setNombres(Object.fromEntries((data || []).map((p) => [p.id, p.full_name]))))
@@ -130,15 +206,38 @@ export default function OrderEtapasCard({ orderId, onUpdated }) {
   }
 
   if (loading) return null
-  if (etapas.length === 0) return null
+  if (etapas.length === 0 && !canEditEtapasOrden(role)) return null
 
   return (
     <div>
-      <h3 className="section-title section-title--small">Etapas de producción</h3>
-      <p className="page-subtitle" style={{ marginTop: -6, marginBottom: 10 }}>
+      <div className="section-header">
+        <h3 className="section-title section-title--small" style={{ marginBottom: 0 }}>
+          Etapas de producción
+        </h3>
+        {canEditEtapasOrden(role) && !editando && (
+          <button type="button" className="btn btn--ghost btn--small" onClick={() => setEditando(true)}>
+            Editar etapas
+          </button>
+        )}
+      </div>
+      <p className="page-subtitle" style={{ marginTop: 4, marginBottom: 10 }}>
         Cada etapa avanza por su cuenta — pueden estar varias en proceso al mismo tiempo.
       </p>
 
+      {editando && (
+        <EditarEtapas
+          orderId={orderId}
+          etapas={etapas}
+          onCancelar={() => setEditando(false)}
+          onListo={() => {
+            setEditando(false)
+            load()
+            onUpdated?.()
+          }}
+        />
+      )}
+
+      {!editando && (
       <div className="document-list">
         {etapas.map((et) => {
           const canChange = canChangeEtapa(role, et.etapa)
@@ -228,6 +327,7 @@ export default function OrderEtapasCard({ orderId, onUpdated }) {
           )
         })}
       </div>
+      )}
 
       {error && <p className="form-error">{error.message}</p>}
     </div>

@@ -234,6 +234,15 @@ export async function confirmOrderChanges(orderId) {
 // activas al mismo tiempo. orders.status sigue existiendo como un
 // resumen de un vistazo, recalculado automáticamente por el servidor
 // cada vez que se llama updateOrdenEtapa.
+// V157 — administradores de fábrica: la lista completa de etapas de la orden,
+// en orden (ver set_orden_etapas en schema_v157_editar_etapas_orden.sql).
+export async function setOrdenEtapas(orderId, etapas) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('set_orden_etapas', { p_order_id: orderId, p_etapas: etapas })
+}
+
 export async function fetchOrdenEtapas(orderId) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
