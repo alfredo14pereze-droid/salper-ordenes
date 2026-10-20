@@ -6782,8 +6782,9 @@ que existiera el tipo Frisa (V155), así que nacieron con corte → costura → 
 
 ### V157 — "Editar etapas" de una orden (administradores de fábrica, 2026-10-20)
 
-**ESTADO: rama `frisa-productos`, SIN subir a `main`. `supabase/schema_v157_editar_etapas_orden.sql` SIN aplicar.**
-Aplicar el SQL antes de subir el frontend (el botón llama a `set_orden_etapas`).
+**ESTADO: en `main`/producción desde el 2026-10-20. `supabase/schema_v157_editar_etapas_orden.sql` aplicado el
+2026-10-20 desde el SQL Editor (hash verificado); comprobado: una sola copia de `set_orden_etapas`, security
+definer, `anon` sin acceso. Todavía nadie lo ha usado en una orden real.**
 
 Pedido de Alfredo: poder quitarle corte (o cualquier etapa) a una orden, o editar sus etapas.
 - **SQL:** `set_orden_etapas(orden, etapas[])` — la lista nueva en orden. Solo **admin_fabrica / admin_general**
