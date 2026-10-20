@@ -6758,3 +6758,24 @@ probar `create_order_frisa` en producción "a ver si funciona": gasta folios FR.
 
 **Pendiente / para decidir:** número de corte de Frisa; proveedor de FR-PLA-OM-MC y FR-PLA-VE-MC; confirmar
 que FR-PLA-RO-MC es de Frisa; pasar Maquila al mismo mecanismo de secuencia.
+
+### V156 — Las playeras de Frisa capturadas como Industrial pasan a Frisa (2026-10-20)
+
+**ESTADO: `supabase/schema_v156_frisa_convertir_industrial.sql` APLICADO el 2026-10-20 desde el SQL Editor
+(hash verificado) y comprobado por consulta.** Solo datos.
+
+Síntoma: a Pancho (corte) le salían las playeras de Frisa. Causa: se capturaron como **Industrial** antes de
+que existiera el tipo Frisa (V155), así que nacieron con corte → costura → terminado.
+
+- Las 10 órdenes con cliente "FRISA" eran Industrial. Se pasaron a Frisa las **6 sin ninguna etapa iniciada**,
+  conservando folio, tallas, fecha y folios anteriores: IND-025 → FR-PLA-RO-MC, IND-026 → FR-PLA-AM-ML,
+  IND-030 → FR-PLA-AM-MC, IND-031 → FR-PLA-AM-ML, IND-032 → FR-PLA-AM-SR-ML, IND-033 → FR-PLA-VE-MC. Etapas
+  = secuencia del producto; historial "Pasó de Industrial a Frisa (código)".
+- **Cómo se identificó el producto:** por la prenda capturada — con/sin reflejante (nombre), color y manga;
+  "serigrafía frente y espalda" coincide con los productos de 2 impresiones (verde y roja).
+- Se quedaron como Industrial porque ya avanzaron: IND-022 (todo completado pero en "Por confirmar": revisar),
+  IND-023, IND-024 (terminadas) e IND-027 (terminado en proceso).
+- La migración apaga el candado `orders_frisa_upd` solo dentro de su transacción para cambiar el tipo.
+  Probado en PGlite (51 comprobaciones; las demás órdenes no se tocan, se puede correr dos veces).
+- Pendiente ofrecido: botón "Editar etapas" por orden para administradores (hoy no hay forma de quitar una
+  etapa a una orden desde la app).
