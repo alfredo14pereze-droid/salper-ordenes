@@ -6845,3 +6845,7 @@ operaciones (Admin producción y la vista de solo consulta de Juanis), sin SQL:
 - `utils/imprimirOperaciones.js` (con pruebas), `CatalogoOperacionesDoc` acepta `columnas` y `porPrenda`.
   Operadoras y Reglas siguen con su botón de imprimir de siempre.
 - Probado en el ejemplo local (marcar por prenda, ventana, PDF con una hoja por prenda).
+- Ajuste del mismo día (pedido de Alfredo: "se ve muy feo"): en el PDF, Prenda y Parte se encimaban
+  ("OVEROL CIENEGACUELLO"). La tabla ahora tiene columnas de ancho fijo con una línea entre cada una, renglones
+  alternados en gris claro, y las palabras ya no se parten con guion. Revisado con PDFs de ejemplo (todas las
+  columnas y una hoja por prenda).

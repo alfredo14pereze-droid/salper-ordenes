@@ -1,4 +1,4 @@
-import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
+import { Document, Page, View, Text, StyleSheet, Font } from '@react-pdf/renderer'
 
 // V70 — Imprimibles de producción. Terminología: "valor generado" (NO es el sueldo).
 const INK = '#1a1a1a'
@@ -197,26 +197,54 @@ const hoy = () => new Date().toLocaleDateString('es-MX', { day: 'numeric', month
 // nombre de título (para pegarla en la máquina, por ejemplo).
 const TODAS_LAS_COLUMNAS = ['prenda', 'parte', 'segundos', 'estado']
 
+// Sin partir palabras con guion al cambiar de renglón ("RE-FLEJANTE").
+Font.registerHyphenationCallback((palabra) => [palabra])
+
+// Columnas con ancho fijo y una línea entre cada una (antes Prenda y Parte se
+// encimaban: "OVEROL CIENEGACUELLO"). Operación toma el espacio que sobra.
+const COLS_OPERACIONES = {
+  folio: { titulo: 'Folio', width: 42, align: 'center', valor: (o) => o.folio },
+  prenda: { titulo: 'Prenda', width: 128, valor: (o) => o.prenda },
+  parte: { titulo: 'Parte', width: 104, valor: (o) => o.parte },
+  operacion: { titulo: 'Operación', flex: 1, valor: (o) => o.operacion },
+  segundos: { titulo: 'Seg.', width: 40, align: 'right', valor: (o) => o.segundos },
+  estado: { titulo: 'Estado', width: 50, align: 'center', valor: (o) => (o.activa ? 'Activa' : 'Inactiva') },
+}
+
+const t = StyleSheet.create({
+  head: { flexDirection: 'row', backgroundColor: INK, marginTop: 14 },
+  row: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: LINE, borderLeftWidth: 0.5, borderLeftColor: LINE },
+  rowPar: { backgroundColor: '#f6f4ef' },
+  cell: { paddingVertical: 4, paddingHorizontal: 5, fontSize: 9, borderRightWidth: 0.5, borderRightColor: LINE },
+  headCell: { paddingVertical: 5, paddingHorizontal: 5, fontSize: 8, color: '#fff', fontFamily: 'Helvetica-Bold', borderRightWidth: 0.5, borderRightColor: '#55524c' },
+})
+
+const estiloCol = (col) => ({
+  ...(col.flex ? { flexGrow: 1, flexShrink: 1, flexBasis: 0 } : { width: col.width, flexShrink: 0 }),
+  textAlign: col.align || 'left',
+})
+
 function TablaOperaciones({ operaciones, columnas }) {
   const c = new Set(columnas)
+  const cols = ['folio', 'prenda', 'parte', 'operacion', 'segundos', 'estado']
+    .filter((k) => k === 'folio' || k === 'operacion' || c.has(k))
+    .map((k) => COLS_OPERACIONES[k])
   return (
     <>
-      <View style={[s.th, { marginTop: 14 }]} fixed>
-        <Text style={[s.thT, s.colSm]}>Folio</Text>
-        {c.has('prenda') && <Text style={[s.thT, s.colMd]}>Prenda</Text>}
-        {c.has('parte') && <Text style={[s.thT, s.colFlex]}>Parte</Text>}
-        <Text style={[s.thT, s.colFlex]}>Operación</Text>
-        {c.has('segundos') && <Text style={[s.thT, s.colXs]}>Seg.</Text>}
-        {c.has('estado') && <Text style={[s.thT, s.colSm]}>Estado</Text>}
+      <View style={t.head} fixed>
+        {cols.map((col) => (
+          <Text key={col.titulo} style={[t.headCell, estiloCol(col)]}>
+            {col.titulo}
+          </Text>
+        ))}
       </View>
-      {operaciones.map((o) => (
-        <View key={o.folio} style={s.tr} wrap={false}>
-          <Text style={s.colSm}>{o.folio}</Text>
-          {c.has('prenda') && <Text style={s.colMd}>{o.prenda}</Text>}
-          {c.has('parte') && <Text style={s.colFlex}>{o.parte}</Text>}
-          <Text style={s.colFlex}>{o.operacion}</Text>
-          {c.has('segundos') && <Text style={s.colXs}>{o.segundos}</Text>}
-          {c.has('estado') && <Text style={s.colSm}>{o.activa ? 'Activa' : 'Inactiva'}</Text>}
+      {operaciones.map((o, i) => (
+        <View key={o.folio} style={[t.row, i % 2 === 1 && t.rowPar]} wrap={false}>
+          {cols.map((col) => (
+            <Text key={col.titulo} style={[t.cell, estiloCol(col)]}>
+              {String(col.valor(o) ?? '')}
+            </Text>
+          ))}
         </View>
       ))}
     </>
