@@ -6849,3 +6849,13 @@ operaciones (Admin producción y la vista de solo consulta de Juanis), sin SQL:
   ("OVEROL CIENEGACUELLO"). La tabla ahora tiene columnas de ancho fijo con una línea entre cada una, renglones
   alternados en gris claro, y las palabras ya no se parten con guion. Revisado con PDFs de ejemplo (todas las
   columnas y una hoja por prenda).
+
+### 2026-10-21 — Sublimado ve la información completa de la orden
+
+Pedido de Alfredo: que Samuel (sublimado) vea el pantone y toda la información en las órdenes de sublimado.
+Solo pantalla (`EstacionOrderPage.jsx`), sin SQL ni cambios de permisos:
+- En la estación de sublimado, cada prenda muestra ahora Pantone / especificación, Cuello, Manga, Vivos, Puños,
+  Logotipos, Números, Observaciones y si lleva bolsas (solo los campos que tengan dato).
+- Arriba de las prendas: fecha de entrega y las notas generales de la orden.
+- Las demás estaciones siguen viendo el resumen corto de siempre.
+- Probado en el ejemplo local con rol sublimado (vista de celular).

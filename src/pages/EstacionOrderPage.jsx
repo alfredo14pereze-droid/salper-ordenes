@@ -23,7 +23,7 @@ import EtapaCronometro from '../components/orders/EtapaCronometro'
 import { medirEtapa } from '../utils/tiemposEtapas'
 import { estaPausada, soportaPausa } from '../utils/pausasEtapa'
 import { formatMinutosHabiles } from '../utils/horasHabiles'
-import { formatDateTime } from '../utils/dates'
+import { formatDate, formatDateTime } from '../utils/dates'
 
 const conTalla = (talla) => (talla ? `T.${talla}` : '')
 
@@ -95,7 +95,22 @@ function RosterEstacion({ item }) {
   )
 }
 
-function PrendaResumen({ item }) {
+// `completa` (sublimado, Samuel): además, pantone y todas las
+// especificaciones de la prenda, como en el detalle de la orden.
+function PrendaResumen({ item, completa = false }) {
+  const detalles = completa
+    ? [
+        item.pantone && ['Pantone / especificación', item.pantone],
+        item.cuello && ['Cuello', item.cuello],
+        item.manga && ['Manga', item.manga],
+        item.vivos && ['Vivos', item.vivos],
+        item.punos && ['Puños', item.punos],
+        item.logotipos && ['Logotipos', item.logotipos],
+        item.numeros && ['Números', item.numeros],
+        item.observaciones && ['Observaciones', item.observaciones],
+        item.lleva_bolsas && ['Bolsas', 'Lleva bolsas'],
+      ].filter(Boolean)
+    : []
   const sizesText = (item.sizes || [])
     .filter((s) => String(s.talla).trim())
     .map((s) => `${conTalla(s.talla)}: ${s.cantidad}`)
@@ -108,6 +123,11 @@ function PrendaResumen({ item }) {
         {item.color ? ` · ${item.color}` : ''}
       </p>
       {item.tela_nombre && <p className="estacion-prenda__detalle">Tela: {item.tela_nombre}</p>}
+      {detalles.map(([etiqueta, valor]) => (
+        <p key={etiqueta} className="estacion-prenda__detalle">
+          {etiqueta}: <b>{valor}</b>
+        </p>
+      ))}
       {item.lleva_bordado && item.bordado_ubicacion && <p className="estacion-prenda__detalle">Bordado en: {item.bordado_ubicacion}</p>}
       <p className="estacion-prenda__detalle">{sizesText || 'Sin tallas capturadas'}</p>
       {/* V134 — impresiones de la prenda (foto y dónde va), para la etapa de impresión. */}
@@ -570,11 +590,18 @@ export default function EstacionOrderPage() {
         </div>
       )}
       {order.created_by_nombre && <p className="pantone-hint">Creada por: {order.created_by_nombre}</p>}
+      {/* Sublimado (Samuel) ve la información completa: entrega y notas de la orden. */}
+      {estacion?.dashboardSublimado && (
+        <>
+          <p className="estacion-prenda__detalle">Entrega: {formatDate(order.requested_delivery_date)}</p>
+          {order.description?.trim() && <p className="estacion-prenda__detalle">Notas de la orden: {order.description}</p>}
+        </>
+      )}
       <AvisoTallasDanadas order={order} paraEstacion />
 
       <div className="estacion-list" style={{ marginTop: 14 }}>
         {(order.items || []).map((item, i) => (
-          <PrendaResumen key={item.id || i} item={item} />
+          <PrendaResumen key={item.id || i} item={item} completa={!!estacion?.dashboardSublimado} />
         ))}
       </div>
 
