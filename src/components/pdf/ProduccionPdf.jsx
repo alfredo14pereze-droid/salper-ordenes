@@ -192,30 +192,63 @@ const hoy = () => new Date().toLocaleDateString('es-MX', { day: 'numeric', month
 // premios): un catálogo imprimible por sección, tal cual está en ese
 // momento (no es un histórico ni compara semanas, a diferencia de los
 // otros 2 documentos de este archivo).
-export function CatalogoOperacionesDoc({ operaciones }) {
+// `columnas`: cuáles de prenda/parte/segundos/estado se imprimen (folio y
+// operación siempre). `porPrenda`: cada prenda en su propia hoja, con su
+// nombre de título (para pegarla en la máquina, por ejemplo).
+const TODAS_LAS_COLUMNAS = ['prenda', 'parte', 'segundos', 'estado']
+
+function TablaOperaciones({ operaciones, columnas }) {
+  const c = new Set(columnas)
+  return (
+    <>
+      <View style={[s.th, { marginTop: 14 }]} fixed>
+        <Text style={[s.thT, s.colSm]}>Folio</Text>
+        {c.has('prenda') && <Text style={[s.thT, s.colMd]}>Prenda</Text>}
+        {c.has('parte') && <Text style={[s.thT, s.colFlex]}>Parte</Text>}
+        <Text style={[s.thT, s.colFlex]}>Operación</Text>
+        {c.has('segundos') && <Text style={[s.thT, s.colXs]}>Seg.</Text>}
+        {c.has('estado') && <Text style={[s.thT, s.colSm]}>Estado</Text>}
+      </View>
+      {operaciones.map((o) => (
+        <View key={o.folio} style={s.tr} wrap={false}>
+          <Text style={s.colSm}>{o.folio}</Text>
+          {c.has('prenda') && <Text style={s.colMd}>{o.prenda}</Text>}
+          {c.has('parte') && <Text style={s.colFlex}>{o.parte}</Text>}
+          <Text style={s.colFlex}>{o.operacion}</Text>
+          {c.has('segundos') && <Text style={s.colXs}>{o.segundos}</Text>}
+          {c.has('estado') && <Text style={s.colSm}>{o.activa ? 'Activa' : 'Inactiva'}</Text>}
+        </View>
+      ))}
+    </>
+  )
+}
+
+export function CatalogoOperacionesDoc({ operaciones, columnas = TODAS_LAS_COLUMNAS, porPrenda = false }) {
+  if (porPrenda) {
+    const grupos = []
+    for (const o of operaciones) {
+      const g = grupos.find((x) => x.prenda === o.prenda)
+      if (g) g.operaciones.push(o)
+      else grupos.push({ prenda: o.prenda, operaciones: [o] })
+    }
+    return (
+      <Document title="Catálogo de operaciones · SALPER">
+        {grupos.map((g) => (
+          <Page key={g.prenda} size="LETTER" style={s.page}>
+            <Text style={s.brand}>SALPER · {g.prenda}</Text>
+            <Text style={s.sub}>{g.operaciones.length} operaciones · generado el {hoy()}</Text>
+            <TablaOperaciones operaciones={g.operaciones} columnas={columnas.filter((x) => x !== 'prenda')} />
+          </Page>
+        ))}
+      </Document>
+    )
+  }
   return (
     <Document title="Catálogo de operaciones · SALPER">
       <Page size="LETTER" style={s.page}>
         <Text style={s.brand}>SALPER · CATÁLOGO DE OPERACIONES</Text>
         <Text style={s.sub}>{operaciones.length} operaciones · generado el {hoy()}</Text>
-        <View style={[s.th, { marginTop: 14 }]}>
-          <Text style={[s.thT, s.colSm]}>Folio</Text>
-          <Text style={[s.thT, s.colMd]}>Prenda</Text>
-          <Text style={[s.thT, s.colFlex]}>Parte</Text>
-          <Text style={[s.thT, s.colFlex]}>Operación</Text>
-          <Text style={[s.thT, s.colXs]}>Seg.</Text>
-          <Text style={[s.thT, s.colSm]}>Estado</Text>
-        </View>
-        {operaciones.map((o) => (
-          <View key={o.folio} style={s.tr} wrap={false}>
-            <Text style={s.colSm}>{o.folio}</Text>
-            <Text style={s.colMd}>{o.prenda}</Text>
-            <Text style={s.colFlex}>{o.parte}</Text>
-            <Text style={s.colFlex}>{o.operacion}</Text>
-            <Text style={s.colXs}>{o.segundos}</Text>
-            <Text style={s.colSm}>{o.activa ? 'Activa' : 'Inactiva'}</Text>
-          </View>
-        ))}
+        <TablaOperaciones operaciones={operaciones} columnas={columnas} />
       </Page>
     </Document>
   )

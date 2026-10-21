@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Modal from '../talleros/Modal'
-import ImprimirCatalogo from './ImprimirCatalogo'
+import PdfPreviewModal from '../pdf/PdfPreviewModal'
 import { fetchOperacionesTodas, guardarOperacion } from '../../services/produccionService'
 import { useAuth } from '../../contexts/AuthContext'
 import { esFabricaSoloLectura } from '../../utils/permissions'
 import { buildCatalogoOperacionesPdfBlob, catalogoPdfFileName } from '../../utils/generateProduccionPdf'
+import { COLUMNAS_DEFAULT, COLUMNAS_OPCIONALES, operacionesParaImprimir } from '../../utils/imprimirOperaciones'
 import {
   centena,
   sugerirFolioPrendaExistente,
@@ -30,6 +31,9 @@ export default function OperacionesAdmin({ consulta = false }) {
   const [verCentenas, setVerCentenas] = useState(false)
   const [alta, setAlta] = useState(null)
   const [edit, setEdit] = useState(null)
+  // Palomitas para escoger qué imprimir (se conservan al cambiar el filtro).
+  const [marcadas, setMarcadas] = useState(() => new Set())
+  const [imprimir, setImprimir] = useState(false)
 
   const cargar = useCallback(async () => {
     const { data, error: err } = await fetchOperacionesTodas()
@@ -46,6 +50,26 @@ export default function OperacionesAdmin({ consulta = false }) {
     const n = q.trim().toLowerCase()
     return ops.filter((o) => (!fPrenda || o.prenda === fPrenda) && (!n || `${o.folio} ${o.operacion} ${o.parte}`.toLowerCase().includes(n)))
   }, [ops, fPrenda, q])
+  const todasVisiblesMarcadas = filtradas.length > 0 && filtradas.every((o) => marcadas.has(o.folio))
+  function marcar(folio) {
+    setMarcadas((prev) => {
+      const n = new Set(prev)
+      if (n.has(folio)) n.delete(folio)
+      else n.add(folio)
+      return n
+    })
+  }
+  function marcarVisibles() {
+    setMarcadas((prev) => {
+      const n = new Set(prev)
+      for (const o of filtradas) {
+        if (todasVisiblesMarcadas) n.delete(o.folio)
+        else n.add(o.folio)
+      }
+      return n
+    })
+  }
+
   const centenasPrenda = useMemo(() => (fPrenda ? centenas.filter((c) => c.prendas.includes(fPrenda)) : []), [centenas, fPrenda])
   const pocas = centenas.filter((c) => c.pocos)
 
@@ -80,7 +104,9 @@ export default function OperacionesAdmin({ consulta = false }) {
               {verCentenas ? 'Ocultar' : 'Folios libres por centena'}
             </button>
           )}
-          <ImprimirCatalogo label="Imprimir operaciones" build={() => buildCatalogoOperacionesPdfBlob(ops)} fileName={catalogoPdfFileName('operaciones')} />
+          <button type="button" className="btn btn--secondary btn--small" onClick={() => setImprimir(true)}>
+            Imprimir…
+          </button>
           {!soloLectura && (
             <button type="button" className="btn btn--secondary btn--small" onClick={() => setAlta({ prendaSel: fPrenda || '', prendaNueva: '', folio: '', parte: '', operacion: '', segundos: '' })}>
               + Nueva operación
@@ -89,6 +115,14 @@ export default function OperacionesAdmin({ consulta = false }) {
         </div>
       </div>
       {error && <p className="form-error">{error}</p>}
+      {marcadas.size > 0 && (
+        <p className="template-hint">
+          {marcadas.size} {marcadas.size === 1 ? 'operación marcada' : 'operaciones marcadas'} para imprimir.{' '}
+          <button type="button" className="btn btn--ghost btn--small" onClick={() => setMarcadas(new Set())}>
+            Quitar marcas
+          </button>
+        </p>
+      )}
       {!consulta && pocas.length > 0 && (
         <p className="produccion__aviso">
           ⚠ A estas centenas les quedan menos de {MIN_LIBRES_AVISO} folios libres: {pocas.map((c) => `${c.centena * 100} (${c.libres})`).join(', ')}.
@@ -127,6 +161,15 @@ export default function OperacionesAdmin({ consulta = false }) {
         <table className="simple-table">
           <thead>
             <tr>
+              <th>
+                <input
+                  type="checkbox"
+                  checked={todasVisiblesMarcadas}
+                  onChange={marcarVisibles}
+                  title={`Marcar las ${filtradas.length} que se ven`}
+                  aria-label={`Marcar las ${filtradas.length} que se ven`}
+                />
+              </th>
               <th>Folio</th>
               <th>Prenda</th>
               <th>Parte</th>
@@ -139,6 +182,9 @@ export default function OperacionesAdmin({ consulta = false }) {
           <tbody>
             {filtradas.slice(0, 300).map((o) => (
               <tr key={o.folio} className={o.activa ? '' : 'mt-catalogo__item--off'}>
+                <td>
+                  <input type="checkbox" checked={marcadas.has(o.folio)} onChange={() => marcar(o.folio)} aria-label={`Marcar ${o.folio} para imprimir`} />
+                </td>
                 <td>{o.folio}</td>
                 <td>{o.prenda}</td>
                 <td>{o.parte}</td>
@@ -167,6 +213,7 @@ export default function OperacionesAdmin({ consulta = false }) {
 
       {alta && <AltaOperacion ops={ops} prendas={prendas} valores={alta} onClose={() => setAlta(null)} onDone={() => { setAlta(null); cargar() }} />}
       {edit && <EditarOperacion op={edit} onClose={() => setEdit(null)} onDone={() => { setEdit(null); cargar() }} />}
+      {imprimir && <ImprimirOperaciones ops={ops} visibles={filtradas} marcadas={marcadas} filtro={{ prenda: fPrenda, q }} onClose={() => setImprimir(false)} />}
     </div>
   )
 }
@@ -293,6 +340,93 @@ function AltaOperacion({ ops, prendas, valores, onClose, onDone }) {
           </button>
         </div>
       </form>
+    </Modal>
+  )
+}
+
+// Imprimir operaciones escogiendo qué va en la hoja: lo que se ve (filtro y
+// búsqueda), solo las marcadas o todo el catálogo; con o sin inactivas; qué
+// columnas; y si cada prenda va en su propia hoja.
+function ImprimirOperaciones({ ops, visibles, marcadas, filtro, onClose }) {
+  const [modo, setModo] = useState(marcadas.size > 0 ? 'marcadas' : 'visibles')
+  const [incluirInactivas, setIncluirInactivas] = useState(false)
+  const [columnas, setColumnas] = useState(COLUMNAS_DEFAULT)
+  const [porPrenda, setPorPrenda] = useState(false)
+  const [generando, setGenerando] = useState(false)
+  const [error, setError] = useState(null)
+  const [preview, setPreview] = useState(null)
+
+  const lista = operacionesParaImprimir(ops, { modo, visibles, marcadas, incluirInactivas })
+  const descripcionFiltro = [filtro.prenda, filtro.q.trim() && `"${filtro.q.trim()}"`].filter(Boolean).join(' · ') || 'sin filtro'
+  const toggleColumna = (key) => setColumnas((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
+
+  async function verPdf() {
+    setGenerando(true)
+    setError(null)
+    try {
+      const blob = await buildCatalogoOperacionesPdfBlob(lista, { columnas, porPrenda })
+      setPreview({ blob, fileName: catalogoPdfFileName('operaciones') })
+    } catch (e) {
+      setError(`No se pudo generar el PDF: ${e.message}`)
+    }
+    setGenerando(false)
+  }
+
+  if (preview) return <PdfPreviewModal blob={preview.blob} fileName={preview.fileName} onClose={onClose} />
+
+  const opcion = (valor, texto, deshabilitada = false) => (
+    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 400, opacity: deshabilitada ? 0.5 : 1 }}>
+      <input type="radio" name="modo-impresion" checked={modo === valor} disabled={deshabilitada} onChange={() => setModo(valor)} />
+      {texto}
+    </label>
+  )
+
+  return (
+    <Modal title="Imprimir operaciones" onClose={onClose}>
+      <div className="order-form">
+        <div>
+          <span className="field-label" style={{ display: 'block', marginBottom: 6 }}>
+            ¿Qué operaciones?
+          </span>
+          {opcion('visibles', `Las que se ven ahora (${visibles.length}) — ${descripcionFiltro}`)}
+          {opcion('marcadas', `Solo las marcadas (${marcadas.size})`, marcadas.size === 0)}
+          {opcion('todas', `Todo el catálogo (${ops.length})`)}
+          {marcadas.size === 0 && <p className="template-hint">Para escoger una por una, márcalas con la casilla de la izquierda en la tabla.</p>}
+        </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 400 }}>
+          <input type="checkbox" checked={incluirInactivas} onChange={(e) => setIncluirInactivas(e.target.checked)} />
+          Incluir operaciones inactivas
+        </label>
+        <div>
+          <span className="field-label" style={{ display: 'block', marginBottom: 6 }}>
+            Columnas (folio y operación siempre van)
+          </span>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            {COLUMNAS_OPCIONALES.map((c) => (
+              <label key={c.key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 400 }}>
+                <input type="checkbox" checked={columnas.includes(c.key)} onChange={() => toggleColumna(c.key)} />
+                {c.label}
+              </label>
+            ))}
+          </div>
+        </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 400 }}>
+          <input type="checkbox" checked={porPrenda} onChange={(e) => setPorPrenda(e.target.checked)} />
+          Una hoja por prenda (con el nombre de la prenda de título)
+        </label>
+        <p className="template-hint">
+          Se imprimirán <b>{lista.length}</b> {lista.length === 1 ? 'operación' : 'operaciones'}.
+        </p>
+        {error && <p className="form-error">{error}</p>}
+        <div className="order-form__actions">
+          <button type="button" className="btn btn--ghost" onClick={onClose}>
+            Cancelar
+          </button>
+          <button type="button" className="btn btn--primary" disabled={generando || lista.length === 0} onClick={verPdf}>
+            {generando ? 'Generando…' : 'Ver PDF'}
+          </button>
+        </div>
+      </div>
     </Modal>
   )
 }

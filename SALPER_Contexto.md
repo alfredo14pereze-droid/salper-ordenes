@@ -6830,3 +6830,18 @@ modificar nada. Sin SQL: la base ya le dejaba leer `prod_operaciones` (política
 - Permiso `canVerOperacionesProduccion` = capturar o ver producción (sin clave nueva en "Roles y permisos",
   porque una clave que no exista en `rol_permisos` dejaría a todos fuera).
 - Probado en el ejemplo local con rol captura_produccion (filtro, búsqueda, sin botones de edición).
+
+### 2026-10-21 — Imprimir operaciones escogiendo qué se imprime
+
+Pedido de Alfredo. Antes "Imprimir operaciones" sacaba siempre el catálogo completo. Ahora, en el catálogo de
+operaciones (Admin producción y la vista de solo consulta de Juanis), sin SQL:
+- Cada renglón tiene una **casilla para marcarlo**; la de la cabecera marca o desmarca todas las que se ven con
+  el filtro y la búsqueda. Las marcas se conservan al cambiar de filtro ("N operaciones marcadas · Quitar
+  marcas").
+- **"Imprimir…"** abre una ventana: qué operaciones (las que se ven ahora / solo las marcadas / todo el
+  catálogo), incluir o no las inactivas (por omisión no), qué columnas (prenda, parte, segundos, estado; folio
+  y operación siempre) y **"Una hoja por prenda"** (cada prenda en su hoja, con su nombre de título). Muestra
+  cuántas se van a imprimir y abre la vista previa del PDF de siempre.
+- `utils/imprimirOperaciones.js` (con pruebas), `CatalogoOperacionesDoc` acepta `columnas` y `porPrenda`.
+  Operadoras y Reglas siguen con su botón de imprimir de siempre.
+- Probado en el ejemplo local (marcar por prenda, ventana, PDF con una hoja por prenda).

@@ -20,8 +20,8 @@ export const produccionPdfFileName = (tipo, semana) => `Produccion-${tipo}-${sem
 
 // V109 — catálogos imprimibles de Admin producción (Operaciones/
 // Operadoras/Reglas), sin relación con una semana en particular.
-export async function buildCatalogoOperacionesPdfBlob(operaciones) {
-  return pdf(<CatalogoOperacionesDoc operaciones={operaciones} />).toBlob()
+export async function buildCatalogoOperacionesPdfBlob(operaciones, opciones = {}) {
+  return pdf(<CatalogoOperacionesDoc operaciones={operaciones} {...opciones} />).toBlob()
 }
 
 export async function buildCatalogoOperadorasPdfBlob(operadoras) {
