@@ -6800,3 +6800,20 @@ Pedido de Alfredo: poder quitarle corte (o cualquier etapa) a una orden, o edita
 - **Probado:** PGlite (16 comprobaciones: permisos, quitar corte, agregar/quitar bordado e impresión y que no
   regresen al editar prendas, no quitar iniciadas, reordenar, historial, Frisa), `node --test` (51),
   `npm run build` y la pantalla en el ejemplo local (`/etapas`).
+
+### 2026-10-21 — Producción: 181 operaciones de 3 overoles (solo datos)
+
+Alfredo mandó `overoles.xlsx` (hojas "doble", "cinega", "Hoja3"). Cargado con
+`supabase/datos_2026-10-21_operaciones_overoles.sql` (insert directo, con guarda de folios/prendas; hash
+verificado; comprobado: catálogo pasó de 636 a 817 operaciones):
+- **OVEROL CON DOBLE REFLEJANTE** folios 1301–1362 (62), **OVEROL CIENEGA** 1401–1459 (59), **OVEROL
+  MILPILLAS** 1501–1560 (60): centenas libres, una por prenda.
+- Prenda = título de la hoja; parte = subtítulo; operación = renglón; **segundos = columna G "total TIEMPO"
+  × 100** (0.35 = 35 s; es el tiempo por prenda: por pieza × piezas por prenda). Cuadra con los totales del
+  Excel en minutos.
+- Textos en mayúsculas, faltas corregidas (REFLEJANTE, BASTILLA, DELANTERO, BROCHE CHAQUETIN, PESPUNTE).
+- **Decisión de Alfredo:** las 7 de más de 120 s llevan la tercera parte del tiempo del Excel (folios 1312,
+  1321, 1343, 1410, 1419, 1438, 1440; p. ej. "PEGAR REFLEJANTE FRENTE 3" 430 → 143.3 s).
+- Tiempo por overol: doble 3115 s (51.9 min), Ciénega 3104 s (51.7 min), Milpillas 2717 s (45.3 min).
+- La primera versión del archivo falló sin cargar nada (columna de más en el insert); se corrigió y se probó
+  en PGlite antes de volver a correrla.
