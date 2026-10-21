@@ -26,7 +26,7 @@ begin
   end if;
 end $$;
 
-insert into public.prod_operaciones (folio, prenda, parte, operacion, segundos, activa) values
+insert into public.prod_operaciones (folio, prenda, parte, operacion, segundos) values
   (1301, 'OVEROL CON DOBLE REFLEJANTE', 'CUELLO', 'CERRAR CUELLO', 35),
   (1302, 'OVEROL CON DOBLE REFLEJANTE', 'CUELLO', 'VOLTEAR', 18),
   (1303, 'OVEROL CON DOBLE REFLEJANTE', 'CUELLO', 'PESPUNTE 1/16', 35),
