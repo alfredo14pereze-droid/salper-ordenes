@@ -77,7 +77,10 @@ function TalleroDetail() {
           <dt>Tela</dt>
           <dd>{tallero.tela || '—'}</dd>
           <dt>Ubicación</dt>
-          <dd>{[ubicacion, tallero.estanteria].filter(Boolean).join(' · ') || '—'}</dd>
+          <dd>{ubicacion || '—'}</dd>
+          {/* La columna en la base sigue llamándose "estanteria"; en pantalla es la caja física. */}
+          <dt>Caja</dt>
+          <dd>{tallero.estanteria || '—'}</dd>
           {tallero.estado_uso === 'prestado' && (
             <>
               <dt>Lo tiene</dt>

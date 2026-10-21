@@ -126,7 +126,7 @@ export default function TalleroFormModal({ tallero, productos, onClose, onDone }
             </select>
           </label>
           <label>
-            Estantería
+            Caja
             <input type="text" className="input" value={v.estanteria} onChange={(e) => set('estanteria', e.target.value)} />
           </label>
         </div>
