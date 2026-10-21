@@ -30,6 +30,7 @@ import ProduccionCapturaPage from './pages/ProduccionCapturaPage'
 import ProduccionRevisionPage from './pages/ProduccionRevisionPage'
 import ProduccionDashboardPage from './pages/ProduccionDashboardPage'
 import ProduccionAdminPage from './pages/ProduccionAdminPage'
+import ProduccionOperacionesPage from './pages/ProduccionOperacionesPage'
 import EstadisticasProduccionPage from './pages/EstadisticasProduccionPage'
 import TalleroDetailPage from './pages/TalleroDetailPage'
 import InventarioPage from './pages/InventarioPage'
@@ -121,6 +122,7 @@ function AuthGate() {
           <Route path="/produccion/revision" element={<ProduccionRevisionPage />} />
           <Route path="/produccion/dashboard" element={<ProduccionDashboardPage />} />
           <Route path="/produccion/admin" element={<ProduccionAdminPage />} />
+          <Route path="/produccion/operaciones" element={<ProduccionOperacionesPage />} />
           <Route path="/estadisticas-produccion" element={<EstadisticasProduccionPage />} />
           <Route path="/talleros" element={<TallerosPage />} />
           <Route path="/talleros/:id" element={<TalleroDetailPage />} />

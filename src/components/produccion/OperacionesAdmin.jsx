@@ -18,9 +18,11 @@ const NUEVA = '__nueva__'
 
 // V70 — Catálogo de operaciones. Los folios se organizan por centenas según la prenda: al dar de alta se
 // sugiere el siguiente folio libre; las operaciones NUNCA se borran (solo se desactivan) y un folio jamás se reutiliza.
-export default function OperacionesAdmin() {
+// `consulta`: vista de solo consulta (Juanis, /produccion/operaciones): buscar y
+// filtrar, sin altas, ediciones ni información de folios libres.
+export default function OperacionesAdmin({ consulta = false }) {
   const { role } = useAuth()
-  const soloLectura = esFabricaSoloLectura(role)
+  const soloLectura = consulta || esFabricaSoloLectura(role)
   const [ops, setOps] = useState([])
   const [error, setError] = useState(null)
   const [fPrenda, setFPrenda] = useState('')
@@ -73,9 +75,11 @@ export default function OperacionesAdmin() {
           <input className="input" placeholder="Folio u operación…" value={q} onChange={(e) => setQ(e.target.value)} />
         </label>
         <div className="revision__acciones">
-          <button type="button" className="btn btn--ghost btn--small" onClick={() => setVerCentenas((v) => !v)}>
-            {verCentenas ? 'Ocultar' : 'Folios libres por centena'}
-          </button>
+          {!consulta && (
+            <button type="button" className="btn btn--ghost btn--small" onClick={() => setVerCentenas((v) => !v)}>
+              {verCentenas ? 'Ocultar' : 'Folios libres por centena'}
+            </button>
+          )}
           <ImprimirCatalogo label="Imprimir operaciones" build={() => buildCatalogoOperacionesPdfBlob(ops)} fileName={catalogoPdfFileName('operaciones')} />
           {!soloLectura && (
             <button type="button" className="btn btn--secondary btn--small" onClick={() => setAlta({ prendaSel: fPrenda || '', prendaNueva: '', folio: '', parte: '', operacion: '', segundos: '' })}>
@@ -85,12 +89,12 @@ export default function OperacionesAdmin() {
         </div>
       </div>
       {error && <p className="form-error">{error}</p>}
-      {pocas.length > 0 && (
+      {!consulta && pocas.length > 0 && (
         <p className="produccion__aviso">
           ⚠ A estas centenas les quedan menos de {MIN_LIBRES_AVISO} folios libres: {pocas.map((c) => `${c.centena * 100} (${c.libres})`).join(', ')}.
         </p>
       )}
-      {fPrenda && centenasPrenda.length > 0 && (
+      {!consulta && fPrenda && centenasPrenda.length > 0 && (
         <p className="template-hint">
           {fPrenda}: {centenasPrenda.map((c) => `centena ${c.centena * 100} — ${c.libres} folios libres`).join(' · ')}
         </p>
@@ -159,7 +163,7 @@ export default function OperacionesAdmin() {
         </table>
         {filtradas.length > 300 && <p className="template-hint">Mostrando 300 de {filtradas.length}; filtra por prenda o busca.</p>}
       </div>
-      <p className="template-hint">Las operaciones no se borran: se desactivan. Un folio nunca se reutiliza.</p>
+      {!consulta && <p className="template-hint">Las operaciones no se borran: se desactivan. Un folio nunca se reutiliza.</p>}
 
       {alta && <AltaOperacion ops={ops} prendas={prendas} valores={alta} onClose={() => setAlta(null)} onDone={() => { setAlta(null); cargar() }} />}
       {edit && <EditarOperacion op={edit} onClose={() => setEdit(null)} onDone={() => { setEdit(null); cargar() }} />}

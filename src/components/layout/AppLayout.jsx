@@ -14,7 +14,7 @@ import {
   canViewTalleros,
   isCapturaProduccion,
   canCapturarProduccion,
-  canViewProduccionMontos,
+  canViewProduccionMontos, canVerOperacionesProduccion,
   canVerRankingProduccion,
   canViewPedidosTienda,
   canViewEstadisticas,
@@ -146,6 +146,9 @@ export default function AppLayout({ children }) {
     // V103 — también captura_produccion (Juanis), ver ranking/valor generado.
     { to: '/produccion/dashboard', label: 'Dashboard producción', show: canVerRankingProduccion(role) },
     { to: '/produccion/admin', label: 'Admin producción', show: canViewProduccionMontos(role) },
+    // 2026-10-21 — catálogo de operaciones de solo consulta (Juanis). Los admins
+    // ya lo tienen, editable, en Admin producción.
+    { to: '/produccion/operaciones', label: 'Operaciones', show: canVerOperacionesProduccion(role) && !canViewProduccionMontos(role) },
     // V63 — visible también para fábrica (ver canViewTalleros).
     { to: '/talleros', label: 'Talleros', show: canViewTalleros(role) },
     // V95 — Inventario ya abierto por rol (ver canViewInventario).

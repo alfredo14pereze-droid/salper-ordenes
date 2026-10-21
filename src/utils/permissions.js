@@ -478,6 +478,15 @@ export function canCapturarProduccion(role) {
   return tiene(role, 'prod.capturar', () => role === 'admin_general' || role === 'admin_fabrica' || role === 'captura_produccion')
 }
 
+// 2026-10-21 — catálogo de operaciones de SOLO CONSULTA (/produccion/operaciones):
+// quien captura (Juanis) lo ve, busca y filtra, sin editar nada. Los admins ya
+// lo tienen, editable, en Admin producción. El servidor ya le permitía leerlo
+// (política "prod catalogo operaciones": prod_puede_capturar()). Sin clave nueva
+// en "Roles y permisos": se apoya en las de capturar / ver producción.
+export function canVerOperacionesProduccion(role) {
+  return canCapturarProduccion(role) || canViewProduccionMontos(role)
+}
+
 // V103 — pedido del usuario: Juanis (captura_produccion) ve el resultado
 // ("valor generado") de cada operadora y puede imprimir el ranking —
 // relaja, a propósito y SOLO para esto, la regla de "nunca ve montos".

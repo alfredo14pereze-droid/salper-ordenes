@@ -6817,3 +6817,16 @@ verificado; comprobado: catálogo pasó de 636 a 817 operaciones):
 - Tiempo por overol: doble 3115 s (51.9 min), Ciénega 3104 s (51.7 min), Milpillas 2717 s (45.3 min).
 - La primera versión del archivo falló sin cargar nada (columna de más en el insert); se corrigió y se probó
   en PGlite antes de volver a correrla.
+
+### 2026-10-21 — Juanis ve el catálogo de operaciones (solo consulta)
+
+Pedido de Alfredo: que Juanis (`captura_produccion`) vea todas las operaciones, con filtro y búsqueda, sin poder
+modificar nada. Sin SQL: la base ya le dejaba leer `prod_operaciones` (política "prod catalogo operaciones",
+`prod_puede_capturar()`).
+- Pantalla nueva **`/produccion/operaciones`** ("Operaciones" en el menú, solo para quien captura y no tiene
+  Admin producción): `OperacionesAdmin` con `consulta` → filtro por prenda, búsqueda por folio, parte u
+  operación, columnas folio/prenda/parte/operación/segundos/estado y "Imprimir operaciones". Sin altas,
+  ediciones, activar/desactivar ni datos de folios libres.
+- Permiso `canVerOperacionesProduccion` = capturar o ver producción (sin clave nueva en "Roles y permisos",
+  porque una clave que no exista en `rol_permisos` dejaría a todos fuera).
+- Probado en el ejemplo local con rol captura_produccion (filtro, búsqueda, sin botones de edición).
