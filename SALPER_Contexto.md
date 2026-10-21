@@ -6859,3 +6859,16 @@ Solo pantalla (`EstacionOrderPage.jsx`), sin SQL ni cambios de permisos:
 - Arriba de las prendas: fecha de entrega y las notas generales de la orden.
 - Las demás estaciones siguen viendo el resumen corto de siempre.
 - Probado en el ejemplo local con rol sublimado (vista de celular).
+
+### 2026-10-21 — Overoles: nueva operación "Cerrar chaquetín" y folios recorridos
+
+Pedido de Alfredo (Excel "overoles 2026"): cada overol lleva una parte nueva **CERRAR CHAQUETIN → CERRAR COSTADO
+(60 s)** justo después de ESPALDA, y los folios siguientes se recorren uno hacia abajo para que sigan el orden
+del Excel. Los segundos ya cargados no se tocaron (incluidas las 7 operaciones divididas entre 3).
+- `supabase/datos_2026-10-21b_overoles_cerrar_chaquetin.sql`, aplicado en producción:
+  doble reflejante nueva 1322 (1322–1362 → 1323–1363), Ciénega nueva 1420 (1420–1459 → 1421–1460),
+  Milpillas nueva 1520 (1520–1560 → 1521–1561). Ahora son 63, 60 y 61 operaciones (820 en el catálogo).
+- Excepción a "un folio nunca se reutiliza": esos folios se cargaron el mismo día y no tenían ninguna captura en
+  `prod_registros`. El script lo verifica, revisa con un hash que el catálogo de overoles siga igual a la carga
+  original y compara el resultado contra el hash esperado; si algo no cuadra, no cambia nada.
+- PDFs nuevos de los tres overoles (folio, parte, operación, segundos; prenda de título).
