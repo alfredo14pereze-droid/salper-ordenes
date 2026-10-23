@@ -6872,3 +6872,20 @@ del Excel. Los segundos ya cargados no se tocaron (incluidas las 7 operaciones d
   `prod_registros`. El script lo verifica, revisa con un hash que el catálogo de overoles siga igual a la carga
   original y compara el resultado contra el hash esperado; si algo no cuadra, no cambia nada.
 - PDFs nuevos de los tres overoles (folio, parte, operación, segundos; prenda de título).
+
+### 2026-10-23 — Todos los campos de archivo aceptan foto o PDF
+
+Pedido de Alfredo: "todos los campos que aceptan archivos, que acepten foto o PDF, cualquiera". Sin SQL: los
+buckets (`order-photos`, `mt-fotos`, `orden-documentos`) se crearon sin límite de tipo y `order-photos` ya
+guardaba PDFs de diseños.
+- `src/utils/archivos.js`: `ACEPTA_FOTO_O_PDF`, `esFotoOPdf`, `extensionDeArchivo` (un PDF siempre se guarda
+  con `.pdf`, así se reconoce después) y `esPdf` (por la extensión del path/url).
+- Servicios: fotos de la orden, bordados (registro y de prenda), talleros, pendientes, productos del catálogo
+  aceptan PDF; documentos de la orden (cotización/OC/factura) y constancia fiscal aceptan foto.
+- `components/common/Miniatura.jsx`: donde había `<img>` de un archivo subido, muestra una tarjeta "📄 PDF"
+  si es PDF (galería, nueva orden, pendientes, bordados, estación, catálogo de clientes, productos, talleros,
+  resumen). En la estación un PDF se abre en otra pestaña en vez del visor de fotos.
+- El PDF de la orden (`generateOrderPdf.jsx`) deja fuera los adjuntos PDF (no se pueden pintar como imagen).
+- Sin cambio: el import CSV de consumos (es un archivo de datos).
+- Probado: `npm run build` y las miniaturas en un ejemplo local (`salper-pdf-harness`, puerto 5194). **No
+  probado** subir un PDF real con sesión.

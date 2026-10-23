@@ -24,6 +24,8 @@ import { medirEtapa } from '../utils/tiemposEtapas'
 import { estaPausada, soportaPausa } from '../utils/pausasEtapa'
 import { formatMinutosHabiles } from '../utils/horasHabiles'
 import { formatDate, formatDateTime } from '../utils/dates'
+import Miniatura from '../components/common/Miniatura'
+import { esPdf } from '../utils/archivos'
 
 const conTalla = (talla) => (talla ? `T.${talla}` : '')
 
@@ -159,6 +161,8 @@ function Lightbox({ src, alt, onClose }) {
 function EstacionFotos({ order, esBordado }) {
   const [bordados, setBordados] = useState(null)
   const [ampliada, setAmpliada] = useState(null)
+  // Un PDF no cabe en el visor de fotos: se abre aparte.
+  const abrir = (src, alt, pdf = esPdf(src)) => (pdf ? window.open(src, '_blank', 'noopener') : setAmpliada({ src, alt }))
 
   useEffect(() => {
     if (!esBordado) return
@@ -197,9 +201,9 @@ function EstacionFotos({ order, esBordado }) {
                     type="button"
                     key={r.id}
                     className="estacion-foto-thumb"
-                    onClick={() => r.foto_url && setAmpliada({ src: r.foto_url, alt: r.ubicacion })}
+                    onClick={() => r.foto_url && abrir(r.foto_url, r.ubicacion)}
                   >
-                    {r.foto_url ? <img src={r.foto_url} alt={r.ubicacion} loading="lazy" /> : <span>Sin foto</span>}
+                    {r.foto_url ? <Miniatura src={r.foto_url} alt={r.ubicacion} loading="lazy" /> : <span>Sin foto</span>}
                     <span className="estacion-foto-thumb__label">{r.ubicacion}</span>
                   </button>
                 ))}
@@ -219,8 +223,8 @@ function EstacionFotos({ order, esBordado }) {
       <span className="field-label">Fotos de referencia</span>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {fotos.map((foto) => (
-          <button type="button" key={foto.path} className="estacion-foto-thumb" onClick={() => setAmpliada({ src: foto.url, alt: foto.name })}>
-            <img src={foto.url} alt={foto.name} loading="lazy" />
+          <button type="button" key={foto.path} className="estacion-foto-thumb" onClick={() => abrir(foto.url, foto.name, esPdf(foto))}>
+            <Miniatura src={foto.url} alt={foto.name} pdf={esPdf(foto)} loading="lazy" />
           </button>
         ))}
       </div>

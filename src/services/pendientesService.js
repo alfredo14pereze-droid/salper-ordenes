@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient'
+import { esFotoOPdf, extensionDeArchivo } from '../utils/archivos'
 
 // V78 — Pendientes tienda <-> fábrica. Todo cambio de estado pasa por RPC (el
 // servidor valida rol y transición). Ver supabase/schema_v78_pendientes_tienda_fabrica.sql.
@@ -90,11 +91,11 @@ export async function guardarTipo({ id = null, nombre, activo = true, orden = nu
 export async function uploadPendientePhoto(file) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
-  if (!file.type.startsWith('image/')) return { data: null, error: new Error(`"${file.name}" no es una imagen.`) }
+  if (!esFotoOPdf(file)) return { data: null, error: new Error(`"${file.name}" no es una foto ni un PDF.`) }
   if (file.size > MAX_PENDIENTE_PHOTO_SIZE_MB * 1024 * 1024) {
     return { data: null, error: new Error(`"${file.name}" pesa más de ${MAX_PENDIENTE_PHOTO_SIZE_MB}MB.`) }
   }
-  const ext = file.name.split('.').pop()
+  const ext = extensionDeArchivo(file)
   const path = `pendientes/${crypto.randomUUID()}.${ext}`
   const { error: uploadError } = await supabase.storage.from(PHOTO_BUCKET).upload(path, file)
   if (uploadError) return { data: null, error: uploadError }

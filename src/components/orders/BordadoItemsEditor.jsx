@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
 import { uploadFotoBordado } from '../../services/bordadosService'
 import { PRENDAS_BORDADO, OTRA_PRENDA, esCachucha, nuevoBordado, nuevaPrendaBordado } from '../../utils/bordadoOrden'
+import Miniatura from '../../components/common/Miniatura'
+import { ACEPTA_FOTO_O_PDF } from '../../utils/archivos'
 
 // V132 — editor de prendas para órdenes de tipo "bordado": solo prenda,
 // tallas/cantidades y los bordados (foto + dónde va, salvo cachucha, que solo
@@ -150,7 +152,7 @@ export default function BordadoItemsEditor({ items, onChange }) {
               {(item.bordados || []).map((b) => (
                 <div key={b.id} className="bordado-fila">
                   <a href={b.foto_url} target="_blank" rel="noreferrer">
-                    <img src={b.foto_url} alt="Bordado" className="bordado-fila__foto" />
+                    <Miniatura src={b.foto_url} alt="Bordado" className="bordado-fila__foto" />
                   </a>
                   {!cachucha ? (
                     <input
@@ -176,7 +178,7 @@ export default function BordadoItemsEditor({ items, onChange }) {
                 <input
                   ref={(el) => (inputsRef.current[itemIndex] = el)}
                   type="file"
-                  accept="image/*"
+                  accept={ACEPTA_FOTO_O_PDF}
                   multiple
                   hidden
                   onChange={(e) => {

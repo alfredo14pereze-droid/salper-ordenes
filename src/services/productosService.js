@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient'
+import { esFotoOPdf, extensionDeArchivo } from '../utils/archivos'
 
 const BUCKET = 'order-photos'
 export const MAX_PRODUCTO_FOTO_SIZE_MB = 5
@@ -20,14 +21,14 @@ export async function uploadProductoFoto(clienteId, file) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
 
-  if (!file.type.startsWith('image/')) {
-    return { data: null, error: new Error(`"${file.name}" no es una imagen.`) }
+  if (!esFotoOPdf(file)) {
+    return { data: null, error: new Error(`"${file.name}" no es una foto ni un PDF.`) }
   }
   if (file.size > MAX_PRODUCTO_FOTO_SIZE_MB * 1024 * 1024) {
     return { data: null, error: new Error(`"${file.name}" pesa más de ${MAX_PRODUCTO_FOTO_SIZE_MB}MB.`) }
   }
 
-  const ext = file.name.split('.').pop()
+  const ext = extensionDeArchivo(file)
   const path = `productos/${clienteId}/${crypto.randomUUID()}.${ext}`
 
   const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file)

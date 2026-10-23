@@ -40,6 +40,8 @@ import { buildOrderConfirmationPdfBlob, fetchPagosParaPdf, orderConfirmationPdfF
 import { canViewFinanzas } from '../utils/permissions'
 import { faltaTela, tipoLlevaCorte } from '../utils/telaObligatoria'
 import { CAPTURA_FECHA_CREACION_HABILITADA } from '../utils/featureFlags'
+import Miniatura from '../components/common/Miniatura'
+import { ACEPTA_FOTO_O_PDF } from '../utils/archivos'
 
 const initialForm = {
   clientId: '',
@@ -174,11 +176,11 @@ function DocumentosPicker({ label, files, onChange }) {
       <FileDropLabel
         className="btn btn--secondary btn--small"
         style={{ display: 'inline-flex' }}
-        accept="application/pdf"
+        accept={ACEPTA_FOTO_O_PDF}
         multiple
         onFiles={(nuevos) => onChange([...files, ...nuevos])}
       >
-        {files.length > 0 ? '+ Agregar otro' : 'Subir PDF (o arrastra aquí)'}
+        {files.length > 0 ? '+ Agregar otro' : 'Subir PDF o foto (o arrastra aquí)'}
       </FileDropLabel>
       {files.map((file, i) => (
         <div key={`${file.name}-${i}`} style={{ marginTop: 6, display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -911,7 +913,7 @@ function NewOrderForm() {
                       aria-pressed={p.id === form.productoId}
                       onClick={() => updateField('productoId', p.id)}
                     >
-                      {p.foto_url ? <img src={p.foto_url} alt="" loading="lazy" /> : <span className="producto-card__sin-foto">Sin foto</span>}
+                      {p.foto_url ? <Miniatura src={p.foto_url} alt="" loading="lazy" /> : <span className="producto-card__sin-foto">Sin foto</span>}
                       <span className="producto-card__nombre">{p.nombre}</span>
                       <span className="producto-card__prenda">{etiquetaProcesos(p.procesos) || '⚠️ Sin procesos'}</span>
                     </button>
@@ -1028,8 +1030,8 @@ function NewOrderForm() {
           <summary>{esFrisa ? 'Cotización y orden de compra (opcional)' : 'Cotización, total y anticipo (opcional)'}</summary>
           <div className="form-optional__body">
             <div className="form-row">
-              <DocumentosPicker label="Cotización (PDF)" files={cotizacionFiles} onChange={setCotizacionFiles} />
-              <DocumentosPicker label="Orden de compra (PDF)" files={ordenCompraFiles} onChange={setOrdenCompraFiles} />
+              <DocumentosPicker label="Cotización (PDF o foto)" files={cotizacionFiles} onChange={setCotizacionFiles} />
+              <DocumentosPicker label="Orden de compra (PDF o foto)" files={ordenCompraFiles} onChange={setOrdenCompraFiles} />
             </div>
             {/* V155 — las órdenes de Frisa no llevan precio. */}
             {!esFrisa && (

@@ -10,6 +10,8 @@ import { Loading, ErrorState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
 import { pfEsTienda, pfEsFabrica, canMarcarEntregado } from '../utils/permissions'
 import { formatDate, formatDateTime } from '../utils/dates'
+import Miniatura from '../components/common/Miniatura'
+import { esPdf } from '../utils/archivos'
 
 export default function PendienteDetailPage() {
   const { id } = useParams()
@@ -148,7 +150,7 @@ export default function PendienteDetailPage() {
           <div className="photo-picker__grid" style={{ marginTop: 10 }}>
             {p.fotos.map((f) => (
               <a key={f.path} href={f.url} target="_blank" rel="noreferrer" className="photo-picker__thumb">
-                <img src={f.url} alt="" />
+                <Miniatura src={f.url} alt="" pdf={esPdf(f)} />
               </a>
             ))}
           </div>

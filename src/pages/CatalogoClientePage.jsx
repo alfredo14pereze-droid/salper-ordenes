@@ -10,6 +10,8 @@ import { fetchProductosByCliente, guardarProducto, setProductoProcesos, uploadPr
 import { resumenProducto } from '../utils/productoCatalogo'
 import { PROCESOS_MAQUILA_OPTIONS } from '../lib/constants'
 import { esClienteMaquila, etiquetaProcesos, ordenarProcesos } from '../utils/maquila'
+import Miniatura from '../components/common/Miniatura'
+import { ACEPTA_FOTO_O_PDF, esPdf } from '../utils/archivos'
 
 // V133 — catálogo de UN cliente (colegio): se entra desde Catálogos y aquí se
 // ven sus productos con foto, se abre la ficha completa de cada uno y se
@@ -185,15 +187,15 @@ function ProductoForm({ producto = null, clienteId, telas, esMaquila = false, on
         <div className="producto-fotos">
           {fotos.map((f, i) => (
             <div key={f.path || f.url} className="producto-fotos__item">
-              <img src={f.url} alt="" />
+              <Miniatura src={f.url} alt="" pdf={esPdf(f)} />
               <button type="button" aria-label="Quitar foto" onClick={() => setFotos((prev) => prev.filter((_, j) => j !== i))}>
                 ×
               </button>
             </div>
           ))}
           <label className="producto-fotos__agregar">
-            + Foto
-            <input type="file" accept="image/*" multiple hidden onChange={handleFotos} />
+            + Foto o PDF
+            <input type="file" accept={ACEPTA_FOTO_O_PDF} multiple hidden onChange={handleFotos} />
           </label>
         </div>
       </div>
@@ -205,7 +207,7 @@ function ProductoForm({ producto = null, clienteId, telas, esMaquila = false, on
             <div key={i} className="producto-bordado">
               {b.foto_url ? (
                 <div className="producto-fotos__item">
-                  <img src={b.foto_url} alt="" />
+                  <Miniatura src={b.foto_url} alt="" />
                   <button type="button" aria-label="Quitar foto del logotipo" onClick={() => setBordado(i, { foto_url: '', foto_path: '' })}>
                     ×
                   </button>
@@ -213,7 +215,7 @@ function ProductoForm({ producto = null, clienteId, telas, esMaquila = false, on
               ) : (
                 <label className="producto-fotos__agregar">
                   + Foto del logo
-                  <input type="file" accept="image/*" hidden onChange={(e) => handleFotoBordado(i, e)} />
+                  <input type="file" accept={ACEPTA_FOTO_O_PDF} hidden onChange={(e) => handleFotoBordado(i, e)} />
                 </label>
               )}
               <div className="producto-bordado__campos">
@@ -345,7 +347,7 @@ function ProductoDetalle({ producto, telas, esMaquila = false, canEdit, canDelet
         <div className="producto-detalle__fotos">
           {fotos.map((f) => (
             <a key={f.url} href={f.url} target="_blank" rel="noreferrer">
-              <img src={f.url} alt="" loading="lazy" />
+              <Miniatura src={f.url} alt="" pdf={esPdf(f)} loading="lazy" />
             </a>
           ))}
         </div>
@@ -366,7 +368,7 @@ function ProductoDetalle({ producto, telas, esMaquila = false, canEdit, canDelet
               <div key={i} className="producto-bordado">
                 {b.foto_url ? (
                   <a href={b.foto_url} target="_blank" rel="noreferrer" className="producto-fotos__item">
-                    <img src={b.foto_url} alt="" loading="lazy" />
+                    <Miniatura src={b.foto_url} alt="" loading="lazy" />
                   </a>
                 ) : (
                   <span className="producto-fotos__agregar producto-fotos__agregar--vacio">Sin foto del logo</span>
@@ -522,7 +524,7 @@ function CatalogoClienteContent() {
                 window.scrollTo({ top: 0, behavior: 'smooth' })
               }}
             >
-              {p.foto_url ? <img src={p.foto_url} alt="" loading="lazy" /> : <span className="producto-card__sin-foto">Sin foto</span>}
+              {p.foto_url ? <Miniatura src={p.foto_url} alt="" loading="lazy" /> : <span className="producto-card__sin-foto">Sin foto</span>}
               <span className="producto-card__nombre">{p.nombre}</span>
               <span className="producto-card__prenda">{resumenProducto(p, telas)}</span>
               {esMaquila && <span className="producto-card__prenda">{etiquetaProcesos(p.procesos) || '⚠️ Sin procesos'}</span>}

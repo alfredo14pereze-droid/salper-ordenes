@@ -10,6 +10,7 @@ import { fetchClienteById } from '../../services/clientesService'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditOrderDocument, canManageClienteDocuments } from '../../utils/permissions'
 import FileDropLabel from '../common/FileDropLabel'
+import { ACEPTA_FOTO_O_PDF } from '../../utils/archivos'
 
 const DOC_TYPES = [
   { kind: 'cotizacion', label: 'Cotización' },
@@ -147,12 +148,12 @@ export default function OrderDocumentsCard({ order, onUpdated }) {
                 {editable ? (
                   <FileDropLabel
                     className="btn btn--secondary btn--small"
-                    accept="application/pdf"
+                    accept={ACEPTA_FOTO_O_PDF}
                     multiple
                     disabled={busy}
                     onFiles={(files) => handleUpload(kind, files)}
                   >
-                    {busy ? 'Subiendo…' : docs.length > 0 ? '+ Agregar otro' : 'Subir PDF (o arrastra aquí)'}
+                    {busy ? 'Subiendo…' : docs.length > 0 ? '+ Agregar otro' : 'Subir PDF o foto (o arrastra aquí)'}
                   </FileDropLabel>
                 ) : (
                   docs.length === 0 && <span className="document-row__empty">Sin documento</span>
@@ -202,7 +203,7 @@ export default function OrderDocumentsCard({ order, onUpdated }) {
               {constanciaEditable && (
                 <FileDropLabel
                   className="btn btn--secondary btn--small"
-                  accept="application/pdf"
+                  accept={ACEPTA_FOTO_O_PDF}
                   disabled={busyKind === 'constancia'}
                   onFiles={handleUploadConstancia}
                 >
@@ -210,7 +211,7 @@ export default function OrderDocumentsCard({ order, onUpdated }) {
                     ? 'Subiendo…'
                     : cliente?.constancia_fiscal_path
                       ? 'Reemplazar'
-                      : 'Subir PDF (o arrastra aquí)'}
+                      : 'Subir PDF o foto (o arrastra aquí)'}
                 </FileDropLabel>
               )}
               {!cliente?.constancia_fiscal_path && !constanciaEditable && <span className="document-row__empty">Sin documento</span>}

@@ -3,6 +3,8 @@ import PhotoPicker from '../orders/PhotoPicker'
 import { fetchClientes } from '../../services/clientesService'
 import { crearPendiente, editarPendiente, fetchTipos, uploadPendientePhoto, marcarBaja } from '../../services/pendientesService'
 import { estadoPago, formatoDinero, prendasDe } from '../../utils/pendientesPago'
+import Miniatura from '../../components/common/Miniatura'
+import { esPdf } from '../../utils/archivos'
 
 const LINEA_VACIA = { prenda: '', talla: '', cantidad: '1' }
 
@@ -306,7 +308,7 @@ export default function PendienteForm({ pendiente = null, onClose, onSaved }) {
             <div className="photo-picker__grid">
               {fotosGuardadas.map((f, i) => (
                 <div key={f.path} className="photo-picker__thumb">
-                  <img src={f.url} alt="" />
+                  <Miniatura src={f.url} alt="" pdf={esPdf(f)} />
                   <button type="button" aria-label="Quitar foto" onClick={() => setFotosGuardadas(fotosGuardadas.filter((_, j) => j !== i))}>
                     ×
                   </button>

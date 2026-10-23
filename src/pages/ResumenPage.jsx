@@ -6,6 +6,8 @@ import { formatDate } from '../utils/dates'
 import TypeBadge from '../components/orders/TypeBadge'
 import StatusBadge from '../components/orders/StatusBadge'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
+import Miniatura from '../components/common/Miniatura'
+import { esPdf } from '../utils/archivos'
 
 // Resumen de todo lo que sigue pendiente (no completado, no cancelado),
 // agrupado por CLIENTE — no por orden — porque un mismo cliente puede
@@ -210,7 +212,8 @@ export default function ResumenPage() {
                             }}
                           >
                             {photo ? (
-                              <img
+                              <Miniatura
+                                pdf={esPdf(photo)}
                                 src={photo.url}
                                 alt={photo.caption || `Referencia orden ${order.order_number}`}
                                 style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-md)' }}

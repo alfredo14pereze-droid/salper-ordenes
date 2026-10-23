@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { uploadFotoBordado } from '../../services/bordadosService'
 import { bordadosDePrenda, textoUbicaciones } from '../../utils/productoCatalogo'
+import Miniatura from '../../components/common/Miniatura'
+import { ACEPTA_FOTO_O_PDF } from '../../utils/archivos'
 
 // V133 — bordados de una prenda que "lleva bordado" (escolar/industrial):
 // cada uno con su foto y dónde va. Viven dentro de la prenda
@@ -81,14 +83,14 @@ export default function BordadosPrenda({ item, onPatch, tipo = 'bordado' }) {
         <div key={b.id} className="producto-bordado">
           {b.foto_url ? (
             <a href={b.foto_url} target="_blank" rel="noreferrer" className="producto-fotos__item">
-              <img src={b.foto_url} alt={t.alt} />
+              <Miniatura src={b.foto_url} alt={t.alt} />
             </a>
           ) : (
             <label className="producto-fotos__agregar producto-fotos__agregar--falta">
               + Foto
               <input
                 type="file"
-                accept="image/*"
+                accept={ACEPTA_FOTO_O_PDF}
                 hidden
                 onChange={(e) => {
                   ponerFoto(b.id, e.target.files?.[0])
@@ -114,7 +116,7 @@ export default function BordadosPrenda({ item, onPatch, tipo = 'bordado' }) {
         {subiendo > 0 ? 'Subiendo…' : lista.length > 0 ? t.otra : t.primera}
         <input
           type="file"
-          accept="image/*"
+          accept={ACEPTA_FOTO_O_PDF}
           multiple
           hidden
           onChange={(e) => {
