@@ -11,6 +11,7 @@ import { fmtFecha } from '../components/talleros/TalleroCard'
 import PrestarModal from '../components/talleros/PrestarModal'
 import DevolverModal from '../components/talleros/DevolverModal'
 import TalleroFormModal from '../components/talleros/TalleroFormModal'
+import Miniatura from '../components/common/Miniatura'
 
 export default function TalleroDetailPage() {
   return (
@@ -62,7 +63,11 @@ function TalleroDetail() {
         <TalleroEstadoBadge estado={tallero.estado_uso} />
       </div>
 
-      {tallero.foto_url && <img src={tallero.foto_url} alt={tallero.codigo} className="tallero-detail__photo" />}
+      {tallero.foto_url && (
+        <a href={tallero.foto_url} target="_blank" rel="noreferrer">
+          <Miniatura src={tallero.foto_url} alt={tallero.codigo} className="tallero-detail__photo" />
+        </a>
+      )}
 
       <div className="card tallero-detail__info">
         <dl>

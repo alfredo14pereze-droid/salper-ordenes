@@ -18,6 +18,7 @@ import { canEditFinanzas, canEditOrder } from '../../utils/permissions'
 import { useTelas } from '../../hooks/useTelas'
 import BordadosMiniaturas from './BordadosMiniaturas'
 import { useProductosByCliente } from '../../hooks/useProductosByCliente'
+import Miniatura from '../../components/common/Miniatura'
 
 const emptyItem = () => ({
   id: crypto.randomUUID(),
@@ -122,7 +123,7 @@ function ItemSummary({ item, index, mostrador }) {
                 .filter((b) => b.foto_url)
                 .map((b) => (
                   <a key={b.id} href={b.foto_url} target="_blank" rel="noreferrer">
-                    <img src={b.foto_url} alt="" loading="lazy" />
+                    <Miniatura src={b.foto_url} alt="" loading="lazy" />
                     <span>{b.ubicacion}</span>
                   </a>
                 ))}

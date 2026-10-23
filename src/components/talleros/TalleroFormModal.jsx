@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Modal from './Modal'
 import FileDropLabel from '../common/FileDropLabel'
+import { ACEPTA_FOTO_O_PDF } from '../../utils/archivos'
 import {
   createTallero,
   updateTallero,
@@ -149,7 +150,7 @@ export default function TalleroFormModal({ tallero, productos, onClose, onDone }
           <span className="field-label" style={{ display: 'block', marginBottom: 6 }}>
             Foto
           </span>
-          <FileDropLabel className="btn btn--secondary btn--small" style={{ display: 'inline-flex' }} accept="image/*" onFiles={(f) => setFotoFile(f[0])}>
+          <FileDropLabel className="btn btn--secondary btn--small" style={{ display: 'inline-flex' }} accept={ACEPTA_FOTO_O_PDF} onFiles={(f) => setFotoFile(f[0])}>
             {fotoFile ? fotoFile.name : editing && tallero.foto_url ? 'Cambiar foto (o arrastra aquí)' : 'Subir foto (o arrastra aquí)'}
           </FileDropLabel>
         </div>

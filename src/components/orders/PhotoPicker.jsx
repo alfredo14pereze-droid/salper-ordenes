@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import FileDropLabel from '../common/FileDropLabel'
+import Miniatura from '../../components/common/Miniatura'
+import { ACEPTA_FOTO_O_PDF, esPdf } from '../../utils/archivos'
 
 // Selector de fotos para el formulario de "Nueva orden": la orden todavía
 // no existe (no hay order_id para subir a Storage), así que aquí solo se
@@ -25,16 +27,16 @@ export default function PhotoPicker({ files, onChange }) {
 
   return (
     <div className="photo-picker">
-      <FileDropLabel className="photo-picker__add" accept="image/*" multiple onFiles={handleNewFiles}>
-        + Agregar fotos (o arrastra aquí)
+      <FileDropLabel className="photo-picker__add" accept={ACEPTA_FOTO_O_PDF} multiple onFiles={handleNewFiles}>
+        + Agregar fotos o PDF (o arrastra aquí)
       </FileDropLabel>
 
       {previews.length > 0 && (
         <div className="photo-picker__grid">
           {previews.map((url, i) => (
             <div key={url} className="photo-picker__thumb">
-              <img src={url} alt={files[i].name} />
-              <button type="button" onClick={() => removeAt(i)} aria-label="Quitar foto">
+              <Miniatura src={url} alt={files[i].name} pdf={esPdf(files[i])} />
+              <button type="button" onClick={() => removeAt(i)} aria-label="Quitar archivo">
                 ×
               </button>
             </div>

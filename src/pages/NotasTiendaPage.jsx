@@ -22,6 +22,8 @@ import {
   uploadNotaFoto,
 } from '../services/notasTiendaService'
 import { formatDateTime } from '../utils/dates'
+import Miniatura from '../components/common/Miniatura'
+import { ACEPTA_FOTO_O_PDF, esPdf } from '../utils/archivos'
 
 // V158 — Notas de tienda: producto faltante, notas del día, errores, otros.
 // Escribe el personal de tienda; admin de tienda / admin general las marcan
@@ -285,17 +287,17 @@ function NotaForm({ onCreated }) {
       <div className="nota-form__foto">
         {preview ? (
           <>
-            <img src={preview} alt="Foto de la nota" />
+            <Miniatura src={preview} alt="Foto de la nota" pdf={esPdf(file)} />
             <button type="button" className="btn btn--ghost btn--small" onClick={() => setFile(null)}>
-              Quitar foto
+              Quitar archivo
             </button>
           </>
         ) : (
           <label className="btn btn--ghost btn--small">
-            + Agregar foto (opcional)
+            + Agregar foto o PDF (opcional)
             <input
               type="file"
-              accept="image/*"
+              accept={ACEPTA_FOTO_O_PDF}
               hidden
               onChange={(e) => {
                 setFile(e.target.files?.[0] || null)
@@ -328,7 +330,7 @@ function NotaCard({ nota, puedeResolver, ocupada, onResolver, onReabrir }) {
       <p className="nota-card__texto">{nota.texto}</p>
       {nota.foto_url && (
         <a href={nota.foto_url} target="_blank" rel="noreferrer" className="nota-card__foto">
-          <img src={nota.foto_url} alt="Foto de la nota" loading="lazy" />
+          <Miniatura src={nota.foto_url} alt="Foto de la nota" loading="lazy" />
         </a>
       )}
       {resuelta && (

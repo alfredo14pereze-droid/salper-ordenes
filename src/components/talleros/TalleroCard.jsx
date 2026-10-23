@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import TalleroEstadoBadge from './TalleroEstadoBadge'
+import Miniatura from '../../components/common/Miniatura'
 
 export function fmtFecha(ts) {
   return ts ? new Date(ts).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
@@ -11,7 +12,7 @@ export default function TalleroCard({ t, canLoan, canManage, onPrestar, onPresta
   return (
     <div className="card tallero-card">
       <Link to={`/talleros/${t.id}`} className="tallero-card__photo">
-        {t.foto_url ? <img src={t.foto_url} alt={`${t.codigo}`} loading="lazy" /> : <span>Sin foto</span>}
+        {t.foto_url ? <Miniatura src={t.foto_url} alt={`${t.codigo}`} loading="lazy" /> : <span>Sin foto</span>}
       </Link>
       <div className="tallero-card__body">
         <div className="tallero-card__top">

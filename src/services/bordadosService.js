@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient'
+import { esFotoOPdf, extensionDeArchivo } from '../utils/archivos'
 
 // Mismo bucket público que las fotos de referencia (order-photos) — el
 // bordado también es solo referencia visual, no trae precios. Ver
@@ -37,13 +38,13 @@ export async function createOrdenBordado(orderId, itemId, ubicacion, file) {
   let fotoPath = null
 
   if (file) {
-    if (!file.type.startsWith('image/')) {
-      return { data: null, error: new Error(`"${file.name}" no es una imagen.`) }
+    if (!esFotoOPdf(file)) {
+      return { data: null, error: new Error(`"${file.name}" no es una foto ni un PDF.`) }
     }
     if (file.size > MAX_BORDADO_PHOTO_SIZE_MB * 1024 * 1024) {
       return { data: null, error: new Error(`"${file.name}" pesa más de ${MAX_BORDADO_PHOTO_SIZE_MB}MB.`) }
     }
-    const ext = file.name.split('.').pop()
+    const ext = extensionDeArchivo(file)
     const path = `${orderId}/bordado/${itemId}/${crypto.randomUUID()}.${ext}`
     const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file)
     if (uploadError) return { data: null, error: uploadError }
@@ -80,11 +81,11 @@ export async function deleteOrdenBordado(registro) {
 export async function uploadFotoBordado(file) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
-  if (!file.type.startsWith('image/')) return { data: null, error: new Error(`"${file.name}" no es una imagen.`) }
+  if (!esFotoOPdf(file)) return { data: null, error: new Error(`"${file.name}" no es una foto ni un PDF.`) }
   if (file.size > MAX_BORDADO_PHOTO_SIZE_MB * 1024 * 1024) {
     return { data: null, error: new Error(`"${file.name}" pesa más de ${MAX_BORDADO_PHOTO_SIZE_MB}MB.`) }
   }
-  const ext = file.name.split('.').pop()
+  const ext = extensionDeArchivo(file)
   const path = `bordados-orden/${crypto.randomUUID()}.${ext}`
   const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file)
   if (uploadError) return { data: null, error: uploadError }

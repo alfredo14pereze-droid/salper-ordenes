@@ -3,6 +3,8 @@ import { Loading, ErrorState, EmptyState } from '../common/States'
 import { formatDateTime } from '../../utils/dates'
 import { uploadNotaFoto } from '../../services/notasTiendaService'
 import { fetchDestinatarios, crearNotaPersonal, marcarEnterado, quitarNotaPersonal } from '../../services/notasPersonalService'
+import Miniatura from '../common/Miniatura'
+import { ACEPTA_FOTO_O_PDF, esPdf } from '../../utils/archivos'
 
 // V163 — pestaña "Para el personal" de Notas de tienda. Los datos (notas y
 // "Enterado") los carga NotasTiendaPage para poder mostrar el contador de
@@ -78,7 +80,7 @@ export default function NotasParaPersonal({ userId, puedeEscribir, puedeEnterado
                 <p className="nota-card__texto">{n.texto}</p>
                 {n.foto_url && (
                   <a href={n.foto_url} target="_blank" rel="noreferrer" className="nota-card__foto">
-                    <img src={n.foto_url} alt="Foto de la nota" loading="lazy" />
+                    <Miniatura src={n.foto_url} alt="Foto de la nota" loading="lazy" />
                   </a>
                 )}
 
@@ -215,17 +217,17 @@ function NotaPersonalForm({ destinatarios, onCreated }) {
       <div className="nota-form__foto">
         {preview ? (
           <>
-            <img src={preview} alt="Foto de la nota" />
+            <Miniatura src={preview} alt="Foto de la nota" pdf={esPdf(file)} />
             <button type="button" className="btn btn--ghost btn--small" onClick={() => setFile(null)}>
-              Quitar foto
+              Quitar archivo
             </button>
           </>
         ) : (
           <label className="btn btn--ghost btn--small">
-            + Agregar foto (opcional)
+            + Agregar foto o PDF (opcional)
             <input
               type="file"
-              accept="image/*"
+              accept={ACEPTA_FOTO_O_PDF}
               hidden
               onChange={(e) => {
                 setFile(e.target.files?.[0] || null)

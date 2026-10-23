@@ -4,6 +4,8 @@ import { fetchOrdenBordados, createOrdenBordado, deleteOrdenBordado } from '../.
 import { useAuth } from '../../contexts/AuthContext'
 import { canManageBordado } from '../../utils/permissions'
 import { useFileDrop } from '../../hooks/useFileDrop'
+import Miniatura from '../../components/common/Miniatura'
+import { ACEPTA_FOTO_O_PDF } from '../../utils/archivos'
 
 const UBICACIONES = ['Frente', 'Espalda', 'Manga izquierda', 'Manga derecha', 'Otro']
 
@@ -64,11 +66,13 @@ function PrendaBordadoRow({ orderId, item, registros, canEdit, onChanged }) {
           {registros.map((r) => (
             <div key={r.id} style={{ textAlign: 'center' }}>
               {r.foto_url && (
-                <img
-                  src={r.foto_url}
-                  alt={r.ubicacion}
-                  style={{ width: 90, height: 90, objectFit: 'cover', borderRadius: 6, display: 'block' }}
-                />
+                <a href={r.foto_url} target="_blank" rel="noreferrer" style={{ display: 'block', width: 90, height: 90 }}>
+                  <Miniatura
+                    src={r.foto_url}
+                    alt={r.ubicacion}
+                    style={{ width: 90, height: 90, objectFit: 'cover', borderRadius: 6, display: 'block' }}
+                  />
+                </a>
               )}
               <span className="pending-card__garment" style={{ display: 'block', marginTop: 2 }}>
                 {r.ubicacion}
@@ -102,7 +106,7 @@ function PrendaBordadoRow({ orderId, item, registros, canEdit, onChanged }) {
             className={'dropzone-inline' + (dragActive ? ' dropzone--active' : '')}
             {...dropHandlers}
           >
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+            <input ref={fileInputRef} type="file" accept={ACEPTA_FOTO_O_PDF} onChange={(e) => setFile(e.target.files?.[0] || null)} />
           </span>
           <button type="button" className="btn btn--primary btn--small" onClick={handleAdd} disabled={saving}>
             {saving ? 'Guardando…' : 'Guardar'}

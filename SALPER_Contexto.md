@@ -7558,3 +7558,22 @@ es la misma operación; ej. 7 de camisola + 2 de playera en una sola hoja.
   (`marcarOtraPrenda` en `utils/imprimirOperaciones.js`).
 - «Editar operaciones»: "Agregar operaciones de otra prenda" muestra las de esa prenda para palomearlas.
 - Ejemplo local: `salper-ops-harness` (puerto 5189, `.claude/harness-ops/`, PGlite con V173+V177+V182).
+
+### 2026-10-23 — Todos los campos de archivo aceptan foto o PDF (en `main` desde 2026-11-05)
+
+Pedido de Alfredo: "todos los campos que aceptan archivos, que acepten foto o PDF, cualquiera". Sin SQL: los
+buckets (`order-photos`, `mt-fotos`, `orden-documentos`) se crearon sin límite de tipo y `order-photos` ya
+guardaba PDFs de diseños.
+- `src/utils/archivos.js`: `ACEPTA_FOTO_O_PDF`, `esFotoOPdf`, `extensionDeArchivo` (un PDF siempre se guarda
+  con `.pdf`, así se reconoce después) y `esPdf` (por la extensión del path/url).
+- Servicios: fotos de la orden, bordados (registro y de prenda), talleros, pendientes, productos del catálogo
+  aceptan PDF; documentos de la orden (cotización/OC/factura) y constancia fiscal aceptan foto.
+- `components/common/Miniatura.jsx`: donde había `<img>` de un archivo subido, muestra una tarjeta "📄 PDF"
+  si es PDF (galería, nueva orden, pendientes, bordados, estación, catálogo de clientes, productos, talleros,
+  resumen). En la estación un PDF se abre en otra pestaña en vez del visor de fotos.
+- Al subirlo (2026-11-05) se sumaron los campos que llegaron después: foto de Notas de tienda y de Notas para
+  el personal (`notasTiendaService`, bucket `nt-fotos`, también sin límite de tipo).
+- El PDF de la orden (`generateOrderPdf.jsx`) deja fuera los adjuntos PDF (no se pueden pintar como imagen).
+- Sin cambio: el import CSV de consumos (es un archivo de datos).
+- Probado: `npm run build` y las miniaturas en un ejemplo local (`salper-pdf-harness`, puerto 5194). **No
+  probado** subir un PDF real con sesión.

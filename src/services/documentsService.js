@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient'
+import { esFotoOPdf, extensionDeArchivo } from '../utils/archivos'
 
 // Documentos por orden (cotización / orden de compra / factura) — bucket
 // PRIVADO a propósito (a diferencia de order-photos), porque estos PDFs
@@ -29,18 +30,18 @@ export async function fetchOrderDocumentos(orderId) {
     .order('created_at', { ascending: true })
 }
 
-// Sube UN PDF a la orden y lo registra como un documento más (no
+// Sube UN PDF (o foto, desde 2026-10-23) a la orden y lo registra como un documento más (no
 // reemplaza a los que ya había). Si el registro falla después de haber
 // subido el archivo, se intenta borrar el archivo huérfano.
 export async function uploadOrderDocument(orderId, kind, file) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
 
-  if (file.type !== 'application/pdf') {
-    return { data: null, error: new Error(`"${file.name}" no es un PDF.`) }
+  if (!esFotoOPdf(file)) {
+    return { data: null, error: new Error(`"${file.name}" no es un PDF ni una foto.`) }
   }
 
-  const path = `${orderId}/${kind}-${crypto.randomUUID()}.pdf`
+  const path = `${orderId}/${kind}-${crypto.randomUUID()}.${extensionDeArchivo(file)}`
 
   const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file)
   if (uploadError) return { data: null, error: uploadError }
@@ -89,11 +90,11 @@ export async function uploadClienteConstanciaFiscal(clienteId, file) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
 
-  if (file.type !== 'application/pdf') {
-    return { data: null, error: new Error(`"${file.name}" no es un PDF.`) }
+  if (!esFotoOPdf(file)) {
+    return { data: null, error: new Error(`"${file.name}" no es un PDF ni una foto.`) }
   }
 
-  const path = `clientes/${clienteId}/constancia-${crypto.randomUUID()}.pdf`
+  const path = `clientes/${clienteId}/constancia-${crypto.randomUUID()}.${extensionDeArchivo(file)}`
 
   const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file)
   if (uploadError) return { data: null, error: uploadError }

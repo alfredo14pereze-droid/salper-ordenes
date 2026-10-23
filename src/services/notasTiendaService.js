@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient'
+import { esFotoOPdf, extensionDeArchivo } from '../utils/archivos'
 
 // V158 — Notas de tienda. Lectura directa (RLS: permiso nt.ver); escritura
 // siempre por RPC (nt_crear_nota / nt_resolver_nota) — ver
@@ -35,11 +36,11 @@ export async function fetchNotasTienda({ resueltas = false } = {}) {
 export async function uploadNotaFoto(file) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
-  if (!file.type.startsWith('image/')) return { data: null, error: new Error(`"${file.name}" no es una imagen.`) }
+  if (!esFotoOPdf(file)) return { data: null, error: new Error(`"${file.name}" no es una foto ni un PDF.`) }
   if (file.size > MAX_FOTO_SIZE_MB * 1024 * 1024) {
     return { data: null, error: new Error(`"${file.name}" pesa más de ${MAX_FOTO_SIZE_MB}MB.`) }
   }
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+  const ext = extensionDeArchivo(file)
   const path = `${crypto.randomUUID()}.${ext}`
   const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file)
   if (uploadError) return { data: null, error: uploadError }

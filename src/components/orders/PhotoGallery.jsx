@@ -3,6 +3,8 @@ import { uploadOrderPhotos, removeOrderPhoto, MAX_PHOTO_SIZE_MB } from '../../se
 import { useAuth } from '../../contexts/AuthContext'
 import { canManageOrderPhotos } from '../../utils/permissions'
 import FileDropLabel from '../common/FileDropLabel'
+import Miniatura from '../../components/common/Miniatura'
+import { ACEPTA_FOTO_O_PDF, esPdf } from '../../utils/archivos'
 
 // Fotos de referencia ya guardadas en una orden (order.reference_photos),
 // con opción de agregar más y de eliminar. Vive en el detalle de la orden.
@@ -45,8 +47,8 @@ export default function PhotoGallery({ order, onUpdated }) {
       <div className="photo-gallery__header">
         <h4>Fotos de especificación</h4>
         {canManage && (
-          <FileDropLabel className="btn btn--secondary btn--small" accept="image/*" multiple disabled={uploading} onFiles={handleFiles}>
-            {uploading ? 'Subiendo…' : '+ Agregar fotos (o arrastra aquí)'}
+          <FileDropLabel className="btn btn--secondary btn--small" accept={ACEPTA_FOTO_O_PDF} multiple disabled={uploading} onFiles={handleFiles}>
+            {uploading ? 'Subiendo…' : '+ Agregar fotos o PDF (o arrastra aquí)'}
           </FileDropLabel>
         )}
       </div>
@@ -54,16 +56,16 @@ export default function PhotoGallery({ order, onUpdated }) {
       {error && <p className="form-error">{error.message}</p>}
 
       {photos.length === 0 ? (
-        <p className="photo-gallery__empty">Sin fotos todavía (máx. {MAX_PHOTO_SIZE_MB}MB por imagen).</p>
+        <p className="photo-gallery__empty">Sin fotos todavía (fotos o PDF, máx. {MAX_PHOTO_SIZE_MB}MB cada uno).</p>
       ) : (
         <div className="photo-gallery__grid">
           {photos.map((photo) => (
             <div key={photo.path} className="photo-gallery__thumb">
               <a href={photo.url} target="_blank" rel="noreferrer">
-                <img src={photo.url} alt={photo.name} />
+                <Miniatura src={photo.url} alt={photo.name} pdf={esPdf(photo)} />
               </a>
               {canManage && (
-                <button type="button" onClick={() => handleRemove(photo)} aria-label="Eliminar foto">
+                <button type="button" onClick={() => handleRemove(photo)} aria-label="Eliminar archivo">
                   ×
                 </button>
               )}

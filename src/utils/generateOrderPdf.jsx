@@ -7,6 +7,7 @@ import { marcasDePrenda, resumenPagosPdf, resumenPedidoPdf } from './pagosPdf'
 import { fetchHojasOperacionesParaOrden, fetchOperacionesParaOrden } from '../services/produccionService'
 import { armarHojasOperaciones, esHoja, idDeHoja, prendaOperacionesDe } from './operacionesOrden'
 import { cargarOpcionesOperaciones } from '../hooks/usePrendasOperaciones'
+import { esPdf } from './archivos'
 
 // Genera el blob del PDF de confirmación de una orden (sin descargarlo —
 // ver PdfPreviewModal.jsx, que se encarga de mostrarlo y de la descarga
@@ -94,7 +95,8 @@ function fotoParaPdfSegura(url) {
 }
 
 export async function prepararFotosParaPdf(order) {
-  const urls = (order?.reference_photos || []).map((f) => f?.url).filter(Boolean)
+  // Un PDF adjunto no se puede meter como imagen: se queda fuera del PDF.
+  const urls = (order?.reference_photos || []).filter((f) => !esPdf(f)).map((f) => f?.url).filter(Boolean)
   return (await Promise.all(urls.map(fotoParaPdfSegura))).filter(Boolean)
 }
 
@@ -106,7 +108,7 @@ export async function prepararFotosDePrendasParaPdf(order) {
     ...new Set(
       (order?.items || [])
         .flatMap((item) => [...urlsDeMarcas(item, 'bordado'), ...urlsDeMarcas(item, 'impresion')])
-        .filter(Boolean)
+        .filter((url) => url && !esPdf(url))
     ),
   ]
   const listas = await Promise.all(urls.map(fotoParaPdfSegura))

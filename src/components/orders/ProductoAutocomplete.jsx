@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createProducto } from '../../services/productosService'
 import { prendaDesdeProducto } from '../../utils/productoCatalogo'
+import Miniatura from '../../components/common/Miniatura'
 
 // Catálogo de productos de un cliente: solo aparece cuando la orden ya tiene
 // un cliente EXISTENTE seleccionado (no uno nuevo, que todavía no puede tener
@@ -76,7 +77,7 @@ export default function ProductoAutocomplete({
 
           {elegido && !abierto && (
             <div className="producto-elegido">
-              {elegido.foto_url && <img src={elegido.foto_url} alt="" loading="lazy" />}
+              {elegido.foto_url && <Miniatura src={elegido.foto_url} alt="" loading="lazy" />}
               <div>
                 <b>{elegido.nombre}</b>
                 {elegido.pendiente_validar && (
@@ -98,7 +99,7 @@ export default function ProductoAutocomplete({
                   onClick={() => handleSelectProducto(p)}
                 >
                   {p.foto_url ? (
-                    <img src={p.foto_url} alt="" loading="lazy" />
+                    <Miniatura src={p.foto_url} alt="" loading="lazy" />
                   ) : (
                     <span className="producto-card__sin-foto">Sin foto</span>
                   )}
