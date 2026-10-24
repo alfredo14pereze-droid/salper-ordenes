@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { GARMENT_COLORS, GARMENT_OPTIONS_SUBLIMACION, GARMENT_SHORT_KEYS_SUBLIMACION, GARMENT_TOP_KEYS_SUBLIMACION, ORDER_TYPES_REQUIRING_PANTONE } from '../../lib/constants'
+import { GARMENT_COLORS, GARMENT_OPTIONS_SUBLIMACION, GARMENT_SHORT_KEYS_SUBLIMACION, GARMENT_SIN_ROSTER_SUBLIMACION, GARMENT_TOP_KEYS_SUBLIMACION, ORDER_TYPES_REQUIRING_PANTONE } from '../../lib/constants'
 import TelaSelect from './TelaSelect'
 import ProductoAutocomplete from './ProductoAutocomplete'
 import OrderTelaResumen from './OrderTelaResumen'
@@ -194,8 +194,9 @@ function OrderItemsEditorGeneral({
         const isTopGarment = isSublimacion && GARMENT_TOP_KEYS_SUBLIMACION.includes(item.garment)
         const isShort = isSublimacion && GARMENT_SHORT_KEYS_SUBLIMACION.includes(item.garment)
         const showCuelloManga = !isSublimacion || isTopGarment
-        // V126 — el roster se ve siempre en sublimación (menos pantalonera, que no lleva).
-        const showRoster = isSublimacion && item.garment !== 'Pantalonera'
+        // V126 — el roster se ve siempre en sublimación (menos pantalonera y bandera, que no llevan).
+        const showRoster = isSublimacion && !GARMENT_SIN_ROSTER_SUBLIMACION.includes(item.garment)
+        const isBandera = isSublimacion && item.garment === 'Bandera'
         const tallasDisponibles = [...new Set(item.sizes.map((s) => s.talla.trim()).filter(Boolean))]
         // V43: "otro" si se eligió a propósito (el set) O si ya trae un
         // color que no está en la lista (orden vieja, o cambió de tipo).
@@ -491,7 +492,7 @@ function OrderItemsEditorGeneral({
                     <input
                       type="text"
                       className="input"
-                      placeholder="Ej. 8, CH, 34…"
+                      placeholder={isBandera ? 'Medida, ej. 1 × 1.5 m' : 'Ej. 8, CH, 34…'}
                       value={size.talla}
                       onChange={(e) => updateSize(itemIndex, sizeIndex, { talla: e.target.value })}
                     />

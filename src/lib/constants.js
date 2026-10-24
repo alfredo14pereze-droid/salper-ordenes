@@ -251,11 +251,17 @@ export const GARMENT_OPTIONS_SUBLIMACION = [
   'Chamarra',
   'Sudadera',
   'Pantalonera',
+  // 2026-10-24 — banderas: sin cuello/manga ni nombres y números; en
+  // "Tallas y cantidades" se escribe la medida (ej. 1 × 1.5 m).
+  'Bandera',
 ]
 
 // Prendas que se capturan como el short: solo números (sin nombre) y la
 // pregunta "¿Lleva bolsas?". La falda short (2026-10-09) va aquí.
 export const GARMENT_SHORT_KEYS_SUBLIMACION = ['Short', 'Falda short']
+
+// Prendas de sublimación que no llevan lista de nombres y números.
+export const GARMENT_SIN_ROSTER_SUBLIMACION = ['Pantalonera', 'Bandera']
 
 // De esas 5, solo estas 3 llevan cuello y manga ("las de arriba") — short
 // y pantalonera no. Short (y solo short) además lleva su propia lista de
