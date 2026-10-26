@@ -249,3 +249,16 @@ export async function statsDias(desde, hasta, operadoraId = null) {
   if (cfgError) return { data: null, error: cfgError }
   return supabase.rpc('prod_stats_dias', { p_desde: desde, p_hasta: hasta, p_operadora: operadoraId })
 }
+
+// Operaciones activas de una prenda, en orden de folio (hoja de impresión por
+// prenda y cotizador). Mismo catálogo y misma RLS que fetchOperacionesTodas.
+export async function fetchOperacionesDePrenda(prenda) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase
+    .from('prod_operaciones')
+    .select('folio, prenda, parte, operacion, segundos, activa')
+    .eq('prenda', prenda)
+    .eq('activa', true)
+    .order('folio')
+}

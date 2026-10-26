@@ -1,0 +1,99 @@
+/* Hoja de operaciones por prenda (pantalla + impresión). */
+.hoja-impresion {
+  max-width: 900px;
+  margin: 0 auto;
+}
+.hoja-impresion__controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border, #ddd);
+}
+.hoja-impresion__campo {
+  flex: 1 1 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.hoja-impresion__titulo {
+  font-size: 28px;
+  margin: 0 0 16px;
+  text-transform: uppercase;
+}
+.hoja-impresion__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 17px;
+}
+.hoja-impresion__tabla th,
+.hoja-impresion__tabla td {
+  border: 1px solid #999;
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.hoja-impresion__tabla th {
+  background: #f0f0f0;
+}
+.hoja-impresion__folio {
+  width: 80px;
+  font-weight: 700;
+}
+.hoja-impresion__num {
+  width: 130px;
+  white-space: nowrap;
+  text-align: right !important;
+}
+
+@media print {
+  @page {
+    size: letter portrait;
+    margin: 12mm;
+  }
+  /* Solo la hoja: fuera menú, barras, avisos, chat y botones. */
+  body.imprimiendo-hoja #root > :not(.app-shell),
+  body.imprimiendo-hoja .app-topbar,
+  body.imprimiendo-hoja .app-sidebar,
+  body.imprimiendo-hoja .app-sidebar-overlay,
+  body.imprimiendo-hoja .app-bottomnav,
+  body.imprimiendo-hoja .app-main > :not(.hoja-impresion),
+  body.imprimiendo-hoja .hoja-impresion__controles {
+    display: none !important;
+  }
+  body.imprimiendo-hoja,
+  body.imprimiendo-hoja .app-shell,
+  body.imprimiendo-hoja .app-main {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  body.imprimiendo-hoja .hoja-impresion {
+    max-width: none;
+    margin: 0;
+  }
+  .hoja-impresion__titulo {
+    font-size: 26pt;
+    color: #000;
+  }
+  .hoja-impresion__tabla {
+    font-size: 15pt;
+  }
+  .hoja-impresion__tabla th {
+    background: #e6e6e6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .hoja-impresion__tabla thead {
+    display: table-header-group; /* repite encabezado en cada página */
+  }
+  .hoja-impresion__tabla tr {
+    break-inside: avoid;
+  }
+}

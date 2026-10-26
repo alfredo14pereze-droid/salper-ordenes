@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Modal from '../talleros/Modal'
 import PdfPreviewModal from '../pdf/PdfPreviewModal'
 import { fetchOperacionesTodas, guardarOperacion } from '../../services/produccionService'
@@ -103,6 +104,11 @@ export default function OperacionesAdmin({ consulta = false }) {
             <button type="button" className="btn btn--ghost btn--small" onClick={() => setVerCentenas((v) => !v)}>
               {verCentenas ? 'Ocultar' : 'Folios libres por centena'}
             </button>
+          )}
+          {fPrenda && (
+            <Link to={`/produccion/operaciones/imprimir?prenda=${encodeURIComponent(fPrenda)}`} className="btn btn--primary btn--small">
+              Imprimir operaciones
+            </Link>
           )}
           <button type="button" className="btn btn--secondary btn--small" onClick={() => setImprimir(true)}>
             Imprimir…

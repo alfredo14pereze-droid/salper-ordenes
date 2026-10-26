@@ -1,0 +1,75 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { fetchOperacionesDePrenda } from '../../services/produccionService'
+import './impresion.css'
+
+// Hoja informativa para pegar en la línea: folio, operación y tiempo de cada
+// operación ACTIVA de una prenda. Sin precios, costos, totales ni casillas.
+// El título se puede cambiar antes de imprimir (arranca con el nombre de la
+// prenda). Al imprimir solo sale la hoja (ver impresion.css).
+export default function HojaOperacionesPrenda({ prenda, volverA }) {
+  const [ops, setOps] = useState(null)
+  const [error, setError] = useState(null)
+  const [titulo, setTitulo] = useState(prenda)
+
+  useEffect(() => {
+    setTitulo(prenda)
+    let vivo = true
+    fetchOperacionesDePrenda(prenda).then(({ data, error: err }) => {
+      if (!vivo) return
+      if (err) setError(err.message)
+      else setOps(data || [])
+    })
+    return () => {
+      vivo = false
+    }
+  }, [prenda])
+
+  // Mientras esta hoja está abierta, la impresión oculta todo lo demás de la app.
+  useEffect(() => {
+    document.body.classList.add('imprimiendo-hoja')
+    return () => document.body.classList.remove('imprimiendo-hoja')
+  }, [])
+
+  return (
+    <div className="page hoja-impresion">
+      <div className="hoja-impresion__controles">
+        <Link to={volverA} className="btn btn--ghost btn--small">
+          ← Volver
+        </Link>
+        <label className="hoja-impresion__campo">
+          Título de la hoja
+          <input className="input" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+        </label>
+        <button type="button" className="btn btn--primary" onClick={() => window.print()} disabled={!ops || ops.length === 0}>
+          Imprimir
+        </button>
+      </div>
+
+      <h1 className="hoja-impresion__titulo">{titulo.trim() || prenda}</h1>
+      {error && <p className="form-error">{error}</p>}
+      {!ops && !error && <p className="template-hint">Cargando operaciones…</p>}
+      {ops && ops.length === 0 && <p className="template-hint">Esta prenda no tiene operaciones activas.</p>}
+      {ops && ops.length > 0 && (
+        <table className="hoja-impresion__tabla">
+          <thead>
+            <tr>
+              <th className="hoja-impresion__folio">Folio</th>
+              <th>Operación</th>
+              <th className="hoja-impresion__num">Tiempo (seg)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ops.map((o) => (
+              <tr key={o.folio}>
+                <td className="hoja-impresion__folio">{o.folio}</td>
+                <td>{o.operacion}</td>
+                <td className="hoja-impresion__num">{Number(o.segundos).toLocaleString('es-MX', { maximumFractionDigits: 2 })}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )
+}
