@@ -487,6 +487,15 @@ export function canVerOperacionesProduccion(role) {
   return canCapturarProduccion(role) || canViewProduccionMontos(role)
 }
 
+// Cotizador de destajo (/cotizador): solo admin_general ("admin general";
+// en los prompts aparece como super_admin) y admin_fabrica. Sin clave en
+// "Roles y permisos" a propósito: no se crean permisos ni roles nuevos.
+// No toca la base: lee el catálogo de operaciones, que estos dos roles ya
+// pueden leer (prod_puede_capturar()).
+export function canUsarCotizador(role) {
+  return role === 'admin_general' || role === 'admin_fabrica'
+}
+
 // V103 — pedido del usuario: Juanis (captura_produccion) ve el resultado
 // ("valor generado") de cada operadora y puede imprimir el ranking —
 // relaja, a propósito y SOLO para esto, la regla de "nunca ve montos".

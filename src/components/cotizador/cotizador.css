@@ -1,0 +1,26 @@
+.cotizador { display: flex; flex-direction: column; gap: 14px; }
+.cotizador__leyenda { margin: 0; font-weight: 600; }
+.cotizador__paso { padding: 14px 16px; }
+.cotizador__paso .section-title { margin-top: 0; }
+.cotizador__parte { border-top: 1px solid var(--color-border, #e3e3e3); padding: 10px 0 4px; }
+.cotizador__parte-encabezado { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cotizador__parte-encabezado strong { margin-right: 4px; }
+.cotizador__ops { list-style: none; margin: 6px 0 0; padding: 0; }
+.cotizador__ops label { display: grid; grid-template-columns: auto 56px 1fr auto; gap: 8px; align-items: baseline; padding: 4px 0; font-weight: 400; cursor: pointer; }
+.cotizador__folio { font-weight: 700; }
+.cotizador__seg { white-space: nowrap; color: var(--color-text-muted, #666); }
+.cotizador__alerta { color: #b45309; font-weight: 700; white-space: nowrap; }
+.cotizador__fila-alerta td { background: #fff7e0; }
+.cotizador__campos { display: flex; flex-wrap: wrap; gap: 16px; }
+.cotizador__campos label { display: flex; flex-direction: column; gap: 4px; flex: 1 1 200px; }
+.cotizador__totales { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin-bottom: 10px; }
+.cotizador__dato { border: 1px solid var(--color-border, #e3e3e3); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.cotizador__dato--destacado { border-color: #111; }
+.cotizador__dato-label { font-size: 13px; color: var(--color-text-muted, #666); }
+.cotizador__dato-valor { font-size: 20px; font-weight: 700; }
+.cotizador__num { text-align: right !important; white-space: nowrap; }
+.cotizador__tabla tfoot th { border-top: 2px solid #999; }
+@media (max-width: 600px) {
+  .cotizador__ops label { grid-template-columns: auto 48px 1fr; }
+  .cotizador__seg { grid-column: 3; }
+}

@@ -6872,3 +6872,42 @@ del Excel. Los segundos ya cargados no se tocaron (incluidas las 7 operaciones d
   `prod_registros`. El script lo verifica, revisa con un hash que el catálogo de overoles siga igual a la carga
   original y compara el resultado contra el hash esperado; si algo no cuadra, no cambia nada.
 - PDFs nuevos de los tres overoles (folio, parte, operación, segundos; prenda de título).
+
+### 2026-10-26 — Hoja de operaciones por prenda + Cotizador de destajo
+
+Pedido de Alfredo (prompt en dos fases). Rama `cotizador-operaciones` desde `main` (el prompt decía `fase-2`,
+que está obsoleta). **Sin SQL ni cambios de esquema**: todo lee el catálogo `prod_operaciones` que ya existía.
+
+**Fase 1 — Imprimir operaciones** (`src/components/impresion/`, ruta `/produccion/operaciones/imprimir?prenda=…`):
+- En Operaciones (Admin producción y la vista de consulta de Juanis), al elegir una prenda aparece el botón
+  "Imprimir operaciones". Hoja informativa: folio, operación y tiempo (seg) de las operaciones ACTIVAS, en orden
+  de folio; título editable antes de imprimir (arranca con el nombre de la prenda). Sin precios, costos, totales
+  ni casillas. Impresión con `@media print` (`impresion.css`): solo la hoja, carta vertical, letra grande,
+  encabezado repetido en cada página. Mismo acceso que el catálogo (`canVerOperacionesProduccion`).
+- El botón "Imprimir…" de antes (PDF con columnas a elegir) sigue igual.
+
+**Fase 2 — Cotizador** (`src/components/cotizador/`, ruta y menú `/cotizador`):
+- Prenda → operaciones agrupadas por PARTE con casilla y tiempo (al elegir la prenda se marcan todas;
+  "Seleccionar todas"/"Limpiar" por parte) → piezas (entero > 0) y operadoras (1 a 60) → resultado: tabla por
+  operación (folio, operación, tiempo, precio por pieza, costo del lote) y totales (segundos y costo por pieza,
+  costo del lote, minutos por pieza, tiempo total, operadoras, días con decimales y días redondeados hacia arriba).
+  Leyenda fija: "Solo costo de destajo. No incluye sueldo base, indirectos ni margen."
+- Cálculo puro en `calculos.js` (pruebas: `node --test src/components/cotizador/calculos.test.js`). No guarda
+  cotizaciones. Operación con tiempo 0/vacío → aviso y cuenta como 0; sin operaciones → todo en cero; piezas u
+  operadoras inválidas → mensaje y el lote/días quedan en 0 (sin dividir entre 0).
+- **Constantes** en `src/config/costos.js`: `COSTO_POR_SEGUNDO = 0.025`, `MINUTOS_EFECTIVOS_DIA = 425` (hoja
+  COSTEO del Excel, confirmado por Alfredo), `MAX_OPERADORAS = 60`. Ojo: son solo del cotizador. La captura y
+  los premios siguen usando `prod_config` (`precio_por_segundo = 0.025`, `segundos_jornada = 25650` = 427.5 min,
+  no 425).
+- **Mapeo de rol**: "admin general" (super_admin en los prompts) = `admin_general`. Acceso: `canUsarCotizador`
+  = `admin_general` y `admin_fabrica` (sin `admin_fabrica_lectura`); sin roles ni claves de "Roles y permisos"
+  nuevas. Menú oculto y ruta bloqueada (`RequireRole`) para los demás. Del lado del servidor no hace falta nada:
+  solo lee el catálogo, que esos roles ya podían leer.
+- **Operación 2029** (PANTALON PX60, ENSAMBLE, "BASTILLAR PIERNAS Y AFIANZAR LICRA Y BOLSA"): en la app está
+  con **80 seg y activa**; sin capturas en `prod_registros`. La app no guarda "piezas diarias" ni "precio" (se
+  calculan: $2.00 por pieza y ~320 piezas por jornada), así que el 0 del Excel no existe aquí. `segundos` tiene
+  `check (segundos > 0)`: no puede haber operaciones en 0. **No se corrigió nada**; queda pendiente que Alfredo
+  confirme si 80 seg es correcto.
+- Probado en un ejemplo local con copia de solo lectura del catálogo: PX60 completo, 1000 piezas, 5 operadoras =
+  1,073 seg/pieza, $26.825 por pieza, $26,825.00 el lote, 8.42 días (9 redondeado), cuadrado contra un cálculo
+  aparte; permisos por rol; aviso de tiempo 0 con una operación ficticia.

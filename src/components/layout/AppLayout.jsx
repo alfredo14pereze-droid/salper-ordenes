@@ -14,7 +14,7 @@ import {
   canViewTalleros,
   isCapturaProduccion,
   canCapturarProduccion,
-  canViewProduccionMontos, canVerOperacionesProduccion,
+  canViewProduccionMontos, canVerOperacionesProduccion, canUsarCotizador,
   canVerRankingProduccion,
   canViewPedidosTienda,
   canViewEstadisticas,
@@ -149,6 +149,8 @@ export default function AppLayout({ children }) {
     // 2026-10-21 — catálogo de operaciones de solo consulta (Juanis). Los admins
     // ya lo tienen, editable, en Admin producción.
     { to: '/produccion/operaciones', label: 'Operaciones', show: canVerOperacionesProduccion(role) && !canViewProduccionMontos(role) },
+    // Cotizador de destajo (solo admin_general / admin_fabrica).
+    { to: '/cotizador', label: 'Cotizador', show: canUsarCotizador(role) },
     // V63 — visible también para fábrica (ver canViewTalleros).
     { to: '/talleros', label: 'Talleros', show: canViewTalleros(role) },
     // V95 — Inventario ya abierto por rol (ver canViewInventario).
