@@ -6930,3 +6930,44 @@ tienda deje notas: **Producto faltante, Nota del día, Error u Otro**, con una f
 - Probado: SQL en PGlite (19 casos: permisos por rol, validaciones, resolver/reabrir, fotos, correr dos veces);
   pantalla en un ejemplo local con base falsa (tienda escribe con y sin foto, admin_tienda resuelve,
   consulta_tienda solo lee, corte no la ve, celular).
+
+### V159 — Precio por línea y "Venta de mostrador" por línea (2026-10-28, rama `precios-por-linea`)
+
+Pedido de Alfredo: capturar el precio unitario **por línea** (prenda + talla) desde el alta, con total calculado,
+anticipo y saldo visibles, una bandera "Venta de mostrador" por línea y candado de entrega con excepción de un día.
+- **Modelo**: una línea = una talla con cantidad de `orders.items` (`item_index`, `size_index`). Prenda, talla y
+  cantidad siguen en `orders.items` (lo lee producción); el precio y la bandera van en la tabla nueva
+  **`orden_lineas`** (`precio_unitario`, `venta_mostrador boolean not null default false`, copia de prenda y
+  talla). Check en la base: `venta_mostrador or precio_unitario > 0`. RLS: solo `fin_puede_ver()`.
+  No se usó una tabla `lineas_orden` que reemplazara `orders.items` (lo usan corte, roster, surtido, PDF, etc.).
+- **Órdenes viejas**: si una línea no tiene fila en `orden_lineas`, vale el precio por prenda de V77
+  (`orden_precios`) y sus extras por pieza se siguen sumando. Nada se migró ni se borró. `orders.total_orden`
+  (V42, total a mano) solo se muestra en órdenes sin precios (`usaTotalCalculado` en `utils/preciosLineas.js`).
+- **SQL** `supabase/schema_v159_lineas_mostrador.sql` (aditivo; revisa md5 de las 3 funciones que reemplaza y,
+  si la versión viva no es la de V77/V144, no aplica nada):
+  - `create_order_con_lineas` / `create_order_maquila_con_lineas`: validan precios ANTES de pedir folio y
+    guardan orden + líneas en la misma transacción. El alta ya no llama a `create_order` directo.
+  - Constraint trigger diferido `orders_lineas_precio_chk` (solo INSERT): una orden nueva de un tipo con precio
+    no se guarda con líneas sin precio ni mostrador. Tipos sin precio: `frisa` y `venta_mostrador`
+    (`orden_tipo_lleva_precio`). Arregla de paso que el candado de V77 habría frenado la entrega de Frisa.
+  - `set_orden_lineas` (editar precio/mostrador en órdenes existentes; no en entregadas; guarda aunque falten
+    precios), `orden_lineas_mostrador(uuid[])` (todas las sesiones: solo qué líneas son de mostrador, sin
+    precios), `orden_totales`/`orden_faltantes` por línea (mostrador no suma ni falta).
+  - **Excepción temporal**: fila `fin_config.entrega_sin_precio_hasta = '2026-10-28 23:59:59-06'`; mientras
+    `now()` sea menor, `fin_validar_entrega` deja entregar sin precio (la razón social sí se exige). El
+    29-oct-2026 correr `delete from public.fin_config where clave = 'entrega_sin_precio_hasta';`.
+  - El candado sigue aplicando solo a órdenes creadas desde `candado_desde` (26-sep) y solo a "Entregada"
+    (`completado`), no a "Terminado" (lo pone el sistema y esas estaciones no ven precios). Decisión de Alfredo.
+- **Frontend**: lógica en `src/utils/preciosLineas.js` (+ pruebas); `PreciosLineasEditor` (tabla prenda |
+  talla | cant. | mostrador | precio | subtotal, en alta y detalle) y `ResumenPagoAlta` (total, anticipo, saldo).
+  Alta: sección "Precios y pago" visible; el precio vive en cada talla del estado y se quita antes de guardar
+  `items`. Detalle: `OrderFacturacionCard` por línea (sin capturar extras nuevos); `OrderPaymentsCard` con total
+  calculado; resumen de entrega con una fila por línea; etiqueta "Mostrador" en `OrderCard` y `OrderItemsCard`
+  (`hooks/useLineasMostrador.js`, una consulta por tanda).
+- **Probado**: SQL en PGlite (30 casos + revisión de md5); pantallas reales en un arnés local con PGlite y el SQL
+  real (`.claude/harness-precios/`, servidor `salper-precios-harness`, puerto 5194, `?rol=`,
+  `?excepcion=vencida`): alta con varias líneas/precios (4,500 − 1,000 = 3,500), mostrador sin precio, entrega
+  rechazada fuera de la excepción y aceptada dentro, marcar mostrador en orden vieja y entregar, órdenes viejas
+  y entregadas cargan, PDF de entrega, celular.
+- Pendiente ofrecido: `ultimo_precio_cliente_prenda` (sugerencia de precio) solo mira `orden_precios` de V77; no
+  sugiere con los precios por línea nuevos.
