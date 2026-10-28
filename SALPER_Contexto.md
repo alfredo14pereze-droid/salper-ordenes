@@ -6971,3 +6971,22 @@ anticipo y saldo visibles, una bandera "Venta de mostrador" por línea y candado
   y entregadas cargan, PDF de entrega, celular.
 - Pendiente ofrecido: `ultimo_precio_cliente_prenda` (sugerencia de precio) solo mira `orden_precios` de V77; no
   sugiere con los precios por línea nuevos.
+
+### V160 — Entregar orden: admin_tienda también + "Entregar de todos modos" (2026-10-28, rama `entrega-admins`)
+
+Pedido de Alfredo: que admin_fabrica y admin_tienda puedan marcar una orden como entregada, y que un admin
+pueda entregar aunque la bloquee la falta de precio (o de datos de factura), dejando registro.
+- **SQL** `supabase/schema_v160_entrega_admins_forzar.sql` (aditivo, NO toca `update_order_status`):
+  - Permisos nuevos en "Roles y permisos" (módulo "Entregas"): `orden.entregar` y `orden.entregar_forzado`,
+    sembrados a admin_general, admin_tienda y admin_fabrica.
+  - `entregar_orden(orden, forzar, motivo)`: revisa lo mismo de siempre (`fin_validar_entrega`); si algo falta
+    y no se fuerza, el mismo mensaje. Forzando: permiso `orden.entregar_forzado` + motivo (5+ letras). No
+    entrega eliminadas, canceladas ni ya entregadas.
+  - Registro: tabla `orden_entregas_forzadas` (qué bloqueaba, `orden_faltantes()` de ese momento, motivo,
+    quién, rol, cuándo); la leen quienes pueden entregar o ver precios. Nota en `order_status_history`:
+    "Entregada de todos modos (Falta precio en: …) Motivo: …".
+- **Frontend**: `canDeliverOrder` / `canForceDelivery` (permissions.js); `StatusChanger` usa `entregar_orden`
+  y, si se bloquea, muestra "Entregar de todos modos" con motivo obligatorio; `EntregaForzadaAviso` en el
+  detalle. "Corregir estado manualmente" sigue solo para admin_fabrica/admin_general (y con el candado).
+- Probado: SQL en PGlite (18 casos) y en el arnés local con admin_tienda (bloqueo → motivo → entregada,
+  aviso e historial), ventas sin botón.
