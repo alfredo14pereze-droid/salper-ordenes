@@ -17,7 +17,10 @@ import { TIPO_VENTA_MOSTRADOR, CLIENTE_SALPER_NOMBRE } from '../lib/constants'
 import { uploadOrderPhotos, attachExistingPhotos } from '../services/photosService'
 import { copyTemplatePhotosToOrder } from '../services/templatesService'
 import { uploadOrderDocument } from '../services/documentsService'
-import { createAnticipo, METODOS_PAGO } from '../services/anticiposService'
+import { createAnticipo } from '../services/anticiposService'
+import { filasDeFormulario, lineasParaGuardar, marcarMostrador, mensajeFaltanPrecios, resumenPago, tipoLlevaPrecio } from '../utils/preciosLineas'
+import PreciosLineasEditor from '../components/orders/PreciosLineasEditor'
+import ResumenPagoAlta from '../components/orders/ResumenPagoAlta'
 import { recognizeDocument } from '../services/documentOcrService'
 import { similarity } from '../utils/similarity'
 import { filtrarClientesPorTipo } from '../utils/clientes'
@@ -54,7 +57,6 @@ const initialForm = {
   requestedDeliveryDate: '',
   foliosExternos: [],
   createdAt: '',
-  totalOrden: '',
   // V143 — solo órdenes de maquila.
   productoId: '',
   numeroCorte: '',
@@ -290,6 +292,34 @@ function NewOrderForm() {
   const productoFrisa = esFrisa ? productosFrisa.find((p) => p.id === form.productoFrisaId) || null : null
   const bordadoFrisa = !!form.bordadoFrisa && admiteBordadoPorOrden(productoFrisa)
 
+  // V159 — precio por línea (prenda + talla) y venta de mostrador. El precio
+  // vive en cada talla del estado y se quita antes de guardar orders.items.
+  // Frisa y el tipo Venta Mostrador no llevan precio.
+  const llevaPrecio = !!form.orderTypeKey && !esFrisa && tipoLlevaPrecio(form.orderTypeKey)
+  const filasPrecio = useMemo(() => filasDeFormulario(esMaquila ? items.slice(0, 1) : items), [items, esMaquila])
+  const resumen = resumenPago(filasPrecio, anticipoMonto)
+  function cambiarLinea(fila, patch) {
+    setItems((current) =>
+      current.map((item, i) =>
+        i !== fila.itemIndex
+          ? item
+          : {
+              ...item,
+              sizes: item.sizes.map((s, j) => {
+                if (j !== fila.sizeIndex) return s
+                return 'ventaMostrador' in patch ? marcarMostrador(s, patch.ventaMostrador) : { ...s, precio_unitario: patch.precio }
+              }),
+            }
+      )
+    )
+  }
+  function cambiarAnticipo({ monto, metodo, recibidoPor, notas }) {
+    setAnticipoMonto(monto)
+    setAnticipoMetodo(metodo)
+    setAnticipoRecibidoPor(recibidoPor)
+    setAnticipoNotas(notas)
+  }
+
   function discardDraft() {
     clearDraft()
     setForm(initialForm)
@@ -460,8 +490,10 @@ function NewOrderForm() {
       setSubmitError(new Error('Falta la fecha de entrega.'))
       return
     }
-    const anticipoMontoNum = Number(anticipoMonto)
-    if (anticipoMonto && (!anticipoMontoNum || anticipoMontoNum <= 0)) {
+    // V159 — sin nada que cobrar (tipo sin precio o todo de mostrador) no hay anticipo.
+    const anticipoAplica = llevaPrecio && resumen.hayCobro
+    const anticipoMontoNum = anticipoAplica ? Number(anticipoMonto) : 0
+    if (anticipoAplica && anticipoMonto && (!anticipoMontoNum || anticipoMontoNum <= 0)) {
       setSubmitError(new Error('El monto del anticipo debe ser mayor a cero.'))
       return
     }
@@ -469,14 +501,18 @@ function NewOrderForm() {
       setSubmitError(new Error('Falta indicar quién recibió el anticipo.'))
       return
     }
-    const totalOrdenNum = Number(form.totalOrden)
-    if (form.totalOrden && (!totalOrdenNum || totalOrdenNum <= 0)) {
-      setSubmitError(new Error('El total de la orden debe ser mayor a cero.'))
+
+    if (esMaquila) {
+      await handleSubmitMaquila(anticipoMontoNum)
       return
     }
 
-    if (esMaquila) {
-      await handleSubmitMaquila(totalOrdenNum, anticipoMontoNum)
+    // Prendas que se guardan (mismo filtro de siempre). Las líneas de precio
+    // se cuentan sobre ESTA lista para que sus índices coincidan en la base.
+    const itemsFiltrados = items.filter((item) => item.garment.trim() || item.sizes.some((s) => s.talla.trim()))
+    const faltaPrecio = llevaPrecio ? mensajeFaltanPrecios(filasDeFormulario(itemsFiltrados), form.orderTypeKey) : null
+    if (faltaPrecio) {
+      setSubmitError(new Error(faltaPrecio))
       return
     }
 
@@ -502,8 +538,8 @@ function NewOrderForm() {
     setSubmitting(true)
     setSubmitError(null)
 
-    const cleanItemsBase = items
-      .filter((item) => item.garment.trim() || item.sizes.some((s) => s.talla.trim()))
+    // Solo talla y cantidad: el precio y la bandera de mostrador NO van en orders.items.
+    const cleanItemsBase = itemsFiltrados
       .map((item) => limpiarRoster({
         ...item,
         sizes: item.sizes
@@ -548,9 +584,9 @@ function NewOrderForm() {
       description: form.description.trim(),
       requestedDeliveryDate: form.requestedDeliveryDate,
       items: cleanItems,
+      lineas: llevaPrecio ? lineasParaGuardar(itemsFiltrados) : [],
       foliosExternos: form.foliosExternos,
       createdAt: CAPTURA_FECHA_CREACION_HABILITADA ? form.createdAt || null : null,
-      totalOrden: totalOrdenNum > 0 ? totalOrdenNum : null,
     })
 
     if (createError) {
@@ -565,7 +601,7 @@ function NewOrderForm() {
   // V143 — orden de maquila: cliente de maquila → producto → número de corte
   // (único por cliente) → tallas → bordado. Las etapas las arma el servidor
   // con los procesos del producto.
-  async function handleSubmitMaquila(totalOrdenNum, anticipoMontoNum) {
+  async function handleSubmitMaquila(anticipoMontoNum) {
     const cliente = clientes.find((c) => c.id === form.clientId) || null
     const faltaMaquila = validarOrdenMaquila({
       cliente,
@@ -576,6 +612,11 @@ function NewOrderForm() {
     })
     if (faltaMaquila) {
       setSubmitError(new Error(faltaMaquila))
+      return
+    }
+    const faltaPrecio = mensajeFaltanPrecios(filasDeFormulario([items[0]]), form.orderTypeKey)
+    if (faltaPrecio) {
+      setSubmitError(new Error(faltaPrecio))
       return
     }
 
@@ -598,9 +639,10 @@ function NewOrderForm() {
       numeroCorte,
       requestedDeliveryDate: form.requestedDeliveryDate,
       items: [prendaMaquila(items[0], productoMaquila, llevaBordadoMaquila)],
+      // Mismo filtro de tallas que prendaMaquila: los índices coinciden.
+      lineas: lineasParaGuardar([items[0]]),
       description: form.description.trim(),
       foliosExternos: form.foliosExternos,
-      totalOrden: totalOrdenNum > 0 ? totalOrdenNum : null,
     })
 
     if (createError) {
@@ -1024,85 +1066,29 @@ function NewOrderForm() {
           </div>
         </details>
 
+        {/* V159 — Precios y pago: visible (no plegable). Una línea por talla, con
+            precio unitario o "venta de mostrador"; debajo total, anticipo y saldo. */}
+        {llevaPrecio && (
+          <div className="precios-alta">
+            <span className="field-label" style={{ marginBottom: 8, display: 'block' }}>
+              Precios y pago
+            </span>
+            <PreciosLineasEditor filas={filasPrecio} onChange={cambiarLinea} />
+            <ResumenPagoAlta
+              resumen={resumen}
+              anticipo={{ monto: anticipoMonto, metodo: anticipoMetodo, recibidoPor: anticipoRecibidoPor, notas: anticipoNotas }}
+              onAnticipo={cambiarAnticipo}
+            />
+          </div>
+        )}
+
         <details className="form-optional">
-          <summary>{esFrisa ? 'Cotización y orden de compra (opcional)' : 'Cotización, total y anticipo (opcional)'}</summary>
+          <summary>Cotización y orden de compra (opcional)</summary>
           <div className="form-optional__body">
             <div className="form-row">
               <DocumentosPicker label="Cotización (PDF)" files={cotizacionFiles} onChange={setCotizacionFiles} />
               <DocumentosPicker label="Orden de compra (PDF)" files={ordenCompraFiles} onChange={setOrdenCompraFiles} />
             </div>
-            {/* V155 — las órdenes de Frisa no llevan precio. */}
-            {!esFrisa && (
-            <>
-
-            <div className="form-row">
-              <label>
-                Total de la orden
-                <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  className="input"
-                  value={form.totalOrden}
-                  onChange={(e) => updateField('totalOrden', e.target.value)}
-                  placeholder="0.00"
-                />
-              </label>
-              <label>
-                Anticipo recibido
-                <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  className="input"
-                  value={anticipoMonto}
-                  onChange={(e) => setAnticipoMonto(e.target.value)}
-                  placeholder="0.00"
-                />
-              </label>
-            </div>
-            {form.totalOrden && anticipoMonto && (
-              <p className="pantone-hint">
-                Restante: {(Number(form.totalOrden) - Number(anticipoMonto)).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
-              </p>
-            )}
-
-            {anticipoMonto && (
-              <>
-                <div className="form-row">
-                  <label>
-                    Método de pago
-                    <select className="input" value={anticipoMetodo} onChange={(e) => setAnticipoMetodo(e.target.value)}>
-                      {METODOS_PAGO.map((m) => (
-                        <option key={m.key} value={m.key}>
-                          {m.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Quién lo recibió *
-                    <input
-                      type="text"
-                      className="input"
-                      value={anticipoRecibidoPor}
-                      onChange={(e) => setAnticipoRecibidoPor(e.target.value)}
-                    />
-                  </label>
-                </div>
-                <label>
-                  Notas del anticipo
-                  <input
-                    type="text"
-                    className="input"
-                    value={anticipoNotas}
-                    onChange={(e) => setAnticipoNotas(e.target.value)}
-                  />
-                </label>
-              </>
-            )}
-            </>
-            )}
           </div>
         </details>
 

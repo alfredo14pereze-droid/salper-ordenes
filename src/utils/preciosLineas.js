@@ -56,6 +56,7 @@ export function filasDeFormulario(items) {
         talla: String(size.talla).trim(),
         cantidad,
         precioUnitario: precio,
+        precioTexto: mostrador ? '' : String(size.precio_unitario ?? ''),
         ventaMostrador: mostrador,
         subtotal: !mostrador && precio > 0 ? redondear(cantidad * precio) : 0,
       })

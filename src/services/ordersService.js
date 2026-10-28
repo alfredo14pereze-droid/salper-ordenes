@@ -109,20 +109,25 @@ export async function createOrder({
   description,
   requestedDeliveryDate,
   items,
+  lineas,
   foliosExternos,
   createdAt,
-  totalOrden,
 }) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
 
+  // V159 — la orden y sus líneas de precio se guardan juntas (una sola
+  // transacción): create_order_con_lineas valida los precios antes de pedir
+  // folio y luego llama a create_order. El total ya no se captura a mano.
   return supabase
-    .rpc('create_order', {
+    .rpc('create_order_con_lineas', {
       p_client_name: clientName,
       p_order_type_key: orderTypeKey,
       p_description: description || null,
       p_requested_delivery_date: requestedDeliveryDate,
       p_items: items || [],
+      // [{item_index, size_index, precio_unitario, venta_mostrador}] — ver utils/preciosLineas.js
+      p_lineas: lineas || [],
       p_client_id: clientId || null,
       p_client_telefono: clientTelefono || null,
       p_client_correo: clientCorreo || null,
@@ -134,8 +139,6 @@ export async function createOrder({
       // con su fecha real, no la de hoy. null = se comporta como
       // siempre (now() del lado del servidor).
       p_created_at: createdAt || null,
-      // V42: opcional, para calcular "Restante" contra los anticipos.
-      p_total_orden: totalOrden || null,
     })
     .single()
 }
@@ -143,20 +146,21 @@ export async function createOrder({
 // V143 — orden de maquila: el servidor toma el nombre del cliente del
 // catálogo y genera las etapas con los procesos del producto (ver
 // create_order_maquila en schema_v143_maquila.sql).
-export async function createOrderMaquila({ clientId, productoId, numeroCorte, requestedDeliveryDate, items, description, foliosExternos, totalOrden }) {
+export async function createOrderMaquila({ clientId, productoId, numeroCorte, requestedDeliveryDate, items, lineas, description, foliosExternos }) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
 
+  // V159 — con sus líneas de precio, en la misma transacción.
   return supabase
-    .rpc('create_order_maquila', {
+    .rpc('create_order_maquila_con_lineas', {
       p_client_id: clientId,
       p_producto_id: productoId,
       p_numero_corte: numeroCorte,
       p_requested_delivery_date: requestedDeliveryDate,
       p_items: items || [],
+      p_lineas: lineas || [],
       p_description: description || null,
       p_folios_externos: foliosExternos || [],
-      p_total_orden: totalOrden || null,
     })
     .single()
 }

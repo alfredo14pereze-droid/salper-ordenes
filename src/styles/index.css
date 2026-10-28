@@ -4665,3 +4665,18 @@ h4 {
 .nota-tipo--dia { background: var(--color-info-soft); color: var(--color-info); }
 .nota-tipo--error { background: var(--color-danger-soft); color: var(--color-danger); }
 .nota-tipo--otro { background: var(--color-bg); color: var(--color-text-muted); border: 1px solid var(--color-border); }
+
+/* V159 — precio por línea y venta de mostrador */
+.badge--mostrador { background: var(--color-black); color: var(--color-amber); }
+.input.input--error { border-color: var(--color-danger); }
+.precio-lineas__mostrador { margin: 0; font-weight: 600; }
+.precio-lineas__fila--mostrador td { background: var(--color-bg); }
+.precios-alta { padding: 14px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.resumen-pago-alta .totales-box { margin-top: 8px; }
+@media (max-width: 720px) {
+  .precio-lineas tr { padding: 8px 0; border-top: 1px solid var(--color-border); }
+  .precio-lineas td { border-top: 0; padding: 3px 6px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .precio-lineas td::before { content: attr(data-label); font-size: 12px; color: var(--color-text-muted); font-weight: 600; }
+  .precio-lineas td input.input { max-width: 150px; }
+  .totales-box { max-width: none; }
+}
