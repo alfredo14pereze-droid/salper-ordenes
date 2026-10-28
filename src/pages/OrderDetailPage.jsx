@@ -4,6 +4,7 @@ import { useOrder } from '../hooks/useOrder'
 import { useOrderTypes } from '../hooks/useOrderTypes'
 import StatusStepper from '../components/orders/StatusStepper'
 import StatusChanger from '../components/orders/StatusChanger'
+import EntregaForzadaAviso from '../components/orders/EntregaForzadaAviso'
 import StatusHistoryList from '../components/orders/StatusHistoryList'
 import TypeBadge from '../components/orders/TypeBadge'
 import PhotoGallery from '../components/orders/PhotoGallery'
@@ -35,6 +36,9 @@ import {
   canViewRemision,
   canViewSurtido,
   canChangeStatus,
+  canCompleteOrder,
+  canConfirmOrder,
+  canDeliverOrder,
   canSetEstimatedDays,
   canViewEtapas,
   canViewFinanzas,
@@ -207,7 +211,12 @@ function OrderDetailContent() {
             que mostrar para su rol (ambos regresan null solos) — se veía
             como un recuadro vacío feo. Ahora solo se monta si el rol
             actual puede hacer algo aquí. */}
-        {user && !order.eliminada_en && (canChangeStatus(role) || canSetEstimatedDays(role, order)) && (
+        {/* V160 — registro de una entrega forzada (falta de precio/factura). */}
+        {user && (canViewFinanzas(role) || canDeliverOrder(role)) && <EntregaForzadaAviso order={order} />}
+
+        {/* V160 — admin_tienda solo entrega: en una orden ya entregada no tiene
+            nada que hacer aquí (evita la tarjeta vacía). */}
+        {user && !order.eliminada_en && ((canChangeStatus(role) && (order.status !== 'completado' || canCompleteOrder(role) || canConfirmOrder(role))) || canSetEstimatedDays(role, order)) && (
           <section className="card">
             <StatusChanger order={order} onUpdated={refresh} />
             <EstimatedDaysCard order={order} onUpdated={refresh} />

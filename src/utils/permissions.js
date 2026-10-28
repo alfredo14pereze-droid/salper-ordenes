@@ -118,7 +118,20 @@ export function canCompleteOrder(role) {
 // decidir si mostrar la sección de "cambiar estado" en el detalle de la
 // orden.
 export function canChangeStatus(role) {
-  return canConfirmOrder(role) || canCompleteOrder(role)
+  return canConfirmOrder(role) || canCompleteOrder(role) || canDeliverOrder(role)
+}
+
+// V160 — "Confirmar entrega al cliente" (entregar_orden): permiso editable
+// 'orden.entregar' (admin_general, admin_tienda, admin_fabrica). La corrección
+// manual de estado sigue siendo canCompleteOrder.
+export function canDeliverOrder(role) {
+  return tiene(role, 'orden.entregar', () => ['admin_general', 'admin_tienda', 'admin_fabrica'].includes(role))
+}
+
+// V160 — entregar de todos modos cuando falta precio o datos de factura
+// (pide motivo y queda registrado): permiso 'orden.entregar_forzado'.
+export function canForceDelivery(role) {
+  return tiene(role, 'orden.entregar_forzado', () => ['admin_general', 'admin_tienda', 'admin_fabrica'].includes(role))
 }
 
 // V49 — "Etapas de producción" (OrderEtapasCard) es la herramienta real

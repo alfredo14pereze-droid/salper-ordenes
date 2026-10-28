@@ -4681,3 +4681,9 @@ h4 {
   .precio-lineas td input.input { max-width: 150px; }
   .totales-box { max-width: none; }
 }
+
+/* V160 — entregar de todos modos */
+.entrega-forzar { margin-top: 10px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg); display: grid; gap: 8px; }
+.entrega-forzar__motivo { display: grid; gap: 6px; font-weight: 600; }
+.entrega-forzada-aviso { margin: 0; padding: 10px 12px; background: var(--color-orange-soft); color: var(--color-warning); border-radius: var(--radius-md); }
+.entrega-forzada-aviso b { color: var(--color-text); }

@@ -165,6 +165,22 @@ export async function createOrderMaquila({ clientId, productoId, numeroCorte, re
     .single()
 }
 
+// V160 — confirmar la entrega al cliente. Con `forzar` (y motivo) entrega
+// aunque falte precio o factura; queda en orden_entregas_forzadas.
+export async function entregarOrden(orderId, { forzar = false, motivo = null } = {}) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase
+    .rpc('entregar_orden', { p_order_id: orderId, p_forzar: forzar, p_motivo: motivo })
+    .single()
+}
+
+export async function fetchEntregasForzadas(orderId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: [], error: cfgError }
+  return supabase.from('orden_entregas_forzadas').select('*').eq('order_id', orderId).order('creada_en', { ascending: false })
+}
+
 // V145 — "Equipo": identificador extra y opcional de la orden (sublimación).
 export async function setOrdenEquipo(orderId, equipo) {
   const { error: cfgError } = ensureClient()

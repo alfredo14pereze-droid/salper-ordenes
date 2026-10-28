@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { STATUSES } from '../../lib/constants'
-import { updateOrderStatus } from '../../services/ordersService'
+import { entregarOrden, updateOrderStatus } from '../../services/ordersService'
 import { useAuth } from '../../contexts/AuthContext'
-import { canChangeStatus, canCompleteOrder, canConfirmOrder } from '../../utils/permissions'
+import { canChangeStatus, canCompleteOrder, canConfirmOrder, canDeliverOrder, canForceDelivery } from '../../utils/permissions'
 
 // Desde V23 (etapas paralelas) esta tarjeta se angostó a los dos
 // "bookends" de todo el pedido — confirmar un pedido nuevo y marcar la
@@ -13,6 +13,10 @@ export default function StatusChanger({ order, onUpdated }) {
   const [overrideStatus, setOverrideStatus] = useState(order.status)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  // V160 — la entrega se bloqueó (falta precio/factura): quien tenga permiso
+  // puede entregar de todos modos con un motivo, que queda registrado.
+  const [bloqueo, setBloqueo] = useState(null)
+  const [motivo, setMotivo] = useState('')
 
   // tienda no cambia estados; y aunque fábrica/admin_fabrica pueden, una
   // orden cancelada solo la puede reactivar admin_general (el servidor ya
@@ -21,7 +25,7 @@ export default function StatusChanger({ order, onUpdated }) {
   if (order.cancelled_at && role !== 'admin_general') return null
 
   const canConfirm = canConfirmOrder(role) && order.status === 'en_confirmacion'
-  const canComplete = canCompleteOrder(role) && order.status !== 'completado'
+  const canComplete = canDeliverOrder(role) && order.status !== 'completado'
   const canOverride = canCompleteOrder(role) // admin_fabrica/admin_general: corrección manual
 
   if (!canConfirm && !canComplete && !canOverride) return null
@@ -41,9 +45,41 @@ export default function StatusChanger({ order, onUpdated }) {
 
   // Entregada = la orden se cierra y pasa a Órdenes pasadas. Se pide confirmar
   // para que nadie la cierre por accidente.
-  function handleDeliver() {
+  async function handleDeliver() {
     if (!window.confirm('¿Confirmas que esta orden ya se entregó al cliente? Pasará a Órdenes pasadas.')) return
-    handleChange('completado')
+    setSaving(true)
+    setError(null)
+    setBloqueo(null)
+    const { error: entregaError } = await entregarOrden(order.id)
+    setSaving(false)
+    if (entregaError) {
+      // Bloqueo por requisitos (precio/factura): se ofrece entregar de todos modos.
+      if (/^No se puede marcar como entregada/.test(entregaError.message) && canForceDelivery(role)) {
+        setBloqueo(entregaError.message)
+        setMotivo('')
+      } else {
+        setError(entregaError)
+      }
+      return
+    }
+    onUpdated?.()
+  }
+
+  async function handleForzar() {
+    if (motivo.trim().length < 5) {
+      setError(new Error('Escribe el motivo para entregar de todos modos.'))
+      return
+    }
+    setSaving(true)
+    setError(null)
+    const { error: entregaError } = await entregarOrden(order.id, { forzar: true, motivo: motivo.trim() })
+    setSaving(false)
+    if (entregaError) {
+      setError(entregaError)
+      return
+    }
+    setBloqueo(null)
+    onUpdated?.()
   }
 
   return (
@@ -67,6 +103,30 @@ export default function StatusChanger({ order, onUpdated }) {
           </button>
         )}
       </div>
+
+      {bloqueo && (
+        <div className="entrega-forzar">
+          <p className="fin-missing" style={{ marginTop: 0 }}>{bloqueo}</p>
+          <label className="entrega-forzar__motivo">
+            Si de todos modos ya se entregó, escribe el motivo (queda registrado con tu nombre):
+            <textarea
+              className="input"
+              rows={2}
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              placeholder="Ej. El cliente pagó en efectivo; el precio se captura después."
+            />
+          </label>
+          <div className="status-changer__row" style={{ gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" className="btn btn--primary" disabled={saving || motivo.trim().length < 5} onClick={handleForzar}>
+              {saving ? 'Guardando…' : 'Entregar de todos modos'}
+            </button>
+            <button type="button" className="btn btn--ghost" disabled={saving} onClick={() => setBloqueo(null)}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
       {canOverride && (
         <div className="status-changer__row" style={{ marginTop: 8 }}>
