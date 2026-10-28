@@ -4715,3 +4715,60 @@ h4 {
 .entrega-masiva__meta { color: var(--color-text-muted); font-size: 13px; overflow-wrap: anywhere; }
 .entrega-masiva__resultado { display: grid; gap: 10px; }
 .entrega-masiva__bloqueadas { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+
+/* ---------- V163 — Notas para el personal ---------- */
+
+.notas-pestanas {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--color-border);
+  margin-bottom: 16px;
+}
+
+.notas-pestana {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  padding: 10px 14px;
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.notas-pestana--activa {
+  color: var(--color-text);
+  border-bottom-color: var(--color-amber-strong);
+}
+
+.notas-pestana__contador {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 13px;
+  text-align: center;
+}
+
+.nota-card--personal { border-left-color: var(--color-amber-strong); }
+.nota-card--sin-leer { background: var(--color-orange-soft); }
+
+.nota-tipo--todos { background: var(--color-info-soft); color: var(--color-info); }
+.nota-tipo--persona { background: var(--color-orange-soft); color: var(--color-orange-strong); }
+
+.nota-leido {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nota-leido--ok { color: var(--color-good); }

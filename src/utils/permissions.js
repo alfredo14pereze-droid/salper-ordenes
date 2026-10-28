@@ -700,3 +700,25 @@ export function canEscribirNotasTienda(role) {
 export function canResolverNotasTienda(role) {
   return tiene(role, 'nt.resolver', () => role === 'admin_tienda' || role === 'admin_general')
 }
+
+// V163 — Notas para el personal (segunda pestaña de Notas de tienda).
+// np.ver / np.enterado / np.escribir; fallback = siembra de
+// schema_v163_notas_para_personal.sql.
+export function canViewNotasPersonal(role) {
+  return tiene(role, 'np.ver', () => (
+    ['ventas', 'contabilidad', 'tienda', 'admin_tienda', 'admin_general', 'consulta_tienda', 'lectura'].includes(role)
+  ))
+}
+
+export function canEnteradoNotasPersonal(role) {
+  return tiene(role, 'np.enterado', () => ['ventas', 'contabilidad', 'tienda'].includes(role))
+}
+
+export function canEscribirNotasPersonal(role) {
+  return tiene(role, 'np.escribir', () => role === 'admin_tienda' || role === 'admin_general')
+}
+
+// La sección "Notas de tienda" se ve si se puede ver cualquiera de sus dos pestañas.
+export function canViewSeccionNotas(role) {
+  return canViewNotasTienda(role) || canViewNotasPersonal(role)
+}

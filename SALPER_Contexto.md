@@ -7071,3 +7071,26 @@ $1,135.13, +129.0% → +47.2% ($400 → $50). Estefania Romero: $1,572.13, base 
   promedio": puede no coincidir con la base del bono. Ofrecido alinearlo, no hecho.
 - La primera semana de Alberto ($135, parcial) entra a su base; si se quiere excluir semanas parciales hay
   que definir el criterio.
+
+### V163 — Notas para el personal (2026-10-28, SQL aplicado el 2026-10-29)
+
+(Se escribió como "V160" mientras otra rama subía su propia V160 de entregar orden; el archivo quedó como V163.
+El SQL que corrió Alfredo es el mismo, solo cambió el número.)
+
+"Notas de tienda" ahora tiene dos pestañas: **Del personal** (V158) y **Para el personal** (nueva): los
+administrativos le dejan notas al personal, a todos o a una persona, con foto opcional.
+- **SQL**: `supabase/schema_v163_notas_para_personal.sql` (aditivo). Tablas `np_notas` (`para_id` null = todo el
+  personal; `quitada_en` = "Quitar nota", se oculta pero queda) y `np_enterados` (quién pulsó "Enterado" y
+  cuándo). RLS: quien escribe ve todas las notas y todos los Enterado; los demás solo las de todos y las suyas, y
+  solo sus Enterado. Funciones `np_destinatarios`, `np_crear_nota`, `np_marcar_enterado`, `np_quitar_nota`. La
+  foto usa el bucket `nt-fotos` de V158.
+- **Permisos** (módulo "Notas para el personal" en Roles y permisos): `np.ver` = ventas, contabilidad, tienda,
+  admin_tienda, admin_general, consulta_tienda, lectura; `np.enterado` = ventas, contabilidad, tienda (también
+  define quiénes cuentan como destinatarios: perfiles con ese permiso y sin `suspended_at`); `np.escribir` =
+  admin_tienda, admin_general. Decisiones de Alfredo.
+- **Pantalla**: `src/components/notas/NotasParaPersonal.jsx` + servicio `notasPersonalService.js`; la página
+  carga las notas para mostrar en la pestaña cuántas faltan por marcar "Enterado" y abre ahí si hay pendientes.
+  Quien escribe ve en cada nota "X de N ya la leyeron", quiénes sí y quiénes faltan. Menú: `canViewSeccionNotas`.
+- Probado: SQL en PGlite (26 casos) y pantalla en ejemplo local con varias personas (admin escribe a todos y a
+  una persona, Giss solo ve las suyas y marca Enterado, el admin lo ve, consulta solo lee, corte no la ve,
+  quitar nota, celular).

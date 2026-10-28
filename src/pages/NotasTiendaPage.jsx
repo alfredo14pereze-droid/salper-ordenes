@@ -2,7 +2,17 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import RequireRole from '../components/common/RequireRole'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
-import { canViewNotasTienda, canEscribirNotasTienda, canResolverNotasTienda } from '../utils/permissions'
+import {
+  canViewNotasTienda,
+  canEscribirNotasTienda,
+  canResolverNotasTienda,
+  canViewNotasPersonal,
+  canEnteradoNotasPersonal,
+  canEscribirNotasPersonal,
+  canViewSeccionNotas,
+} from '../utils/permissions'
+import { fetchNotasPersonal } from '../services/notasPersonalService'
+import NotasParaPersonal from '../components/notas/NotasParaPersonal'
 import {
   TIPOS_NOTA,
   etiquetaTipo,
@@ -16,16 +26,90 @@ import { formatDateTime } from '../utils/dates'
 // V158 — Notas de tienda: producto faltante, notas del día, errores, otros.
 // Escribe el personal de tienda; admin de tienda / admin general las marcan
 // como resueltas (se ocultan de "Pendientes" pero quedan en "Resueltas").
+// V163 — dos pestañas: "Del personal" (V158) y "Para el personal" (notas de
+// los administrativos al personal, con "Enterado").
 export default function NotasTiendaPage() {
   return (
-    <RequireRole allow={canViewNotasTienda}>
+    <RequireRole allow={canViewSeccionNotas}>
       <NotasTiendaContent />
     </RequireRole>
   )
 }
 
 function NotasTiendaContent() {
-  const { role } = useAuth()
+  const { role, user } = useAuth()
+  const verDel = canViewNotasTienda(role)
+  const verPara = canViewNotasPersonal(role)
+  const puedeEnterado = canEnteradoNotasPersonal(role)
+  const escribePara = canEscribirNotasPersonal(role)
+  const userId = user?.id
+
+  // Las notas "Para el personal" se cargan aquí para mostrar cuántas faltan
+  // por marcar "Enterado" en la pestaña y abrir ahí si hay pendientes.
+  const [para, setPara] = useState({ datos: null, loading: verPara, error: null })
+  const cargarPara = useCallback(async () => {
+    if (!verPara) return
+    setPara((p) => ({ ...p, loading: true, error: null }))
+    const { data, error } = await fetchNotasPersonal()
+    setPara({ datos: data, loading: false, error })
+  }, [verPara])
+  useEffect(() => {
+    cargarPara()
+  }, [cargarPara])
+
+  const sinLeer = useMemo(() => {
+    if (!puedeEnterado || !para.datos) return 0
+    const mias = new Set(para.datos.enterados.filter((e) => e.usuario_id === userId).map((e) => e.nota_id))
+    return para.datos.notas.filter((n) => !mias.has(n.id)).length
+  }, [para.datos, puedeEnterado, userId])
+
+  const [pestana, setPestana] = useState(null) // del | para
+  useEffect(() => {
+    if (pestana) return
+    if (!verDel) setPestana('para')
+    else if (!verPara) setPestana('del')
+    else if (!para.loading) setPestana(sinLeer > 0 ? 'para' : 'del')
+  }, [pestana, verDel, verPara, para.loading, sinLeer])
+
+  return (
+    <div className="page page--narrow">
+      <div className="section-header">
+        <h2 className="section-title">Notas de tienda</h2>
+      </div>
+
+      {verDel && verPara && (
+        <div className="notas-pestanas" role="tablist">
+          <button type="button" role="tab" aria-selected={pestana === 'del'} className={'notas-pestana' + (pestana === 'del' ? ' notas-pestana--activa' : '')} onClick={() => setPestana('del')}>
+            Del personal
+          </button>
+          <button type="button" role="tab" aria-selected={pestana === 'para'} className={'notas-pestana' + (pestana === 'para' ? ' notas-pestana--activa' : '')} onClick={() => setPestana('para')}>
+            Para el personal
+            {sinLeer > 0 && <span className="notas-pestana__contador">{sinLeer}</span>}
+          </button>
+        </div>
+      )}
+
+      {pestana === null ? (
+        <Loading label="Cargando notas…" />
+      ) : pestana === 'para' ? (
+        <NotasParaPersonal
+          userId={userId}
+          puedeEscribir={escribePara}
+          puedeEnterado={puedeEnterado}
+          datos={para.datos}
+          loading={para.loading}
+          error={para.error}
+          onRecargar={cargarPara}
+          onCambio={cargarPara}
+        />
+      ) : (
+        <NotasDelPersonal role={role} />
+      )}
+    </div>
+  )
+}
+
+function NotasDelPersonal({ role }) {
   const puedeEscribir = canEscribirNotasTienda(role)
   const puedeResolver = canResolverNotasTienda(role)
 
@@ -72,11 +156,7 @@ function NotasTiendaContent() {
   }
 
   return (
-    <div className="page page--narrow">
-      <div className="section-header">
-        <h2 className="section-title">Notas de tienda</h2>
-      </div>
-
+    <>
       {puedeEscribir && <NotaForm onCreated={() => (vista === 'pendientes' ? cargar() : setVista('pendientes'))} />}
 
       <div className="notas-filtros">
@@ -130,7 +210,7 @@ function NotasTiendaContent() {
           ))}
         </div>
       )}
-    </div>
+    </>
   )
 }
 

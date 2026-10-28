@@ -19,7 +19,7 @@ import {
   canViewPedidosTienda,
   canViewEstadisticas,
   canViewPendientes,
-  canViewNotasTienda,
+  canViewSeccionNotas,
   canDeliverOrder,
   canViewInventario,
   canRegistrarEntradaTela,
@@ -125,7 +125,8 @@ export default function AppLayout({ children }) {
     // V78 — pendientes tienda <-> fábrica: los roles de fábrica también lo ven.
     { to: '/pendientes', label: 'Pendientes', show: canViewPendientes(role) },
     // V158 — notas del personal de tienda (faltantes, notas del día, errores).
-    { to: '/notas-tienda', label: 'Notas de tienda', show: canViewNotasTienda(role) },
+    // V163 — con dos pestañas: del personal y para el personal.
+    { to: '/notas-tienda', label: 'Notas de tienda', show: canViewSeccionNotas(role) },
     // Entrega masiva: marcar varias órdenes como entregadas a la vez (permiso orden.entregar).
     { to: '/entregas', label: 'Entrega masiva', show: canDeliverOrder(role) },
     // V24 — de solo lectura para todos, invitados incluidos; le faltaba
