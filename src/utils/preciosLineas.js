@@ -133,6 +133,15 @@ export function lineasParaGuardar(items) {
   return lineas
 }
 
+// ¿El total de la orden sale de los precios (calculado) o del total capturado
+// a mano (orders.total_orden, V42, órdenes viejas)? Calculado si alguna línea
+// tiene precio o es de mostrador, o si no hay total manual.
+export function usaTotalCalculado(order, totales) {
+  if (!totales) return false
+  const conPrecios = (totales.renglones || []).some((r) => r.venta_mostrador || r.precio_unitario != null)
+  return conPrecios || order?.total_orden == null
+}
+
 // Líneas para set_orden_lineas desde las filas del detalle.
 export function lineasDeFilas(filas) {
   return (filas || []).map((f) => ({

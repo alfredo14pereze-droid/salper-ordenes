@@ -4,6 +4,8 @@ import { setOrderTotal } from '../../services/ordersService'
 import { formatDateTime } from '../../utils/dates'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditOrder } from '../../utils/permissions'
+import { fetchOrdenTotales } from '../../services/finanzasService'
+import { usaTotalCalculado } from '../../utils/preciosLineas'
 
 function formatMonto(monto) {
   return Number(monto).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })
@@ -20,6 +22,10 @@ function formatMonto(monto) {
 // puede desincronizar). El total se edita con set_order_total, aparte de
 // update_order_details a propósito (no dispara pending_reconfirmation_at:
 // no es algo que fábrica necesite reconfirmar).
+//
+// V159 — el total ya no se captura: sale de los precios por línea
+// (orden_totales). El total manual solo queda para órdenes viejas que no
+// tienen precios (ahí sigue el botón "Editar").
 export default function OrderPaymentsCard({ order, onUpdated }) {
   const { role, profile } = useAuth()
   const disabled = !!order.eliminada_en
@@ -39,14 +45,17 @@ export default function OrderPaymentsCard({ order, onUpdated }) {
   const [totalInput, setTotalInput] = useState(order.total_orden ?? '')
   const [savingTotal, setSavingTotal] = useState(false)
   const [totalError, setTotalError] = useState(null)
+  const [totales, setTotales] = useState(null)
 
   // disabled: la orden fue eliminada (soft-delete) — ya no admite más
   // anticipos de ningún rol (ver schema_v24_soft_delete.sql).
   const canRegister = !disabled && (role === 'ventas' || role === 'contabilidad' || role === 'admin_tienda' || role === 'admin_general')
   const canDelete = !disabled && (role === 'admin_tienda' || role === 'admin_general')
-  const canEditTotal = !disabled && canEditOrder(role, order)
+  const canEditTotalBase = !disabled && canEditOrder(role, order)
 
   const load = useCallback(async () => {
+    const { data: t } = await fetchOrdenTotales(order.id)
+    setTotales(t || null)
     const { data, error: fetchError } = await fetchAnticipos(order.id)
     if (fetchError) {
       setError(fetchError)
@@ -57,12 +66,15 @@ export default function OrderPaymentsCard({ order, onUpdated }) {
     setLoading(false)
   }, [order.id])
 
+  // `order` cambia al guardar precios en la otra tarjeta: se recalcula el total.
   useEffect(() => {
     load()
-  }, [load])
+  }, [load, order])
 
   const recibido = anticipos.reduce((sum, a) => sum + Number(a.monto), 0)
-  const restante = order.total_orden != null ? Number(order.total_orden) - recibido : null
+  const calculado = usaTotalCalculado(order, totales)
+  const total = calculado ? Number(totales.total) : order.total_orden != null ? Number(order.total_orden) : null
+  const restante = total != null ? total - recibido : null
 
   function openForm() {
     setRecibidoPor(profile?.full_name || '')
@@ -142,6 +154,7 @@ export default function OrderPaymentsCard({ order, onUpdated }) {
   }
 
   if (loading) return null
+  const canEditTotal = canEditTotalBase && !calculado
 
   return (
     <div>
@@ -157,7 +170,8 @@ export default function OrderPaymentsCard({ order, onUpdated }) {
       <div className="payments-summary">
         <div className="payments-summary__stat">
           <span className="payments-summary__label">Total de la orden</span>
-          <span className="payments-summary__value">{order.total_orden != null ? formatMonto(order.total_orden) : '—'}</span>
+          <span className="payments-summary__value">{total != null ? formatMonto(total) : '—'}</span>
+          {calculado && <span className="payments-summary__label">Calculado con los precios</span>}
           {canEditTotal && !editingTotal && (
             <button
               type="button"

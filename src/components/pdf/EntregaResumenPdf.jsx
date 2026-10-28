@@ -83,7 +83,8 @@ function Field({ label, value }) {
 export default function EntregaResumenPdf({ data }) {
   const { orden, cliente, facturacion, totales, anticipos } = data
   const items = orden.items || []
-  const porIndice = Object.fromEntries((totales.renglones || []).map((r) => [r.item_index, r]))
+  // V159 — una fila por línea (prenda + talla), en el orden de la orden.
+  const lineas = totales.renglones || []
   const fiscal = facturacion.fiscal
 
   return (
@@ -124,22 +125,24 @@ export default function EntregaResumenPdf({ data }) {
             <Text style={[styles.th, styles.cExtras]}>Extras / pza</Text>
             <Text style={[styles.th, styles.cSub]}>Subtotal</Text>
           </View>
-          {items.map((item, i) => {
-            const piezas = (item.sizes || []).reduce((s, sz) => s + (Number(sz.cantidad) || 0), 0)
-            if (piezas <= 0) return null
-            const r = porIndice[i]
-            const tallas = (item.sizes || []).filter((sz) => Number(sz.cantidad) > 0).map((sz) => `${sz.talla} × ${sz.cantidad}`).join('   ')
+          {lineas.map((r) => {
+            const item = items[r.item_index] || {}
+            const specs = specsDe(item)
             return (
-              <View key={i} style={styles.tr} wrap={false}>
+              <View key={`${r.item_index}:${r.size_index}`} style={styles.tr} wrap={false}>
                 <View style={styles.cPrenda}>
-                  <Text style={{ fontFamily: 'Helvetica-Bold' }}>{item.garment || `Prenda ${i + 1}`}</Text>
-                  <Text style={styles.spec}>{tallas}</Text>
-                  {specsDe(item).length > 0 && <Text style={styles.spec}>{specsDe(item).join(' · ')}</Text>}
+                  <Text style={{ fontFamily: 'Helvetica-Bold' }}>
+                    {r.prenda || `Prenda ${r.item_index + 1}`}
+                    {r.talla ? `  ·  Talla ${r.talla}` : ''}
+                  </Text>
+                  {specs.length > 0 && <Text style={styles.spec}>{specs.join(' · ')}</Text>}
                 </View>
-                <Text style={styles.cPiezas}>{piezas}</Text>
-                <Text style={styles.cPrecio}>{r ? mxn(r.precio_unitario) : 'Sin precio'}</Text>
+                <Text style={styles.cPiezas}>{r.cantidad}</Text>
+                <Text style={styles.cPrecio}>
+                  {r.venta_mostrador ? 'Mostrador' : r.precio_unitario != null ? mxn(r.precio_unitario) : 'Sin precio'}
+                </Text>
                 <View style={styles.cExtras}>
-                  {r && (r.extras || []).length > 0 ? (
+                  {!r.venta_mostrador && (r.extras || []).length > 0 ? (
                     (r.extras || []).map((e, j) => (
                       <Text key={j} style={styles.spec}>
                         {e.concepto} +{mxn(e.monto)}
@@ -149,7 +152,7 @@ export default function EntregaResumenPdf({ data }) {
                     <Text>—</Text>
                   )}
                 </View>
-                <Text style={styles.cSub}>{r ? mxn(r.subtotal_renglon) : '—'}</Text>
+                <Text style={styles.cSub}>{r.venta_mostrador || r.precio_unitario == null ? '—' : mxn(r.subtotal_renglon)}</Text>
               </View>
             )
           })}

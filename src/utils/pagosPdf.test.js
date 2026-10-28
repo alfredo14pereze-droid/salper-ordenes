@@ -13,7 +13,7 @@ test('total capturado a mano y anticipo', () => {
 })
 
 test('con precios por prenda mandan los totales calculados', () => {
-  const totales = { renglones: [{}], requiere_factura: true, subtotal: 3512.93, iva: 562.07, total: 4075, anticipos: 1000 }
+  const totales = { renglones: [{ precio_unitario: 180 }], requiere_factura: true, subtotal: 3512.93, iva: 562.07, total: 4075, anticipos: 1000 }
   assert.deepEqual(resumenPagosPdf({ total_orden: 9999 }, totales), { subtotal: 3512.93, iva: 562.07, total: 4075, anticipos: 1000, saldo: 3075 })
   assert.deepEqual(resumenPagosPdf({}, { ...totales, requiere_factura: false }), { subtotal: null, iva: null, total: 4075, anticipos: 1000, saldo: 3075 })
 })
@@ -40,4 +40,14 @@ test('bordados e impresiones: solo si la prenda los lleva y traen foto o lugar',
   assert.deepEqual(marcasDePrenda(item, 'impresion'), [])
   assert.equal(marcasDePrenda({ ...item, lleva_impresion: true }, 'impresion').length, 1)
   assert.deepEqual(marcasDePrenda({}, 'bordado'), [])
+})
+
+test('V159: orden vieja con total manual y líneas sin precio usa el total manual', () => {
+  const totales = { renglones: [{ precio_unitario: null, venta_mostrador: false }], total: 0, anticipos: 500 }
+  assert.deepEqual(resumenPagosPdf({ total_orden: 2000 }, totales), { subtotal: null, iva: null, total: 2000, anticipos: 500, saldo: 1500 })
+})
+
+test('V159: con una línea de mostrador manda el total calculado', () => {
+  const totales = { renglones: [{ precio_unitario: 100, venta_mostrador: false }, { precio_unitario: null, venta_mostrador: true }], total: 1000, anticipos: 0 }
+  assert.equal(resumenPagosPdf({ total_orden: 9999 }, totales).total, 1000)
 })

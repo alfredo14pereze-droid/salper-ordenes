@@ -1,3 +1,4 @@
+import { usaTotalCalculado } from './preciosLineas.js'
 // Totales y anticipo para el PDF de la orden. `totales` es lo que regresa
 // orden_totales (V77). Si la orden tiene precios por prenda, mandan esos
 // (con IVA desglosado cuando pide factura); si no, el total capturado a mano
@@ -5,7 +6,8 @@
 // muestra la sección.
 export function resumenPagosPdf(order, totales) {
   const anticipos = Number(totales?.anticipos) || 0
-  const conPrecios = (totales?.renglones || []).length > 0
+  // V159: renglones ya trae también las líneas sin precio; la regla vive en preciosLineas.
+  const conPrecios = usaTotalCalculado(order, totales)
   const total = conPrecios ? Number(totales.total) || 0 : Number(order?.total_orden) || 0
   if (total <= 0 && anticipos <= 0) return null
   const desglosaIva = conPrecios && !!totales.requiere_factura
