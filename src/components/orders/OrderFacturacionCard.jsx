@@ -310,7 +310,7 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
             <div className="totales-box__row"><span>Anticipos / abonos</span><span>− {formatMxn(totales.anticipos)}</span></div>
             <div className="totales-box__row totales-box__row--saldo"><span>Saldo pendiente</span><span>{formatMxn(totales.saldo)}</span></div>
           </div>
-          {totales.lista_para_entregar ? (
+          {order.status === 'completado' ? null : totales.lista_para_entregar ? (
             <p className="fin-ok">✓ Precios y facturación completos: la orden puede entregarse.</p>
           ) : (
             <p className="fin-missing">

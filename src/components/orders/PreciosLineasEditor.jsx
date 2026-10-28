@@ -29,7 +29,7 @@ export default function PreciosLineasEditor({ filas, onChange, disabled = false,
         </thead>
         <tbody>
           {filas.map((f) => {
-            const sinPrecio = conPrecio && !f.ventaMostrador && !(Number(f.precioUnitario) > 0)
+            const sinPrecio = conPrecio && !disabled && !f.ventaMostrador && !(Number(f.precioUnitario) > 0)
             const valor = f.precioTexto !== undefined ? f.precioTexto : f.precioUnitario ?? ''
             return (
               <tr key={`${f.itemIndex}:${f.sizeIndex}`} className={f.ventaMostrador ? 'precio-lineas__fila--mostrador' : undefined}>
@@ -42,6 +42,7 @@ export default function PreciosLineasEditor({ filas, onChange, disabled = false,
                       type="checkbox"
                       checked={!!f.ventaMostrador}
                       disabled={disabled}
+                      aria-label={`Venta de mostrador ${f.prenda} ${f.talla}`}
                       onChange={(e) => onChange(f, { ventaMostrador: e.target.checked })}
                     />
                     {f.ventaMostrador ? <span className="badge badge--mostrador">Mostrador</span> : 'No'}
