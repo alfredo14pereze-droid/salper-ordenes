@@ -7,6 +7,7 @@ import { resumenPrendas } from '../../utils/prendas'
 import { useAuth } from '../../contexts/AuthContext'
 import { canConfirmOrderChanges } from '../../utils/permissions'
 import { codigoProductoFrisa, etiquetaSecuencia, secuenciaDeOrden } from '../../utils/frisa'
+import { useLineasMostrador } from '../../hooks/useLineasMostrador'
 
 export default function OrderCard({ order, orderType }) {
   const navigate = useNavigate()
@@ -21,6 +22,9 @@ export default function OrderCard({ order, orderType }) {
   const days = daysUntil(order.requested_delivery_date)
   const completed = isCompleted(order.status)
   const prendas = resumenPrendas(order)
+  // V159 — si alguna línea es "venta de mostrador", etiqueta en la tarjeta.
+  const lineasMostrador = useLineasMostrador(order.id)
+  const conMostrador = !!lineasMostrador && lineasMostrador.size > 0
   // V155 — órdenes de Frisa: código del producto y su secuencia de procesos.
   const codigoFrisa = codigoProductoFrisa(order)
   const secuenciaFrisa = etiquetaSecuencia(secuenciaDeOrden(order))
@@ -96,6 +100,7 @@ export default function OrderCard({ order, orderType }) {
         {nota && <p className="order-card__nota-notice">✎ Nota: {nota}</p>}
         <div className="order-card__meta">
           <TypeBadge type={orderType} />
+          {conMostrador && <span className="badge badge--mostrador">Mostrador</span>}
           <span className={dueClass}>{dueLabel}</span>
         </div>
         <div className="order-card__footer">
@@ -114,6 +119,7 @@ export default function OrderCard({ order, orderType }) {
           <span className="order-card__number">
             #{order.order_number}
             {nota && <span className="order-card__nota-chip">✎ Nota</span>}
+            {conMostrador && <span className="badge badge--mostrador" style={{ marginLeft: 6 }}>Mostrador</span>}
           </span>
           <span className="order-card__compact-sub">
             {order.client_name} · {dueLabel}

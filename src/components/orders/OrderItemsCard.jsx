@@ -1,6 +1,8 @@
 import { esOrdenBordado, normalizarItemsBordado, validarItemsBordado } from '../../utils/bordadoOrden'
 import { limpiarRoster } from '../../utils/roster'
 import { useState } from 'react'
+import { useLineasMostrador } from '../../hooks/useLineasMostrador'
+import { esLineaMostrador } from '../../utils/preciosLineas'
 import OrderItemsEditor from './OrderItemsEditor'
 import MaquilaItemsEditor from './MaquilaItemsEditor'
 import { esOrdenMaquila } from '../../utils/maquila'
@@ -58,11 +60,14 @@ function buildInitialItems(order) {
 // también mezcla talla con otro número (el de la playera).
 const conTalla = (talla) => (talla ? `T.${talla}` : '')
 
-function ItemSummary({ item, index }) {
-  const sizesText = (item.sizes || [])
+function ItemSummary({ item, index, mostrador }) {
+  // V159 — tallas de "venta de mostrador" llevan su etiqueta (índice = posición guardada).
+  const sizes = (item.sizes || []).map((s, j) => ({ ...s, esMostrador: esLineaMostrador(mostrador, index, j) }))
+  const sizesText = sizes
     .filter((s) => String(s.talla).trim())
     .map((s) => `${conTalla(s.talla)}: ${s.cantidad}`)
     .join(' · ')
+  const tallasMostrador = sizes.filter((s) => s.esMostrador && String(s.talla).trim())
 
   const piezasPrenda = (item.sizes || []).reduce((sum, s) => sum + (Number(s.cantidad) || 0), 0)
 
@@ -131,7 +136,15 @@ function ItemSummary({ item, index }) {
         )}
         <div>
           <dt>Tallas y cantidades</dt>
-          <dd>{sizesText || 'Sin tallas capturadas'}</dd>
+          <dd>
+            {sizesText || 'Sin tallas capturadas'}
+            {tallasMostrador.length > 0 && (
+              <div style={{ marginTop: 4 }}>
+                <span className="badge badge--mostrador">Mostrador</span>{' '}
+                {tallasMostrador.map((s) => conTalla(s.talla)).join(' · ')}
+              </div>
+            )}
+          </dd>
         </div>
         {/* V58 — cada prenda con su propio total (pedido explícito del
             usuario: no solo el total de piezas de toda la orden). */}
@@ -172,6 +185,7 @@ function ItemSummary({ item, index }) {
 // su trabajo es el tiempo/etapa, no re-especificar qué se está pidiendo.
 export default function OrderItemsCard({ order, onUpdated }) {
   const { role } = useAuth()
+  const mostrador = useLineasMostrador(order.id)
   const editable = canEditOrder(role, order)
   const [editing, setEditing] = useState(false)
   const [items, setItems] = useState(() => buildInitialItems(order))
@@ -282,7 +296,7 @@ export default function OrderItemsCard({ order, onUpdated }) {
           <>
             <div className="document-list">
               {order.items.map((item, i) => (
-                <ItemSummary key={item.id || i} item={item} index={i} />
+                <ItemSummary key={item.id || i} item={item} index={i} mostrador={mostrador} />
               ))}
             </div>
             <p className="pantone-hint" style={{ textAlign: 'right', marginTop: 10 }}>
