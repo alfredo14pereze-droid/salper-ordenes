@@ -4559,3 +4559,109 @@ h4 {
   gap: 8px;
   margin-bottom: 10px;
 }
+
+/* ---------- V158 — Notas de tienda ---------- */
+
+.notas-filtros {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 18px 0 14px;
+}
+
+.notas-filtros__grupo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nota-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.nota-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nota-form__foto {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nota-form__foto img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.notas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nota-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left-width: 5px;
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.nota-card--faltante { border-left-color: var(--color-warning); }
+.nota-card--dia { border-left-color: var(--color-info); }
+.nota-card--error { border-left-color: var(--color-danger); }
+.nota-card--otro { border-left-color: var(--color-text-muted); }
+.nota-card--resuelta { opacity: 0.75; }
+
+.nota-card__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.nota-card__meta {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.nota-card__texto {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.nota-card__foto img {
+  max-width: 220px;
+  max-height: 220px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  object-fit: cover;
+}
+
+.nota-card__resuelta {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-good);
+  font-weight: 600;
+}
+
+.nota-tipo--faltante { background: var(--color-orange-soft); color: var(--color-orange-strong); }
+.nota-tipo--dia { background: var(--color-info-soft); color: var(--color-info); }
+.nota-tipo--error { background: var(--color-danger-soft); color: var(--color-danger); }
+.nota-tipo--otro { background: var(--color-bg); color: var(--color-text-muted); border: 1px solid var(--color-border); }

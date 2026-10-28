@@ -26,6 +26,7 @@ import ControlRapidoPage from './pages/ControlRapidoPage'
 import EstadisticasPage from './pages/EstadisticasPage'
 import PedidosColegioPage from './pages/PedidosColegioPage'
 import TallerosPage from './pages/TallerosPage'
+import NotasTiendaPage from './pages/NotasTiendaPage'
 import ProduccionCapturaPage from './pages/ProduccionCapturaPage'
 import ProduccionRevisionPage from './pages/ProduccionRevisionPage'
 import ProduccionDashboardPage from './pages/ProduccionDashboardPage'
@@ -105,6 +106,7 @@ function AuthGate() {
           <Route path="/calendario" element={<CalendarPage />} />
           <Route path="/anuncios" element={<AnnouncementsPage />} />
           <Route path="/pendientes" element={<PendientesPage />} />
+          <Route path="/notas-tienda" element={<NotasTiendaPage />} />
           <Route path="/pendientes/:id" element={<PendienteDetailPage />} />
           <Route path="/usuarios" element={<UsersPage />} />
           <Route path="/roles-permisos" element={<RolesPermisosPage />} />

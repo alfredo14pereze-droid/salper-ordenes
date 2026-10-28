@@ -6911,3 +6911,22 @@ que está obsoleta). **Sin SQL ni cambios de esquema**: todo lee el catálogo `p
 - Probado en un ejemplo local con copia de solo lectura del catálogo: PX60 completo, 1000 piezas, 5 operadoras =
   1,073 seg/pieza, $26.825 por pieza, $26,825.00 el lote, 8.42 días (9 redondeado), cuadrado contra un cálculo
   aparte; permisos por rol; aviso de tiempo 0 con una operación ficticia.
+
+### V158 — Notas de tienda (2026-10-28)
+
+Sección nueva `/notas-tienda` ("Notas de tienda" en el menú, después de Pendientes) para que el personal de
+tienda deje notas: **Producto faltante, Nota del día, Error u Otro**, con una foto opcional.
+- **SQL**: `supabase/schema_v158_notas_tienda.sql` (aditivo). Tabla `nt_notas` (tipo, texto, foto, quién y
+  cuándo la escribió, quién y cuándo la resolvió). Lectura con RLS por permiso; escritura solo por
+  `nt_crear_nota` y `nt_resolver_nota` (resolver con `p_resuelta=false` la vuelve a abrir). Bucket público
+  `nt-fotos` (como `mt-fotos`); sube quien puede escribir notas.
+- **Permisos** (editables en "Roles y permisos", módulo "Notas de tienda"): `nt.ver` = ventas, contabilidad,
+  tienda, admin_tienda, admin_general, consulta_tienda y lectura; `nt.escribir` = ventas, contabilidad, tienda,
+  admin_tienda, admin_general; `nt.resolver` = admin_tienda, admin_general. Fábrica no la ve. Decisiones de
+  Alfredo. Frontend: `canViewNotasTienda` / `canEscribirNotasTienda` / `canResolverNotasTienda`.
+- **Pantalla** (`src/pages/NotasTiendaPage.jsx`, servicio `notasTiendaService.js`): formulario arriba (tipo,
+  nota, foto), vista Pendientes / Resueltas y filtro por tipo con conteo. Las resueltas se ocultan de Pendientes
+  pero quedan en Resueltas (últimas 200) con quién y cuándo.
+- Probado: SQL en PGlite (19 casos: permisos por rol, validaciones, resolver/reabrir, fotos, correr dos veces);
+  pantalla en un ejemplo local con base falsa (tienda escribe con y sin foto, admin_tienda resuelve,
+  consulta_tienda solo lee, corte no la ve, celular).

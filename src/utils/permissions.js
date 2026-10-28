@@ -668,3 +668,22 @@ export const ROLE_LABELS = {
   costura: 'Costura',
   consulta_tienda: 'Consulta (Tienda) — solo lectura',
 }
+
+// V158 — Notas de tienda. Permisos editables en "Roles y permisos"
+// (nt.ver / nt.escribir / nt.resolver); el fallback reproduce la siembra
+// de schema_v158_notas_tienda.sql por si la tabla aún no carga.
+export function canViewNotasTienda(role) {
+  return tiene(role, 'nt.ver', () => (
+    ['ventas', 'contabilidad', 'tienda', 'admin_tienda', 'admin_general', 'consulta_tienda', 'lectura'].includes(role)
+  ))
+}
+
+export function canEscribirNotasTienda(role) {
+  return tiene(role, 'nt.escribir', () => (
+    ['ventas', 'contabilidad', 'tienda', 'admin_tienda', 'admin_general'].includes(role)
+  ))
+}
+
+export function canResolverNotasTienda(role) {
+  return tiene(role, 'nt.resolver', () => role === 'admin_tienda' || role === 'admin_general')
+}

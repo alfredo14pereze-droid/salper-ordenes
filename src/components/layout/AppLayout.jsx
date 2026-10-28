@@ -19,6 +19,7 @@ import {
   canViewPedidosTienda,
   canViewEstadisticas,
   canViewPendientes,
+  canViewNotasTienda,
   canViewInventario,
   canRegistrarEntradaTela,
   canGestionarConsumosPrenda,
@@ -122,6 +123,8 @@ export default function AppLayout({ children }) {
     { to: '/calendario', label: 'Calendario', show: !restricted && !tiendaBasica && !soloConsultaTienda },
     // V78 — pendientes tienda <-> fábrica: los roles de fábrica también lo ven.
     { to: '/pendientes', label: 'Pendientes', show: canViewPendientes(role) },
+    // V158 — notas del personal de tienda (faltantes, notas del día, errores).
+    { to: '/notas-tienda', label: 'Notas de tienda', show: canViewNotasTienda(role) },
     // V24 — de solo lectura para todos, invitados incluidos; le faltaba
     // aparecer en el menú (antes solo se llegaba por URL directa).
     { to: '/control-rapido', label: 'Control rápido', show: true },
