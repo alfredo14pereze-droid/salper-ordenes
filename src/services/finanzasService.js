@@ -80,6 +80,23 @@ export async function setOrdenPrecios(orderId, renglones) {
   return supabase.rpc('set_orden_precios', { p_order_id: orderId, p_renglones: renglones })
 }
 
+// V159 — precio y "venta de mostrador" por línea (prenda + talla).
+// lineas = [{item_index, size_index, precio_unitario, venta_mostrador}]
+export async function setOrdenLineas(orderId, lineas) {
+  const { error } = ensureClient()
+  if (error) return { data: null, error }
+  return supabase.rpc('set_orden_lineas', { p_order_id: orderId, p_lineas: lineas || [] })
+}
+
+// V159 — qué líneas son de mostrador (sin precios): lo puede leer cualquier
+// rol, para la etiqueta "Mostrador" del listado y del detalle.
+export async function fetchLineasMostrador(orderIds) {
+  const { error } = ensureClient()
+  if (error) return { data: [], error }
+  if (!orderIds || orderIds.length === 0) return { data: [], error: null }
+  return supabase.rpc('orden_lineas_mostrador', { p_order_ids: orderIds })
+}
+
 export async function setOrdenFacturacion({ orderId, requiere, incluyeIva, razonSocialId }) {
   const { error } = ensureClient()
   if (error) return { data: null, error }

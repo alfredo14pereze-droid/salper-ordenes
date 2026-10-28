@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
-  fetchOrdenPrecios,
   fetchOrdenFacturacion,
   fetchOrdenTotales,
   fetchRazonesSociales,
   fetchUltimoPrecio,
   fetchResumenEntrega,
-  setOrdenPrecios,
+  setOrdenLineas,
   setOrdenFacturacion,
   setOrdenFacturacionManual,
   formatMxn,
@@ -18,16 +17,18 @@ import PdfPreviewModal from '../pdf/PdfPreviewModal'
 import { buildEntregaPdfBlob, entregaPdfFileName } from '../../utils/generateEntregaPdf'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditFinanzas } from '../../utils/permissions'
+import { filasDeRenglones, lineasDeFilas, resumenPago } from '../../utils/preciosLineas'
+import PreciosLineasEditor from './PreciosLineasEditor'
+import { refrescarLineasMostrador } from '../../hooks/useLineasMostrador'
 
 // V144 — datos fiscales capturados a mano (orden de un cliente no registrado).
 const FISCAL_VACIO = { razon_social: '', rfc: '', regimen_fiscal: '', cp_fiscal: '', uso_cfdi: '', correo_factura: '' }
 const FISCAL_OBLIGATORIOS = ['razon_social', 'rfc', 'regimen_fiscal', 'cp_fiscal', 'uso_cfdi']
 
-function cantidadDe(item) {
-  return (item?.sizes || []).reduce((s, sz) => s + (Number(sz.cantidad) || 0), 0)
-}
-
-// Precios por prenda + facturación + totales de la orden (V77). Los números
+// Precios + facturación + totales de la orden (V77). Desde V159 el precio es
+// por LÍNEA (prenda + talla) y cada línea puede ser "venta de mostrador" (no
+// pide precio ni suma). Las órdenes viejas muestran el precio por prenda de
+// V77 en cada talla y sus extras por pieza se siguen sumando. Los números
 // (subtotal, IVA, total, saldo y qué falta) los calcula Supabase
 // (orden_totales); aquí solo se capturan y se muestran. Solo lo montan los
 // roles que pueden ver dinero (ver OrderDetailPage).
@@ -36,16 +37,8 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
   const readOnly =
     !canEditFinanzas(role) || order.status === 'completado' || !!order.eliminada_en || !!order.cancelled_at
 
-  // Renglones = prendas con piezas. item_index = posición en order.items.
-  const renglones = useMemo(
-    () =>
-      (order.items || [])
-        .map((item, index) => ({ index, item, cantidad: cantidadDe(item) }))
-        .filter((r) => r.cantidad > 0),
-    [order.items]
-  )
-
-  const [rows, setRows] = useState({}) // index -> { precio, extras:[{concepto,monto}], sugerido }
+  // Una fila por talla con piezas (item_index/size_index de order.items).
+  const [filas, setFilas] = useState([])
   const [requiere, setRequiere] = useState(false)
   const [incluyeIva, setIncluyeIva] = useState(true)
   const [razonId, setRazonId] = useState('')
@@ -69,37 +62,33 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
   }, [order.client_id])
 
   const load = useCallback(async () => {
-    const [p, f, t, rz] = await Promise.all([
-      fetchOrdenPrecios(order.id),
+    const [f, t, rz] = await Promise.all([
       fetchOrdenFacturacion(order.id),
       fetchOrdenTotales(order.id),
       loadRazones(),
     ])
-    if (p.error || t.error) setError(p.error || t.error)
-    const next = {}
-    for (const r of renglones) {
-      const saved = (p.data || []).find((x) => x.item_index === r.index && x.prenda === (r.item.garment || ''))
-      next[r.index] = saved
-        ? { precio: String(saved.precio_unitario), extras: (saved.extras || []).map((e) => ({ concepto: e.concepto, monto: String(e.monto) })), sugerido: false }
-        : { precio: '', extras: [], sugerido: false }
-    }
+    if (t.error) setError(t.error)
+    const next = filasDeRenglones(t.data?.renglones).map((fila) => ({
+      ...fila,
+      precioTexto: fila.precioUnitario == null ? '' : String(fila.precioUnitario),
+      sugerido: false,
+    }))
     // Sugerencia: último precio cobrado a este cliente por la misma prenda (editable).
     if (order.client_id && canEditFinanzas(role)) {
-      await Promise.all(
-        renglones.map(async (r) => {
-          if (next[r.index].precio !== '' || !r.item.garment) return
-          const { data } = await fetchUltimoPrecio(order.client_id, r.item.garment)
-          if (data?.precio_unitario != null) {
-            next[r.index] = {
-              precio: String(data.precio_unitario),
-              extras: (data.extras || []).map((e) => ({ concepto: e.concepto, monto: String(e.monto) })),
-              sugerido: true,
-            }
-          }
-        })
+      const prendas = [...new Set(next.filter((x) => !x.ventaMostrador && x.precioTexto === '').map((x) => x.prenda))]
+      const sugeridos = Object.fromEntries(
+        await Promise.all(prendas.map(async (prenda) => [prenda, (await fetchUltimoPrecio(order.client_id, prenda)).data]))
       )
+      for (const fila of next) {
+        const sug = sugeridos[fila.prenda]
+        if (!fila.ventaMostrador && fila.precioTexto === '' && sug?.precio_unitario != null) {
+          fila.precioTexto = String(sug.precio_unitario)
+          fila.precioUnitario = Number(sug.precio_unitario)
+          fila.sugerido = true
+        }
+      }
     }
-    setRows(next)
+    setFilas(next)
     setRequiere(!!f.data?.requiere_factura)
     setIncluyeIva(f.data ? f.data.precios_incluyen_iva : true)
     setRazonId(f.data?.razon_social_id || '')
@@ -108,14 +97,22 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
     setTotales(t.data || null)
     setDirty(false)
     setLoading(false)
-  }, [order.id, order.client_id, renglones, role, loadRazones])
+  }, [order.id, order.client_id, role, loadRazones])
 
   useEffect(() => {
     load()
   }, [load])
 
-  function patchRow(index, patch) {
-    setRows((r) => ({ ...r, [index]: { ...r[index], sugerido: false, ...patch } }))
+  function cambiarLinea(fila, patch) {
+    setFilas((actuales) =>
+      actuales.map((x) => {
+        if (x.itemIndex !== fila.itemIndex || x.sizeIndex !== fila.sizeIndex) return x
+        if ('ventaMostrador' in patch) {
+          return { ...x, sugerido: false, ventaMostrador: patch.ventaMostrador, ...(patch.ventaMostrador ? { precioTexto: '', precioUnitario: null } : {}) }
+        }
+        return { ...x, sugerido: false, precioTexto: patch.precio, precioUnitario: patch.precio }
+      })
+    )
     setDirty(true)
   }
 
@@ -131,22 +128,14 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
   async function handleSave() {
     setSaving(true)
     setError(null)
-    const payload = renglones
-      .filter((r) => rows[r.index]?.precio !== '' && rows[r.index]?.precio != null)
-      .map((r) => ({
-        item_index: r.index,
-        prenda: r.item.garment || '',
-        precio_unitario: Number(rows[r.index].precio),
-        extras: (rows[r.index].extras || [])
-          .filter((e) => e.concepto.trim() !== '' || e.monto !== '')
-          .map((e) => ({ concepto: e.concepto.trim(), monto: Number(e.monto || 0) })),
-      }))
-    const { error: pErr } = await setOrdenPrecios(order.id, payload)
+    // Líneas sin precio y sin mostrador no se guardan: quedan "falta precio".
+    const { error: pErr } = await setOrdenLineas(order.id, lineasDeFilas(filas))
     if (pErr) {
       setSaving(false)
       setError(pErr)
       return
     }
+    refrescarLineasMostrador(order.id)
     // Sin cliente del catálogo y con factura: datos fiscales a mano (V144).
     const { error: fErr } =
       !order.client_id && requiere
@@ -187,7 +176,8 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
   const sinCliente = !order.client_id
   const faltantes = totales?.faltantes
   const sinPrecio = faltantes?.renglones_sin_precio || []
-  const conSugerencia = renglones.some((r) => rows[r.index]?.sugerido)
+  const conSugerencia = filas.some((x) => x.sugerido)
+  const enPantalla = resumenPago(filas)
   const fiscalIncompleto = FISCAL_OBLIGATORIOS.some((k) => !fiscal[k].trim())
   const setFiscalCampo = (campo, valor) => {
     setFiscal((prev) => ({ ...prev, [campo]: valor }))
@@ -206,73 +196,17 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
       </div>
       {dirty && !readOnly && <p className="page-subtitle">Hay cambios sin guardar: guarda para ver los totales y el resumen.</p>}
 
-      {renglones.length === 0 ? (
+      {filas.length === 0 ? (
         <p className="page-subtitle">Esta orden todavía no tiene prendas con piezas.</p>
       ) : (
-        <table className="precio-table">
-          <thead>
-            <tr>
-              <th>Prenda</th>
-              <th>Piezas</th>
-              <th>Precio unitario</th>
-              <th>Extras por pieza</th>
-              <th style={{ textAlign: 'right' }}>Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {renglones.map((r) => {
-              const row = rows[r.index] || { precio: '', extras: [] }
-              const extrasPieza = row.extras.reduce((s, e) => s + (Number(e.monto) || 0), 0)
-              const sub = row.precio === '' ? null : r.cantidad * ((Number(row.precio) || 0) + extrasPieza)
-              return (
-                <tr key={r.index}>
-                  <td>
-                    <strong>{r.item.garment || `Prenda ${r.index + 1}`}</strong>
-                    {[r.item.color, r.item.pantone].filter(Boolean).length > 0 && (
-                      <div className="razon-row__meta">{[r.item.color, r.item.pantone].filter(Boolean).join(' · ')}</div>
-                    )}
-                  </td>
-                  <td>{r.cantidad}</td>
-                  <td>
-                    <input
-                      type="number" min="0" step="0.01" className="input" placeholder="0.00"
-                      value={row.precio} disabled={readOnly}
-                      onChange={(e) => patchRow(r.index, { precio: e.target.value })}
-                    />
-                    {row.sugerido && <div className="precio-suggested">Sugerido: último precio de este cliente</div>}
-                  </td>
-                  <td>
-                    <div className="precio-extras">
-                      {row.extras.map((ex, i) => (
-                        <div key={i} className="precio-extra">
-                          <input
-                            className="input" placeholder="Ej. Bordado espalda" value={ex.concepto} disabled={readOnly}
-                            onChange={(e) => patchRow(r.index, { extras: row.extras.map((x, j) => (j === i ? { ...x, concepto: e.target.value } : x)) })}
-                          />
-                          <input
-                            type="number" min="0" step="0.01" className="input" placeholder="+$" value={ex.monto} disabled={readOnly}
-                            onChange={(e) => patchRow(r.index, { extras: row.extras.map((x, j) => (j === i ? { ...x, monto: e.target.value } : x)) })}
-                          />
-                          {!readOnly && (
-                            <button type="button" className="btn btn--ghost btn--small" onClick={() => patchRow(r.index, { extras: row.extras.filter((_, j) => j !== i) })}>
-                              ✕
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      {!readOnly && (
-                        <button type="button" className="btn btn--ghost btn--small" onClick={() => patchRow(r.index, { extras: [...row.extras, { concepto: '', monto: '' }] })}>
-                          + Extra
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sub == null ? '—' : formatMxn(sub)}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+        <>
+          <PreciosLineasEditor filas={filas} onChange={cambiarLinea} disabled={readOnly} />
+          {dirty && (
+            <p className="page-subtitle" style={{ textAlign: 'right' }}>
+              Total en pantalla (sin guardar): <b>{formatMxn(enPantalla.total)}</b>
+            </p>
+          )}
+        </>
       )}
       {conSugerencia && !readOnly && <p className="page-subtitle">Los precios sugeridos no se guardan hasta que pulses "Guardar precios y facturación".</p>}
 
@@ -382,7 +316,7 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
             <p className="fin-missing">
               Para poder entregarla falta:{' '}
               {[
-                sinPrecio.length > 0 && `precio en ${sinPrecio.map((s) => s.prenda || `prenda ${s.item_index + 1}`).join(', ')}`,
+                sinPrecio.length > 0 && `precio en ${sinPrecio.map((s) => `${s.prenda || `prenda ${s.item_index + 1}`}${s.talla ? ` ${s.talla}` : ''}`).join(', ')} (o marcarla como venta de mostrador)`,
                 faltantes?.falta_razon_social && (sinCliente ? 'los datos fiscales de la factura' : 'la razón social de la factura'),
               ].filter(Boolean).join(' y ')}
               .
