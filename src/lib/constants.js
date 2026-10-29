@@ -56,7 +56,9 @@ export const STATUSES = [
   { key: 'en_bordado', label: 'En bordado', color: '#bdeae2', textColor: '#16130f' },
   { key: 'bordado', label: 'Bordado', color: '#158a76', textColor: '#ffffff' },
   { key: 'en_terminado', label: 'En terminado', color: '#ddd0f5', textColor: '#16130f' },
-  { key: 'terminado', label: 'Terminado', color: '#7c4dc4', textColor: '#ffffff' },
+  // 'terminado' = todas las etapas listas, falta entregar: se muestra como
+  // "Lista para entregar" (mismo valor en la base, solo cambia el nombre).
+  { key: 'terminado', label: 'Lista para entregar', color: '#7c4dc4', textColor: '#ffffff' },
   { key: 'completado', label: 'Entregada', color: '#2f8f4e', textColor: '#ffffff' },
 ]
 
@@ -75,7 +77,9 @@ export const STATUS_GROUPS = [
   { key: 'sublimado', label: 'Sublimado', keys: ['en_sublimado', 'sublimado'] },
   { key: 'produccion', label: 'Costura', keys: ['en_produccion', 'produccion'] },
   { key: 'bordado', label: 'Bordado', keys: ['en_bordado', 'bordado'] },
-  { key: 'terminado', label: 'Terminado', keys: ['en_terminado', 'terminado'] },
+  { key: 'terminado', label: 'En terminado', keys: ['en_terminado'] },
+  // Chip propio para encontrar rápido lo que ya se puede entregar.
+  { key: 'lista_entregar', label: 'Lista para entregar', keys: ['terminado'] },
   { key: 'completado', label: 'Entregada', keys: ['completado'] },
 ]
 

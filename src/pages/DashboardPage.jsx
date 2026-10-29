@@ -64,6 +64,17 @@ function DashboardContent() {
   const currentOrders = useMemo(() => orders.filter((o) => o.status !== 'completado'), [orders])
   const completedCount = orders.length - currentOrders.length
 
+  // Listas para entregar (estado 'terminado'): acceso directo arriba de la lista.
+  const listasCount = useMemo(
+    () => currentOrders.filter((o) => o.status === 'terminado' && !o.cancelled_at && !o.eliminada_en).length,
+    [currentOrders]
+  )
+  const soloListas = filters.statuses.length === 1 && filters.statuses[0] === 'lista_entregar'
+  function verListas() {
+    setFilters((f) => ({ ...f, statuses: soloListas ? [] : ['lista_entregar'] }))
+    document.querySelector('.dashboard-all-orders')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   const filteredOrders = useMemo(() => {
     return currentOrders.filter((order) => {
       if (filters.types.length > 0 && !filters.types.includes(order.order_type_key)) return false
@@ -131,6 +142,15 @@ function DashboardContent() {
           <h2 className="section-title">Todas las órdenes</h2>
           <span className="section-count">{filteredOrders.length} de {currentOrders.length}</span>
         </div>
+
+        {listasCount > 0 && (
+          <button type="button" className={`listas-entregar${soloListas ? ' listas-entregar--activo' : ''}`} onClick={verListas}>
+            <span>
+              ✓ <b>{listasCount}</b> {listasCount === 1 ? 'orden lista' : 'órdenes listas'} para entregar
+            </span>
+            <span className="listas-entregar__accion">{soloListas ? 'Ver todas' : 'Ver solo esas'}</span>
+          </button>
+        )}
 
         <OrderFilters orderTypes={orderTypes} filters={filters} onChange={setFilters} statuses={DASHBOARD_STATUS_GROUPS} />
 

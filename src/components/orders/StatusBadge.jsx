@@ -12,10 +12,8 @@ export default function StatusBadge({ status }) {
   return (
     <>
       <span className="badge badge--status" style={{ background: s.color, color: s.textColor }}>
-        {s.label}
+        {status === 'terminado' ? '✓ ' : ''}{s.label}
       </span>
-      {/* 'terminado' = todas las etapas listas: falta confirmar la entrega */}
-      {status === 'terminado' && <span className="badge badge--ready">✓ Lista para entregar</span>}
     </>
   )
 }

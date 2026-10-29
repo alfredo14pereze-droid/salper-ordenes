@@ -7104,3 +7104,12 @@ administrativos le dejan notas al personal, a todos o a una persona, con foto op
   entrega de todos modos (queda en `orden_entregas_forzadas`).
 - Código: `hooks/useEntregarOrden.js` (lógica), `components/orders/EntregaRapida.jsx` (UI),
   `StatusChanger` ya no repite el botón en `terminado`; `tieneAccionesDeEstado` decide si se monta la tarjeta.
+
+### Estado "Lista para entregar" (2026-10-29, rama `listas-entregar`, sin SQL)
+
+- El estado `terminado` (todas las etapas listas) ahora se llama **"Lista para entregar"** en toda la app
+  (STATUSES). Mismo valor en la base: no cambia `recompute_order_status` ni nada de la lógica de estados.
+- Filtros (STATUS_GROUPS): "Terminado" se separó en "En terminado" (`en_terminado`) y el chip nuevo
+  "Lista para entregar" (`lista_entregar` → `terminado`).
+- Dashboard: barra verde "✓ N órdenes listas para entregar · Ver solo esas" que aplica ese filtro; cada
+  tarjeta trae el botón "Confirmar entrega al cliente" (Entrega rápida).
