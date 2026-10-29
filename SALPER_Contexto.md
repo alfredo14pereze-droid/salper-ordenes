@@ -7145,7 +7145,7 @@ sublimado** → **Todas** (historial: ya sublimadas o entregadas, la más recien
 "Diseño pendiente" (era "sin diseño final subido", no un estado). Cada tarjeta lleva tres chips — Diseño
 autorizado / Impreso / Sublimado — verdes con ✓ al cumplirse. La lógica vive en `utils/flujoSublimado.js`
 (con pruebas).
-- **SQL `schema_v165_diseno_autorizado.sql` (SIN aplicar al escribir esto)**: `orders.diseno_autorizado_en`,
+- **SQL `schema_v165_diseno_autorizado.sql` APLICADO por Alfredo el 2026-10-29** (verificado: `autorizar_diseno` existe, `anon` sin acceso): `orders.diseno_autorizado_en`,
   `_por`, `_nombre`; permiso `dis.autorizar` (sublimado, admin_fabrica, admin_general; editable en Roles y
   permisos); RPC `autorizar_diseno(orden, autorizado)` — solo sublimación, no cambia `orders.status`; quitar la
   autorización solo mientras la impresión siga pendiente. Relleno: las órdenes con impresión en proceso o
