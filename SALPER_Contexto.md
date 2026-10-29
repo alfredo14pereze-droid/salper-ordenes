@@ -7136,3 +7136,28 @@ al personal y cada persona las marca como hechas.
   "basta con uno", Giss la completa y Jose ve "La hizo Giss", deshacer, avance del admin, consulta solo lee,
   corte no la ve, celular). Se corrigió en la prueba: para quien solo consulta, "cada quien" seguía saliendo como
   hecha si alguien ya la había hecho.
+
+### V165 — Sublimación: "Diseño autorizado" y flujo en secuencia de Samuel (2026-10-29, rama `diseno-autorizado`)
+
+Pedido de Alfredo (Fase 1 de 2). La pantalla de Samuel (`SublimadoHomePage`) muestra las órdenes en secuencia:
+**Pendientes de diseño** (sin autorizar, el estado por omisión) → **Pendientes de impresión** → **Pendientes de
+sublimado** → **Todas** (historial: ya sublimadas o entregadas, la más reciente primero). Se quitó la pestaña
+"Diseño pendiente" (era "sin diseño final subido", no un estado). Cada tarjeta lleva tres chips — Diseño
+autorizado / Impreso / Sublimado — verdes con ✓ al cumplirse. La lógica vive en `utils/flujoSublimado.js`
+(con pruebas).
+- **SQL `schema_v165_diseno_autorizado.sql` (SIN aplicar al escribir esto)**: `orders.diseno_autorizado_en`,
+  `_por`, `_nombre`; permiso `dis.autorizar` (sublimado, admin_fabrica, admin_general; editable en Roles y
+  permisos); RPC `autorizar_diseno(orden, autorizado)` — solo sublimación, no cambia `orders.status`; quitar la
+  autorización solo mientras la impresión siga pendiente. Relleno: las órdenes con impresión en proceso o
+  completada quedan autorizadas (hora de inicio de la impresión, sin "quién"). Probado en PGlite (14 casos).
+- Decisiones de Alfredo: no se exige diseño final subido para autorizar (solo aviso "Sin diseño final subido").
+- Botón "Diseño autorizado": en la tarjeta (pestaña de diseño, fuera del botón de la tarjeta), en la pantalla
+  de estación de la orden (`DisenoAutorizado.jsx`) y en el detalle de la orden (`DisenoAutorizadoCard`).
+- Estación: la impresión dice "Todavía no le toca: falta autorizar el diseño" y el sublimado "falta imprimir"
+  mientras la impresión siga pendiente (solo pantalla; el servidor no lo bloquea).
+- Los estados generales no cambian: imprimir/sublimar ya mueven `orders.status` a Impresa/Sublimado (V150).
+- **Orden de despliegue: SQL primero.** Sin la columna, todas las órdenes sin impresión empezada caerían en
+  "Pendientes de diseño" y el botón fallaría.
+- Ejemplo local: servidor `salper-diseno-harness` (puerto 5193, `.claude/harness-diseno/`, sin commit).
+- Fase 2 (pendiente): impresión por lote con total de metros y tinta capturado una vez por lote
+  (`lotes_impresion`) y la tela en la tarjeta.

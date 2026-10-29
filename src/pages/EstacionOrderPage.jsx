@@ -19,6 +19,7 @@ import { Loading, ErrorState } from '../components/common/States'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import Modal from '../components/talleros/Modal'
 import OrderDisenosCard from '../components/orders/OrderDisenosCard'
+import DisenoAutorizado from '../components/orders/DisenoAutorizado'
 import EtapaCronometro from '../components/orders/EtapaCronometro'
 import { medirEtapa } from '../utils/tiemposEtapas'
 import { estaPausada, soportaPausa } from '../utils/pausasEtapa'
@@ -611,6 +612,11 @@ export default function EstacionOrderPage() {
 
       {estacion?.disenos && <OrderDisenosCard order={order} className="estacion-disenos" />}
 
+      {/* V165 — "Diseño autorizado": sin él, la impresión todavía no le toca. */}
+      {estacion?.dashboardSublimado && (
+        <DisenoAutorizado order={order} impresion={etapas.find((e) => e.etapa === 'impresion')} onCambio={refresh} />
+      )}
+
       {misEtapas.length > 0 &&
         (order.status === 'en_confirmacion' ? (
           <button type="button" className="btn btn--primary estacion-btn" disabled={busy} onClick={handleConfirmar}>
@@ -628,6 +634,12 @@ export default function EstacionOrderPage() {
             const pasoFrisa = secuenciaDeOrden(order).find((p) => p.etapa === et.etapa)
             const anterior = esOrdenFrisa(order.order_type_key) ? etapaAnteriorEnSecuencia(et.etapa, etapas) : null
             const esperaAnterior = et.estado === 'pendiente' && !!anterior && anterior.estado !== 'completado'
+            // V165 — la impresión espera a que el diseño esté autorizado.
+            const esperaDiseno =
+              et.etapa === 'impresion' && et.estado === 'pendiente' && order.order_type_key === 'sublimacion' && !order.diseno_autorizado_en
+            // …y el sublimado, a que la impresión haya empezado.
+            const esperaImpresion =
+              et.etapa === 'sublimado' && et.estado === 'pendiente' && etapas.find((e) => e.etapa === 'impresion')?.estado === 'pendiente'
             return (
               <div key={et.etapa} className="estacion-acciones">
                 {misEtapas.length > 1 && <h3 className="section-title section-title--small">{ETAPA_LABELS[et.etapa] || et.etapa}</h3>}
@@ -639,7 +651,11 @@ export default function EstacionOrderPage() {
                   </p>
                 )}
                 {/* V139 — Iniciar / cronómetro / tiempo real. Una etapa terminada ya no se reabre desde aquí. */}
-                {esperaAnterior ? (
+                {esperaDiseno ? (
+                  <p className="pantone-hint">Todavía no le toca: falta autorizar el diseño.</p>
+                ) : esperaImpresion ? (
+                  <p className="pantone-hint">Todavía no le toca: falta imprimir.</p>
+                ) : esperaAnterior ? (
                   <p className="pantone-hint">Todavía no le toca: falta terminar {(ETAPA_LABELS[anterior.etapa] || anterior.etapa).toLowerCase()}.</p>
                 ) : terminada ? (
                   <EtapaTiempoReal etapa={et} />
@@ -667,7 +683,7 @@ export default function EstacionOrderPage() {
                     Iniciar
                   </button>
                 )}
-                {esperaAnterior ? null : esPrincipal && estacion.consumoPlaceholder ? (
+                {esperaAnterior || esperaDiseno || esperaImpresion ? null : esPrincipal && estacion.consumoPlaceholder ? (
                   terminada ? (
                     <CorteTerminado order={order} unaHoja={etapas.some((e) => e.etapa === 'sublimado')} onRegistrado={refresh} />
                   ) : (

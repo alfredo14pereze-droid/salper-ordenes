@@ -22,6 +22,7 @@ import CancelOrderCard from '../components/orders/CancelOrderCard'
 import OrderEtapasCard from '../components/orders/OrderEtapasCard'
 import OrderBordadosCard from '../components/orders/OrderBordadosCard'
 import OrderDisenosCard from '../components/orders/OrderDisenosCard'
+import { DisenoAutorizadoCard } from '../components/orders/DisenoAutorizado'
 import OrderSurtidoCard from '../components/orders/OrderSurtidoCard'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import { Loading, ErrorState } from '../components/common/States'
@@ -290,6 +291,8 @@ function OrderDetailContent() {
             subir admin_fabrica/admin_general. La tarjeta no se pinta si no
             hay diseños ni permiso para subirlos. */}
         {user && <OrderDisenosCard order={order} className="card" />}
+        {/* V165 — "Diseño autorizado" (solo sublimación). */}
+        {user && <DisenoAutorizadoCard order={order} onCambio={refresh} />}
 
         {/* V48 — "Cantidad surtida" es demasiado ruido visual para quien
             solo consulta la orden (comparación pedido/surtido por cada

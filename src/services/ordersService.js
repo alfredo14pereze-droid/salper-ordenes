@@ -350,6 +350,16 @@ export async function reportarImpresion(orderId, { largo, azul, magenta, amarill
     .single()
 }
 
+// V165 — "Diseño autorizado" (sublimación): autorizado = true lo marca,
+// false lo quita (solo mientras la impresión siga pendiente). No cambia el
+// estado de la orden.
+export async function autorizarDiseno(orderId, autorizado = true) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.rpc('autorizar_diseno', { p_order_id: orderId, p_autorizado: autorizado }).single()
+}
+
 // V140 — pausa o reanuda una etapa en proceso (el cronómetro deja de contar;
 // la etapa sigue "en proceso"). Mismo permiso que updateOrdenEtapa.
 export async function pausarOrdenEtapa(orderId, etapa, pausar) {

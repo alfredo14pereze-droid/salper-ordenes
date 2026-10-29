@@ -4067,6 +4067,27 @@ h4 {
   gap: 6px;
   margin-top: 4px;
 }
+/* V165 — tarjeta de "Pendientes de diseño" con el botón "Diseño autorizado"
+   debajo (fuera de la tarjeta, que es un botón que abre la orden). */
+.sub-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sub-card__accion,
+.diseno-autorizado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.sub-card__accion {
+  justify-content: flex-end;
+  padding: 0 4px;
+}
+.diseno-autorizado {
+  margin: 12px 0;
+}
 .estacion-disenos {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
