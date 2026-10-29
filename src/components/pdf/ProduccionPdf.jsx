@@ -1,4 +1,5 @@
 import { Document, Page, View, Text, StyleSheet, Font } from '@react-pdf/renderer'
+import { textoMejora, textoVs, textoMejoraCompleto, etiquetaPocasSemanas, baseMejora, esPromedio } from '../../utils/produccionMejora'
 
 // V70 — Imprimibles de producción. Terminología: "valor generado" (NO es el sueldo).
 const INK = '#1a1a1a'
@@ -42,6 +43,8 @@ const s = StyleSheet.create({
   cNombre: { flex: 1 },
   cNum: { width: 86, textAlign: 'right' },
   cNumS: { width: 48, textAlign: 'right' },
+  cNumM: { width: 110, textAlign: 'right', alignItems: 'flex-end' },
+  cVs: { fontSize: 7, color: MUTED },
   // V109 — catálogos (operaciones/operadoras/reglas): columnas genéricas
   // reusadas entre las 3 tablas, en vez de definir un set por tabla.
   colXs: { width: 40, textAlign: 'center' },
@@ -113,7 +116,7 @@ export function HojaOperadora({ semana, persona }) {
             <Text>{money(premio.bono_lugar)}</Text>
           </View>
           <View style={s.row}>
-            <Text>Bono por mejora ({premio.mejora_pct == null ? 'sin base' : `${Number(premio.mejora_pct).toFixed(1)}%`} vs semana anterior)</Text>
+            <Text>Bono por mejora ({textoMejoraCompleto(premio)})</Text>
             <Text>{money(premio.bono_mejora)}</Text>
           </View>
           <View style={s.rowTotal}>
@@ -169,16 +172,22 @@ export function ProduccionRankingDoc({ semana, filas }) {
           <Text style={[s.thT, s.cLugar]}>Lugar</Text>
           <Text style={[s.thT, s.cNombre]}>Operadora</Text>
           <Text style={[s.thT, s.cNum]}>Semana actual</Text>
-          <Text style={[s.thT, s.cNum]}>Semana anterior</Text>
-          <Text style={[s.thT, s.cNum]}>Mejora</Text>
+          <Text style={[s.thT, s.cNum]}>{filas.some(esPromedio) ? 'Base (promedio)' : 'Semana anterior'}</Text>
+          <Text style={[s.thT, s.cNumM]}>Mejora</Text>
         </View>
         {filas.map((f) => (
           <View key={f.operadora_id} style={s.tr} wrap={false}>
             <Text style={s.cLugar}>{f.lugar}</Text>
             <Text style={s.cNombre}>{f.nombre}</Text>
             <Text style={[s.cNum, s.bold]}>{money(f.valor_generado)}</Text>
-            <Text style={s.cNum}>{f.valor_anterior == null ? '—' : money(f.valor_anterior)}</Text>
-            <Text style={s.cNum}>{f.mejora_pct == null ? 'Sin base' : `${f.mejora_pct >= 0 ? '+' : ''}${Number(f.mejora_pct).toFixed(1)}%`}</Text>
+            <Text style={s.cNum}>{money(baseMejora(f))}</Text>
+            <View style={s.cNumM}>
+              <Text>
+                {textoMejora(f)}
+                {etiquetaPocasSemanas(f) ? ` · ${etiquetaPocasSemanas(f)}` : ''}
+              </Text>
+              <Text style={s.cVs}>{textoVs(f)}</Text>
+            </View>
           </View>
         ))}
       </Page>

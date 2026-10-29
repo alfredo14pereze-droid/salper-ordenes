@@ -11,6 +11,7 @@ import {
   reabrirSemana,
   fetchRegistrosOperadora,
 } from '../services/produccionService'
+import { textoMejora, textoVs, etiquetaPocasSemanas, baseMejora, esPromedio } from '../utils/produccionMejora'
 
 // V69 — Revisión y aprobación semanal (admin_general / admin_fabrica). Terminología:
 // "valor generado" (NO es el sueldo). Todo el cálculo viene del servidor
@@ -233,7 +234,7 @@ function Revision() {
                 <th>Lugar</th>
                 <th>Operadora</th>
                 <th>Valor generado</th>
-                <th>Semana anterior</th>
+                <th>{filas.some(esPromedio) ? 'Base (promedio)' : 'Semana anterior'}</th>
                 <th>Mejora</th>
                 <th>Bono meta</th>
                 <th>Bono lugar</th>
@@ -250,8 +251,12 @@ function Revision() {
                       {f.numero_operadora ?? '—'} · {f.nombre}
                     </td>
                     <td>{money(f.valor_generado)}</td>
-                    <td>{money(f.valor_anterior)}</td>
-                    <td>{f.mejora_pct == null ? 'Sin base' : `${Number(f.mejora_pct).toFixed(1)}%`}</td>
+                    <td>{money(baseMejora(f))}</td>
+                    <td>
+                      {textoMejora(f)}
+                      {etiquetaPocasSemanas(f) && <span className="badge revision__pocas">{etiquetaPocasSemanas(f)}</span>}
+                      <small className="revision__vs">{textoVs(f)}</small>
+                    </td>
                     <td>{money(f.bono_meta)}</td>
                     <td>{money(f.bono_lugar)}</td>
                     <td>{money(f.bono_mejora)}</td>

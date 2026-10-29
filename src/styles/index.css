@@ -3075,6 +3075,17 @@ h4 {
 .revision__fila {
   cursor: pointer;
 }
+/* V162 — debajo del % de mejora: contra qué se comparó */
+.revision__vs {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.revision__pocas {
+  margin-left: 6px;
+  font-size: 10px;
+  padding: 1px 6px;
+}
 .revision__fila:hover {
   background: var(--color-orange-soft);
 }

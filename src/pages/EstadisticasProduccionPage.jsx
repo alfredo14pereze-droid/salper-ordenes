@@ -4,6 +4,7 @@ import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { TrendChart, LineChart } from '../components/produccion/StatsCharts'
 import TiemposEtapas from '../components/produccion/TiemposEtapas'
 import { canViewProduccionMontos } from '../utils/permissions'
+import { textoVs, etiquetaPocasSemanas, baseMejora } from '../utils/produccionMejora'
 import {
   fetchOperadorasTodas,
   statsInfo,
@@ -330,7 +331,7 @@ function Contenido() {
             <div>
               <h3 className="pstat-sub">Top 5 por % de mejora</h3>
               {detalle.dest.top_mejora.length === 0 ? (
-                <EmptyState>Nadie tiene semana anterior con qué comparar.</EmptyState>
+                <EmptyState>Nadie tiene semanas previas con qué comparar.</EmptyState>
               ) : (
                 <div className="table-scroll">
                   <table className="stats-table">
@@ -338,6 +339,7 @@ function Contenido() {
                       <tr>
                         <th>Operadora</th>
                         <th>Mejora</th>
+                        <th>Base</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -345,6 +347,11 @@ function Contenido() {
                         <tr key={t.nombre}>
                           <td>{t.nombre}</td>
                           <td style={{ color: 'var(--color-good)' }}>{pct(t.mejora_pct)}</td>
+                          <td>
+                            {money(baseMejora(t))}
+                            {etiquetaPocasSemanas(t) && <span className="badge revision__pocas">{etiquetaPocasSemanas(t)}</span>}
+                            <small className="revision__vs">{textoVs(t)}</small>
+                          </td>
                         </tr>
                       ))}
                     </tbody>

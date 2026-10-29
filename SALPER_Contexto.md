@@ -7014,3 +7014,60 @@ Pedido de Alfredo: marcar muchas órdenes como entregadas a la vez (había mucha
   de todos modos con UN motivo, que queda en `orden_entregas_forzadas` de cada una.
 - Lógica en `src/utils/entregaMasiva.js` (+ pruebas). Probado en el arnés local (admin_tienda: 1 entregada, 2
   bloqueadas → forzadas con motivo; celular).
+
+### V162 — Mejora contra el promedio de 4 semanas + diagnóstico de Alberto (2026-10-29, rama `premios-mejora-promedio`)
+
+**Alberto (EMP036, #36, Alberto Lopez Garcia) — causa raíz.** Existe una sola vez (sin duplicados ni
+capturas huérfanas: los 3,273 registros apuntan a operadoras válidas), activo, COSTURA, participa en bonos,
+alta 2026-09-29. Tiene producción las 5 semanas desde el 23-sep ($135 la primera, 4 registros; luego
+$870–$1,120) y SÍ aparece en revisión, ranking y dashboard. Lo que nunca tuvo es **% de mejora**: salía
+"Sin base" → $0 de bono de mejora y nunca entraba al "Top 5 por % de mejora" de Estadísticas.
+Por qué: `prod_calcular_premios` (V67) compara contra la última semana **aprobada**, y desde el 23-sep
+ninguna semana se ha aprobado (las 5 siguen `en_revision`). Así que TODAS las semanas comparaban contra la
+importada del 16–22 sep, donde Alberto no existía. Efecto secundario: la "mejora vs semana anterior" de
+todas las operadoras era en realidad contra el 16–22 sep (ej. Clara +176.8% en la semana del 21-oct).
+No hubo que corregir datos: lo resuelve la regla nueva.
+
+**Regla nueva de mejora** (decisión de Alfredo):
+- Base = promedio del valor generado de las últimas 4 semanas PREVIAS en que la operadora tuvo producción
+  (valor > 0; mismo valor que se usa para el lugar y la meta). Las semanas sin registros no entran ni
+  cuentan como 0. Con 1–3 semanas se promedian las que haya; sin ninguna → mejora NULL ("N/A") sin bono.
+  Interpretación tomada: "las últimas 4 semanas CON registros", buscando hacia atrás sin límite (incluye las
+  importadas del Excel).
+- % mejora = (valor semana − base) / base × 100. Umbrales del bono (tabla `prod_reglas_premios`: 20%→$50,
+  51%→$200, 80%→$400) y bono de lugar sin cambios.
+- Aplica desde la semana que empieza en `prod_mejora_promedio_desde()` (2026-10-21 en el archivo); las
+  anteriores se calculan como siempre. Semanas aprobadas siguen saliendo de su snapshot. No hay campo de
+  "cierre" aparte: el cierre es `prod_semanas.estado = 'aprobada'` + snapshot en `prod_premios_semana`.
+
+**SQL** (`supabase/schema_v162_produccion_mejora_promedio.sql`, SIN aplicar al escribir esto; una sola
+transacción, sin cambios de esquema): candado md5 de las 4 funciones vivas (aborta si alguien las cambió);
+`prod_mejora_promedio_desde()` (fecha de corte); **`prod_base_mejora(semana_id)`** = la única función con la
+regla (interna, sin grant); `prod_calcular_premios`, `prod_revision_semana` y `prod_ranking_semana`
+recreadas (drop + create) con 3 columnas nuevas `base_promedio`, `base_semanas`, `base_regla`
+('promedio' | 'semana_anterior'); `prod_stats_destacados` parcheado sobre la definición viva para traer la
+base en el top de mejora. En semanas con la regla nueva, `valor_anterior` = la base (así queda en el
+snapshot al aprobar); el número de semanas de un snapshot se reconstruye con `prod_base_mejora`.
+Probado en PGlite con copia real de las tablas: lo viejo del arnés = producción (0 diferencias), semanas
+antes del corte idénticas, aprobar con la regla nueva guarda la base.
+
+**Frontend:** `src/utils/produccionMejora.js` (solo textos; el cálculo es del servidor): "+24.7%",
+"vs promedio de N semanas", la base en pesos y la etiqueta "2 sem." si N<4; "N/A" sin semanas previas.
+Lo usan Revisión producción (columna "Base (promedio)"), Estadísticas (Top 5 por % de mejora con base),
+la hoja por operadora y el ranking en PDF. Si el SQL todavía no está aplicado se ve como antes.
+
+**Validación semana 21–27 oct (regla nueva vs vieja):** total premios $3,850 → $2,950 (bono de mejora
+$1,800 → $900). Alberto: $962.52, 4 semanas, base $772.04, viejo "Sin base", nuevo +24.7% → $50.
+Clara: $2,079.79, base $1,468.06, +176.8% → +41.7% (bono $400 → $50). Yolanda Gonzalez: $1,671.25, base
+$1,135.13, +129.0% → +47.2% ($400 → $50). Estefania Romero: $1,572.13, base $876.13, +12.4% → +79.4% ($0 → $200).
+
+**Pendiente:**
+- Alfredo: confirmar la fecha de corte (¿la semana del 21-oct que se paga hoy, o desde la del 28-oct?) y
+  aplicar el SQL; luego subir el frontend.
+- Aprobar las semanas en revisión (23-sep a 20-oct) para congelarlas; mientras no se aprueben se
+  recalculan en vivo.
+- El Dashboard de producción (`utils/produccionStats.js`) tiene su propio "promedio de 4 semanas" (cuenta
+  semanas en 0, para la clasificación ±10%) y la hoja por operadora lo muestra en "Contra tu propio
+  promedio": puede no coincidir con la base del bono. Ofrecido alinearlo, no hecho.
+- La primera semana de Alberto ($135, parcial) entra a su base; si se quiere excluir semanas parciales hay
+  que definir el criterio.
