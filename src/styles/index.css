@@ -4973,3 +4973,43 @@ h4 {
 }
 
 .tarea-fecha--vencida { color: var(--color-danger); }
+
+/* ---------- "Por confirmar" arriba del Dashboard de admin_fabrica ---------- */
+.por-confirmar {
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-soft);
+}
+.por-confirmar__titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  color: var(--color-danger);
+}
+.por-confirmar__n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 14px;
+}
+.por-confirmar__ayuda {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+.por-confirmar__vacio {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-good-soft);
+  color: var(--color-good);
+  font-weight: 600;
+}

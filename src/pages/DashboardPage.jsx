@@ -8,6 +8,7 @@ import { STATUS_GROUPS } from '../lib/constants'
 import OrderCard from '../components/orders/OrderCard'
 import OrderFilters from '../components/orders/OrderFilters'
 import UpcomingOrders from '../components/orders/UpcomingOrders'
+import PorConfirmarOrders from '../components/orders/PorConfirmarOrders'
 import AnnouncementBanner from '../components/announcements/AnnouncementBanner'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
@@ -134,6 +135,9 @@ function DashboardContent() {
       </div>
 
       <AnnouncementBanner />
+
+      {/* admin_fabrica ve primero lo que falta confirmar. */}
+      {role === 'admin_fabrica' && <PorConfirmarOrders orders={currentOrders} typesByKey={typesByKey} onUpdated={refresh} />}
 
       <UpcomingOrders orders={upcoming} typesByKey={typesByKey} onUpdated={refresh} />
 

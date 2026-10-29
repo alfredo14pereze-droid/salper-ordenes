@@ -7201,3 +7201,9 @@ todos puedan marcar sus tareas").
 - `dis.autorizar` queda en ventas, admin_fabrica y admin_general. Solo cambia `rol_permisos`; la función `autorizar_diseno` no cambia.
 - El respaldo de `canAutorizarDiseno` en `permissions.js` es la misma lista.
 - En "Pendientes de diseño", Samuel ve el aviso "Ventas autoriza el diseño…" en lugar del botón.
+
+## "Por confirmar" arriba del Dashboard de admin_fabrica (sin SQL)
+
+- Hasta arriba del Dashboard (antes de "Próximas a surtir"), admin_fabrica ve todas las órdenes en `en_confirmacion` que no estén canceladas ni eliminadas, la de entrega más cercana primero, en un recuadro rojo con el número.
+- Si no hay pendientes, sale una línea verde: "No hay órdenes por confirmar".
+- Componente `src/components/orders/PorConfirmarOrders.jsx`. Los demás roles no lo ven.
