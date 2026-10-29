@@ -7161,3 +7161,18 @@ autorizado / Impreso / Sublimado — verdes con ✓ al cumplirse. La lógica viv
 - Ejemplo local: servidor `salper-diseno-harness` (puerto 5193, `.claude/harness-diseno/`, sin commit).
 - Fase 2 (pendiente): impresión por lote con total de metros y tinta capturado una vez por lote
   (`lotes_impresion`) y la tela en la tarjeta.
+
+### V166 — Tareas: cada quien ve las suyas y todos pueden marcarlas (2026-10-29)
+
+Ajuste a V164 pedido por Alfredo ("que a Giss solo le aparezcan las suyas, las de ventas o las de todos, y que
+todos puedan marcar sus tareas").
+- **SQL** `supabase/schema_v166_tareas_mis_tareas.sql`: `ta.completar` también para admin_tienda y admin_general;
+  `ta_me_toca('todos')` ya no incluye a quien asigna (`ta.asignar`); `ta_destinatarios` devuelve además
+  `en_todos` (false para quien asigna). La RLS no cambia.
+- **Pantalla**: quien asigna tiene dos pestañas, **Mis tareas** (solo las suyas: por persona o por su rol, con
+  contador) y **Asignadas** (todas, con avance, formulario y "Quitar"). Abre en Mis tareas si tiene pendientes
+  propias; si no, en Asignadas. El personal solo ve "Mis tareas". "Todo el personal" en el avance ya no cuenta
+  a los admins. Ya se puede asignar al rol "Admin (Tienda)" / "Administrador general" o a un admin por persona.
+- Contexto: en la base, Giss es **ventas** (no tienda). "Ver como" no sirve para revisar Tareas: la base sigue
+  leyendo con la cuenta real (admin), que puede ver todas.
+- Probado: SQL en PGlite sobre V164 con las tareas reales (17 casos) y pantalla con las personas reales.

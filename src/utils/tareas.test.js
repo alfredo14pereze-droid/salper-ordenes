@@ -18,6 +18,16 @@ test('meToca: todos, por rol y por persona', () => {
   assert.equal(meToca(tiendaUno, { userId: 'l', role: 'ventas' }), false)
   assert.equal(meToca(aLaura, { userId: 'l', role: 'ventas' }), true)
   assert.equal(meToca(aLaura, { userId: 'g', role: 'tienda' }), false)
+  // V166: a quien asigna no le toca "todo el personal", pero sí lo suyo.
+  assert.equal(meToca(todos, { userId: 'a', role: 'admin_tienda', asigna: true }), false)
+  assert.equal(meToca({ destino_tipo: 'persona', destino_id: 'a' }, { userId: 'a', role: 'admin_tienda', asigna: true }), true)
+  assert.equal(meToca({ destino_tipo: 'rol', destino_rol: 'admin_tienda' }, { userId: 'a', role: 'admin_tienda', asigna: true }), true)
+})
+
+test('destinatariosDe: "todo el personal" no cuenta a los admins (en_todos = false)', () => {
+  const conAdmin = [...gente, { id: 'a', nombre: 'Armando', rol: 'admin_tienda', en_todos: false }]
+  assert.deepEqual(destinatariosDe(todos, conAdmin).map((d) => d.id), ['g', 'j', 'l'])
+  assert.deepEqual(destinatariosDe({ destino_tipo: 'rol', destino_rol: 'admin_tienda' }, conAdmin).map((d) => d.id), ['a'])
 })
 
 test('destinatariosDe', () => {

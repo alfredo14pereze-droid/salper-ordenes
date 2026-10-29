@@ -64,25 +64,38 @@ function TareasContent() {
   }, [datos])
 
   const hoy = hoyLocal()
-  // "Hecha" depende de quién mira: quien asigna ve si ya la completaron todos
-  // los que deben; quien la hace ve si ya la hizo él (o alguien, en "basta con uno").
+  // V166 — dos vistas: "Mis tareas" (solo las que le tocan a uno; para
+  // todos) y "Asignadas" (todas, con el avance; solo quien asigna).
+  // null = todavía no se elige: abre en "Mis tareas" si hay pendientes propias,
+  // si no en "Asignadas" (donde está el formulario).
+  const [seccionElegida, setSeccion] = useState(null) // mis | asignadas
+
   const filas = useMemo(
     () =>
       datos.tareas.map((t) => {
         const comps = porTarea.get(t.id) || []
         const general = puedeAsignar ? estadoGeneral(t, comps, destinatarios) : null
-        const toca = puedeCompletar && meToca(t, { userId, role })
+        const toca = puedeCompletar && meToca(t, { userId, role, asigna: puedeAsignar })
         const mio = toca ? estadoParaMi(t, comps, userId) : null
         // Quien solo consulta no ve a todos los del grupo: "cada quien" se queda
         // pendiente; "basta con uno" está hecha en cuanto alguien la hace.
-        const hecha = puedeAsignar ? general.hecha : mio ? mio.hecha : t.modo === 'uno' && comps.length > 0
-        return { t, comps, general, mio, toca, hecha }
+        const hechaMia = mio ? mio.hecha : t.modo === 'uno' && comps.length > 0
+        return { t, comps, general, mio, toca, hechaMia, hechaGeneral: general?.hecha ?? hechaMia }
       }),
     [datos, porTarea, puedeAsignar, puedeCompletar, destinatarios, userId, role],
   )
 
-  const pendientes = ordenarTareas(filas.filter((f) => !f.hecha).map((f) => f.t), hoy).map((t) => filas.find((f) => f.t.id === t.id))
-  const hechas = filas.filter((f) => f.hecha)
+  // Mis tareas: las que me tocan (quien no puede completar —solo consulta— ve
+  // las que la base ya le deja leer, que son las suyas).
+  const mias = filas.filter((f) => !puedeCompletar || f.toca).map((f) => ({ ...f, hecha: f.hechaMia }))
+  const misPendientes = mias.filter((f) => !f.hecha).length
+  const seccion = seccionElegida ?? (misPendientes > 0 ? 'mis' : 'asignadas')
+  const enAsignadas = puedeAsignar && seccion === 'asignadas'
+  const asignadas = filas.map((f) => ({ ...f, hecha: f.hechaGeneral }))
+  const base = enAsignadas ? asignadas : mias
+  const ordenar = (l) => ordenarTareas(l.map((f) => f.t), hoy).map((t) => l.find((f) => f.t.id === t.id))
+  const pendientes = ordenar(base.filter((f) => !f.hecha))
+  const hechas = base.filter((f) => f.hecha)
   const visibles = vista === 'pendientes' ? pendientes : hechas
 
   async function accion(id, fn) {
@@ -108,15 +121,27 @@ function TareasContent() {
         <h2 className="section-title">Tareas</h2>
       </div>
 
-      {puedeCompletar && (
-        <p className={'tareas-resumen' + (pendientes.length ? ' tareas-resumen--pend' : '')}>
-          {pendientes.length === 0
+      {puedeAsignar && (
+        <div className="notas-pestanas" role="tablist">
+          <button type="button" role="tab" aria-selected={!enAsignadas} className={'notas-pestana' + (!enAsignadas ? ' notas-pestana--activa' : '')} onClick={() => setSeccion('mis')}>
+            Mis tareas
+            {misPendientes > 0 && <span className="notas-pestana__contador">{misPendientes}</span>}
+          </button>
+          <button type="button" role="tab" aria-selected={enAsignadas} className={'notas-pestana' + (enAsignadas ? ' notas-pestana--activa' : '')} onClick={() => setSeccion('asignadas')}>
+            Asignadas
+          </button>
+        </div>
+      )}
+
+      {puedeCompletar && !enAsignadas && (
+        <p className={'tareas-resumen' + (misPendientes ? ' tareas-resumen--pend' : '')}>
+          {misPendientes === 0
             ? '✓ No tienes tareas pendientes.'
-            : `Tienes ${pendientes.length} tarea${pendientes.length === 1 ? '' : 's'} pendiente${pendientes.length === 1 ? '' : 's'}.`}
+            : `Tienes ${misPendientes} tarea${misPendientes === 1 ? '' : 's'} pendiente${misPendientes === 1 ? '' : 's'}.`}
         </p>
       )}
 
-      {puedeAsignar && <TareaForm destinatarios={destinatarios} onCreated={cargar} />}
+      {enAsignadas && <TareaForm destinatarios={destinatarios} onCreated={cargar} />}
 
       <div className="notas-filtros">
         <div className="notas-filtros__grupo">
@@ -134,8 +159,8 @@ function TareasContent() {
       {visibles.length === 0 ? (
         <EmptyState>
           {vista === 'pendientes'
-            ? puedeAsignar
-              ? 'No hay tareas pendientes.'
+            ? enAsignadas
+              ? 'No hay tareas asignadas pendientes.'
               : 'No tienes tareas pendientes. 🎉'
             : 'Todavía no hay tareas hechas.'}
         </EmptyState>
@@ -147,7 +172,7 @@ function TareasContent() {
               fila={f}
               hoy={hoy}
               userId={userId}
-              puedeAsignar={puedeAsignar}
+              puedeAsignar={enAsignadas}
               ocupada={ocupada === f.t.id}
               onMarcar={(hecha) => accion(f.t.id, () => marcarTarea(f.t.id, hecha))}
               onQuitar={() => quitar(f.t)}

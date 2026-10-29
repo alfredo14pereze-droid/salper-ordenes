@@ -738,7 +738,8 @@ export function canViewTareas(role) {
 }
 
 export function canCompletarTareas(role) {
-  return tiene(role, 'ta.completar', () => ['ventas', 'contabilidad', 'tienda'].includes(role))
+  // V166 — también admin_tienda / admin_general.
+  return tiene(role, 'ta.completar', () => ['ventas', 'contabilidad', 'tienda', 'admin_tienda', 'admin_general'].includes(role))
 }
 
 export function canAsignarTareas(role) {

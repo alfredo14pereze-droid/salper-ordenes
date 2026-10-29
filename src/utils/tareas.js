@@ -7,9 +7,10 @@ export function hoyLocal(d = new Date()) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }
 
-// ¿Le toca esta tarea a esta persona?
-export function meToca(tarea, { userId, role }) {
-  if (tarea.destino_tipo === 'todos') return true
+// ¿Le toca esta tarea a esta persona? (V166: "todo el personal" no incluye a
+// quien asigna — asigna = true para admin_tienda / admin_general.)
+export function meToca(tarea, { userId, role, asigna = false }) {
+  if (tarea.destino_tipo === 'todos') return !asigna
   if (tarea.destino_tipo === 'rol') return tarea.destino_rol === role
   if (tarea.destino_tipo === 'persona') return tarea.destino_id === userId
   return false
@@ -17,7 +18,7 @@ export function meToca(tarea, { userId, role }) {
 
 // Personas que deben hacerla (de la lista de ta_destinatarios).
 export function destinatariosDe(tarea, destinatarios) {
-  if (tarea.destino_tipo === 'todos') return destinatarios
+  if (tarea.destino_tipo === 'todos') return destinatarios.filter((d) => d.en_todos !== false)
   if (tarea.destino_tipo === 'rol') return destinatarios.filter((d) => d.rol === tarea.destino_rol)
   const d = destinatarios.find((x) => x.id === tarea.destino_id)
   return [d || { id: tarea.destino_id, nombre: tarea.destino_nombre, rol: null }]
