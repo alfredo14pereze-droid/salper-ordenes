@@ -86,3 +86,8 @@ test('detalle: filas desde orden_totales y de vuelta a líneas', () => {
     { item_index: 1, size_index: 0, precio_unitario: null, venta_mostrador: true },
   ])
 })
+
+test('V161: precio vacío o 0 se manda como null (queda "falta precio")', () => {
+  const lineas = lineasParaGuardar([{ garment: 'Playera', sizes: [{ talla: 'M', cantidad: '3', precio_unitario: '' }, { talla: 'G', cantidad: '2', precio_unitario: '0' }] }])
+  assert.deepEqual(lineas.map((l) => l.precio_unitario), [null, null])
+})

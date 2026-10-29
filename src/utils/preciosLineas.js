@@ -122,10 +122,12 @@ export function lineasParaGuardar(items) {
   ;(items || []).forEach((item, itemIndex) => {
     ;(item?.sizes || []).filter(tallaSeGuarda).forEach((size, sizeIndex) => {
       const mostrador = !!size.venta_mostrador
+      const precio = precioNumero(size.precio_unitario)
       lineas.push({
         item_index: itemIndex,
         size_index: sizeIndex,
-        precio_unitario: mostrador ? null : precioNumero(size.precio_unitario),
+        // V161 — sin precio (vacío o 0) se manda null: la línea queda "falta precio".
+        precio_unitario: mostrador || !(precio > 0) ? null : precio,
         venta_mostrador: mostrador,
       })
     })

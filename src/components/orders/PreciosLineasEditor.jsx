@@ -8,7 +8,7 @@ import { subtotalFila } from '../../utils/preciosLineas'
 // filas: [{ itemIndex, sizeIndex, prenda, talla, cantidad, precioUnitario,
 //           precioTexto?, ventaMostrador, extrasPorPieza? }]
 // onChange(fila, { precio } | { ventaMostrador })
-export default function PreciosLineasEditor({ filas, onChange, disabled = false, conPrecio = true }) {
+export default function PreciosLineasEditor({ filas, onChange, disabled = false, conPrecio = true, marcarFaltantes = true }) {
   if (filas.length === 0) {
     return <p className="pantone-hint">Captura arriba las tallas y cantidades; aquí aparecerá una línea por talla para ponerle precio.</p>
   }
@@ -29,7 +29,7 @@ export default function PreciosLineasEditor({ filas, onChange, disabled = false,
         </thead>
         <tbody>
           {filas.map((f) => {
-            const sinPrecio = conPrecio && !disabled && !f.ventaMostrador && !(Number(f.precioUnitario) > 0)
+            const sinPrecio = conPrecio && marcarFaltantes && !disabled && !f.ventaMostrador && !(Number(f.precioUnitario) > 0)
             const valor = f.precioTexto !== undefined ? f.precioTexto : f.precioUnitario ?? ''
             return (
               <tr key={`${f.itemIndex}:${f.sizeIndex}`} className={f.ventaMostrador ? 'precio-lineas__fila--mostrador' : undefined}>

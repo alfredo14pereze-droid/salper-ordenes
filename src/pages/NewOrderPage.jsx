@@ -18,6 +18,7 @@ import { uploadOrderPhotos, attachExistingPhotos } from '../services/photosServi
 import { copyTemplatePhotosToOrder } from '../services/templatesService'
 import { uploadOrderDocument } from '../services/documentsService'
 import { createAnticipo } from '../services/anticiposService'
+import { fetchAltaRequierePrecio } from '../services/finanzasService'
 import { filasDeFormulario, lineasParaGuardar, marcarMostrador, mensajeFaltanPrecios, resumenPago, tipoLlevaPrecio } from '../utils/preciosLineas'
 import PreciosLineasEditor from '../components/orders/PreciosLineasEditor'
 import ResumenPagoAlta from '../components/orders/ResumenPagoAlta'
@@ -298,6 +299,12 @@ function NewOrderForm() {
   const llevaPrecio = !!form.orderTypeKey && !esFrisa && tipoLlevaPrecio(form.orderTypeKey)
   const filasPrecio = useMemo(() => filasDeFormulario(esMaquila ? items.slice(0, 1) : items), [items, esMaquila])
   const resumen = resumenPago(filasPrecio, anticipoMonto)
+  // V161 — mientras se acostumbran, el precio puede ser opcional al crear
+  // (interruptor fin_config.alta_requiere_precio, se cambia solo en la base).
+  const [precioObligatorio, setPrecioObligatorio] = useState(true)
+  useEffect(() => {
+    fetchAltaRequierePrecio().then(setPrecioObligatorio)
+  }, [])
   function cambiarLinea(fila, patch) {
     setItems((current) =>
       current.map((item, i) =>
@@ -510,7 +517,7 @@ function NewOrderForm() {
     // Prendas que se guardan (mismo filtro de siempre). Las líneas de precio
     // se cuentan sobre ESTA lista para que sus índices coincidan en la base.
     const itemsFiltrados = items.filter((item) => item.garment.trim() || item.sizes.some((s) => s.talla.trim()))
-    const faltaPrecio = llevaPrecio ? mensajeFaltanPrecios(filasDeFormulario(itemsFiltrados), form.orderTypeKey) : null
+    const faltaPrecio = llevaPrecio && precioObligatorio ? mensajeFaltanPrecios(filasDeFormulario(itemsFiltrados), form.orderTypeKey) : null
     if (faltaPrecio) {
       setSubmitError(new Error(faltaPrecio))
       return
@@ -614,7 +621,7 @@ function NewOrderForm() {
       setSubmitError(new Error(faltaMaquila))
       return
     }
-    const faltaPrecio = mensajeFaltanPrecios(filasDeFormulario([items[0]]), form.orderTypeKey)
+    const faltaPrecio = precioObligatorio ? mensajeFaltanPrecios(filasDeFormulario([items[0]]), form.orderTypeKey) : null
     if (faltaPrecio) {
       setSubmitError(new Error(faltaPrecio))
       return
@@ -1073,11 +1080,17 @@ function NewOrderForm() {
             <span className="field-label" style={{ marginBottom: 8, display: 'block' }}>
               Precios y pago
             </span>
-            <PreciosLineasEditor filas={filasPrecio} onChange={cambiarLinea} />
+            {!precioObligatorio && (
+              <p className="pantone-hint" style={{ marginTop: 0 }}>
+                El precio es opcional por ahora: puedes crear la orden sin precio y capturarlo después en el detalle.
+              </p>
+            )}
+            <PreciosLineasEditor filas={filasPrecio} onChange={cambiarLinea} marcarFaltantes={precioObligatorio} />
             <ResumenPagoAlta
               resumen={resumen}
               anticipo={{ monto: anticipoMonto, metodo: anticipoMetodo, recibidoPor: anticipoRecibidoPor, notas: anticipoNotas }}
               onAnticipo={cambiarAnticipo}
+              obligatorio={precioObligatorio}
             />
           </div>
         )}

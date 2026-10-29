@@ -80,6 +80,15 @@ export async function setOrdenPrecios(orderId, renglones) {
   return supabase.rpc('set_orden_precios', { p_order_id: orderId, p_renglones: renglones })
 }
 
+// V161 — ¿el precio es obligatorio al crear una orden? (fin_config.alta_requiere_precio).
+// Si la consulta falla, se asume que sí (lo mismo que hace la base sin V161).
+export async function fetchAltaRequierePrecio() {
+  const { error } = ensureClient()
+  if (error) return true
+  const { data, error: rpcError } = await supabase.rpc('fin_alta_requiere_precio')
+  return rpcError ? true : data !== false
+}
+
 // V159 — precio y "venta de mostrador" por línea (prenda + talla).
 // lineas = [{item_index, size_index, precio_unitario, venta_mostrador}]
 export async function setOrdenLineas(orderId, lineas) {

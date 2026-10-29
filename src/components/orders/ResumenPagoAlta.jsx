@@ -5,7 +5,7 @@ import { formatMxn } from '../../services/finanzasService'
 // `resumen` sale de resumenPago() (utils/preciosLineas.js). Si todas las
 // líneas son de venta de mostrador no hay nada que cobrar y el anticipo no
 // aplica.
-export default function ResumenPagoAlta({ resumen, anticipo, onAnticipo }) {
+export default function ResumenPagoAlta({ resumen, anticipo, onAnticipo, obligatorio = true }) {
   const { monto, metodo, recibidoPor, notas } = anticipo
   const set = (patch) => onAnticipo({ ...anticipo, ...patch })
 
@@ -33,7 +33,13 @@ export default function ResumenPagoAlta({ resumen, anticipo, onAnticipo }) {
         )}
       </div>
 
-      {resumen.sinPrecio.length > 0 && (
+      {resumen.sinPrecio.length > 0 && !obligatorio && (
+        <p className="pantone-hint">
+          Sin precio todavía: {resumen.sinPrecio.map((f) => `${f.prenda} ${f.talla}`).join(', ')}. Puedes crear la orden y
+          capturarlo después en el detalle (se necesita para entregarla).
+        </p>
+      )}
+      {resumen.sinPrecio.length > 0 && obligatorio && (
         <p className="fin-missing">
           Falta precio en: {resumen.sinPrecio.map((f) => `${f.prenda} ${f.talla}`).join(', ')}. Captúralo o márcalo como venta de
           mostrador.
