@@ -7195,7 +7195,7 @@ todos puedan marcar sus tareas").
 
 ## V168 — "Autorizar diseños" pasa de sublimado a ventas
 
-**SQL: PENDIENTE de aplicar** (`supabase/schema_v168_autorizar_diseno_ventas.sql`).
+**SQL APLICADO por Alfredo el 2026-10-29** (`supabase/schema_v168_autorizar_diseno_ventas.sql`).
 
 - Pedido de Alfredo: Samuel ya no autoriza diseños; los autoriza Gis (ventas). Como los permisos van por rol, todo ventas puede autorizar.
 - `dis.autorizar` queda en ventas, admin_fabrica y admin_general. Solo cambia `rol_permisos`; la función `autorizar_diseno` no cambia.
