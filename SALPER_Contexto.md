@@ -7002,3 +7002,15 @@ Pedido de Alfredo: mientras se acostumbran, que el precio NO sea requisito para 
 - El mismo SQL quitó la excepción de entrega de V159 (`entrega_sin_precio_hasta`, venció el 28-oct).
 - Frontend: `NewOrderPage` no bloquea si es opcional; aviso gris "puedes capturarlo después"; precio vacío o 0
   se manda como sin precio. Probado en PGlite (12 casos) y en el arnés (orden creada sin precio).
+
+### Entrega masiva (2026-10-29, rama `entrega-masiva`, sin SQL)
+
+Pedido de Alfredo: marcar muchas órdenes como entregadas a la vez (había muchas sin marcar).
+- Pantalla `/entregas` ("Entrega masiva" en el menú; permiso `orden.entregar`, V160). Filtro "Listas para
+  entregar" (status `terminado`, por defecto) o "Todas sin entregar"; búsqueda por folio/cliente/equipo;
+  "Seleccionar todas"; "Marcar N como entregadas" con avance.
+- Cada orden pasa por `entregar_orden` (V160), una por una: mismas reglas y registro que el botón del detalle.
+  Las bloqueadas por precio/factura se listan con lo que les falta; con `orden.entregar_forzado` se entregan
+  de todos modos con UN motivo, que queda en `orden_entregas_forzadas` de cada una.
+- Lógica en `src/utils/entregaMasiva.js` (+ pruebas). Probado en el arnés local (admin_tienda: 1 entregada, 2
+  bloqueadas → forzadas con motivo; celular).
