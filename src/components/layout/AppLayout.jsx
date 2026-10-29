@@ -20,6 +20,7 @@ import {
   canViewEstadisticas,
   canViewPendientes,
   canViewNotasTienda,
+  canDeliverOrder,
   canViewInventario,
   canRegistrarEntradaTela,
   canGestionarConsumosPrenda,
@@ -125,6 +126,8 @@ export default function AppLayout({ children }) {
     { to: '/pendientes', label: 'Pendientes', show: canViewPendientes(role) },
     // V158 — notas del personal de tienda (faltantes, notas del día, errores).
     { to: '/notas-tienda', label: 'Notas de tienda', show: canViewNotasTienda(role) },
+    // Entrega masiva: marcar varias órdenes como entregadas a la vez (permiso orden.entregar).
+    { to: '/entregas', label: 'Entrega masiva', show: canDeliverOrder(role) },
     // V24 — de solo lectura para todos, invitados incluidos; le faltaba
     // aparecer en el menú (antes solo se llegaba por URL directa).
     { to: '/control-rapido', label: 'Control rápido', show: true },
