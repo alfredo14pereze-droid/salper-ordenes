@@ -7179,7 +7179,7 @@ todos puedan marcar sus tareas").
 
 ## V167 — Sublimación: impresión por lote (Fase 2 de la pantalla de Samuel)
 
-**SQL: PENDIENTE de aplicar** (`supabase/schema_v167_lotes_impresion.sql`).
+**SQL APLICADO por Alfredo el 2026-10-29** (`supabase/schema_v167_lotes_impresion.sql`).
 
 - En "Pendientes de impresión" cada tarjeta lleva una casilla; "Elegir todas" y "Marcar N impresas" abren la captura del lote.
 - El programa de impresión da un solo total: el largo (m) y la tinta por color (mL) se capturan una vez y se guardan en `lotes_impresion` (fecha, quién, `order_ids`, `folios`, largo, tintas, total generado, notas, corrección).
