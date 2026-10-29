@@ -350,6 +350,59 @@ export async function reportarImpresion(orderId, { largo, azul, magenta, amarill
     .single()
 }
 
+// V167 — impresión por lote: marca impresas varias órdenes de sublimación
+// a la vez. El largo y la tinta son los totales del lote (como los da el
+// programa de impresión) y se guardan en lotes_impresion.
+export async function imprimirLote(orderIds, { largo, azul, magenta, amarillo, negro, notas }) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase
+    .rpc('imprimir_lote', {
+      p_order_ids: orderIds,
+      p_largo_m: largo,
+      p_azul_ml: azul,
+      p_magenta_ml: magenta,
+      p_amarillo_ml: amarillo,
+      p_negro_ml: negro,
+      p_notas: notas || null,
+    })
+    .single()
+}
+
+// V167 — corrige los números de un lote ya guardado.
+export async function corregirLoteImpresion(loteId, { largo, azul, magenta, amarillo, negro, notas }) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase
+    .rpc('corregir_lote_impresion', {
+      p_lote_id: loteId,
+      p_largo_m: largo,
+      p_azul_ml: azul,
+      p_magenta_ml: magenta,
+      p_amarillo_ml: amarillo,
+      p_negro_ml: negro,
+      p_notas: notas || null,
+    })
+    .single()
+}
+
+// V167 — lotes de impresión, el más reciente primero.
+export async function fetchLotesImpresion(limite = 60) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.from('lotes_impresion').select('*').order('creado_en', { ascending: false }).limit(limite)
+}
+
+export async function fetchLoteImpresion(loteId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+
+  return supabase.from('lotes_impresion').select('*').eq('id', loteId).maybeSingle()
+}
+
 // V165 — "Diseño autorizado" (sublimación): autorizado = true lo marca,
 // false lo quita (solo mientras la impresión siga pendiente). No cambia el
 // estado de la orden.

@@ -4404,6 +4404,126 @@ h4 {
   font-size: 13px;
 }
 
+/* V167 — impresión por lote: casilla junto a cada tarjeta de "Pendientes de
+   impresión", barra de "Marcar N impresas" y reporte del lote. */
+.lote-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 8px 0;
+  background: var(--color-bg, var(--color-surface));
+}
+.lote-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lote-check input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--color-good);
+}
+.lote-fila {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.lote-fila > .estacion-card {
+  flex: 1;
+  min-width: 0;
+}
+.lote-check--fila {
+  padding: 0 4px;
+}
+.lote-fila--on > .estacion-card {
+  border-color: var(--color-good);
+  box-shadow: 0 0 0 2px var(--color-good);
+}
+.lote-ordenes {
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.lote-ordenes__tela {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--color-muted, #6b6558);
+}
+.lote-card {
+  cursor: default;
+}
+.lote-card__head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.lote-reporte {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+.lote-reporte__titulo {
+  margin: 0;
+  font-size: 1rem;
+}
+.lote-reporte__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.lote-reporte__tabla th,
+.lote-reporte__tabla td {
+  text-align: left;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--color-border);
+}
+.lote-reporte__notas {
+  margin: 0;
+}
+.lote-reporte__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+@media print {
+  body.imprime-lote * {
+    visibility: hidden;
+  }
+  body.imprime-lote .lote-reporte,
+  body.imprime-lote .lote-reporte * {
+    visibility: visible;
+  }
+  body.imprime-lote .lote-reporte {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+  }
+  body.imprime-lote .lote-reporte__acciones {
+    display: none;
+  }
+}
+
 /* V146 — reporte de impresión de sublimación (largo del trazo y tinta) */
 .impresion-reporte {
   display: flex;

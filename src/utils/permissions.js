@@ -745,3 +745,9 @@ export function canCompletarTareas(role) {
 export function canAsignarTareas(role) {
   return tiene(role, 'ta.asignar', () => role === 'admin_tienda' || role === 'admin_general')
 }
+
+// V167 — marcar impresas varias órdenes en lote: los mismos que reportan la
+// impresión (V146). Ver imprimir_lote en schema_v167_lotes_impresion.sql.
+export function canImprimirLote(role) {
+  return canChangeEtapa(role, 'impresion')
+}

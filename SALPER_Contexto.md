@@ -7176,3 +7176,19 @@ todos puedan marcar sus tareas").
 - Contexto: en la base, Giss es **ventas** (no tienda). "Ver como" no sirve para revisar Tareas: la base sigue
   leyendo con la cuenta real (admin), que puede ver todas.
 - Probado: SQL en PGlite sobre V164 con las tareas reales (17 casos) y pantalla con las personas reales.
+
+## V167 — Sublimación: impresión por lote (Fase 2 de la pantalla de Samuel)
+
+**SQL: PENDIENTE de aplicar** (`supabase/schema_v167_lotes_impresion.sql`).
+
+- En "Pendientes de impresión" cada tarjeta lleva una casilla; "Elegir todas" y "Marcar N impresas" abren la captura del lote.
+- El programa de impresión da un solo total: el largo (m) y la tinta por color (mL) se capturan una vez y se guardan en `lotes_impresion` (fecha, quién, `order_ids`, `folios`, largo, tintas, total generado, notas, corrección).
+- `orden_etapas.imp_lote_id` marca a qué lote perteneció la impresión de cada orden.
+- `imprimir_lote(uuid[], largo, azul, magenta, amarillo, negro, notas)`:
+  - Mismos roles que V146 (sublimado, admin_fabrica, admin_general).
+  - Exige órdenes de sublimación, no canceladas, con diseño autorizado (V165) y con la impresión sin terminar. Si una falla, no se guarda nada.
+  - Termina cada etapa con `update_orden_etapa`, como siempre.
+- `corregir_lote_impresion(...)` corrige los números de un lote (desde la pestaña "Lotes").
+- Pestaña nueva "Lotes": historial de lotes con su reporte (folio, cliente, tela, metros, tinta por color), que se puede imprimir.
+- La orden impresa en lote muestra en su página "Se imprimió en lote … con N órdenes más" y el total del lote. Las órdenes impresas solas siguen usando el reporte por orden de V146.
+- Las tarjetas de Samuel muestran la tela (`items[].tela_nombre`).

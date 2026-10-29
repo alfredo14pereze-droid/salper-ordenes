@@ -2,10 +2,11 @@ import BordadosMiniaturas from '../components/orders/BordadosMiniaturas'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useOrder } from '../hooks/useOrder'
-import { fetchOrdenEtapas, updateOrdenEtapa, pausarOrdenEtapa, updateOrderStatus, setItemSurtido, reportarImpresion } from '../services/ordersService'
+import { fetchOrdenEtapas, updateOrdenEtapa, pausarOrdenEtapa, updateOrderStatus, setItemSurtido, reportarImpresion, fetchLoteImpresion } from '../services/ordersService'
 import { rosterDePrenda, textoRoster } from '../utils/roster'
 import AvisoTallasDanadas from '../components/orders/AvisoTallasDanadas'
 import { TINTAS, formatMl, numero, reporteDeEtapa, totalTinta, validarReporteImpresion } from '../utils/impresionReporte'
+import { reporteDeLote } from '../utils/loteImpresion'
 import { TelaUsadaCorte, CorteTerminado } from '../components/orders/CorteRegistro'
 import { fetchOrdenBordados } from '../services/bordadosService'
 import { buildRemisionPdfBlob, remisionPdfFileName } from '../utils/generateOrderPdf'
@@ -405,6 +406,29 @@ function EtapaTiempoReal({ etapa }) {
   )
 }
 
+// V167 — la orden se imprimió junto con otras: los metros y la tinta son
+// del lote completo.
+function ImpresaEnLote({ loteId }) {
+  const [lote, setLote] = useState(undefined)
+  useEffect(() => {
+    let vivo = true
+    fetchLoteImpresion(loteId).then(({ data }) => vivo && setLote(data || null))
+    return () => {
+      vivo = false
+    }
+  }, [loteId])
+  if (lote === undefined) return <p className="pantone-hint">Cargando lote…</p>
+  if (!lote) return <p className="pantone-hint">Se imprimió en un lote.</p>
+  const r = reporteDeLote(lote)
+  const otras = (lote.folios || []).length - 1
+  return (
+    <p className="pantone-hint">
+      Se imprimió en lote {formatDateTime(lote.creado_en)}
+      {otras > 0 ? ` con ${otras} ${otras === 1 ? 'orden más' : 'órdenes más'} (${lote.folios.map((f) => `#${f}`).join(', ')})` : ''}. Total del lote: {r.largo} m · {formatMl(r.total)}.
+    </p>
+  )
+}
+
 // V146 — reporte de impresión (Samuel): al marcar "Impresa" captura el largo
 // del trazo y la tinta de cada color; el total se suma solo. Ya impresa,
 // muestra lo reportado y deja corregirlo.
@@ -458,12 +482,17 @@ function ImpresionReporte({ order, etapa, onGuardado }) {
               <dd>{formatMl(guardado.total)}</dd>
             </div>
           </dl>
+        ) : etapa.imp_lote_id ? (
+          <ImpresaEnLote loteId={etapa.imp_lote_id} />
         ) : (
           <p className="pantone-hint">Esta impresión se marcó sin reporte de trazo ni tinta.</p>
         )}
-        <button type="button" className="btn btn--ghost btn--small" onClick={() => setEditando(true)}>
-          {guardado ? 'Corregir reporte' : 'Capturar trazo y tinta'}
-        </button>
+        {/* V167 — los números de un lote se corrigen en la pestaña "Lotes". */}
+        {(guardado || !etapa.imp_lote_id) && (
+          <button type="button" className="btn btn--ghost btn--small" onClick={() => setEditando(true)}>
+            {guardado ? 'Corregir reporte' : 'Capturar trazo y tinta'}
+          </button>
+        )}
       </div>
     )
   }
