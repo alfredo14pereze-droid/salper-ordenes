@@ -7192,3 +7192,12 @@ todos puedan marcar sus tareas").
 - Pestaña nueva "Lotes": historial de lotes con su reporte (folio, cliente, tela, metros, tinta por color), que se puede imprimir.
 - La orden impresa en lote muestra en su página "Se imprimió en lote … con N órdenes más" y el total del lote. Las órdenes impresas solas siguen usando el reporte por orden de V146.
 - Las tarjetas de Samuel muestran la tela (`items[].tela_nombre`).
+
+## V168 — "Autorizar diseños" pasa de sublimado a ventas
+
+**SQL: PENDIENTE de aplicar** (`supabase/schema_v168_autorizar_diseno_ventas.sql`).
+
+- Pedido de Alfredo: Samuel ya no autoriza diseños; los autoriza Gis (ventas). Como los permisos van por rol, todo ventas puede autorizar.
+- `dis.autorizar` queda en ventas, admin_fabrica y admin_general. Solo cambia `rol_permisos`; la función `autorizar_diseno` no cambia.
+- El respaldo de `canAutorizarDiseno` en `permissions.js` es la misma lista.
+- En "Pendientes de diseño", Samuel ve el aviso "Ventas autoriza el diseño…" en lugar del botón.

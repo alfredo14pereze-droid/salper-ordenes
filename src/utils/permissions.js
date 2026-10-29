@@ -309,10 +309,11 @@ export function canManageDisenos(role) {
   return role === 'sublimado' || role === 'admin_fabrica' || role === 'admin_general'
 }
 
-// V165 — autorizar el diseño de una orden de sublimación (dis.autorizar);
-// fallback = siembra de schema_v165_diseno_autorizado.sql.
+// V165 — autorizar el diseño de una orden de sublimación (dis.autorizar).
+// V168: lo autoriza ventas (Gis), ya no sublimado. Fallback = permisos
+// después de schema_v168_autorizar_diseno_ventas.sql.
 export function canAutorizarDiseno(role) {
-  return tiene(role, 'dis.autorizar', () => ['sublimado', 'admin_fabrica', 'admin_general'].includes(role))
+  return tiene(role, 'dis.autorizar', () => ['ventas', 'admin_fabrica', 'admin_general'].includes(role))
 }
 
 // Terminado (V26): capturar cantidad_surtida/comentario_surtido por línea

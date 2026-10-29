@@ -160,6 +160,11 @@ export default function SublimadoHomePage() {
         </div>
       )}
 
+      {/* V168 — Samuel ya no autoriza: solo ve qué falta autorizar. */}
+      {!encontradas && actual.key === 'diseno' && !puedeAutorizar && lista.length > 0 && (
+        <p className="pantone-hint">Ventas autoriza el diseño; cuando lo autorice, la orden pasa a “Pendientes de impresión”.</p>
+      )}
+
       {eligiendo && lista.length > 0 && (
         <div className="lote-barra">
           <label className="lote-check">
