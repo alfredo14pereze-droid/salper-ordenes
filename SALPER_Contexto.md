@@ -6990,3 +6990,15 @@ pueda entregar aunque la bloquee la falta de precio (o de datos de factura), dej
   detalle. "Corregir estado manualmente" sigue solo para admin_fabrica/admin_general (y con el candado).
 - Probado: SQL en PGlite (18 casos) y en el arnés local con admin_tienda (bloqueo → motivo → entregada,
   aviso e historial), ventas sin botón.
+
+### V161 — Precio opcional al crear la orden (temporal) (2026-10-29, rama `precio-opcional-alta`)
+
+Pedido de Alfredo: mientras se acostumbran, que el precio NO sea requisito para crear una orden; se captura después.
+- **Interruptor** en una fila: `fin_config.alta_requiere_precio` (`'no'` = opcional, `'si'` = obligatorio como en
+  V159). La pantalla lo lee con `fin_alta_requiere_precio()`; para volver a exigirlo basta
+  `update public.fin_config set valor = 'si' where clave = 'alta_requiere_precio';` (sin subir código).
+- `orden_lineas_validar` y el candado `orders_lineas_precio_guard` (V159) respetan el interruptor.
+- La **entrega** no cambia: siguen haciendo falta los precios (o "Entregar de todos modos", V160).
+- El mismo SQL quitó la excepción de entrega de V159 (`entrega_sin_precio_hasta`, venció el 28-oct).
+- Frontend: `NewOrderPage` no bloquea si es opcional; aviso gris "puedes capturarlo después"; precio vacío o 0
+  se manda como sin precio. Probado en PGlite (12 casos) y en el arnés (orden creada sin precio).
