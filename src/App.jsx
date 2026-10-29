@@ -27,6 +27,7 @@ import EstadisticasPage from './pages/EstadisticasPage'
 import PedidosColegioPage from './pages/PedidosColegioPage'
 import TallerosPage from './pages/TallerosPage'
 import NotasTiendaPage from './pages/NotasTiendaPage'
+import TareasPage from './pages/TareasPage'
 import EntregaMasivaPage from './pages/EntregaMasivaPage'
 import ProduccionCapturaPage from './pages/ProduccionCapturaPage'
 import ProduccionRevisionPage from './pages/ProduccionRevisionPage'
@@ -108,6 +109,7 @@ function AuthGate() {
           <Route path="/anuncios" element={<AnnouncementsPage />} />
           <Route path="/pendientes" element={<PendientesPage />} />
           <Route path="/notas-tienda" element={<NotasTiendaPage />} />
+          <Route path="/tareas" element={<TareasPage />} />
           <Route path="/entregas" element={<EntregaMasivaPage />} />
           <Route path="/pendientes/:id" element={<PendienteDetailPage />} />
           <Route path="/usuarios" element={<UsersPage />} />

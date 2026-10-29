@@ -20,6 +20,7 @@ import {
   canViewEstadisticas,
   canViewPendientes,
   canViewSeccionNotas,
+  canViewTareas,
   canDeliverOrder,
   canViewInventario,
   canRegistrarEntradaTela,
@@ -127,6 +128,8 @@ export default function AppLayout({ children }) {
     // V158 — notas del personal de tienda (faltantes, notas del día, errores).
     // V163 — con dos pestañas: del personal y para el personal.
     { to: '/notas-tienda', label: 'Notas de tienda', show: canViewSeccionNotas(role) },
+    // V164 — tareas que los administrativos le asignan al personal.
+    { to: '/tareas', label: 'Tareas', show: canViewTareas(role) },
     // Entrega masiva: marcar varias órdenes como entregadas a la vez (permiso orden.entregar).
     { to: '/entregas', label: 'Entrega masiva', show: canDeliverOrder(role) },
     // V24 — de solo lectura para todos, invitados incluidos; le faltaba

@@ -7113,3 +7113,26 @@ administrativos le dejan notas al personal, a todos o a una persona, con foto op
   "Lista para entregar" (`lista_entregar` → `terminado`).
 - Dashboard: barra verde "✓ N órdenes listas para entregar · Ver solo esas" que aplica ese filtro; cada
   tarjeta trae el botón "Confirmar entrega al cliente" (Entrega rápida).
+
+### V164 — Tareas para el personal (2026-10-29)
+
+Sección nueva `/tareas` ("Tareas" en el menú, después de Notas de tienda): los administrativos le asignan tareas
+al personal y cada persona las marca como hechas.
+- **A quién**: a todo el personal, a un rol (ventas, tienda, contabilidad) o a una persona. En tareas de grupo se
+  elige en cada una cómo se completa: **cada quien la hace** (cada persona la marca; se ve quién falta) o **basta
+  con que uno la haga** (en cuanto alguien la marca queda hecha; el resto ve "La hizo X"). A una persona siempre
+  es "cada quien". No se repiten. Fecha límite opcional (rojo si venció y no está hecha; las vencidas van
+  primero). Se puede desmarcar la propia ("Deshacer"). Decisiones de Alfredo.
+- **SQL**: `supabase/schema_v164_tareas.sql` (aditivo). Tablas `ta_tareas` (`quitada_en` = "Quitar tarea") y
+  `ta_completadas`. RLS: quien asigna ve todas; los demás, las que les tocan (`ta_me_toca`); las completadas se
+  ven si se ve la tarea. Funciones `ta_destinatarios`, `ta_crear_tarea`, `ta_marcar_tarea` (rechaza la segunda
+  persona en "basta con uno"), `ta_quitar_tarea`.
+- **Permisos** (módulo "Tareas" en Roles y permisos): `ta.ver` = ventas, contabilidad, tienda, admin_tienda,
+  admin_general, consulta_tienda, lectura; `ta.completar` = ventas, contabilidad, tienda (también define quiénes
+  reciben tareas y qué roles salen en "por rol"); `ta.asignar` = admin_tienda, admin_general.
+- **Pantalla**: `src/pages/TareasPage.jsx`, servicio `tareasService.js`, cálculos en `src/utils/tareas.js`
+  (pruebas: `node --test src/utils/tareas.test.js`).
+- Probado: SQL en PGlite (35 casos) y pantalla en ejemplo local con 7 personas (asignar a rol con fecha y
+  "basta con uno", Giss la completa y Jose ve "La hizo Giss", deshacer, avance del admin, consulta solo lee,
+  corte no la ve, celular). Se corrigió en la prueba: para quien solo consulta, "cada quien" seguía saliendo como
+  hecha si alguien ya la había hecho.

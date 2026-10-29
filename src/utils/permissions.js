@@ -722,3 +722,19 @@ export function canEscribirNotasPersonal(role) {
 export function canViewSeccionNotas(role) {
   return canViewNotasTienda(role) || canViewNotasPersonal(role)
 }
+
+// V164 — Tareas para el personal. ta.ver / ta.completar / ta.asignar;
+// fallback = siembra de schema_v164_tareas.sql.
+export function canViewTareas(role) {
+  return tiene(role, 'ta.ver', () => (
+    ['ventas', 'contabilidad', 'tienda', 'admin_tienda', 'admin_general', 'consulta_tienda', 'lectura'].includes(role)
+  ))
+}
+
+export function canCompletarTareas(role) {
+  return tiene(role, 'ta.completar', () => ['ventas', 'contabilidad', 'tienda'].includes(role))
+}
+
+export function canAsignarTareas(role) {
+  return tiene(role, 'ta.asignar', () => role === 'admin_tienda' || role === 'admin_general')
+}
