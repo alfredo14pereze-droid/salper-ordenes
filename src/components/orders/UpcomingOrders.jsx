@@ -3,7 +3,7 @@ import { EmptyState } from '../common/States'
 
 // "Próximas a surtir": las N órdenes activas ordenadas por fecha de entrega
 // más cercana. Vive como sección destacada arriba del dashboard.
-export default function UpcomingOrders({ orders, typesByKey, limit = 5 }) {
+export default function UpcomingOrders({ orders, typesByKey, limit = 5, onUpdated }) {
   const upcoming = orders.slice(0, limit)
 
   return (
@@ -14,7 +14,7 @@ export default function UpcomingOrders({ orders, typesByKey, limit = 5 }) {
       ) : (
         <div className="order-grid order-grid--scroll">
           {upcoming.map((order) => (
-            <OrderCard key={order.id} order={order} orderType={typesByKey[order.order_type_key]} />
+            <OrderCard key={order.id} order={order} orderType={typesByKey[order.order_type_key]} onUpdated={onUpdated} />
           ))}
         </div>
       )}

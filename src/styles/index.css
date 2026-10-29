@@ -4772,3 +4772,11 @@ h4 {
 }
 
 .nota-leido--ok { color: var(--color-good); }
+
+/* Entrega rápida: confirmar entrega de órdenes "Lista para entregar" */
+.entrega-rapida { display: grid; gap: 8px; }
+.entrega-rapida__fila { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.entrega-rapida__texto { margin: 0; flex: 1 1 220px; font-weight: 600; color: var(--color-good); }
+.entrega-rapida--banner { margin: 12px 0; padding: 14px 16px; border: 1px solid var(--color-good); border-radius: var(--radius-md); background: var(--color-good-soft); }
+.entrega-rapida--tarjeta { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--color-border); cursor: default; }
+.entrega-rapida--tarjeta .entrega-rapida__btn { width: 100%; }

@@ -3,7 +3,8 @@ import { useParams, useLocation, Link } from 'react-router-dom'
 import { useOrder } from '../hooks/useOrder'
 import { useOrderTypes } from '../hooks/useOrderTypes'
 import StatusStepper from '../components/orders/StatusStepper'
-import StatusChanger from '../components/orders/StatusChanger'
+import StatusChanger, { tieneAccionesDeEstado } from '../components/orders/StatusChanger'
+import EntregaRapida from '../components/orders/EntregaRapida'
 import EntregaForzadaAviso from '../components/orders/EntregaForzadaAviso'
 import StatusHistoryList from '../components/orders/StatusHistoryList'
 import TypeBadge from '../components/orders/TypeBadge'
@@ -35,9 +36,6 @@ import { useAuth } from '../contexts/AuthContext'
 import {
   canViewRemision,
   canViewSurtido,
-  canChangeStatus,
-  canCompleteOrder,
-  canConfirmOrder,
   canDeliverOrder,
   canSetEstimatedDays,
   canViewEtapas,
@@ -179,6 +177,9 @@ function OrderDetailContent() {
 
       <StatusStepper status={order.status} />
 
+      {/* Lista para entregar: botón grande arriba para confirmar la entrega. */}
+      <EntregaRapida order={order} onEntregada={refresh} />
+
       <div className="order-detail__grid">
         <section className="card">
           <OrderDetailsCard order={order} orderTypes={orderTypes} onUpdated={refresh} />
@@ -214,9 +215,8 @@ function OrderDetailContent() {
         {/* V160 — registro de una entrega forzada (falta de precio/factura). */}
         {user && (canViewFinanzas(role) || canDeliverOrder(role)) && <EntregaForzadaAviso order={order} />}
 
-        {/* V160 — admin_tienda solo entrega: en una orden ya entregada no tiene
-            nada que hacer aquí (evita la tarjeta vacía). */}
-        {user && !order.eliminada_en && ((canChangeStatus(role) && (order.status !== 'completado' || canCompleteOrder(role) || canConfirmOrder(role))) || canSetEstimatedDays(role, order)) && (
+        {/* Solo si el rol tiene algo que hacer aquí (evita la tarjeta vacía). */}
+        {user && !order.eliminada_en && (tieneAccionesDeEstado(role, order) || canSetEstimatedDays(role, order)) && (
           <section className="card">
             <StatusChanger order={order} onUpdated={refresh} />
             <EstimatedDaysCard order={order} onUpdated={refresh} />

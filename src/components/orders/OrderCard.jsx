@@ -8,8 +8,9 @@ import { useAuth } from '../../contexts/AuthContext'
 import { canConfirmOrderChanges } from '../../utils/permissions'
 import { codigoProductoFrisa, etiquetaSecuencia, secuenciaDeOrden } from '../../utils/frisa'
 import { useLineasMostrador } from '../../hooks/useLineasMostrador'
+import EntregaRapida from './EntregaRapida'
 
-export default function OrderCard({ order, orderType }) {
+export default function OrderCard({ order, orderType, onUpdated }) {
   const navigate = useNavigate()
   const { role } = useAuth()
   const { user } = useAuth()
@@ -131,6 +132,9 @@ export default function OrderCard({ order, orderType }) {
         </div>
         {order.cancelled_at ? <span className="badge badge--danger">Cancelada</span> : <StatusBadge status={order.status} />}
       </div>
+
+      {/* Lista para entregar: confirmar la entrega sin abrir la orden. */}
+      <EntregaRapida order={order} onEntregada={onUpdated} variante="tarjeta" />
     </article>
   )
 }

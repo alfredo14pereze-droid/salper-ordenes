@@ -7094,3 +7094,13 @@ administrativos le dejan notas al personal, a todos o a una persona, con foto op
 - Probado: SQL en PGlite (26 casos) y pantalla en ejemplo local con varias personas (admin escribe a todos y a
   una persona, Giss solo ve las suyas y marca Enterado, el admin lo ve, consulta solo lee, corte no la ve,
   quitar nota, celular).
+
+### Entrega rápida (2026-10-29, rama `entrega-rapida`, sin SQL)
+
+- Órdenes en "Lista para entregar" (`terminado`) muestran el botón **"Confirmar entrega al cliente"**:
+  recuadro verde arriba del detalle y botón dentro de la tarjeta del Dashboard (no abre la orden).
+  Permiso `orden.entregar` (V160: admin_general, admin_tienda, admin_fabrica).
+- Mismo flujo que el detalle: si falta precio/factura y hay `orden.entregar_forzado`, pide motivo y
+  entrega de todos modos (queda en `orden_entregas_forzadas`).
+- Código: `hooks/useEntregarOrden.js` (lógica), `components/orders/EntregaRapida.jsx` (UI),
+  `StatusChanger` ya no repite el botón en `terminado`; `tieneAccionesDeEstado` decide si se monta la tarjeta.

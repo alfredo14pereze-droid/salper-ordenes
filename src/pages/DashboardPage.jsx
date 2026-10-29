@@ -124,7 +124,7 @@ function DashboardContent() {
 
       <AnnouncementBanner />
 
-      <UpcomingOrders orders={upcoming} typesByKey={typesByKey} />
+      <UpcomingOrders orders={upcoming} typesByKey={typesByKey} onUpdated={refresh} />
 
       <section className="dashboard-all-orders">
         <div className="section-header">
@@ -146,7 +146,7 @@ function DashboardContent() {
         ) : (
           <div className="order-grid">
             {filteredOrders.map((order) => (
-              <OrderCard key={order.id} order={order} orderType={typesByKey[order.order_type_key]} />
+              <OrderCard key={order.id} order={order} orderType={typesByKey[order.order_type_key]} onUpdated={refresh} />
             ))}
           </div>
         )}
@@ -158,7 +158,7 @@ function DashboardContent() {
             </h3>
             <div className="order-grid">
               {completedMatches.map((order) => (
-                <OrderCard key={order.id} order={order} orderType={typesByKey[order.order_type_key]} />
+                <OrderCard key={order.id} order={order} orderType={typesByKey[order.order_type_key]} onUpdated={refresh} />
               ))}
             </div>
           </>
