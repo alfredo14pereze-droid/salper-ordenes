@@ -7207,3 +7207,9 @@ todos puedan marcar sus tareas").
 - Hasta arriba del Dashboard (antes de "Próximas a surtir"), admin_fabrica ve todas las órdenes en `en_confirmacion` que no estén canceladas ni eliminadas, la de entrega más cercana primero, en un recuadro rojo con el número.
 - Si no hay pendientes, sale una línea verde: "No hay órdenes por confirmar".
 - Componente `src/components/orders/PorConfirmarOrders.jsx`. Los demás roles no lo ven.
+
+## Buscador por nombre en Catálogos (sin SQL)
+
+- Al abrir Clientes, Telas, Frisa o Proveedores en Catálogos aparece un buscador por nombre; Frisa también busca por código. El contador muestra "N de total".
+- En el catálogo de prendas de un cliente hay un buscador de producto por nombre, que se combina con "Solo pendientes de validar".
+- Ignora mayúsculas, acentos y orden de palabras: `utils/buscarPorNombre.js` (`coincideNombre`) y `components/common/BuscadorNombre.jsx`.

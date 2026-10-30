@@ -10,6 +10,8 @@ import { fetchProductosByCliente, guardarProducto, setProductoProcesos, uploadPr
 import { resumenProducto } from '../utils/productoCatalogo'
 import { PROCESOS_MAQUILA_OPTIONS } from '../lib/constants'
 import { esClienteMaquila, etiquetaProcesos, ordenarProcesos } from '../utils/maquila'
+import BuscadorNombre from '../components/common/BuscadorNombre'
+import { coincideNombre } from '../utils/buscarPorNombre'
 
 // V133 — catálogo de UN cliente (colegio): se entra desde Catálogos y aquí se
 // ven sus productos con foto, se abre la ficha completa de cada uno y se
@@ -427,6 +429,7 @@ function CatalogoClienteContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [soloPendientes, setSoloPendientes] = useState(false)
+  const [busqueda, setBusqueda] = useState('')
   const [abiertoId, setAbiertoId] = useState(null)
   const [creando, setCreando] = useState(false)
 
@@ -450,7 +453,7 @@ function CatalogoClienteContent() {
   if (error) return <ErrorState error={error} />
 
   const pendientes = productos.filter((p) => p.pendiente_validar).length
-  const visibles = soloPendientes ? productos.filter((p) => p.pendiente_validar) : productos
+  const visibles = productos.filter((p) => (!soloPendientes || p.pendiente_validar) && coincideNombre(busqueda, p.nombre))
   const abierto = productos.find((p) => p.id === abiertoId)
   const esMaquila = esClienteMaquila(cliente)
 
@@ -464,6 +467,10 @@ function CatalogoClienteContent() {
         {productos.length} producto(s) en el catálogo{pendientes > 0 ? ` · ${pendientes} con datos por validar` : ''}
       </p>
       {esMaquila && <p className="pantone-hint">Cliente de maquila: cada producto indica qué procesos se le hacen.</p>}
+
+      {productos.length > 0 && (
+        <BuscadorNombre value={busqueda} onChange={setBusqueda} placeholder="Buscar producto por nombre" />
+      )}
 
       <div className="catalogo-cliente__barra">
         <label className="producto-validado">
@@ -508,7 +515,11 @@ function CatalogoClienteContent() {
 
       {visibles.length === 0 ? (
         <p className="page-subtitle">
-          {soloPendientes ? 'No hay productos pendientes de validar.' : 'Este cliente todavía no tiene productos en el catálogo.'}
+          {busqueda.trim()
+            ? `Ningún producto coincide con “${busqueda.trim()}”.`
+            : soloPendientes
+              ? 'No hay productos pendientes de validar.'
+              : 'Este cliente todavía no tiene productos en el catálogo.'}
         </p>
       ) : (
         <div className="producto-picker__grid producto-picker__grid--grande">

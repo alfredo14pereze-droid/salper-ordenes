@@ -5013,3 +5013,8 @@ h4 {
   color: var(--color-good);
   font-weight: 600;
 }
+
+/* Buscador por nombre en las listas de catálogos */
+.buscador-nombre {
+  margin: 0 0 12px;
+}

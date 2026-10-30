@@ -29,6 +29,8 @@ import { fetchTelas, createTela, updateTela, getTelaDeleteImpact, deleteTela } f
 import { fetchInventarioTelas, fetchMovimientosPorTela } from '../services/movimientosTelaService'
 import { fetchProductosResumen } from '../services/productosService'
 import { CLIENTE_TIPO_ORDEN_OPTIONS } from '../lib/constants'
+import BuscadorNombre from '../components/common/BuscadorNombre'
+import { coincideNombre } from '../utils/buscarPorNombre'
 
 // Fila genérica con nombre + botón Eliminar — usada por las 3 secciones
 // simples (proveedores/clientes/telas). Pide confirmación en dos pasos y,
@@ -485,6 +487,7 @@ function CatalogSection({ title, fetchFn, deleteFn, impactFn, impactLabel, addFo
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [abierto, setAbierto] = useState(false)
+  const [busqueda, setBusqueda] = useState('')
 
   const load = useCallback(async () => {
     const { data, error: fetchError } = await fetchFn()
@@ -502,7 +505,10 @@ function CatalogSection({ title, fetchFn, deleteFn, impactFn, impactLabel, addFo
   }, [load])
 
   // V133 — cada lista es desplegable y arranca cerrada, para llegar a Telas
-  // sin tener que recorrer todos los clientes.
+  // sin tener que recorrer todos los clientes. Al abrirla, buscador por nombre.
+  const visibles = items.filter((i) => coincideNombre(busqueda, i.nombre))
+  const buscando = busqueda.trim() !== ''
+
   return (
     <div className="card">
       <div className="section-header" style={abierto ? undefined : { marginBottom: 0 }}>
@@ -511,16 +517,22 @@ function CatalogSection({ title, fetchFn, deleteFn, impactFn, impactLabel, addFo
           <h3 className="section-title section-title--small" style={{ marginBottom: 0 }}>
             {title}
           </h3>
-          {!loading && <span className="section-count">{items.length}</span>}
+          {!loading && <span className="section-count">{buscando && abierto ? `${visibles.length} de ${items.length}` : items.length}</span>}
         </button>
         {abierto && addForm?.(load)}
       </div>
+      {abierto && !loading && !error && items.length > 0 && (
+        <BuscadorNombre value={busqueda} onChange={setBusqueda} placeholder={`Buscar en ${title.toLowerCase()} por nombre`} autoFocus />
+      )}
       {abierto && loading && <Loading label="Cargando…" />}
       {abierto && error && <ErrorState error={error} onRetry={load} />}
       {abierto && !loading && !error && items.length === 0 && <p className="page-subtitle">No hay registros todavía.</p>}
-      {abierto && !loading && !error && items.length > 0 && (
+      {abierto && !loading && !error && items.length > 0 && visibles.length === 0 && (
+        <p className="page-subtitle">Ninguno coincide con “{busqueda.trim()}”.</p>
+      )}
+      {abierto && !loading && !error && visibles.length > 0 && (
         <div className="document-list">
-          {items.map((item) => (
+          {visibles.map((item) => (
             <CatalogRow
               key={item.id}
               item={item}

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Loading, ErrorState } from '../common/States'
+import BuscadorNombre from '../common/BuscadorNombre'
+import { coincideNombre } from '../../utils/buscarPorNombre'
 import { fetchProductosFrisa, guardarProductoFrisa } from '../../services/frisaService'
 import { PROCESOS_FRISA_OPTIONS } from '../../lib/constants'
 import {
@@ -253,6 +255,7 @@ function ProductoRow({ producto, canEdit, onSaved }) {
 
 export default function FrisaCatalogoSection({ canEdit }) {
   const [productos, setProductos] = useState([])
+  const [busqueda, setBusqueda] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [abierto, setAbierto] = useState(false)
@@ -272,6 +275,8 @@ export default function FrisaCatalogoSection({ canEdit }) {
     load()
   }, [load])
 
+  const visibles = productos.filter((p) => coincideNombre(busqueda, p.nombre, p.codigo))
+
   return (
     <div className="card">
       <div className="section-header" style={abierto ? undefined : { marginBottom: 0 }}>
@@ -280,7 +285,7 @@ export default function FrisaCatalogoSection({ canEdit }) {
           <h3 className="section-title section-title--small" style={{ marginBottom: 0 }}>
             Frisa
           </h3>
-          {!loading && <span className="section-count">{productos.length}</span>}
+          {!loading && <span className="section-count">{busqueda.trim() && abierto ? `${visibles.length} de ${productos.length}` : productos.length}</span>}
         </button>
         {abierto && canEdit && !agregando && (
           <button type="button" className="btn btn--ghost btn--small" onClick={() => setAgregando(true)}>
@@ -302,8 +307,14 @@ export default function FrisaCatalogoSection({ canEdit }) {
       {abierto && error && <ErrorState error={error} onRetry={load} />}
       {abierto && !loading && !error && productos.length === 0 && <p className="page-subtitle">No hay productos de Frisa todavía.</p>}
       {abierto && !loading && !error && productos.length > 0 && (
+        <BuscadorNombre value={busqueda} onChange={setBusqueda} placeholder="Buscar en Frisa por nombre o código" autoFocus />
+      )}
+      {abierto && !loading && !error && productos.length > 0 && visibles.length === 0 && (
+        <p className="page-subtitle">Ninguno coincide con “{busqueda.trim()}”.</p>
+      )}
+      {abierto && !loading && !error && visibles.length > 0 && (
         <div className="document-list">
-          {productos.map((p) => (
+          {visibles.map((p) => (
             <ProductoRow key={p.id} producto={p} canEdit={canEdit} onSaved={load} />
           ))}
         </div>
