@@ -7216,7 +7216,7 @@ todos puedan marcar sus tareas").
 
 ## V169 — Rol nuevo: chofer
 
-**SQL: PENDIENTE de aplicar** (`supabase/schema_v169_rol_chofer.sql`).
+**SQL APLICADO por Alfredo el 2026-10-30** (`supabase/schema_v169_rol_chofer.sql`).
 
 - `profiles_role_check` y `admin_update_user_role` aceptan 'chofer'. Permisos sembrados: `ta.ver`, `ta.completar`, `pf.ver`.
 - Edge Function `admin-create-user`: se agregó 'chofer' a `VALID_ROLES`, pero **falta publicarla** (no hay CLI de Supabase aquí). Mientras tanto, crear la cuenta con otro rol y cambiarla a Chofer en Usuarios, que pasa por la función SQL.
