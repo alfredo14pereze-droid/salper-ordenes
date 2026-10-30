@@ -763,3 +763,9 @@ export function canAsignarTareas(role) {
 export function canImprimirLote(role) {
   return canChangeEtapa(role, 'impresion')
 }
+
+// V170 — anotarse tareas propias (las ven solo quien las anota y
+// admin_general). Ver schema_v170_tareas_propias.sql.
+export function canAnotarTareasPropias(role) {
+  return tiene(role, 'ta.propias', () => role === 'chofer')
+}

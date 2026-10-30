@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useOrders } from '../hooks/useOrders'
-import { fetchTareas, marcarTarea } from '../services/tareasService'
+import { crearTareaPropia, fetchTareas, marcarTarea, quitarTarea } from '../services/tareasService'
+import { canAnotarTareasPropias } from '../utils/permissions'
 import { fetchPendientes, ESTADOS } from '../services/pendientesService'
 import { ordenesParaEntregar, pendientesPorLlevar, piezasDeOrden, tareasPendientes } from '../utils/chofer'
 import { hoyLocal } from '../utils/tareas'
@@ -20,11 +21,60 @@ function entregaTexto(fecha) {
   return `Entrega ${cuando} · ${formatDate(fecha)}`
 }
 
+// V170 — el chofer se anota sus propias tareas (solo las ven él y admin_general).
+function NuevaTareaPropia({ onCreada, onCancelar }) {
+  const [titulo, setTitulo] = useState('')
+  const [nota, setNota] = useState('')
+  const [fecha, setFecha] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  async function guardar(e) {
+    e.preventDefault()
+    if (!titulo.trim()) return setError(new Error('Escribe la tarea.'))
+    setSaving(true)
+    setError(null)
+    const { error: err } = await crearTareaPropia({ titulo: titulo.trim(), descripcion: nota.trim(), fechaLimite: fecha })
+    setSaving(false)
+    if (err) return setError(err)
+    onCreada()
+  }
+
+  return (
+    <form className="chofer-card chofer-nueva" onSubmit={guardar}>
+      <label>
+        Tarea
+        <input className="input" value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ej. Cargar gasolina" autoFocus />
+      </label>
+      <label>
+        Nota (opcional)
+        <input className="input" value={nota} onChange={(e) => setNota(e.target.value)} />
+      </label>
+      <label>
+        Para cuándo (opcional)
+        <input type="date" className="input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+      </label>
+      <span className="chofer-card__texto">Solo la ven tú y el administrador.</span>
+      {error && <p className="form-error">{error.message}</p>}
+      <div className="chofer-nueva__acciones">
+        <button type="button" className="btn btn--ghost btn--small" disabled={saving} onClick={onCancelar}>
+          Cancelar
+        </button>
+        <button type="submit" className="btn btn--small estacion-btn--iniciar" disabled={saving}>
+          {saving ? 'Guardando…' : 'Agregar'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
 function MisTareas() {
   const { user, role } = useAuth()
   const [lista, setLista] = useState(null)
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(null)
+  const [agregando, setAgregando] = useState(false)
+  const puedeAnotar = canAnotarTareasPropias(role)
 
   const load = useCallback(async () => {
     const { data, error: err } = await fetchTareas()
@@ -45,15 +95,40 @@ function MisTareas() {
     load()
   }
 
+  async function quitar(t) {
+    if (!window.confirm(`¿Quitar "${t.titulo}"?`)) return
+    setBusy(t.id)
+    const { error: err } = await quitarTarea(t.id)
+    setBusy(null)
+    if (err) return setError(err)
+    load()
+  }
+
   const hoy = hoyLocal()
   return (
     <section className="chofer-seccion">
       <div className="section-header">
         <h2 className="section-title">Mis tareas {lista && <span className="section-count">{lista.length}</span>}</h2>
-        <Link to="/tareas" className="btn btn--ghost btn--small">
-          Ver todas
-        </Link>
+        <div className="chofer-acciones">
+          {puedeAnotar && !agregando && (
+            <button type="button" className="btn btn--secondary btn--small" onClick={() => setAgregando(true)}>
+              + Agregar
+            </button>
+          )}
+          <Link to="/tareas" className="btn btn--ghost btn--small">
+            Ver todas
+          </Link>
+        </div>
       </div>
+      {agregando && (
+        <NuevaTareaPropia
+          onCancelar={() => setAgregando(false)}
+          onCreada={() => {
+            setAgregando(false)
+            load()
+          }}
+        />
+      )}
       {error && <ErrorState error={error} onRetry={load} />}
       {!error && !lista && <Loading label="Cargando tareas…" />}
       {lista && lista.length === 0 && <p className="chofer-vacio">✓ No tienes tareas pendientes.</p>}
@@ -70,9 +145,17 @@ function MisTareas() {
                     {vencida ? 'Venció' : 'Para'} el {formatDate(t.fecha_limite)}
                   </span>
                 )}
-                <button type="button" className="btn btn--small estacion-btn--iniciar chofer-card__accion" disabled={busy === t.id} onClick={() => hecha(t.id)}>
-                  {busy === t.id ? 'Guardando…' : '✓ Hecha'}
-                </button>
+                {t.propia && <span className="chofer-card__texto">Anotada por ti</span>}
+                <div className="chofer-nueva__acciones">
+                  {t.propia && (
+                    <button type="button" className="btn btn--ghost btn--small" disabled={busy === t.id} onClick={() => quitar(t)}>
+                      Quitar
+                    </button>
+                  )}
+                  <button type="button" className="btn btn--small estacion-btn--iniciar chofer-card__accion" disabled={busy === t.id} onClick={() => hecha(t.id)}>
+                    {busy === t.id ? 'Guardando…' : '✓ Hecha'}
+                  </button>
+                </div>
               </article>
             )
           })}

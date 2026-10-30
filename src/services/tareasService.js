@@ -43,6 +43,15 @@ export async function crearTarea({ titulo, descripcion, destino, modo, fechaLimi
     .single()
 }
 
+// V170 — tarea propia: para quien la escribe; solo la ven él y admin_general.
+export async function crearTareaPropia({ titulo, descripcion, fechaLimite }) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase
+    .rpc('ta_crear_tarea_propia', { p_titulo: titulo, p_descripcion: descripcion || null, p_fecha_limite: fechaLimite || null })
+    .single()
+}
+
 export async function marcarTarea(id, hecha) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }

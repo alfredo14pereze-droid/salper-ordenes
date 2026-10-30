@@ -7226,3 +7226,13 @@ todos puedan marcar sus tareas").
   - Pendientes en camino: "Llevar a fábrica" (`enviado_a_fabrica`) y "Llevar a tienda" (`enviado_a_tienda`), solo consulta.
 - Barra mínima (shell de estación) con Inicio, Tareas y Pendientes. Cualquier otra ruta regresa a Inicio (`RUTAS_CHOFER` en `permissions.js`, guardia en `AppLayout.jsx`). "Ver como" incluye Chofer para admin_general.
 - Las órdenes se leen con cualquier sesión (RLS `using (true)`), así que esconder los precios es solo de pantalla, igual que para los demás roles.
+
+## V170 — Tareas propias (el chofer se anota tareas)
+
+**SQL: PENDIENTE de aplicar** (`supabase/schema_v170_tareas_propias.sql`).
+
+- Permiso nuevo `ta.propias`, sembrado al chofer. Columna `ta_tareas.propia`.
+- `ta_crear_tarea_propia(titulo, descripcion, fecha)` crea una tarea para quien la escribe.
+- Una tarea propia solo la ven quien la anotó y admin_general; admin_tienda ya no la ve, aunque tenga `ta.asignar`. Las demás tareas se ven igual que antes.
+- `ta_quitar_tarea` también deja quitarla a quien la anotó.
+- Pantalla del chofer: "+ Agregar" en Mis tareas (tarea, nota y fecha opcionales). Las propias dicen "Anotada por ti" y tienen botón "Quitar".
