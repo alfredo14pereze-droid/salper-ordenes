@@ -7229,7 +7229,7 @@ todos puedan marcar sus tareas").
 
 ## V170 — Tareas propias (el chofer se anota tareas)
 
-**SQL: PENDIENTE de aplicar** (`supabase/schema_v170_tareas_propias.sql`).
+**SQL APLICADO por Alfredo el 2026-10-30** (`supabase/schema_v170_tareas_propias.sql`).
 
 - Permiso nuevo `ta.propias`, sembrado al chofer. Columna `ta_tareas.propia`.
 - `ta_crear_tarea_propia(titulo, descripcion, fecha)` crea una tarea para quien la escribe.
