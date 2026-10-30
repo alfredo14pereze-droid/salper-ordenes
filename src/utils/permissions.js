@@ -767,5 +767,6 @@ export function canImprimirLote(role) {
 // V170 — anotarse tareas propias (las ven solo quien las anota y
 // admin_general). Ver schema_v170_tareas_propias.sql.
 export function canAnotarTareasPropias(role) {
-  return tiene(role, 'ta.propias', () => role === 'chofer')
+  // V171 — todos los que completan tareas.
+  return tiene(role, 'ta.propias', () => ['ventas', 'contabilidad', 'tienda', 'admin_tienda', 'admin_general', 'chofer'].includes(role))
 }

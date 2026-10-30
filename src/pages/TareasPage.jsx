@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import RequireRole from '../components/common/RequireRole'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
-import { canViewTareas, canCompletarTareas, canAsignarTareas, ROLE_LABELS } from '../utils/permissions'
-import { fetchTareas, fetchDestinatariosTareas, crearTarea, marcarTarea, quitarTarea } from '../services/tareasService'
+import { canViewTareas, canCompletarTareas, canAsignarTareas, canAnotarTareasPropias, ROLE_LABELS } from '../utils/permissions'
+import { fetchTareas, fetchDestinatariosTareas, crearTarea, crearTareaPropia, marcarTarea, quitarTarea } from '../services/tareasService'
 import { estadoGeneral, estadoParaMi, hoyLocal, meToca, ordenarTareas, textoDestino, vencida } from '../utils/tareas'
 import { formatDate, formatDateTime } from '../utils/dates'
 
@@ -28,6 +28,8 @@ function TareasContent() {
   const userId = user?.id
   const puedeAsignar = canAsignarTareas(role)
   const puedeCompletar = canCompletarTareas(role)
+  const puedeAnotar = canAnotarTareasPropias(role)
+  const [anotando, setAnotando] = useState(false)
 
   const [datos, setDatos] = useState({ tareas: [], completadas: [] })
   const [destinatarios, setDestinatarios] = useState([])
@@ -143,6 +145,25 @@ function TareasContent() {
 
       {enAsignadas && <TareaForm destinatarios={destinatarios} onCreated={cargar} />}
 
+      {/* V171 — cada quien se anota sus tareas (solo las ven él y admin_general). */}
+      {puedeAnotar && !enAsignadas &&
+        (anotando ? (
+          <TareaPropiaForm
+            onCancelar={() => setAnotando(false)}
+            onCreated={() => {
+              setAnotando(false)
+              setVista('pendientes')
+              cargar()
+            }}
+          />
+        ) : (
+          <div>
+            <button type="button" className="btn btn--secondary" onClick={() => setAnotando(true)}>
+              + Anotarme una tarea
+            </button>
+          </div>
+        ))}
+
       <div className="notas-filtros">
         <div className="notas-filtros__grupo">
           <button type="button" className={'chip' + (vista === 'pendientes' ? ' chip--active' : '')} onClick={() => setVista('pendientes')}>
@@ -206,7 +227,12 @@ function TareaCard({ fila, hoy, userId, puedeAsignar, ocupada, onMarcar, onQuita
       <h3 className="tarea-card__titulo">{t.titulo}</h3>
       {t.descripcion && <p className="nota-card__texto">{t.descripcion}</p>}
       <p className="nota-card__meta">
-        Asignada por {t.creado_por_nombre || 'Administración'} · {formatDateTime(t.creado_en)}
+        {!t.propia
+          ? `Asignada por ${t.creado_por_nombre || 'Administración'}`
+          : t.creado_por === userId
+            ? 'Anotada por ti · solo la ven tú y el administrador'
+            : `Se la anotó ${t.creado_por_nombre || 'la persona'} · solo la ven esa persona y tú`}{' '}
+        · {formatDateTime(t.creado_en)}
       </p>
 
       {toca && mio && (
@@ -231,7 +257,7 @@ function TareaCard({ fila, hoy, userId, puedeAsignar, ocupada, onMarcar, onQuita
       )}
 
       {puedeAsignar && general && <Avance tarea={t} general={general} />}
-      {puedeAsignar && (
+      {(puedeAsignar || (t.propia && t.creado_por === userId)) && (
         <div>
           <button type="button" className="btn btn--ghost btn--small" disabled={ocupada} onClick={onQuitar}>
             Quitar tarea
@@ -270,6 +296,59 @@ function Avance({ tarea, general }) {
       {general.faltan.length > 0 && <div>Faltan: {nombres(general.faltan)}</div>}
       {general.total === 0 && <div>Nadie tiene ese rol todavía.</div>}
     </div>
+  )
+}
+
+// V171 — tarea para uno mismo.
+function TareaPropiaForm({ onCreated, onCancelar }) {
+  const [titulo, setTitulo] = useState('')
+  const [descripcion, setDescripcion] = useState('')
+  const [fecha, setFecha] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!titulo.trim()) {
+      setError(new Error('Escribe la tarea.'))
+      return
+    }
+    setSaving(true)
+    setError(null)
+    const { error: err } = await crearTareaPropia({ titulo: titulo.trim(), descripcion: descripcion.trim(), fechaLimite: fecha })
+    setSaving(false)
+    if (err) {
+      setError(err)
+      return
+    }
+    onCreated?.()
+  }
+
+  return (
+    <form className="nota-form" onSubmit={handleSubmit}>
+      <label>
+        Tarea *
+        <input className="input" value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ej. Llamar al proveedor de hilos" autoFocus />
+      </label>
+      <label>
+        Detalles (opcional)
+        <textarea className="input" rows={2} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
+      </label>
+      <label>
+        Fecha límite (opcional)
+        <input className="input" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+      </label>
+      <p className="nota-card__meta">Solo la ven tú y el administrador.</p>
+      {error && <p className="form-error">{error.message}</p>}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button type="submit" className="btn btn--primary" disabled={saving}>
+          {saving ? 'Guardando…' : 'Agregar tarea'}
+        </button>
+        <button type="button" className="btn btn--ghost" disabled={saving} onClick={onCancelar}>
+          Cancelar
+        </button>
+      </div>
+    </form>
   )
 }
 
