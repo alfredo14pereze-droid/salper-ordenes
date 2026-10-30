@@ -5018,3 +5018,106 @@ h4 {
 .buscador-nombre {
   margin: 0 0 12px;
 }
+
+/* ---------- V169 — pantalla del chofer ---------- */
+.chofer-seccion {
+  margin-bottom: 24px;
+}
+.chofer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  padding: 14px 16px;
+  color: inherit;
+  text-decoration: none;
+}
+.chofer-card--alerta {
+  border-color: var(--color-danger);
+}
+.chofer-card--link {
+  cursor: pointer;
+}
+.chofer-card__titulo {
+  font-size: 1.05rem;
+}
+.chofer-card__texto {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--color-muted, #6b6558);
+}
+.chofer-card__fecha {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.chofer-card__fecha--alerta {
+  color: var(--color-danger);
+}
+.chofer-card__tel {
+  align-self: flex-start;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  color: var(--color-good);
+}
+.chofer-card__toggle {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+.chofer-card__accion {
+  align-self: flex-end;
+  min-height: 44px;
+}
+.chofer-piezas {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.chofer-vacio {
+  margin: 0 0 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-good-soft);
+  color: var(--color-good);
+  font-weight: 600;
+}
+.chofer-vacio--neutro {
+  background: none;
+  color: var(--color-muted, #6b6558);
+  padding: 0 0 6px;
+  font-weight: 400;
+}
+/* V169 — la barra mínima con 3 links (chofer) cabe en un celular de 375px. */
+@media (max-width: 480px) {
+  .app-topbar--estacion {
+    gap: 4px;
+  }
+  .estacion-nav {
+    gap: 2px;
+    min-width: 0;
+  }
+  .estacion-nav__link {
+    padding: 8px 8px;
+  }
+  .app-topbar--estacion > .btn--small {
+    padding-inline: 4px;
+    font-size: 12px;
+    line-height: 1.1;
+    max-width: 56px;
+    white-space: normal;
+  }
+}

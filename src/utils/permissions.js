@@ -667,6 +667,7 @@ export const ROLES_ASIGNABLES = [
   'corte', 'bordado', 'sublimado', 'terminado', 'costura', 'admin_fabrica', 'admin_fabrica_lectura',
   'captura_produccion',
   'tienda', 'consulta_tienda', 'lectura',
+  'chofer',
   'admin_general',
 ]
 
@@ -687,7 +688,16 @@ export const ROLE_LABELS = {
   captura_produccion: 'Captura de costura',
   costura: 'Costura',
   consulta_tienda: 'Consulta (Tienda) — solo lectura',
+  chofer: 'Chofer',
 }
+
+// V169 — chofer: su propia pantalla (tareas, órdenes listas para entregar sin
+// precios, pendientes tienda ↔ fábrica). Solo entra a esas rutas; ver
+// AppLayout.jsx y pages/ChoferHomePage.jsx.
+export function esChofer(role) {
+  return role === 'chofer'
+}
+export const RUTAS_CHOFER = ['/', '/tareas', '/pendientes']
 
 // V158 — Notas de tienda. Permisos editables en "Roles y permisos"
 // (nt.ver / nt.escribir / nt.resolver); el fallback reproduce la siembra
@@ -734,13 +744,14 @@ export function canViewSeccionNotas(role) {
 // fallback = siembra de schema_v164_tareas.sql.
 export function canViewTareas(role) {
   return tiene(role, 'ta.ver', () => (
-    ['ventas', 'contabilidad', 'tienda', 'admin_tienda', 'admin_general', 'consulta_tienda', 'lectura'].includes(role)
+    ['ventas', 'contabilidad', 'tienda', 'admin_tienda', 'admin_general', 'consulta_tienda', 'lectura', 'chofer'].includes(role)
   ))
 }
 
 export function canCompletarTareas(role) {
   // V166 — también admin_tienda / admin_general.
-  return tiene(role, 'ta.completar', () => ['ventas', 'contabilidad', 'tienda', 'admin_tienda', 'admin_general'].includes(role))
+  // V169 — y chofer.
+  return tiene(role, 'ta.completar', () => ['ventas', 'contabilidad', 'tienda', 'admin_tienda', 'admin_general', 'chofer'].includes(role))
 }
 
 export function canAsignarTareas(role) {

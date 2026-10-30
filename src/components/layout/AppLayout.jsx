@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { Navigate, NavLink, useLocation } from 'react-router-dom'
 import ErrorBoundary from '../common/ErrorBoundary'
 import Logo from './Logo'
 import ChatWidget from '../chat/ChatWidget'
@@ -31,6 +31,8 @@ import {
   puedeVerComoOtroRol,
   FABRICA_ETAPA_ROLES,
   ROLE_LABELS,
+  esChofer,
+  RUTAS_CHOFER,
 } from '../../utils/permissions'
 import { esRolDeEstacion } from '../../config/vistasPorRol'
 import { PEDIDOS_PROVEEDOR_HABILITADO } from '../../utils/featureFlags'
@@ -66,6 +68,7 @@ const VIEW_AS_ROLES = [
   'tienda',
   'captura_produccion',
   'consulta_tienda',
+  'chofer',
 ]
 
 export default function AppLayout({ children }) {
@@ -111,6 +114,9 @@ export default function AppLayout({ children }) {
   // de verdad. Usa `role` (el efectivo), no `trueRole`, a propósito: así
   // admin_fabrica ve exactamente el mismo shell que vería ese rol.
   const esEstacion = esRolDeEstacion(role)
+  // V169 — chofer: el mismo shell mínimo, con Inicio / Tareas / Pendientes, y
+  // cualquier otra ruta lo regresa a su inicio (ahí no hay precios).
+  const chofer = esChofer(role)
   // V96 — "Ver como" (V53) ya no es exclusivo de admin_general: admin_fabrica
   // también lo tiene, pero solo para probar los 5 roles de etapa (no
   // ventas/contabilidad/etc., eso es dominio de admin_general).
@@ -202,20 +208,25 @@ export default function AppLayout({ children }) {
   // órdenes. El banner de "Ver como" se conserva — es la única forma de
   // que admin_fabrica regrese a su vista completa mientras prueba una
   // estación.
-  if (esEstacion) {
+  if (esEstacion || chofer) {
+    const links = chofer
+      ? [
+          { to: '/', label: 'Inicio', end: true },
+          { to: '/tareas', label: 'Tareas' },
+          { to: '/pendientes', label: 'Pendientes' },
+        ]
+      : [{ to: '/', label: 'Órdenes', end: true }, ...(canViewPendientes(role) ? [{ to: '/pendientes', label: 'Pendientes' }] : [])]
+    const rutaPermitida = !chofer || RUTAS_CHOFER.some((r) => location.pathname === r || (r !== '/' && location.pathname.startsWith(r + '/')))
     return (
       <div className={'app-shell app-shell--estacion' + (useRediseno ? ' design-root' : '')}>
         <div className="app-topbar app-topbar--estacion">
           <Logo />
           <nav className="estacion-nav">
-            <NavLink to="/" end className={({ isActive }) => 'estacion-nav__link' + (isActive ? ' estacion-nav__link--active' : '')}>
-              Órdenes
-            </NavLink>
-            {canViewPendientes(role) && (
-              <NavLink to="/pendientes" className={({ isActive }) => 'estacion-nav__link' + (isActive ? ' estacion-nav__link--active' : '')}>
-                Pendientes
+            {links.map((l) => (
+              <NavLink key={l.to} to={l.to} end={l.end} className={({ isActive }) => 'estacion-nav__link' + (isActive ? ' estacion-nav__link--active' : '')}>
+                {l.label}
               </NavLink>
-            )}
+            ))}
           </nav>
           {user && (
             <button type="button" className="btn btn--ghost btn--small" onClick={signOut}>
@@ -232,7 +243,7 @@ export default function AppLayout({ children }) {
               </button>
             </div>
           )}
-          <ErrorBoundary key={location.pathname}>{children}</ErrorBoundary>
+          <ErrorBoundary key={location.pathname}>{rutaPermitida ? children : <Navigate to="/" replace />}</ErrorBoundary>
         </main>
       </div>
     )

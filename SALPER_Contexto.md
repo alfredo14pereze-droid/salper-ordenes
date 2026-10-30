@@ -7213,3 +7213,16 @@ todos puedan marcar sus tareas").
 - Al abrir Clientes, Telas, Frisa o Proveedores en Catálogos aparece un buscador por nombre; Frisa también busca por código. El contador muestra "N de total".
 - En el catálogo de prendas de un cliente hay un buscador de producto por nombre, que se combina con "Solo pendientes de validar".
 - Ignora mayúsculas, acentos y orden de palabras: `utils/buscarPorNombre.js` (`coincideNombre`) y `components/common/BuscadorNombre.jsx`.
+
+## V169 — Rol nuevo: chofer
+
+**SQL: PENDIENTE de aplicar** (`supabase/schema_v169_rol_chofer.sql`).
+
+- `profiles_role_check` y `admin_update_user_role` aceptan 'chofer'. Permisos sembrados: `ta.ver`, `ta.completar`, `pf.ver`.
+- Edge Function `admin-create-user`: se agregó 'chofer' a `VALID_ROLES`, pero **falta publicarla** (no hay CLI de Supabase aquí). Mientras tanto, crear la cuenta con otro rol y cambiarla a Chofer en Usuarios, que pasa por la función SQL.
+- Pantalla (`pages/ChoferHomePage.jsx`, desde DashboardPage):
+  - Mis tareas pendientes, con botón "✓ Hecha".
+  - Órdenes "Lista para entregar": folio, cliente, equipo, teléfono para llamar, fecha de entrega y piezas por prenda y talla. No muestra precios y no abre el detalle de la orden.
+  - Pendientes en camino: "Llevar a fábrica" (`enviado_a_fabrica`) y "Llevar a tienda" (`enviado_a_tienda`), solo consulta.
+- Barra mínima (shell de estación) con Inicio, Tareas y Pendientes. Cualquier otra ruta regresa a Inicio (`RUTAS_CHOFER` en `permissions.js`, guardia en `AppLayout.jsx`). "Ver como" incluye Chofer para admin_general.
+- Las órdenes se leen con cualquier sesión (RLS `using (true)`), así que esconder los precios es solo de pantalla, igual que para los demás roles.

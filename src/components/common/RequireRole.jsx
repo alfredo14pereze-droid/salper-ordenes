@@ -13,7 +13,8 @@ import { esRolDeEstacion } from '../../config/vistasPorRol'
 // se quedan con el mensaje de siempre.
 // V116 — consulta_tienda (solo lectura de tienda): mismo trato, Dashboard
 // es su única "pantalla de inicio" obvia.
-const ROLES_CON_INICIO_PROPIO = ['captura_produccion', 'tienda', 'consulta_tienda']
+// V169 — chofer también.
+const ROLES_CON_INICIO_PROPIO = ['captura_produccion', 'tienda', 'consulta_tienda', 'chofer']
 
 // Defensa en profundidad: aunque el nav ya oculta los links a los que no
 // tienes acceso, esto evita que alguien entre directo por la URL y vea

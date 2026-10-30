@@ -12,9 +12,10 @@ import PorConfirmarOrders from '../components/orders/PorConfirmarOrders'
 import AnnouncementBanner from '../components/announcements/AnnouncementBanner'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
-import { hasRestrictedNav, isTiendaBasica } from '../utils/permissions'
+import { esChofer, hasRestrictedNav, isTiendaBasica } from '../utils/permissions'
 import { esRolDeEstacion } from '../config/vistasPorRol'
 import EstacionHomePage from './EstacionHomePage'
+import ChoferHomePage from './ChoferHomePage'
 
 const emptyFilters = { types: [], statuses: [], search: '' }
 
@@ -36,6 +37,7 @@ const DASHBOARD_STATUS_GROUPS = STATUS_GROUPS.filter((g) => g.key !== 'completad
 export default function DashboardPage() {
   const { role } = useAuth()
   if (esRolDeEstacion(role)) return <EstacionHomePage />
+  if (esChofer(role)) return <ChoferHomePage />
   return <DashboardContent />
 }
 

@@ -37,6 +37,8 @@ const VALID_ROLES = [
   // V124 — faltaban: crear usuarios nuevos con estos roles daba "Rol inválido".
   'costura',
   'consulta_tienda',
+  // V169 — chofer.
+  'chofer',
 ]
 
 // Orígenes permitidos: el dominio de producción, cualquier preview de
