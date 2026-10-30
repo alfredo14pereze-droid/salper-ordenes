@@ -7243,4 +7243,4 @@ todos puedan marcar sus tareas").
 - `schema_v171_tareas_propias_todos.sql` vuelve a crear todo lo de V170 (permiso, `ta_tareas.propia`, política de lectura, `ta_crear_tarea_propia`, `ta_quitar_tarea`) y da `ta.propias` a todos los roles con `ta.completar` (ventas, contabilidad, tienda, admin_tienda, admin_general, chofer). Se puede correr aunque V170 esté aplicada.
 - Página de Tareas, vista "Mis tareas": botón "+ Anotarme una tarea" con título, detalles y fecha. La tarjeta dice "Anotada por ti" y quien la anotó la puede quitar. En "Asignadas", Alfredo ve las propias de los demás con "Se la anotó X".
 - El chofer conserva el "+ Agregar" en su Inicio.
-- SQL: PENDIENTE de aplicar.
+- SQL: APLICADO (2026-10-30).
