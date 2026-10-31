@@ -7266,7 +7266,7 @@ todos puedan marcar sus tareas").
 - La hoja de operaciones impresa (`HojaOperacionesPrenda`) sale agrupada por parte: encabezado por parte,
   partes en orden de su primer folio y dentro de cada parte por folio (`agruparPorParte` en imprimirOperaciones.js).
 
-## V174 — Operaciones de producción en el PDF de la orden (2026-10-31, SQL PENDIENTE)
+## V174 — Operaciones de producción en el PDF de la orden (2026-10-31, APLICADO)
 - `schema_v174_operaciones_en_orden.sql`: `prendas_con_operaciones()` y `operaciones_para_orden(text[])`,
   security definer, solo operaciones activas y solo para quien tiene rol (ventas no lee prod_operaciones).
 - Cada prenda de la orden (editor general, no bordado/maquila) tiene "Operaciones (hoja para fábrica)":
