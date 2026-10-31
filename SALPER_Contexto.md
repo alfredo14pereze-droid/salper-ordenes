@@ -7251,3 +7251,11 @@ todos puedan marcar sus tareas").
 - `schema_v172_cotizaciones_guardadas.sql`: tabla `cotizaciones_destajo` (copia de las operaciones elegidas en jsonb tomada de `prod_operaciones`, piezas, operadoras, precio por segundo y minutos por día usados). RPC `guardar_cotizacion_destajo` y `borrar_cotizacion_destajo` (marca `eliminada_en`). Solo admin_general y admin_fabrica leen y escriben.
 - `/cotizador` tiene pestañas Cotizar / Guardadas. En Guardadas: buscar por nombre, prenda o nota; detalle recalculado con los números guardados (`cotizarGuardada`); Imprimir hoja (`/produccion/operaciones/imprimir?cotizacion=id`, solo esas operaciones); Volver a cotizar (catálogo de hoy, avisa si faltan operaciones); Borrar.
 - SQL: APLICADO (2026-10-31).
+
+## V173 — Hojas de operaciones impresas (2026-10-31)
+
+- Al tocar "Imprimir" en la hoja de operaciones (por prenda, desde una cotización guardada o desde una hoja ya guardada), se guarda en `hojas_impresas`: prenda, título y copia de las operaciones. Misma prenda + mismo título (sin importar mayúsculas) = la misma hoja: se actualiza la copia, la fecha y `veces`. Si no se puede guardar, igual se imprime.
+- `schema_v173_hojas_impresas.sql`: tabla, `registrar_hoja_impresa`, `quitar_hoja_impresa`. Ver/imprimir: prod.capturar o prod.ver_lectura; quitar: prod.capturar.
+- Lista: botón "Hojas impresas" en el catálogo de operaciones (Admin producción → Operaciones y /produccion/operaciones). Buscar, ver, "Volver a imprimir" (`/produccion/operaciones/imprimir?hoja=id`), "Quitar de la lista".
+- El PDF de "Imprimir…" (modal con columnas) no se guarda: no tiene título.
+- SQL: PENDIENTE de aplicar.

@@ -97,3 +97,10 @@
     break-inside: avoid;
   }
 }
+
+/* V173 — lista de hojas impresas (catálogo de operaciones) */
+.hojas-impresas { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.hojas-impresas__item { display: flex; flex-direction: column; gap: 10px; }
+.hojas-impresas__head { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; font: inherit; color: inherit; }
+.hojas-impresas__acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.hojas-impresas__num { text-align: right !important; white-space: nowrap; }

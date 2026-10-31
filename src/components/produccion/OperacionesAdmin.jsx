@@ -4,7 +4,8 @@ import Modal from '../talleros/Modal'
 import PdfPreviewModal from '../pdf/PdfPreviewModal'
 import { fetchOperacionesTodas, guardarOperacion } from '../../services/produccionService'
 import { useAuth } from '../../contexts/AuthContext'
-import { esFabricaSoloLectura } from '../../utils/permissions'
+import { canCapturarProduccion, esFabricaSoloLectura } from '../../utils/permissions'
+import HojasImpresas from './HojasImpresas'
 import { buildCatalogoOperacionesPdfBlob, catalogoPdfFileName } from '../../utils/generateProduccionPdf'
 import { COLUMNAS_DEFAULT, COLUMNAS_OPCIONALES, operacionesParaImprimir } from '../../utils/imprimirOperaciones'
 import {
@@ -35,6 +36,7 @@ export default function OperacionesAdmin({ consulta = false }) {
   // Palomitas para escoger qué imprimir (se conservan al cambiar el filtro).
   const [marcadas, setMarcadas] = useState(() => new Set())
   const [imprimir, setImprimir] = useState(false)
+  const [verHojas, setVerHojas] = useState(false) // V173
 
   const cargar = useCallback(async () => {
     const { data, error: err } = await fetchOperacionesTodas()
@@ -113,6 +115,9 @@ export default function OperacionesAdmin({ consulta = false }) {
           <button type="button" className="btn btn--secondary btn--small" onClick={() => setImprimir(true)}>
             Imprimir…
           </button>
+          <button type="button" className={'btn btn--small ' + (verHojas ? 'btn--primary' : 'btn--secondary')} aria-pressed={verHojas} onClick={() => setVerHojas((v) => !v)}>
+            {verHojas ? 'Ocultar hojas impresas' : 'Hojas impresas'}
+          </button>
           {!soloLectura && (
             <button type="button" className="btn btn--secondary btn--small" onClick={() => setAlta({ prendaSel: fPrenda || '', prendaNueva: '', folio: '', parte: '', operacion: '', segundos: '' })}>
               + Nueva operación
@@ -121,6 +126,7 @@ export default function OperacionesAdmin({ consulta = false }) {
         </div>
       </div>
       {error && <p className="form-error">{error}</p>}
+      {verHojas && <HojasImpresas puedeQuitar={canCapturarProduccion(role)} />}
       {marcadas.size > 0 && (
         <p className="template-hint">
           {marcadas.size} {marcadas.size === 1 ? 'operación marcada' : 'operaciones marcadas'} para imprimir.{' '}

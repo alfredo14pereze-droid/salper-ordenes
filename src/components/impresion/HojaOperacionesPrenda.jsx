@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchOperacionesDePrenda } from '../../services/produccionService'
+import { registrarHojaImpresa } from '../../services/hojasImpresasService'
 import './impresion.css'
 
 // Hoja informativa para pegar en la línea: folio, operación y tiempo de cada
@@ -13,6 +14,19 @@ export default function HojaOperacionesPrenda({ prenda, volverA, operaciones = n
   const [ops, setOps] = useState(operaciones)
   const [error, setError] = useState(null)
   const [titulo, setTitulo] = useState(tituloInicial || prenda)
+  const [aviso, setAviso] = useState(null)
+  const [registrando, setRegistrando] = useState(false)
+
+  // V173 — al imprimir, la hoja se guarda en "Hojas impresas" (misma prenda y
+  // título = la misma hoja). Si no se puede guardar, igual se imprime.
+  async function imprimir() {
+    setRegistrando(true)
+    setAviso(null)
+    const { error: err } = await registrarHojaImpresa({ prenda, titulo: titulo.trim() || prenda, folios: ops.map((o) => o.folio) })
+    setRegistrando(false)
+    setAviso(err ? { error: true, texto: `No se pudo guardar en «Hojas impresas»: ${err.message}` } : { error: false, texto: '✓ Guardada en «Hojas impresas».' })
+    window.print()
+  }
 
   useEffect(() => {
     if (operaciones) return
@@ -44,10 +58,11 @@ export default function HojaOperacionesPrenda({ prenda, volverA, operaciones = n
           Título de la hoja
           <input className="input" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
         </label>
-        <button type="button" className="btn btn--primary" onClick={() => window.print()} disabled={!ops || ops.length === 0}>
-          Imprimir
+        <button type="button" className="btn btn--primary" onClick={imprimir} disabled={!ops || ops.length === 0 || registrando}>
+          {registrando ? 'Guardando…' : 'Imprimir'}
         </button>
       </div>
+      {aviso && <p className={'hoja-impresion__controles ' + (aviso.error ? 'form-error' : 'nota-leido--ok')}>{aviso.texto}</p>}
 
       <h1 className="hoja-impresion__titulo">{titulo.trim() || prenda}</h1>
       {error && <p className="form-error">{error}</p>}
