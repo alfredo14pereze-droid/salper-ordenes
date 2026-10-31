@@ -29,6 +29,8 @@ import OrderTypeSelect from '../components/orders/OrderTypeSelect'
 import ClienteSelect from '../components/orders/ClienteSelect'
 import PhotoPicker from '../components/orders/PhotoPicker'
 import OrderItemsEditor from '../components/orders/OrderItemsEditor'
+import { usePrendasOperaciones } from '../hooks/usePrendasOperaciones'
+import { fijarPrendasOperaciones } from '../utils/operacionesOrden'
 import MaquilaItemsEditor from '../components/orders/MaquilaItemsEditor'
 import { esOrdenMaquila, etiquetaProcesos, fotosDeProducto, nuevaPrendaMaquila, prendaMaquila, procesosDeLaOrden, productoBorda, validarOrdenMaquila } from '../utils/maquila'
 import FoliosExternosField from '../components/orders/FoliosExternosField'
@@ -201,6 +203,7 @@ function DocumentosPicker({ label, files, onChange }) {
 
 function NewOrderForm() {
   const { profile, role } = useAuth()
+  const prendasOps = usePrendasOperaciones()
   const { orderTypes, loading, error, refresh } = useOrderTypes()
   const { clientes } = useClientes()
   const { telas, refresh: refreshTelas } = useTelas()
@@ -553,7 +556,7 @@ function NewOrderForm() {
           .filter((s) => s.talla.trim() && Number(s.cantidad) > 0)
           .map((s) => ({ talla: s.talla.trim(), cantidad: Number(s.cantidad) })),
       }))
-    const cleanItems = esOrdenBordado(form.orderTypeKey) ? normalizarItemsBordado(cleanItemsBase) : cleanItemsBase
+    const cleanItems = esOrdenBordado(form.orderTypeKey) ? normalizarItemsBordado(cleanItemsBase) : fijarPrendasOperaciones(cleanItemsBase, form.clientName, prendasOps)
 
     // V136 — si el tipo no tiene etapas, la orden nacería sin orden_etapas y
     // no le aparecería a ninguna estación de fábrica: no se guarda. (El

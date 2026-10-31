@@ -262,3 +262,18 @@ export async function fetchOperacionesDePrenda(prenda) {
     .eq('activa', true)
     .order('folio')
 }
+
+// V174 — operaciones en la orden (las puede leer cualquiera con rol, no solo producción).
+export async function fetchPrendasConOperaciones() {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  const { data, error } = await supabase.rpc('prendas_con_operaciones')
+  return { data: data ? data.map((r) => r.prenda) : null, error }
+}
+
+export async function fetchOperacionesParaOrden(prendas) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  if (!prendas || prendas.length === 0) return { data: [], error: null }
+  return supabase.rpc('operaciones_para_orden', { p_prendas: prendas })
+}

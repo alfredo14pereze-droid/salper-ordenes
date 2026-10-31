@@ -7,6 +7,8 @@ import BordadosPrenda from './BordadosPrenda'
 import BordadoItemsEditor from './BordadoItemsEditor'
 import { esOrdenBordado } from '../../utils/bordadoOrden'
 import { FILA_ROSTER_VACIA, filaRosterConDatos } from '../../utils/roster'
+import { usePrendasOperaciones } from '../../hooks/usePrendasOperaciones'
+import { prendaOperacionesDe } from '../../utils/operacionesOrden'
 
 const OTRO_COLOR = '__otro__'
 
@@ -43,6 +45,8 @@ function OrderItemsEditorGeneral({
 }) {
   const needsPantone = ORDER_TYPES_REQUIRING_PANTONE.includes(orderTypeKey)
   const isSublimacion = orderTypeKey === 'sublimacion'
+  // V174 — prenda del catálogo de operaciones: su hoja sale en el PDF interno.
+  const prendasOps = usePrendasOperaciones()
 
   // V43 — "Otro" en Color (solo escolar/industrial, sublimación ya es
   // texto libre desde V39): la lista de colores no siempre alcanza, pero
@@ -260,6 +264,29 @@ function OrderItemsEditorGeneral({
                   />
                 )}
               </label>
+              {prendasOps && prendasOps.length > 0 && (() => {
+                const valor = prendaOperacionesDe(item, clienteNombre, prendasOps)
+                const sugerida = typeof item.prenda_operaciones !== 'string' && valor
+                return (
+                  <label>
+                    Operaciones (hoja para fábrica)
+                    <select
+                      className="input"
+                      value={valor}
+                      onChange={(e) => updateItem(itemIndex, { prenda_operaciones: e.target.value })}
+                    >
+                      <option value="">Sin hoja de operaciones</option>
+                      {prendasOps.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                      {valor && !prendasOps.includes(valor) && <option value={valor}>{valor} (ya no está en el catálogo)</option>}
+                    </select>
+                    {sugerida && <span className="template-hint">Sugerida por la prenda y el cliente. Sale en el PDF interno.</span>}
+                  </label>
+                )
+              })()}
               <label>
                 Color
                 {isSublimacion ? (

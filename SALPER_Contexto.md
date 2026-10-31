@@ -7265,3 +7265,12 @@ todos puedan marcar sus tareas").
   (la del Vasco, 701–788) a la prenda nueva CHAMARRA DOMUS, folios 1601–1688 (4138 s, igual que la original).
 - La hoja de operaciones impresa (`HojaOperacionesPrenda`) sale agrupada por parte: encabezado por parte,
   partes en orden de su primer folio y dentro de cada parte por folio (`agruparPorParte` en imprimirOperaciones.js).
+
+## V174 — Operaciones de producción en el PDF de la orden (2026-10-31, SQL PENDIENTE)
+- `schema_v174_operaciones_en_orden.sql`: `prendas_con_operaciones()` y `operaciones_para_orden(text[])`,
+  security definer, solo operaciones activas y solo para quien tiene rol (ventas no lee prod_operaciones).
+- Cada prenda de la orden (editor general, no bordado/maquila) tiene "Operaciones (hoja para fábrica)":
+  se guarda en `orders.items[].prenda_operaciones` ('' = ninguna). Sin la clave, se sugiere sola si hay
+  UNA prenda del catálogo con la primera palabra de la prenda y una palabra del cliente (Chamarra + Colegio
+  Domus → CHAMARRA DOMUS); `utils/operacionesOrden.js`.
+- PDF interno (no el del cliente): una página por prenda con su hoja de operaciones agrupada por parte.

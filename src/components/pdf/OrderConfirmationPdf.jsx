@@ -313,7 +313,50 @@ function InfoField({ label, value }) {
   )
 }
 
-export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 'interno', history = [], pagos = null, fotos = [], fotosPrendas = {} }) {
+// V174 — hoja de operaciones de una prenda (solo PDF interno): una página
+// aparte por prenda, agrupada por parte, igual que la hoja impresa de la línea.
+const opStyles = StyleSheet.create({
+  titulo: { fontSize: 16, fontFamily: 'Helvetica-Bold', marginBottom: 2 },
+  sub: { fontSize: 9.5, color: '#555', marginBottom: 10 },
+  fila: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#bbb', paddingVertical: 3.5 },
+  cab: { flexDirection: 'row', backgroundColor: '#eee', paddingVertical: 4, borderBottomWidth: 0.8, borderBottomColor: '#999' },
+  parte: { backgroundColor: '#dcdcdc', paddingVertical: 3, paddingHorizontal: 4, marginTop: 6, fontSize: 9.5, fontFamily: 'Helvetica-Bold', letterSpacing: 0.4 },
+  folio: { width: 50, paddingHorizontal: 4, fontSize: 10, fontFamily: 'Helvetica-Bold' },
+  op: { flex: 1, paddingHorizontal: 4, fontSize: 10 },
+  seg: { width: 70, paddingHorizontal: 4, fontSize: 10, textAlign: 'right' },
+  cabTxt: { fontSize: 9, fontFamily: 'Helvetica-Bold' },
+})
+
+function HojaOperaciones({ order, hoja }) {
+  return (
+    <Page size="LETTER" style={styles.page}>
+      <Text style={opStyles.titulo}>Operaciones · {hoja.prenda}</Text>
+      <Text style={opStyles.sub}>
+        Orden {order.order_number} · {order.client_name} · {hoja.garment || 'Prenda'}
+        {hoja.piezas ? ` · ${hoja.piezas} pieza(s)` : ''}
+      </Text>
+      <View style={opStyles.cab}>
+        <Text style={[opStyles.folio, opStyles.cabTxt]}>Folio</Text>
+        <Text style={[opStyles.op, opStyles.cabTxt]}>Operación</Text>
+        <Text style={[opStyles.seg, opStyles.cabTxt]}>Tiempo (seg)</Text>
+      </View>
+      {hoja.grupos.map((g) => (
+        <View key={g.parte}>
+          <Text style={opStyles.parte} minPresenceAhead={30}>{g.parte}</Text>
+          {g.operaciones.map((o) => (
+            <View key={o.folio} style={opStyles.fila} wrap={false}>
+              <Text style={opStyles.folio}>{o.folio}</Text>
+              <Text style={opStyles.op}>{o.operacion}</Text>
+              <Text style={opStyles.seg}>{Number(o.segundos).toLocaleString('es-MX', { maximumFractionDigits: 2 })}</Text>
+            </View>
+          ))}
+        </View>
+      ))}
+    </Page>
+  )
+}
+
+export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 'interno', history = [], pagos = null, fotos = [], fotosPrendas = {}, hojasOperaciones = [] }) {
   const isInternal = variant === 'interno'
   const items = order.items || []
   const grandTotal = items.reduce(
@@ -472,6 +515,7 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 
 
         {pending && <Text style={styles.footnote}>Orden sujeta a confirmación de fábrica</Text>}
       </Page>
+      {isInternal && hojasOperaciones.map((h, i) => <HojaOperaciones key={i} order={order} hoja={h} />)}
     </Document>
   )
 }

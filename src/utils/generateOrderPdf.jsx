@@ -3,6 +3,8 @@ import OrderConfirmationPdf from '../components/pdf/OrderConfirmationPdf'
 import RemisionPdf from '../components/pdf/RemisionPdf'
 import { fetchOrdenTotales } from '../services/finanzasService'
 import { marcasDePrenda, resumenPagosPdf } from './pagosPdf'
+import { fetchOperacionesParaOrden, fetchPrendasConOperaciones } from '../services/produccionService'
+import { armarHojasOperaciones, prendaOperacionesDe } from './operacionesOrden'
 
 // Genera el blob del PDF de confirmación de una orden (sin descargarlo —
 // ver PdfPreviewModal.jsx, que se encarga de mostrarlo y de la descarga
@@ -14,7 +16,11 @@ import { marcasDePrenda, resumenPagosPdf } from './pagosPdf'
 // la sección "Total y anticipo"; sin él, el PDF sale sin dinero. Las fotos de
 // referencia de la orden se incluyen solas (ver prepararFotosParaPdf).
 export async function buildOrderConfirmationPdfBlob(order, { orderTypeLabel, variant = 'interno', history = [], pagos = null } = {}) {
-  const [fotos, fotosPrendas] = await Promise.all([prepararFotosParaPdf(order), prepararFotosDePrendasParaPdf(order)])
+  const [fotos, fotosPrendas, hojasOperaciones] = await Promise.all([
+    prepararFotosParaPdf(order),
+    prepararFotosDePrendasParaPdf(order),
+    variant === 'interno' ? prepararHojasOperaciones(order) : [],
+  ])
   return pdf(
     <OrderConfirmationPdf
       order={order}
@@ -24,8 +30,28 @@ export async function buildOrderConfirmationPdfBlob(order, { orderTypeLabel, var
       pagos={pagos}
       fotos={fotos}
       fotosPrendas={fotosPrendas}
+      hojasOperaciones={hojasOperaciones}
     />
   ).toBlob()
+}
+
+// V174 — hojas de operaciones de las prendas de la orden (solo PDF interno).
+// Si algo falla (p. ej. la función de la base aún no existe), el PDF sale sin ellas.
+async function prepararHojasOperaciones(order) {
+  try {
+    const items = order.items || []
+    if (items.length === 0) return []
+    const { data: prendas, error: e1 } = await fetchPrendasConOperaciones()
+    if (e1 || !prendas) return []
+    const usadas = [...new Set(items.map((it) => prendaOperacionesDe(it, order.client_name, prendas)).filter(Boolean))]
+    if (usadas.length === 0) return []
+    const { data: ops, error: e2 } = await fetchOperacionesParaOrden(usadas)
+    if (e2) return []
+    return armarHojasOperaciones(items, order.client_name, prendas, ops)
+  } catch (err) {
+    console.error('No se pudieron agregar las operaciones al PDF:', err)
+    return []
+  }
 }
 
 // Fotos de referencia de la orden, listas para el PDF. El PDF solo acepta

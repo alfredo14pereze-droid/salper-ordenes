@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useLineasMostrador } from '../../hooks/useLineasMostrador'
 import { esLineaMostrador } from '../../utils/preciosLineas'
 import OrderItemsEditor from './OrderItemsEditor'
+import { usePrendasOperaciones } from '../../hooks/usePrendasOperaciones'
+import { fijarPrendasOperaciones } from '../../utils/operacionesOrden'
 import MaquilaItemsEditor from './MaquilaItemsEditor'
 import { esOrdenMaquila } from '../../utils/maquila'
 import { esOrdenFrisa } from '../../utils/frisa'
@@ -186,6 +188,7 @@ function ItemSummary({ item, index, mostrador }) {
 export default function OrderItemsCard({ order, onUpdated }) {
   const { role } = useAuth()
   const mostrador = useLineasMostrador(order.id)
+  const prendasOps = usePrendasOperaciones()
   const editable = canEditOrder(role, order)
   const [editing, setEditing] = useState(false)
   const [items, setItems] = useState(() => buildInitialItems(order))
@@ -239,7 +242,7 @@ export default function OrderItemsCard({ order, onUpdated }) {
           .filter((s) => String(s.talla).trim() && Number(s.cantidad) > 0)
           .map((s) => ({ talla: String(s.talla).trim(), cantidad: Number(s.cantidad) })),
       }))
-    const cleanItems = esOrdenBordado(order.order_type_key) ? normalizarItemsBordado(cleanItemsBase) : cleanItemsBase
+    const cleanItems = esOrdenBordado(order.order_type_key) ? normalizarItemsBordado(cleanItemsBase) : fijarPrendasOperaciones(cleanItemsBase, order.client_name, prendasOps)
 
     const { error: saveError } = await setOrderItems(order.id, cleanItems)
     setSaving(false)
