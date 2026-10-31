@@ -119,7 +119,10 @@ export default function OperacionesAdmin({ consulta = false }) {
             {verHojas ? 'Ocultar hojas impresas' : 'Hojas impresas'}
           </button>
           {!soloLectura && (
-            <button type="button" className="btn btn--secondary btn--small" onClick={() => setAlta({ prendaSel: fPrenda || '', prendaNueva: '', folio: '', parte: '', operacion: '', segundos: '' })}>
+            <button type="button" className="btn btn--secondary btn--small" onClick={() =>
+                // Si ya hay prenda filtrada, el folio sugerido sale desde el inicio.
+                setAlta({ prendaSel: fPrenda || '', prendaNueva: '', folio: fPrenda ? String(sugerirFolioPrendaExistente(ops, fPrenda)?.folio ?? '') : '', parte: '', operacion: '', segundos: '' })
+              }>
               + Nueva operación
             </button>
           )}
