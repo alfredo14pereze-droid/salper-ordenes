@@ -7259,3 +7259,9 @@ todos puedan marcar sus tareas").
 - Lista: botón "Hojas impresas" en el catálogo de operaciones (Admin producción → Operaciones y /produccion/operaciones). Buscar, ver, "Volver a imprimir" (`/produccion/operaciones/imprimir?hoja=id`), "Quitar de la lista".
 - El PDF de "Imprimir…" (modal con columnas) no se guarda: no tiene título.
 - SQL: APLICADO (2026-10-31).
+
+## 2026-10-31 — Chamarra Domus + hoja de operaciones por parte (APLICADO)
+- `supabase/datos_2026-10-31_chamarra_domus.sql`: copia las 88 operaciones activas de CHAMARRA ESCOLAR
+  (la del Vasco, 701–788) a la prenda nueva CHAMARRA DOMUS, folios 1601–1688 (4138 s, igual que la original).
+- La hoja de operaciones impresa (`HojaOperacionesPrenda`) sale agrupada por parte: encabezado por parte,
+  partes en orden de su primer folio y dentro de cada parte por folio (`agruparPorParte` en imprimirOperaciones.js).
