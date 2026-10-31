@@ -1,7 +1,7 @@
 // node --test src/components/cotizador/calculos.test.js
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { agruparPorParte, cotizar, validarOperadoras, validarPiezas } from './calculos.js'
+import { agruparPorParte, cotizar, validarOperadoras, validarPiezas, cotizarGuardada, foliosVigentes } from './calculos.js'
 
 const cerca = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} ≠ ${b}`)
 const ops = [
@@ -72,4 +72,23 @@ test('validaciones', () => {
   assert.ok(validarOperadoras('61'))
   assert.ok(validarOperadoras('0'))
   assert.ok(validarOperadoras('1.5'))
+})
+
+test('cotización guardada se recalcula con sus propios números', () => {
+  const c = {
+    prenda: 'CAMISA', piezas: 100, operadoras: 2, costo_por_segundo: '0.05', minutos_dia: '100',
+    operaciones: [{ folio: 2, parte: 'P', operacion: 'B', segundos: '30' }, { folio: 1, parte: 'P', operacion: 'A', segundos: '30' }],
+  }
+  const r = cotizarGuardada(c)
+  assert.equal(r.totales.segundosPorPieza, 60)
+  assert.equal(r.totales.costoUnitario, 3)
+  assert.equal(r.totales.costoTotalLote, 300)
+  assert.equal(r.totales.diasProduccion, 0.5) // 100 min / (2 × 100)
+  assert.deepEqual(r.filas.map((f) => f.folio), [1, 2])
+})
+
+test('volver a cotizar: solo los folios que siguen activos en esa prenda', () => {
+  const c = { prenda: 'CAMISA', operaciones: [{ folio: 1 }, { folio: 2 }, { folio: 3 }] }
+  const activas = [{ folio: 1, prenda: 'CAMISA' }, { folio: 3, prenda: 'PANTALON' }]
+  assert.deepEqual(foliosVigentes(c, activas), { vigentes: [1], faltan: 2 })
 })

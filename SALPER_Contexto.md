@@ -7244,3 +7244,10 @@ todos puedan marcar sus tareas").
 - Página de Tareas, vista "Mis tareas": botón "+ Anotarme una tarea" con título, detalles y fecha. La tarjeta dice "Anotada por ti" y quien la anotó la puede quitar. En "Asignadas", Alfredo ve las propias de los demás con "Se la anotó X".
 - El chofer conserva el "+ Agregar" en su Inicio.
 - SQL: APLICADO (2026-10-30).
+
+## V172 — Cotizaciones de destajo guardadas (2026-10-31)
+
+- Antes el Cotizador no guardaba nada. Ahora, en el paso 5, se guarda con nombre y nota opcional.
+- `schema_v172_cotizaciones_guardadas.sql`: tabla `cotizaciones_destajo` (copia de las operaciones elegidas en jsonb tomada de `prod_operaciones`, piezas, operadoras, precio por segundo y minutos por día usados). RPC `guardar_cotizacion_destajo` y `borrar_cotizacion_destajo` (marca `eliminada_en`). Solo admin_general y admin_fabrica leen y escriben.
+- `/cotizador` tiene pestañas Cotizar / Guardadas. En Guardadas: buscar por nombre, prenda o nota; detalle recalculado con los números guardados (`cotizarGuardada`); Imprimir hoja (`/produccion/operaciones/imprimir?cotizacion=id`, solo esas operaciones); Volver a cotizar (catálogo de hoy, avisa si faltan operaciones); Borrar.
+- SQL: PENDIENTE de aplicar.

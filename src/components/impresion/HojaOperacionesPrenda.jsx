@@ -7,12 +7,15 @@ import './impresion.css'
 // operación ACTIVA de una prenda. Sin precios, costos, totales ni casillas.
 // El título se puede cambiar antes de imprimir (arranca con el nombre de la
 // prenda). Al imprimir solo sale la hoja (ver impresion.css).
-export default function HojaOperacionesPrenda({ prenda, volverA }) {
-  const [ops, setOps] = useState(null)
+// V172 — con `operaciones` (las de una cotización guardada) imprime esas y no
+// las del catálogo; `tituloInicial` cambia el título con el que arranca.
+export default function HojaOperacionesPrenda({ prenda, volverA, operaciones = null, tituloInicial = null }) {
+  const [ops, setOps] = useState(operaciones)
   const [error, setError] = useState(null)
-  const [titulo, setTitulo] = useState(prenda)
+  const [titulo, setTitulo] = useState(tituloInicial || prenda)
 
   useEffect(() => {
+    if (operaciones) return
     setTitulo(prenda)
     let vivo = true
     fetchOperacionesDePrenda(prenda).then(({ data, error: err }) => {
@@ -23,7 +26,7 @@ export default function HojaOperacionesPrenda({ prenda, volverA }) {
     return () => {
       vivo = false
     }
-  }, [prenda])
+  }, [prenda, operaciones])
 
   // Mientras esta hoja está abierta, la impresión oculta todo lo demás de la app.
   useEffect(() => {

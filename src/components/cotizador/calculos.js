@@ -79,3 +79,21 @@ export function cotizar(seleccionadas, piezas, operadoras, { costoPorSegundo = C
     conAviso: filas.filter((f) => f.aviso).length,
   }
 }
+
+// V172 — una cotización guardada, recalculada con SUS números (los segundos,
+// el precio por segundo y los minutos por día de ese día).
+export function cotizarGuardada(c) {
+  return cotizar(c.operaciones || [], String(c.piezas), String(c.operadoras), {
+    costoPorSegundo: Number(c.costo_por_segundo),
+    minutosDia: Number(c.minutos_dia),
+  })
+}
+
+// Para "Volver a cotizar": qué folios de la guardada siguen activos hoy en el
+// catálogo de esa prenda y cuántos ya no están.
+export function foliosVigentes(c, opsActivas) {
+  const hoy = new Set(opsActivas.filter((o) => o.prenda === c.prenda).map((o) => o.folio))
+  const folios = (c.operaciones || []).map((o) => o.folio)
+  const vigentes = folios.filter((f) => hoy.has(f))
+  return { vigentes, faltan: folios.length - vigentes.length }
+}
