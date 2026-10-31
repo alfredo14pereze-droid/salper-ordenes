@@ -7258,4 +7258,4 @@ todos puedan marcar sus tareas").
 - `schema_v173_hojas_impresas.sql`: tabla, `registrar_hoja_impresa`, `quitar_hoja_impresa`. Ver/imprimir: prod.capturar o prod.ver_lectura; quitar: prod.capturar.
 - Lista: botón "Hojas impresas" en el catálogo de operaciones (Admin producción → Operaciones y /produccion/operaciones). Buscar, ver, "Volver a imprimir" (`/produccion/operaciones/imprimir?hoja=id`), "Quitar de la lista".
 - El PDF de "Imprimir…" (modal con columnas) no se guarda: no tiene título.
-- SQL: PENDIENTE de aplicar.
+- SQL: APLICADO (2026-10-31).
