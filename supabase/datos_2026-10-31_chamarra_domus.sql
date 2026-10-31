@@ -10,7 +10,7 @@
 -- en el mismo orden que los folios del Vasco. Un folio nunca se reutiliza.
 --
 -- Solo datos: no cambia tablas ni funciones.
--- Seguro: si no encuentra exactamente UNA chamarra del Vasco, o si ya hay una
+-- Seguro: si no encuentra CHAMARRA ESCOLAR (la del Vasco), o si ya hay una
 -- chamarra de Domus en el catálogo, no carga nada y dice por qué.
 --
 -- Rollback (solo si todavía no se ha capturado producción con esos folios):
@@ -20,19 +20,14 @@ do $$
 declare
   v_origen  text;
   v_nombres text;
-  v_n       integer;
   v_ops     integer;
-  v_c       integer := 0;
+  v_c       integer := 1;  -- nunca folios 1–99
   v_destino constant text := 'CHAMARRA DOMUS';
 begin
-  select count(distinct prenda), min(prenda), string_agg(distinct prenda, ', ')
-    into v_n, v_origen, v_nombres
-    from public.prod_operaciones
-   where prenda ilike '%chamarra%' and prenda ilike '%vasco%';
-  if v_n = 0 then
-    raise exception 'No encuentro ninguna chamarra del Vasco en el catálogo. No se cargó nada.';
-  elsif v_n > 1 then
-    raise exception 'Hay varias chamarras del Vasco (%). No se cargó nada.', v_nombres;
+  -- La chamarra del Vasco está en el catálogo como CHAMARRA ESCOLAR (701–788).
+  v_origen := 'CHAMARRA ESCOLAR';
+  if not exists (select 1 from public.prod_operaciones where prenda = v_origen) then
+    raise exception 'No encuentro % en el catálogo. No se cargó nada.', v_origen;
   end if;
 
   select string_agg(distinct prenda, ', ') into v_nombres
@@ -66,6 +61,6 @@ end $$;
 -- Verificación (solo lectura): debe salir la misma cantidad y los mismos segundos.
 select prenda, count(*) as operaciones, sum(segundos) as segundos, min(folio) as primer_folio, max(folio) as ultimo_folio
   from public.prod_operaciones
- where activa and prenda ilike '%chamarra%' and (prenda ilike '%vasco%' or prenda ilike '%domus%')
+ where activa and prenda ilike '%chamarra%' and (prenda = 'CHAMARRA ESCOLAR' or prenda ilike '%domus%')
  group by prenda
  order by prenda;
