@@ -26,3 +26,17 @@ export function agruparPorPrenda(ops) {
   }
   return [...grupos.entries()].map(([prenda, operaciones]) => ({ prenda, operaciones }))
 }
+
+// Hoja de operaciones de una prenda: agrupada por parte. Las partes salen en el
+// orden de su primer folio (el orden en que se arma la prenda) y dentro de
+// cada parte, por folio. Sin parte → "SIN PARTE".
+export function agruparPorParte(ops) {
+  const grupos = new Map()
+  for (const o of [...ops].sort((a, b) => a.folio - b.folio)) {
+    const parte = (o.parte || '').trim() || 'SIN PARTE'
+    const clave = parte.toUpperCase()
+    if (!grupos.has(clave)) grupos.set(clave, { parte, operaciones: [] })
+    grupos.get(clave).operaciones.push(o)
+  }
+  return [...grupos.values()]
+}

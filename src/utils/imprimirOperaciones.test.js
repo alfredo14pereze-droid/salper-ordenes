@@ -1,7 +1,7 @@
 // node --test src/utils/imprimirOperaciones.test.js
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { agruparPorPrenda, operacionesParaImprimir } from './imprimirOperaciones.js'
+import { agruparPorParte, agruparPorPrenda, operacionesParaImprimir } from './imprimirOperaciones.js'
 
 const ops = [
   { folio: 1312, prenda: 'OVEROL', parte: 'FRENTES', activa: true },
@@ -22,4 +22,19 @@ test('qué operaciones se imprimen', () => {
 test('una prenda por hoja', () => {
   const g = agruparPorPrenda(operacionesParaImprimir(ops, { modo: 'todas', incluirInactivas: true }))
   assert.deepEqual(g.map((x) => [x.prenda, x.operaciones.length]), [['CAMISA', 2], ['OVEROL', 2]])
+})
+
+test('hoja de una prenda agrupada por parte', () => {
+  const g = agruparPorParte([
+    { folio: 1005, parte: 'MANGA' },
+    { folio: 1001, parte: 'CUELLO' },
+    { folio: 1009, parte: 'cuello ' },
+    { folio: 1003, parte: 'MANGA' },
+    { folio: 1010, parte: '' },
+  ])
+  assert.deepEqual(g.map((x) => [x.parte, x.operaciones.map((o) => o.folio)]), [
+    ['CUELLO', [1001, 1009]],
+    ['MANGA', [1003, 1005]],
+    ['SIN PARTE', [1010]],
+  ])
 })

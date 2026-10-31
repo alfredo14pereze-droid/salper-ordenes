@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchOperacionesDePrenda } from '../../services/produccionService'
 import { registrarHojaImpresa } from '../../services/hojasImpresasService'
+import { agruparPorParte } from '../../utils/imprimirOperaciones'
 import './impresion.css'
 
 // Hoja informativa para pegar en la línea: folio, operación y tiempo de cada
 // operación ACTIVA de una prenda. Sin precios, costos, totales ni casillas.
 // El título se puede cambiar antes de imprimir (arranca con el nombre de la
 // prenda). Al imprimir solo sale la hoja (ver impresion.css).
+// Agrupada por parte (cuello, manga…), cada parte en orden de folio.
 // V172 — con `operaciones` (las de una cotización guardada) imprime esas y no
 // las del catálogo; `tituloInicial` cambia el título con el que arranca.
 export default function HojaOperacionesPrenda({ prenda, volverA, operaciones = null, tituloInicial = null }) {
@@ -77,15 +79,20 @@ export default function HojaOperacionesPrenda({ prenda, volverA, operaciones = n
               <th className="hoja-impresion__num">Tiempo (seg)</th>
             </tr>
           </thead>
-          <tbody>
-            {ops.map((o) => (
-              <tr key={o.folio}>
-                <td className="hoja-impresion__folio">{o.folio}</td>
-                <td>{o.operacion}</td>
-                <td className="hoja-impresion__num">{Number(o.segundos).toLocaleString('es-MX', { maximumFractionDigits: 2 })}</td>
+          {agruparPorParte(ops).map((g) => (
+            <tbody key={g.parte}>
+              <tr className="hoja-impresion__parte">
+                <th colSpan={3}>{g.parte}</th>
               </tr>
-            ))}
-          </tbody>
+              {g.operaciones.map((o) => (
+                <tr key={o.folio}>
+                  <td className="hoja-impresion__folio">{o.folio}</td>
+                  <td>{o.operacion}</td>
+                  <td className="hoja-impresion__num">{Number(o.segundos).toLocaleString('es-MX', { maximumFractionDigits: 2 })}</td>
+                </tr>
+              ))}
+            </tbody>
+          ))}
         </table>
       )}
     </div>

@@ -38,6 +38,15 @@
 .hoja-impresion__tabla th {
   background: #f0f0f0;
 }
+.hoja-impresion__tabla .hoja-impresion__parte th {
+  background: #e2e2e2;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.hoja-impresion__tabla tbody {
+  break-inside: avoid-page;
+}
 .hoja-impresion__folio {
   width: 80px;
   font-weight: 700;
