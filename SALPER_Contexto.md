@@ -7280,7 +7280,7 @@ todos puedan marcar sus tareas").
   libres), su hoja impresa y la liga en órdenes. CHAMARRA ESCOLAR intacta. V174 (operaciones en la orden y en
   el PDF interno) y la hoja por parte se quedan.
 
-## V175 — Título al imprimir en Admin producción + hojas guardadas en la orden (2026-11-01, SQL PENDIENTE)
+## V175 — Título al imprimir en Admin producción + hojas guardadas en la orden (2026-11-01, APLICADO)
 - "Imprimir…" del catálogo de operaciones: si todas las operaciones son de una prenda, pide "Título de la
   hoja" (arranca con la prenda). Al ver el PDF se guarda en «Hojas impresas» (registrar_hoja_impresa) y el PDF
   sale con ese título.
