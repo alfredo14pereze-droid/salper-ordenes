@@ -5,7 +5,8 @@ import { formatMxn } from '../../services/finanzasService'
 // `resumen` sale de resumenPago() (utils/preciosLineas.js). Si todas las
 // líneas son de venta de mostrador no hay nada que cobrar y el anticipo no
 // aplica.
-export default function ResumenPagoAlta({ resumen, anticipo, onAnticipo, obligatorio = true }) {
+// V176 — `sinAnticipo`: la orden va en un pedido; el anticipo es del pedido.
+export default function ResumenPagoAlta({ resumen, anticipo, onAnticipo, obligatorio = true, sinAnticipo = false }) {
   const { monto, metodo, recibidoPor, notas } = anticipo
   const set = (patch) => onAnticipo({ ...anticipo, ...patch })
 
@@ -16,7 +17,7 @@ export default function ResumenPagoAlta({ resumen, anticipo, onAnticipo, obligat
           <span>Total</span>
           <span>{formatMxn(resumen.total)}</span>
         </div>
-        {resumen.hayCobro && (
+        {resumen.hayCobro && !sinAnticipo && (
           <>
             <div className="totales-box__row">
               <span>Anticipo</span>
@@ -46,7 +47,9 @@ export default function ResumenPagoAlta({ resumen, anticipo, onAnticipo, obligat
         </p>
       )}
 
-      {resumen.hayCobro ? (
+      {sinAnticipo ? (
+        <p className="pantone-hint">El anticipo y los abonos se registran en el pedido.</p>
+      ) : resumen.hayCobro ? (
         <div className="resumen-pago-alta__anticipo">
           <span className="field-label" style={{ display: 'block', margin: '14px 0 6px' }}>
             Anticipo

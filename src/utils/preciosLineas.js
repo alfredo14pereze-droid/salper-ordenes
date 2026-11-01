@@ -111,17 +111,19 @@ export function mensajeFaltanPrecios(filas, tipo) {
   if (!tipoLlevaPrecio(tipo)) return null
   const sin = filasSinPrecio(filas)
   if (sin.length === 0) return null
-  return `Falta precio unitario en: ${sin.map((f) => `${f.prenda} ${f.talla}`).join(', ')}. Captúralo o márcala como venta de mostrador.`
+  return `Falta precio unitario en: ${sin.map((f) => `${f.prenda} ${f.talla}`).join(', ')}. Captúralo o marca la orden como venta de mostrador.`
 }
 
 // Líneas para create_order_con_lineas: `items` son las prendas YA filtradas
 // (en el mismo orden en que se mandan a la base); los índices de talla se
 // cuentan solo entre las tallas que se guardan.
-export function lineasParaGuardar(items) {
+// Fase 1A — `ventaMostrador` es de toda la orden: si es true, TODAS las líneas
+// se guardan como de mostrador (la base sigue teniendo la bandera por línea).
+export function lineasParaGuardar(items, { ventaMostrador = false } = {}) {
   const lineas = []
   ;(items || []).forEach((item, itemIndex) => {
     ;(item?.sizes || []).filter(tallaSeGuarda).forEach((size, sizeIndex) => {
-      const mostrador = !!size.venta_mostrador
+      const mostrador = ventaMostrador || !!size.venta_mostrador
       const precio = precioNumero(size.precio_unitario)
       lineas.push({
         item_index: itemIndex,
@@ -158,6 +160,28 @@ export function lineasDeFilas(filas) {
 // se marca, borra el precio (no se pide).
 export function marcarMostrador(size, valor) {
   return valor ? { ...size, venta_mostrador: true, precio_unitario: '' } : { ...size, venta_mostrador: false }
+}
+
+// Fase 1A — una orden es "de mostrador" cuando tiene líneas y TODAS son de
+// mostrador. (Las de V159 con solo algunas tallas de mostrador quedan como
+// orden normal; esas tallas conservan su marca.)
+export function esOrdenMostrador(filas) {
+  return (filas || []).length > 0 && filas.every((f) => !!(f.ventaMostrador ?? f.venta_mostrador))
+}
+
+// Lo mismo desde una orden guardada (orders.items) y el conjunto de claves de
+// líneas de mostrador (useLineasMostrador), para quien no ve precios.
+export function ordenEsMostradorPorClaves(items, claves) {
+  if (!claves) return false
+  let hay = false
+  for (const [i, item] of (items || []).entries()) {
+    for (const [j, s] of (item?.sizes || []).entries()) {
+      if (!(Number(s?.cantidad) > 0)) continue
+      hay = true
+      if (!claves.has(`${i}:${j}`)) return false
+    }
+  }
+  return hay
 }
 
 // Conjunto "itemIndex:sizeIndex" de líneas de mostrador (para las etiquetas).

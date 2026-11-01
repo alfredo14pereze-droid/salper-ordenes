@@ -29,6 +29,8 @@ import TallerosPage from './pages/TallerosPage'
 import NotasTiendaPage from './pages/NotasTiendaPage'
 import TareasPage from './pages/TareasPage'
 import EntregaMasivaPage from './pages/EntregaMasivaPage'
+import PedidosPage from './pages/PedidosPage'
+import PedidoPage from './pages/PedidoPage'
 import ProduccionCapturaPage from './pages/ProduccionCapturaPage'
 import ProduccionRevisionPage from './pages/ProduccionRevisionPage'
 import ProduccionDashboardPage from './pages/ProduccionDashboardPage'
@@ -111,6 +113,9 @@ function AuthGate() {
           <Route path="/notas-tienda" element={<NotasTiendaPage />} />
           <Route path="/tareas" element={<TareasPage />} />
           <Route path="/entregas" element={<EntregaMasivaPage />} />
+          {/* V176 — pedidos: varias órdenes con un anticipo, abonos y factura. */}
+          <Route path="/pedidos" element={<PedidosPage />} />
+          <Route path="/pedido/:id" element={<PedidoPage />} />
           <Route path="/pendientes/:id" element={<PendienteDetailPage />} />
           <Route path="/usuarios" element={<UsersPage />} />
           <Route path="/roles-permisos" element={<RolesPermisosPage />} />

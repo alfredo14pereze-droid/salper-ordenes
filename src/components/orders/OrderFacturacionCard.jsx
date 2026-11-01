@@ -17,8 +17,11 @@ import PdfPreviewModal from '../pdf/PdfPreviewModal'
 import { buildEntregaPdfBlob, entregaPdfFileName } from '../../utils/generateEntregaPdf'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditFinanzas } from '../../utils/permissions'
-import { filasDeRenglones, lineasDeFilas, resumenPago } from '../../utils/preciosLineas'
-import PreciosLineasEditor from './PreciosLineasEditor'
+import { esOrdenMostrador, filasDeRenglones, lineasDeFilas, resumenPago } from '../../utils/preciosLineas'
+import { claveTalla, estadoDesdePrecios, precioDeTalla } from '../../utils/preciosPrenda'
+import PreciosPrendaEditor from './PreciosPrendaEditor'
+import VentaMostradorToggle from './VentaMostradorToggle'
+import { usePedidoDeOrden } from '../../hooks/usePedidoDeOrden'
 import { refrescarLineasMostrador } from '../../hooks/useLineasMostrador'
 
 // V144 — datos fiscales capturados a mano (orden de un cliente no registrado).
@@ -32,13 +35,58 @@ const FISCAL_OBLIGATORIOS = ['razon_social', 'rfc', 'regimen_fiscal', 'cp_fiscal
 // (subtotal, IVA, total, saldo y qué falta) los calcula Supabase
 // (orden_totales); aquí solo se capturan y se muestran. Solo lo montan los
 // roles que pueden ver dinero (ver OrderDetailPage).
+//
+// Fase 1A/1B — "Venta de mostrador" es de toda la orden (interruptor arriba;
+// al guardar, todas las líneas quedan de mostrador y sin factura) y el precio
+// se captura por prenda ("Mismo precio" / "Precios por talla"). Se sigue
+// guardando un precio por línea con set_orden_lineas, igual que en V159.
+
+// Prendas para el editor a partir de las filas (una por talla con piezas).
+// Las tallas marcadas antes como mostrador (V159, por línea) no llevan precio.
+function prendasDeFilas(filas) {
+  const porPrenda = new Map()
+  for (const f of filas) {
+    if (!porPrenda.has(f.itemIndex)) {
+      porPrenda.set(f.itemIndex, { key: f.itemIndex, nombre: f.prenda, extrasPorPieza: f.extrasPorPieza, tallas: [], mostradorPrevio: [] })
+    }
+    const p = porPrenda.get(f.itemIndex)
+    const t = claveTalla(f.talla)
+    if (f.ventaMostrador) {
+      if (!p.mostradorPrevio.includes(t)) p.mostradorPrevio.push(t)
+      continue
+    }
+    const ya = p.tallas.find((x) => x.talla === t)
+    if (ya) ya.cantidad += f.cantidad
+    else p.tallas.push({ talla: t, cantidad: f.cantidad })
+  }
+  return [...porPrenda.values()]
+}
+
+function estadosDeFilas(filas) {
+  const out = {}
+  for (const p of prendasDeFilas(filas)) {
+    const precios = filas
+      .filter((f) => f.itemIndex === p.key && !f.ventaMostrador)
+      .map((f) => ({ talla: f.talla, precio: f.precioTexto }))
+    out[p.key] = estadoDesdePrecios(precios)
+  }
+  return out
+}
+
 export default function OrderFacturacionCard({ order, onUpdated }) {
   const { role } = useAuth()
+  // V176 — en un pedido, la factura es del pedido; si el pedido es de
+  // mostrador, la orden también (no se puede apagar aquí).
+  const pedido = usePedidoDeOrden(order)
+  const enPedido = !!order.pedido_id
+  const mostradorPorPedido = !!pedido?.es_mostrador
   const readOnly =
     !canEditFinanzas(role) || order.status === 'completado' || !!order.eliminada_en || !!order.cancelled_at
 
   // Una fila por talla con piezas (item_index/size_index de order.items).
   const [filas, setFilas] = useState([])
+  const [estados, setEstados] = useState({})
+  const [ventaMostrador, setVentaMostrador] = useState(false)
   const [requiere, setRequiere] = useState(false)
   const [incluyeIva, setIncluyeIva] = useState(true)
   const [razonId, setRazonId] = useState('')
@@ -88,7 +136,13 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
         }
       }
     }
-    setFilas(next)
+    // Toda la orden de mostrador → interruptor encendido (y las filas se tratan
+    // como normales por si lo apagan).
+    const todaMostrador = esOrdenMostrador(next)
+    const filasBase = todaMostrador ? next.map((x) => ({ ...x, ventaMostrador: false })) : next
+    setVentaMostrador(todaMostrador)
+    setFilas(filasBase)
+    setEstados(estadosDeFilas(filasBase))
     setRequiere(!!f.data?.requiere_factura)
     setIncluyeIva(f.data ? f.data.precios_incluyen_iva : true)
     setRazonId(f.data?.razon_social_id || '')
@@ -103,16 +157,14 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
     load()
   }, [load])
 
-  function cambiarLinea(fila, patch) {
-    setFilas((actuales) =>
-      actuales.map((x) => {
-        if (x.itemIndex !== fila.itemIndex || x.sizeIndex !== fila.sizeIndex) return x
-        if ('ventaMostrador' in patch) {
-          return { ...x, sugerido: false, ventaMostrador: patch.ventaMostrador, ...(patch.ventaMostrador ? { precioTexto: '', precioUnitario: null } : {}) }
-        }
-        return { ...x, sugerido: false, precioTexto: patch.precio, precioUnitario: patch.precio }
-      })
-    )
+  function cambiarPrecioPrenda(key, estado) {
+    setEstados((prev) => ({ ...prev, [key]: estado }))
+    setFilas((actuales) => actuales.map((x) => (x.itemIndex === key ? { ...x, sugerido: false } : x)))
+    setDirty(true)
+  }
+
+  function handleMostrador(value) {
+    setVentaMostrador(value)
     setDirty(true)
   }
 
@@ -125,11 +177,17 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
     setDirty(true)
   }
 
+  // Filas con el precio que sale de la captura por prenda.
+  const filasEnPantalla = filas.map((f) =>
+    f.ventaMostrador ? f : { ...f, precioUnitario: precioDeTalla(estados[f.itemIndex], f.talla), precioTexto: precioDeTalla(estados[f.itemIndex], f.talla) }
+  )
+
   async function handleSave() {
     setSaving(true)
     setError(null)
     // Líneas sin precio y sin mostrador no se guardan: quedan "falta precio".
-    const { error: pErr } = await setOrdenLineas(order.id, lineasDeFilas(filas))
+    const lineas = ventaMostrador ? lineasDeFilas(filas.map((f) => ({ ...f, ventaMostrador: true }))) : lineasDeFilas(filasEnPantalla)
+    const { error: pErr } = await setOrdenLineas(order.id, lineas)
     if (pErr) {
       setSaving(false)
       setError(pErr)
@@ -137,14 +195,16 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
     }
     refrescarLineasMostrador(order.id)
     // Sin cliente del catálogo y con factura: datos fiscales a mano (V144).
+    // Venta de mostrador: sin factura. En un pedido, la factura es del pedido.
+    const requiereFinal = ventaMostrador || enPedido ? false : requiere
     const { error: fErr } =
-      !order.client_id && requiere
-        ? await setOrdenFacturacionManual({ orderId: order.id, requiere, incluyeIva, fiscal })
+      !order.client_id && requiereFinal
+        ? await setOrdenFacturacionManual({ orderId: order.id, requiere: requiereFinal, incluyeIva, fiscal })
         : await setOrdenFacturacion({
             orderId: order.id,
-            requiere,
+            requiere: requiereFinal,
             incluyeIva,
-            razonSocialId: requiere ? razonId : null,
+            razonSocialId: requiereFinal ? razonId : null,
           })
     setSaving(false)
     if (fErr) {
@@ -177,7 +237,7 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
   const faltantes = totales?.faltantes
   const sinPrecio = faltantes?.renglones_sin_precio || []
   const conSugerencia = filas.some((x) => x.sugerido)
-  const enPantalla = resumenPago(filas)
+  const enPantalla = resumenPago(filasEnPantalla)
   const fiscalIncompleto = FISCAL_OBLIGATORIOS.some((k) => !fiscal[k].trim())
   const setFiscalCampo = (campo, valor) => {
     setFiscal((prev) => ({ ...prev, [campo]: valor }))
@@ -194,13 +254,24 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
           {generating ? 'Generando…' : 'Resumen de entrega'}
         </button>
       </div>
-      {dirty && !readOnly && <p className="page-subtitle">Hay cambios sin guardar: guarda para ver los totales y el resumen.</p>}
+      {dirty && !readOnly && <p className="page-subtitle" style={{ margin: '6px 0 0' }}>Hay cambios sin guardar: guarda para ver los totales y el resumen.</p>}
+
+      {filas.length > 0 && (
+        <div style={{ margin: '10px 0' }}>
+          <VentaMostradorToggle
+            checked={ventaMostrador}
+            onChange={handleMostrador}
+            disabled={readOnly || (mostradorPorPedido && ventaMostrador)}
+            nota={mostradorPorPedido ? `El pedido ${pedido.folio} es de venta de mostrador: esta orden también.` : null}
+          />
+        </div>
+      )}
 
       {filas.length === 0 ? (
         <p className="page-subtitle">Esta orden todavía no tiene prendas con piezas.</p>
-      ) : (
+      ) : ventaMostrador ? null : (
         <>
-          <PreciosLineasEditor filas={filas} onChange={cambiarLinea} disabled={readOnly} />
+          <PreciosPrendaEditor prendas={prendasDeFilas(filas)} estados={estados} onChange={cambiarPrecioPrenda} disabled={readOnly} />
           {dirty && (
             <p className="page-subtitle" style={{ textAlign: 'right' }}>
               Total en pantalla (sin guardar): <b>{formatMxn(enPantalla.total)}</b>
@@ -210,6 +281,12 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
       )}
       {conSugerencia && !readOnly && <p className="page-subtitle">Los precios sugeridos no se guardan hasta que pulses "Guardar precios y facturación".</p>}
 
+      {!ventaMostrador && enPedido && (
+        <p className="pantone-hint" style={{ marginTop: 12 }}>
+          La factura de esta orden se maneja en su pedido{pedido ? ` ${pedido.folio}` : ''}.
+        </p>
+      )}
+      {!ventaMostrador && !enPedido && (
       <div className="order-form" style={{ marginTop: 12 }}>
         <label className="fin-check">
           <input type="checkbox" checked={requiere} disabled={readOnly} onChange={(e) => handleRequiere(e.target.checked)} />
@@ -293,22 +370,37 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
           </p>
         )}
       </div>
+      )}
 
       {!readOnly && (
         <button type="button" className="btn btn--primary" style={{ marginTop: 10 }} onClick={handleSave} disabled={saving || !dirty}>
-          {saving ? 'Guardando…' : 'Guardar precios y facturación'}
+          {saving ? 'Guardando…' : ventaMostrador ? 'Guardar' : 'Guardar precios y facturación'}
         </button>
       )}
       {error && <p className="form-error">{error.message}</p>}
 
-      {totales && !dirty && (
+      {totales && !dirty && ventaMostrador && order.status !== 'completado' && (
+        <p className={totales.lista_para_entregar ? 'fin-ok' : 'fin-missing'}>
+          {totales.lista_para_entregar
+            ? '✓ Venta de mostrador: se puede entregar sin precio, anticipo ni factura.'
+            : 'Venta de mostrador, pero la orden todavía pide factura: pulsa "Guardar" para quitarla.'}
+        </p>
+      )}
+
+      {totales && !dirty && !ventaMostrador && (
         <>
           <div className="totales-box">
             <div className="totales-box__row"><span>Subtotal</span><span>{formatMxn(totales.subtotal)}</span></div>
             {totales.requiere_factura && <div className="totales-box__row"><span>IVA 16%</span><span>{formatMxn(totales.iva)}</span></div>}
             <div className="totales-box__row totales-box__row--total"><span>Total</span><span>{formatMxn(totales.total)}</span></div>
-            <div className="totales-box__row"><span>Anticipos / abonos</span><span>− {formatMxn(totales.anticipos)}</span></div>
-            <div className="totales-box__row totales-box__row--saldo"><span>Saldo pendiente</span><span>{formatMxn(totales.saldo)}</span></div>
+            {enPedido ? (
+              <div className="totales-box__row"><span>Saldo</span><span>en el pedido</span></div>
+            ) : (
+              <>
+                <div className="totales-box__row"><span>Anticipos / abonos</span><span>− {formatMxn(totales.anticipos)}</span></div>
+                <div className="totales-box__row totales-box__row--saldo"><span>Saldo pendiente</span><span>{formatMxn(totales.saldo)}</span></div>
+              </>
+            )}
           </div>
           {order.status === 'completado' ? null : totales.lista_para_entregar ? (
             <p className="fin-ok">✓ Precios y facturación completos: la orden puede entregarse.</p>
@@ -316,7 +408,7 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
             <p className="fin-missing">
               Para poder entregarla falta:{' '}
               {[
-                sinPrecio.length > 0 && `precio en ${sinPrecio.map((s) => `${s.prenda || `prenda ${s.item_index + 1}`}${s.talla ? ` ${s.talla}` : ''}`).join(', ')} (o marcarla como venta de mostrador)`,
+                sinPrecio.length > 0 && `precio en ${sinPrecio.map((s) => `${s.prenda || `prenda ${s.item_index + 1}`}${s.talla ? ` ${s.talla}` : ''}`).join(', ')} (o marcar la orden como venta de mostrador)`,
                 faltantes?.falta_razon_social && (sinCliente ? 'los datos fiscales de la factura' : 'la razón social de la factura'),
               ].filter(Boolean).join(' y ')}
               .

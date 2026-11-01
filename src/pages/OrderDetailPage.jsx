@@ -13,6 +13,7 @@ import OrderItemsCard from '../components/orders/OrderItemsCard'
 import OrderDocumentsCard from '../components/orders/OrderDocumentsCard'
 import OrderPaymentsCard from '../components/orders/OrderPaymentsCard'
 import OrderFacturacionCard from '../components/orders/OrderFacturacionCard'
+import PedidoDeOrdenCard from '../components/pedidos/PedidoDeOrdenCard'
 import OrderDetailsCard from '../components/orders/OrderDetailsCard'
 import OrderNotesCard from '../components/orders/OrderNotesCard'
 import OrderReconfirmBanner from '../components/orders/OrderReconfirmBanner'
@@ -244,6 +245,14 @@ function OrderDetailContent() {
               </p>
             )}
             <OrderDocumentsCard order={order} onUpdated={refresh} />
+          </section>
+        )}
+
+        {/* V176 — a qué pedido pertenece la orden (o agregarla a uno). */}
+        {user && canViewFinanzas(role) && order.order_type_key !== 'frisa' && (
+          <section className="card">
+            {location.state?.pedidoError && <p className="form-error">{location.state.pedidoError}</p>}
+            <PedidoDeOrdenCard order={order} onUpdated={refresh} />
           </section>
         )}
 

@@ -4826,6 +4826,43 @@ h4 {
 .precio-lineas__fila--mostrador td { background: var(--color-bg); }
 .precios-alta { padding: 14px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
 .resumen-pago-alta .totales-box { margin-top: 8px; }
+
+/* Fase 1A — "Venta de mostrador" de toda la orden (interruptor). */
+.mostrador-toggle, .order-form label.mostrador-toggle { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; text-align: left; color: var(--color-text); font-size: 14px; position: relative; gap: 12px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); cursor: pointer; margin: 0; }
+.mostrador-toggle--on { border-color: var(--color-black); background: var(--color-bg); }
+.mostrador-toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.mostrador-toggle__switch { flex: none; width: 44px; height: 26px; border-radius: 999px; background: var(--color-border); position: relative; transition: background 0.15s; }
+.mostrador-toggle__switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--color-surface); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); transition: transform 0.15s; }
+.mostrador-toggle--on .mostrador-toggle__switch { background: var(--color-black); }
+.mostrador-toggle--on .mostrador-toggle__switch::after { transform: translateX(18px); background: var(--color-amber); }
+.mostrador-toggle input:focus-visible + .mostrador-toggle__switch { outline: 2px solid var(--color-amber-strong); outline-offset: 2px; }
+.mostrador-toggle__texto { display: grid; gap: 2px; font-weight: 400; }
+.mostrador-toggle__texto b { font-family: 'Barlow Semi Condensed', sans-serif; font-size: 16px; }
+.mostrador-toggle__texto span { font-size: 13px; color: var(--color-text-muted); }
+
+/* Fase 1B — precio por prenda: "Mismo precio" / "Precios por talla". */
+.precio-prendas { display: grid; gap: 10px; }
+.precio-prenda { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.precio-prenda__head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.precio-prenda__meta { margin-left: 8px; font-size: 13px; color: var(--color-text-muted); }
+.precio-prenda__subtotal { font-weight: 700; font-variant-numeric: tabular-nums; }
+.precio-prenda__unico { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.precio-prenda__unico label { max-width: 180px; margin: 0; }
+.seg { display: inline-flex; border: 1px solid var(--color-border); border-radius: var(--radius-sm); overflow: hidden; justify-self: start; max-width: 100%; }
+.seg__btn { border: none; border-left: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-muted); font-family: 'Barlow Semi Condensed', sans-serif; font-size: 14px; font-weight: 700; padding: 8px 14px; cursor: pointer; min-height: 38px; }
+.seg__btn:first-child { border-left: none; }
+.seg__btn--on { background: var(--color-black); color: var(--color-amber); }
+.seg__btn:disabled { cursor: default; }
+.precio-grupos { display: grid; gap: 8px; justify-items: start; }
+.precio-grupo { width: 100%; }
+.precio-grupo__fila { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px; border-radius: var(--radius-sm); background: var(--color-bg); }
+.precio-grupo__precio { width: 120px; flex: none; }
+.precio-grupo__chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 220px; min-width: 0; }
+.precio-grupo__quitar { margin-left: auto; }
+.precio-chip { min-height: 34px; }
+.precio-chip__cant { font-weight: 400; color: var(--color-text-muted); }
+.chip--active .precio-chip__cant { color: var(--color-black); }
+.precio-chip--otra { opacity: 0.4; cursor: not-allowed; text-decoration: line-through; }
 @media (max-width: 720px) {
   .precio-lineas tr { padding: 8px 0; border-top: 1px solid var(--color-border); }
   .precio-lineas td { border-top: 0; padding: 3px 6px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
@@ -5136,3 +5173,21 @@ h4 {
   margin-bottom: 12px;
   border-color: var(--color-good);
 }
+
+/* V176 — Pedidos */
+.pedido-page { display: grid; gap: 14px; }
+.pedido-page__head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pedido-datos { display: grid; gap: 12px; }
+.pedido-ordenes, .pedido-abonos { display: grid; gap: 8px; margin-top: 10px; }
+.pedido-orden, .pedido-abono { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.pedido-orden--link { color: inherit; text-decoration: none; }
+.pedido-orden--link:hover { border-color: var(--color-black); }
+.pedido-orden--inactiva { opacity: 0.55; }
+.pedido-orden__main { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.pedido-orden__side { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-left: auto; }
+.pedido-orden__total { font-weight: 700; font-variant-numeric: tabular-nums; }
+.pedido-agregar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+.pedido-agregar select { flex: 1 1 220px; min-width: 0; }
+.aviso-fiscal { margin: 0; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--color-orange-soft); color: var(--color-orange-strong); font-size: 13px; font-weight: 600; }
+.agrupacion .seg { flex-wrap: wrap; }
+.pedido-banner { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }

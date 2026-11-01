@@ -22,6 +22,7 @@ import {
   canViewSeccionNotas,
   canViewTareas,
   canDeliverOrder,
+  canViewFinanzas,
   canViewInventario,
   canRegistrarEntradaTela,
   canGestionarConsumosPrenda,
@@ -138,6 +139,8 @@ export default function AppLayout({ children }) {
     { to: '/tareas', label: 'Tareas', show: canViewTareas(role) },
     // Entrega masiva: marcar varias órdenes como entregadas a la vez (permiso orden.entregar).
     { to: '/entregas', label: 'Entrega masiva', show: canDeliverOrder(role) },
+    // V176 — pedidos de clientes (varias órdenes, un anticipo, abonos y factura).
+    { to: '/pedidos', label: 'Pedidos', show: canViewFinanzas(role) },
     // V24 — de solo lectura para todos, invitados incluidos; le faltaba
     // aparecer en el menú (antes solo se llegaba por URL directa).
     { to: '/control-rapido', label: 'Control rápido', show: true },

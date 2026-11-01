@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { fetchAnticipos, createAnticipo, deleteAnticipo, METODOS_PAGO } from '../../services/anticiposService'
 import { setOrderTotal } from '../../services/ordersService'
 import { formatDateTime } from '../../utils/dates'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditOrder } from '../../utils/permissions'
 import { fetchOrdenTotales } from '../../services/finanzasService'
-import { usaTotalCalculado } from '../../utils/preciosLineas'
+import { ordenEsMostradorPorClaves, usaTotalCalculado } from '../../utils/preciosLineas'
+import { useLineasMostrador } from '../../hooks/useLineasMostrador'
 
 function formatMonto(monto) {
   return Number(monto).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })
@@ -28,6 +30,8 @@ function formatMonto(monto) {
 // tienen precios (ahí sigue el botón "Editar").
 export default function OrderPaymentsCard({ order, onUpdated }) {
   const { role, profile } = useAuth()
+  // Fase 1A — venta de mostrador (toda la orden): no lleva anticipo.
+  const ventaMostrador = ordenEsMostradorPorClaves(order.items, useLineasMostrador(order.id))
   const disabled = !!order.eliminada_en
   const [anticipos, setAnticipos] = useState([])
   const [loading, setLoading] = useState(true)
@@ -49,7 +53,8 @@ export default function OrderPaymentsCard({ order, onUpdated }) {
 
   // disabled: la orden fue eliminada (soft-delete) — ya no admite más
   // anticipos de ningún rol (ver schema_v24_soft_delete.sql).
-  const canRegister = !disabled && (role === 'ventas' || role === 'contabilidad' || role === 'admin_tienda' || role === 'admin_general')
+  // V176 — en un pedido, el anticipo y los abonos se registran en el pedido.
+  const canRegister = !disabled && !order.pedido_id && (role === 'ventas' || role === 'contabilidad' || role === 'admin_tienda' || role === 'admin_general')
   const canDelete = !disabled && (role === 'admin_tienda' || role === 'admin_general')
   const canEditTotalBase = !disabled && canEditOrder(role, order)
 
@@ -154,6 +159,31 @@ export default function OrderPaymentsCard({ order, onUpdated }) {
   }
 
   if (loading) return null
+  if (order.pedido_id && anticipos.length === 0) {
+    return (
+      <div>
+        <h3 className="section-title section-title--small" style={{ margin: 0 }}>
+          Pagos
+        </h3>
+        <p className="pantone-hint" style={{ margin: '8px 0 0' }}>
+          Esta orden es parte de un pedido: el anticipo y los abonos se registran en{' '}
+          <Link to={`/pedido/${order.pedido_id}`}>el pedido</Link>.
+        </p>
+      </div>
+    )
+  }
+  if (ventaMostrador && anticipos.length === 0) {
+    return (
+      <div>
+        <h3 className="section-title section-title--small" style={{ margin: 0 }}>
+          Pagos
+        </h3>
+        <p className="pantone-hint" style={{ margin: '8px 0 0' }}>
+          Venta de mostrador: esta orden no lleva anticipo.
+        </p>
+      </div>
+    )
+  }
   const canEditTotal = canEditTotalBase && !calculado
 
   return (

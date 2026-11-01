@@ -7289,3 +7289,78 @@ todos puedan marcar sus tareas").
   del catálogo"; se guarda como `prenda_operaciones = 'hoja:<id>'`. El PDF interno usa la copia de la hoja y su
   título. No se crean folios: la hoja guarda los folios originales.
 - La sugerencia automática (prenda + cliente) también busca en los títulos de las hojas.
+
+## Fase 1 (pedidos) — Venta de mostrador por orden + precio por prenda (2026-11-01, rama `ui-precios-mostrador`, SIN SQL)
+Pedido de Alfredo en dos fases (1 = solo pantalla; 2 = tabla `pedidos`, con esquema). Fase 1 hecha, a la espera
+de que Alfredo la valide; Fase 2 no empezada.
+- **1A — Venta de mostrador de toda la orden.** Se revisó dónde vive la bandera: por LÍNEA,
+  `orden_lineas.venta_mostrador` (V159). **Decisión: no se movió a la orden (no hubo cambio de esquema).** Una
+  orden "es de mostrador" cuando tiene líneas y TODAS son de mostrador (`esOrdenMostrador` /
+  `ordenEsMostradorPorClaves` en `utils/preciosLineas.js`). Así la base, `fin_validar_entrega`, `orden_totales` y
+  la app de producción siguen igual. Se quitó la casilla por talla.
+  - Alta (`NewOrderPage`): interruptor "Venta de mostrador" (`VentaMostradorToggle`) como primer campo
+    (`form.ventaMostrador`, va en el borrador). Encendido: se ocultan precios y anticipo; todas las líneas se mandan
+    con `venta_mostrador = true` (`lineasParaGuardar(items, { ventaMostrador })`), también en maquila. La factura
+    ya no estaba en el alta.
+  - Detalle (`OrderFacturacionCard`): el mismo interruptor arriba. Encendido: oculta precios, factura y totales;
+    al guardar todas las líneas quedan de mostrador y `requiere_factura = false`. `OrderPaymentsCard` dice "no
+    lleva anticipo" (si ya tenía anticipos, se siguen mostrando). `OrderItemsCard`: una sola etiqueta "Venta de
+    mostrador" y, si se agregan tallas a una orden de mostrador, se vuelven a guardar todas las líneas como de
+    mostrador (si no, la talla nueva quedaría "sin precio" y frenaría la entrega).
+  - Órdenes de V159 con SOLO ALGUNAS tallas de mostrador: abren como orden normal; esas tallas conservan su
+    marca y se listan aparte ("marcadas antes como venta de mostrador"), sin precio.
+- **1B — precio por prenda** (`components/orders/PreciosPrendaEditor.jsx`, lógica en `utils/preciosPrenda.js` +
+  pruebas): por prenda, "Mismo precio" (un campo para todas las tallas con cantidad) o "Precios por talla"
+  (grupos precio + chips de tallas, "+ otro precio"; una talla vive en un solo grupo, en los demás sale tachada y
+  deshabilitada). Las tallas se ligan por NOMBRE, no por posición. Al guardar se sigue escribiendo un precio por
+  línea (`create_order_con_lineas` / `set_orden_lineas`), igual que V159. En el alta el estado va en
+  `item.precios` y se quita antes de guardar `orders.items` (`sinDatosDePrecio`). Al abrir una orden: si todas
+  las tallas de la prenda valen lo mismo → "Mismo precio"; si no → agrupada por precio (las sin precio quedan sin
+  grupo y se marcan "Sin precio"). Validación: con precio obligatorio (`fin_config.alta_requiere_precio = 'si'`)
+  no deja crear si una talla con cantidad no tiene precio, salvo mostrador.
+- Se borró `PreciosLineasEditor.jsx` (la tabla por línea con la casilla de mostrador).
+- **Probado** en un arnés local con PGlite y el SQL real de V42/V77/V144/V159/V160/V161
+  (`.claude/harness-pedidos/`, servidor `salper-pedidos-harness`, puerto 5192, `?rol=`, `?alta=si`): alta con
+  precios por talla (250×9 + 280×3 + 150×6 = 3,990, líneas correctas, `items` sin `precios`); alta bloqueada por
+  talla sin precio; alta de mostrador con precio obligatorio (3 líneas de mostrador); detalle: reagrupar tallas y
+  guardar, encender mostrador y guardar (6/6 líneas, sin factura), entregar una orden de mostrador sin precio,
+  agregar una talla a una orden de mostrador (queda de mostrador, nada falta), orden mezclada de V159; celular sin
+  scroll horizontal. 101 pruebas `node --test` y `vite build` limpios.
+- **No probado**: con la base real (nada se escribió en Supabase).
+
+## V176 — Pedidos: agrupar órdenes (Fase 2, 2026-11-01, rama `ui-precios-mostrador`, SQL SIN APLICAR)
+SQL `supabase/schema_v176_pedidos.sql` confirmado por Alfredo (aditivo; compatible con V1). Pantallas hechas y
+probadas en el arnés; falta aplicar el SQL y subir.
+- **Esquema**: tabla `pedidos` (folio `PED-0001` por trigger desde `pedido_folio_seq`, no se cambia ni se reusa;
+  `client_id` opcional, `cliente`, `es_mostrador`, `anticipo` + método/quién lo recibió, `requiere_factura`, razón
+  social/RFC/régimen/uso CFDI/CP/dirección, notas, `created_by(_nombre)`, `deleted_at`). Checks: mostrador ⇒ anticipo
+  0 y sin factura; factura ⇒ razón social. Tabla `pedido_abonos` (copia de reglas de `anticipos`; NO se tocó
+  `anticipos`). `orders.pedido_id` NULLABLE: órdenes sueltas y viejas siguen igual, con su anticipo. RLS de lectura
+  `fin_puede_ver()`; escritura solo por RPC con `fin_puede_editar()` (abonos: roles de `create_anticipo`; borrar
+  abono: admin_tienda/admin_general).
+- **RPC**: `pedido_crear(datos, order_ids[])` (valida datos y órdenes ANTES de pedir folio), `pedido_actualizar`,
+  `pedido_agregar_orden`, `pedido_quitar_orden`, `pedido_eliminar` (solo vacío: sin órdenes, abonos ni anticipo),
+  `create_pedido_abono`, `delete_pedido_abono`, `pedido_totales`, `pedidos_lista`.
+- **Cuentas**: total = suma calculada de las órdenes activas (cantidad × (precio + extras V77) de líneas con precio
+  y no de mostrador, `orden_lineas_calc`). Saldo = total − anticipo − abonos − anticipos que ya traían sus órdenes
+  (decisión: para no cobrar dos veces; sale como renglón aparte). Sin IVA.
+- **Mostrador**: un pedido de mostrador pone todas las líneas de sus órdenes como mostrador y quita su factura (al
+  agregarlas y al marcar el pedido). No acepta órdenes entregadas, anticipo ni abonos.
+- **Factura**: razón social obligatoria; aviso "Datos fiscales incompletos" si falta RFC, régimen, CP o uso CFDI
+  (no bloquea). La factura de una orden en pedido es la del pedido (la orden guarda `requiere_factura = false`).
+- **Pantallas**: Nueva orden → "Orden suelta / Nuevo pedido / Agregar a pedido existente" (solo
+  `canEditFinanzas`, no Frisa). Nuevo pedido: anticipo y factura del pedido (`PedidoDatosForm`), sin anticipo de
+  orden; la orden se crea y luego `pedido_crear(…, [orden])`; si eso falla la orden queda suelta y se avisa en el
+  detalle. Existente: lista con los del mismo cliente primero; si el pedido es de mostrador, la orden también
+  (interruptor bloqueado). `/pedidos` (lista + "Pedido vacío") y `/pedido/:id` (órdenes con "+ Nueva orden" /
+  "+ Orden existente" / Quitar, cuenta, abonos, datos editables, eliminar si está vacío), menú "Pedidos"
+  (`canViewFinanzas`). Detalle de la orden: tarjeta "Pedido" (`PedidoDeOrdenCard`: liga, quitar, agregar a un
+  pedido, nuevo pedido con esta orden); en precios, sin factura propia y "Saldo: en el pedido"; Pagos remite al
+  pedido. Código: `services/pedidosService.js`, `utils/pedidos.js` (+ pruebas), `hooks/usePedidoDeOrden.js`,
+  `components/pedidos/`, `pages/PedidosPage.jsx`, `pages/PedidoPage.jsx`.
+- **Probado** en PGlite con el SQL real (arnés `salper-pedidos-harness`, puerto 5192): 22 casos SQL (cuentas,
+  rechazos sin gastar folio, mostrador, factura, roles, folio no reusado, una sola firma) y las pantallas: alta con
+  pedido nuevo (bloquea sin razón social sin crear nada; crea PED-0001 ligado), cuenta 10,110 − 500 − 1,000 = 8,610,
+  abono, agregar orden existente, "+ Nueva orden" desde el pedido, pedido de mostrador, agregar/quitar desde el
+  detalle, celular. 106 pruebas `node --test` y `vite build` limpios.
+- **No hecho**: folio del pedido en las tarjetas del Dashboard; PDF de la orden o del pedido con datos del pedido.

@@ -1,7 +1,7 @@
 import { esOrdenBordado, normalizarItemsBordado, validarItemsBordado } from '../utils/bordadoOrden'
 import { limpiarRoster } from '../utils/roster'
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useOrderTypes } from '../hooks/useOrderTypes'
 import { useClientes } from '../hooks/useClientes'
 import { useTelas } from '../hooks/useTelas'
@@ -18,9 +18,11 @@ import { uploadOrderPhotos, attachExistingPhotos } from '../services/photosServi
 import { copyTemplatePhotosToOrder } from '../services/templatesService'
 import { uploadOrderDocument } from '../services/documentsService'
 import { createAnticipo } from '../services/anticiposService'
-import { fetchAltaRequierePrecio } from '../services/finanzasService'
-import { filasDeFormulario, lineasParaGuardar, marcarMostrador, mensajeFaltanPrecios, resumenPago, tipoLlevaPrecio } from '../utils/preciosLineas'
-import PreciosLineasEditor from '../components/orders/PreciosLineasEditor'
+import { fetchAltaRequierePrecio, formatMxn } from '../services/finanzasService'
+import { filasDeFormulario, lineasParaGuardar, mensajeFaltanPrecios, resumenPago, tipoLlevaPrecio } from '../utils/preciosLineas'
+import { aplicarPrecios, estadoDeItem, sinDatosDePrecio, tallasDeItem } from '../utils/preciosPrenda'
+import PreciosPrendaEditor from '../components/orders/PreciosPrendaEditor'
+import VentaMostradorToggle from '../components/orders/VentaMostradorToggle'
 import ResumenPagoAlta from '../components/orders/ResumenPagoAlta'
 import { recognizeDocument } from '../services/documentOcrService'
 import { similarity } from '../utils/similarity'
@@ -43,11 +45,19 @@ import { canCreateOrder } from '../utils/permissions'
 import { useAuth } from '../contexts/AuthContext'
 import { Loading, ErrorState } from '../components/common/States'
 import { buildOrderConfirmationPdfBlob, fetchPagosParaPdf, orderConfirmationPdfFileName } from '../utils/generateOrderPdf'
-import { canViewFinanzas } from '../utils/permissions'
+import { canEditFinanzas, canViewFinanzas } from '../utils/permissions'
+import { AGRUPACIONES, PEDIDO_VACIO, datosParaGuardar, errorPedido, ordenarPedidosParaCliente } from '../utils/pedidos'
+import { agregarOrdenAPedido, crearPedido, fetchPedidosLista } from '../services/pedidosService'
+import PedidoDatosForm from '../components/pedidos/PedidoDatosForm'
 import { faltaTela, tipoLlevaCorte } from '../utils/telaObligatoria'
 import { CAPTURA_FECHA_CREACION_HABILITADA } from '../utils/featureFlags'
 
 const initialForm = {
+  // Fase 1A — toda la orden es venta de mostrador: sin precio, anticipo ni factura.
+  ventaMostrador: false,
+  // V176 — 'suelta' | 'nuevo' (pedido nuevo con esta orden) | 'existente'.
+  agrupacion: 'suelta',
+  pedidoExistenteId: '',
   clientId: '',
   // V60 — true = "Otro cliente (no registrado)": nombre/teléfono/correo
   // capturados a mano solo para esta orden, sin guardarse en el catálogo.
@@ -224,7 +234,12 @@ function NewOrderForm() {
   )
   const [draftDismissed, setDraftDismissed] = useState(false)
 
-  const [form, setForm] = useState(() => (initialDraft?.form ? { ...initialForm, ...initialDraft.form } : initialForm))
+  // V176 — "+ Nueva orden" desde un pedido: la orden entra a ese pedido.
+  const pedidoDesdeRuta = useLocation().state?.pedidoId || ''
+  const [form, setForm] = useState(() => {
+    const base = initialDraft?.form ? { ...initialForm, ...initialDraft.form } : initialForm
+    return pedidoDesdeRuta ? { ...base, agrupacion: 'existente', pedidoExistenteId: pedidoDesdeRuta } : base
+  })
   const { productos, refresh: refreshProductos } = useProductosByCliente(form.clientId)
   const [items, setItems] = useState(() => (initialDraft?.items?.length > 0 ? initialDraft.items : [emptyItem()]))
   const [photoFiles, setPhotoFiles] = useState([])
@@ -249,6 +264,12 @@ function NewOrderForm() {
     () => initialDraft?.anticipoRecibidoPor || profile?.full_name || ''
   )
   const [anticipoNotas, setAnticipoNotas] = useState(() => initialDraft?.anticipoNotas || '')
+  // V176 — datos del pedido nuevo (anticipo y factura van en el pedido).
+  const [pedidoForm, setPedidoForm] = useState(() => ({
+    ...PEDIDO_VACIO,
+    anticipoRecibidoPor: profile?.full_name || '',
+    ...(initialDraft?.pedidoForm || {}),
+  }))
 
   const [ocrLoading, setOcrLoading] = useState(false)
   const [ocrWarning, setOcrWarning] = useState(null)
@@ -257,8 +278,8 @@ function NewOrderForm() {
   // Guarda el borrador en cada cambio — barato, y así sobrevive tanto a
   // un cambio de pestaña como a que el celular recargue la página sola.
   useEffect(() => {
-    saveDraft({ form, items, anticipoMonto, anticipoMetodo, anticipoRecibidoPor, anticipoNotas })
-  }, [form, items, anticipoMonto, anticipoMetodo, anticipoRecibidoPor, anticipoNotas])
+    saveDraft({ form, items, anticipoMonto, anticipoMetodo, anticipoRecibidoPor, anticipoNotas, pedidoForm })
+  }, [form, items, anticipoMonto, anticipoMetodo, anticipoRecibidoPor, anticipoNotas, pedidoForm])
 
   // V136 — "Venta Mostrador": el cliente es siempre Salper (se asigna solo y
   // el selector queda bloqueado). El servidor lo fuerza igual.
@@ -296,33 +317,57 @@ function NewOrderForm() {
   const productoFrisa = esFrisa ? productosFrisa.find((p) => p.id === form.productoFrisaId) || null : null
   const bordadoFrisa = !!form.bordadoFrisa && admiteBordadoPorOrden(productoFrisa)
 
-  // V159 — precio por línea (prenda + talla) y venta de mostrador. El precio
-  // vive en cada talla del estado y se quita antes de guardar orders.items.
+  // V159 — precio por línea (prenda + talla). Fase 1B: se captura por prenda
+  // ("Mismo precio" o "Precios por talla", en `item.precios`) y de ahí sale el
+  // precio de cada talla; ni uno ni otro van a orders.items.
   // Frisa y el tipo Venta Mostrador no llevan precio.
   const llevaPrecio = !!form.orderTypeKey && !esFrisa && tipoLlevaPrecio(form.orderTypeKey)
-  const filasPrecio = useMemo(() => filasDeFormulario(esMaquila ? items.slice(0, 1) : items), [items, esMaquila])
+  // Fase 1A — venta de mostrador de toda la orden: no se cobra nada.
+  const ventaMostrador = !!form.ventaMostrador
+  const cobra = llevaPrecio && !ventaMostrador
+  const itemsDePrecio = esMaquila ? items.slice(0, 1) : items
+  const filasPrecio = useMemo(() => filasDeFormulario((esMaquila ? items.slice(0, 1) : items).map(aplicarPrecios)), [items, esMaquila])
   const resumen = resumenPago(filasPrecio, anticipoMonto)
+  const prendasPrecio = itemsDePrecio.map((item, i) => {
+    const tallas = tallasDeItem(item).map((talla) => ({
+      talla,
+      cantidad: (item.sizes || []).filter((s) => String(s.talla ?? '').trim() === talla).reduce((n, s) => n + (Number(s.cantidad) || 0), 0),
+    }))
+    const nombre = (esMaquila ? productoMaquila?.nombre : null) || String(item.garment || '').trim() || `Prenda ${i + 1}`
+    return { key: i, nombre, tallas }
+  }).filter((p) => p.tallas.length > 0)
+  const estadosPrecio = Object.fromEntries(itemsDePrecio.map((item, i) => [i, estadoDeItem(item)]))
+  function cambiarPrecioPrenda(indice, estado) {
+    setItems((current) => current.map((item, i) => (i === indice ? { ...item, precios: estado } : item)))
+  }
   // V161 — mientras se acostumbran, el precio puede ser opcional al crear
   // (interruptor fin_config.alta_requiere_precio, se cambia solo en la base).
   const [precioObligatorio, setPrecioObligatorio] = useState(true)
   useEffect(() => {
     fetchAltaRequierePrecio().then(setPrecioObligatorio)
   }, [])
-  function cambiarLinea(fila, patch) {
-    setItems((current) =>
-      current.map((item, i) =>
-        i !== fila.itemIndex
-          ? item
-          : {
-              ...item,
-              sizes: item.sizes.map((s, j) => {
-                if (j !== fila.sizeIndex) return s
-                return 'ventaMostrador' in patch ? marcarMostrador(s, patch.ventaMostrador) : { ...s, precio_unitario: patch.precio }
-              }),
-            }
-      )
-    )
-  }
+  // V176 — pedidos: solo quien edita precios (ventas y administradores de
+  // tienda), y no en Frisa (no lleva cliente ni precio).
+  const puedePedidos = canEditFinanzas(role) && !esFrisa
+  const agrupacion = puedePedidos ? form.agrupacion || 'suelta' : 'suelta'
+  const enPedido = agrupacion !== 'suelta'
+  const [pedidosLista, setPedidosLista] = useState([])
+  const [pedidosError, setPedidosError] = useState(null)
+  useEffect(() => {
+    if (agrupacion !== 'existente') return
+    fetchPedidosLista().then(({ data, error: err }) => {
+      setPedidosLista(data || [])
+      setPedidosError(err)
+    })
+  }, [agrupacion])
+  const pedidosOrdenados = ordenarPedidosParaCliente(pedidosLista, { clientId: form.clientId, cliente: form.clientName })
+  const pedidoExistente = agrupacion === 'existente' ? pedidosLista.find((p) => p.id === form.pedidoExistenteId) || null : null
+  // Un pedido de mostrador hace de mostrador a todas sus órdenes.
+  const mostradorPorPedido = !!pedidoExistente?.es_mostrador
+  useEffect(() => {
+    if (mostradorPorPedido && !form.ventaMostrador) setForm((f) => ({ ...f, ventaMostrador: true }))
+  }, [mostradorPorPedido, form.ventaMostrador])
+
   function cambiarAnticipo({ monto, metodo, recibidoPor, notas }) {
     setAnticipoMonto(monto)
     setAnticipoMetodo(metodo)
@@ -338,6 +383,7 @@ function NewOrderForm() {
     setAnticipoMetodo('efectivo')
     setAnticipoRecibidoPor(profile?.full_name || '')
     setAnticipoNotas('')
+    setPedidoForm({ ...PEDIDO_VACIO, anticipoRecibidoPor: profile?.full_name || '' })
     setDraftDismissed(true)
   }
 
@@ -500,8 +546,9 @@ function NewOrderForm() {
       setSubmitError(new Error('Falta la fecha de entrega.'))
       return
     }
-    // V159 — sin nada que cobrar (tipo sin precio o todo de mostrador) no hay anticipo.
-    const anticipoAplica = llevaPrecio && resumen.hayCobro
+    // V159 — sin nada que cobrar (tipo sin precio o venta de mostrador) no hay anticipo.
+    // V176 — en un pedido, el anticipo se captura en el pedido (no en la orden).
+    const anticipoAplica = cobra && resumen.hayCobro && !enPedido
     const anticipoMontoNum = anticipoAplica ? Number(anticipoMonto) : 0
     if (anticipoAplica && anticipoMonto && (!anticipoMontoNum || anticipoMontoNum <= 0)) {
       setSubmitError(new Error('El monto del anticipo debe ser mayor a cero.'))
@@ -512,6 +559,18 @@ function NewOrderForm() {
       return
     }
 
+    if (agrupacion === 'existente' && !pedidoExistente) {
+      setSubmitError(new Error('Elige el pedido al que se agrega la orden.'))
+      return
+    }
+    if (agrupacion === 'nuevo') {
+      const faltaPedido = errorPedido({ ...pedidoForm, cliente: form.clientName, esMostrador: ventaMostrador })
+      if (faltaPedido) {
+        setSubmitError(new Error(faltaPedido))
+        return
+      }
+    }
+
     if (esMaquila) {
       await handleSubmitMaquila(anticipoMontoNum)
       return
@@ -519,8 +578,10 @@ function NewOrderForm() {
 
     // Prendas que se guardan (mismo filtro de siempre). Las líneas de precio
     // se cuentan sobre ESTA lista para que sus índices coincidan en la base.
-    const itemsFiltrados = items.filter((item) => item.garment.trim() || item.sizes.some((s) => s.talla.trim()))
-    const faltaPrecio = llevaPrecio && precioObligatorio ? mensajeFaltanPrecios(filasDeFormulario(itemsFiltrados), form.orderTypeKey) : null
+    const itemsFiltrados = items
+      .filter((item) => item.garment.trim() || item.sizes.some((s) => s.talla.trim()))
+      .map(aplicarPrecios)
+    const faltaPrecio = cobra && precioObligatorio ? mensajeFaltanPrecios(filasDeFormulario(itemsFiltrados), form.orderTypeKey) : null
     if (faltaPrecio) {
       setSubmitError(new Error(faltaPrecio))
       return
@@ -551,7 +612,7 @@ function NewOrderForm() {
     // Solo talla y cantidad: el precio y la bandera de mostrador NO van en orders.items.
     const cleanItemsBase = itemsFiltrados
       .map((item) => limpiarRoster({
-        ...item,
+        ...sinDatosDePrecio(item),
         sizes: item.sizes
           .filter((s) => s.talla.trim() && Number(s.cantidad) > 0)
           .map((s) => ({ talla: s.talla.trim(), cantidad: Number(s.cantidad) })),
@@ -594,7 +655,7 @@ function NewOrderForm() {
       description: form.description.trim(),
       requestedDeliveryDate: form.requestedDeliveryDate,
       items: cleanItems,
-      lineas: llevaPrecio ? lineasParaGuardar(itemsFiltrados) : [],
+      lineas: llevaPrecio ? lineasParaGuardar(itemsFiltrados, { ventaMostrador }) : [],
       foliosExternos: form.foliosExternos,
       createdAt: CAPTURA_FECHA_CREACION_HABILITADA ? form.createdAt || null : null,
     })
@@ -624,7 +685,8 @@ function NewOrderForm() {
       setSubmitError(new Error(faltaMaquila))
       return
     }
-    const faltaPrecio = precioObligatorio ? mensajeFaltanPrecios(filasDeFormulario([items[0]]), form.orderTypeKey) : null
+    const faltaPrecio =
+      !ventaMostrador && precioObligatorio ? mensajeFaltanPrecios(filasDeFormulario([aplicarPrecios(items[0])]), form.orderTypeKey) : null
     if (faltaPrecio) {
       setSubmitError(new Error(faltaPrecio))
       return
@@ -650,7 +712,7 @@ function NewOrderForm() {
       requestedDeliveryDate: form.requestedDeliveryDate,
       items: [prendaMaquila(items[0], productoMaquila, llevaBordadoMaquila)],
       // Mismo filtro de tallas que prendaMaquila: los índices coinciden.
-      lineas: lineasParaGuardar([items[0]]),
+      lineas: lineasParaGuardar([aplicarPrecios(items[0])], { ventaMostrador }),
       description: form.description.trim(),
       foliosExternos: form.foliosExternos,
     })
@@ -708,6 +770,22 @@ function NewOrderForm() {
   // documentos, anticipo y la vista previa del PDF.
   async function terminarCreacion(creada, anticipoMontoNum, fotoProductoError = null) {
     let data = creada
+    // V176 — la orden ya existe: se crea su pedido o se agrega al elegido. Si
+    // falla, la orden se queda suelta y se avisa (se puede agregar desde el detalle).
+    let pedidoError = null
+    if (agrupacion === 'nuevo') {
+      const datos = datosParaGuardar({
+        ...pedidoForm,
+        cliente: form.clientName.trim() || data.client_name,
+        clientId: form.clienteIncidental ? '' : form.clientId,
+        esMostrador: ventaMostrador,
+      })
+      const { error: pErr } = await crearPedido(datos, [data.id])
+      if (pErr) pedidoError = `La orden se creó, pero no se pudo crear el pedido: ${pErr.message}`
+    } else if (agrupacion === 'existente' && pedidoExistente) {
+      const { error: pErr } = await agregarOrdenAPedido(pedidoExistente.id, data.id)
+      if (pErr) pedidoError = `La orden se creó, pero no se pudo agregar al pedido ${pedidoExistente.folio}: ${pErr.message}`
+    }
     // La orden ya existe (tiene id): subimos las fotos elegidas a mano. Si
     // esto falla, no se cancela la creación de la orden — se puede
     // reintentar desde el detalle.
@@ -783,7 +861,7 @@ function NewOrderForm() {
       console.error('No se pudo generar el PDF de confirmación:', pdfErr)
     }
 
-    navigate(`/orden/${data.id}`, { state: { photoUploadError: photoError, documentError, anticipoError, equipoError, pdfPreview } })
+    navigate(`/orden/${data.id}`, { state: { photoUploadError: photoError, documentError, anticipoError, equipoError, pedidoError, pdfPreview } })
   }
 
   if (loading) return <Loading label="Cargando tipos de orden…" />
@@ -827,6 +905,69 @@ function NewOrderForm() {
       )}
 
       <form className="order-form" onSubmit={handleSubmit}>
+        {/* Fase 1A — primer paso: ¿toda la orden es venta de mostrador? */}
+        <VentaMostradorToggle
+          checked={ventaMostrador}
+          onChange={(v) => updateField('ventaMostrador', v)}
+          disabled={mostradorPorPedido}
+          nota={
+            mostradorPorPedido
+              ? `El pedido ${pedidoExistente.folio} es de venta de mostrador: esta orden también.`
+              : form.orderTypeKey && !llevaPrecio
+                ? 'Este tipo de orden ya no lleva precio ni anticipo.'
+                : enPedido && ventaMostrador && agrupacion === 'nuevo'
+                  ? 'Todo el pedido será de mostrador: sin precio, anticipo ni factura.'
+                  : null
+          }
+        />
+
+        {/* V176 — ¿la orden va sola o en un pedido? */}
+        {puedePedidos && (
+          <div className="agrupacion">
+            <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+              Pedido
+            </span>
+            <div className="seg" role="group" aria-label="Orden suelta o en un pedido">
+              {AGRUPACIONES.map((a) => (
+                <button
+                  key={a.key}
+                  type="button"
+                  className={'seg__btn' + (agrupacion === a.key ? ' seg__btn--on' : '')}
+                  aria-pressed={agrupacion === a.key}
+                  onClick={() => updateField('agrupacion', a.key)}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
+            {agrupacion === 'nuevo' && (
+              <p className="pantone-hint" style={{ margin: '6px 0 0' }}>
+                Se crea un pedido con esta orden. Su anticipo y su factura se capturan abajo, en "Pedido".
+              </p>
+            )}
+            {agrupacion === 'existente' && (
+              <div style={{ marginTop: 8 }}>
+                {pedidosError && <p className="form-error">{pedidosError.message}</p>}
+                <select
+                  className="input"
+                  value={form.pedidoExistenteId}
+                  onChange={(e) => updateField('pedidoExistenteId', e.target.value)}
+                  aria-label="Pedido existente"
+                >
+                  <option value="">Elige el pedido…</option>
+                  {pedidosOrdenados.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.folio} · {p.cliente} · {p.ordenes} {p.ordenes === 1 ? 'orden' : 'órdenes'}
+                      {p.es_mostrador ? ' · mostrador' : ` · saldo ${formatMxn(p.saldo)}`}
+                    </option>
+                  ))}
+                </select>
+                {pedidosLista.length === 0 && !pedidosError && <p className="pantone-hint">Todavía no hay pedidos.</p>}
+              </div>
+            )}
+          </div>
+        )}
+
         <div>
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
             Tipo de orden *
@@ -1076,9 +1217,10 @@ function NewOrderForm() {
           </div>
         </details>
 
-        {/* V159 — Precios y pago: visible (no plegable). Una línea por talla, con
-            precio unitario o "venta de mostrador"; debajo total, anticipo y saldo. */}
-        {llevaPrecio && (
+        {/* V159 — Precios y pago: visible (no plegable). Fase 1B: precio por prenda
+            ("Mismo precio" / "Precios por talla"); debajo total, anticipo y saldo.
+            Fase 1A: con venta de mostrador no se muestra. */}
+        {cobra && (
           <div className="precios-alta">
             <span className="field-label" style={{ marginBottom: 8, display: 'block' }}>
               Precios y pago
@@ -1088,13 +1230,38 @@ function NewOrderForm() {
                 El precio es opcional por ahora: puedes crear la orden sin precio y capturarlo después en el detalle.
               </p>
             )}
-            <PreciosLineasEditor filas={filasPrecio} onChange={cambiarLinea} marcarFaltantes={precioObligatorio} />
+            <PreciosPrendaEditor
+              prendas={prendasPrecio}
+              estados={estadosPrecio}
+              onChange={cambiarPrecioPrenda}
+              marcarFaltantes={precioObligatorio}
+            />
             <ResumenPagoAlta
               resumen={resumen}
               anticipo={{ monto: anticipoMonto, metodo: anticipoMetodo, recibidoPor: anticipoRecibidoPor, notas: anticipoNotas }}
               onAnticipo={cambiarAnticipo}
               obligatorio={precioObligatorio}
+              sinAnticipo={enPedido}
             />
+          </div>
+        )}
+
+        {agrupacion === 'nuevo' && (
+          <div className="precios-alta">
+            <span className="field-label" style={{ marginBottom: 8, display: 'block' }}>
+              Pedido nuevo · {form.clientName.trim() || 'cliente de la orden'}
+            </span>
+            <PedidoDatosForm
+              value={{ ...pedidoForm, esMostrador: ventaMostrador }}
+              onChange={(v) => setPedidoForm({ ...v, esMostrador: false })}
+              conCliente={false}
+              conMostrador={false}
+            />
+            {ventaMostrador && (
+              <p className="pantone-hint" style={{ margin: 0 }}>
+                Venta de mostrador: el pedido no lleva anticipo ni factura.
+              </p>
+            )}
           </div>
         )}
 

@@ -1,8 +1,9 @@
 import { esOrdenBordado, normalizarItemsBordado, validarItemsBordado } from '../../utils/bordadoOrden'
 import { limpiarRoster } from '../../utils/roster'
 import { useState } from 'react'
-import { useLineasMostrador } from '../../hooks/useLineasMostrador'
-import { esLineaMostrador } from '../../utils/preciosLineas'
+import { refrescarLineasMostrador, useLineasMostrador } from '../../hooks/useLineasMostrador'
+import { esLineaMostrador, lineasParaGuardar, ordenEsMostradorPorClaves } from '../../utils/preciosLineas'
+import { setOrdenLineas } from '../../services/finanzasService'
 import OrderItemsEditor from './OrderItemsEditor'
 import { usePrendasOperaciones } from '../../hooks/usePrendasOperaciones'
 import { fijarPrendasOperaciones } from '../../utils/operacionesOrden'
@@ -13,7 +14,7 @@ import { setOrderItems, fetchOrdenEtapas } from '../../services/ordersService'
 import { faltaTela } from '../../utils/telaObligatoria'
 import { createOrderTemplate } from '../../services/templatesService'
 import { useAuth } from '../../contexts/AuthContext'
-import { canEditOrder } from '../../utils/permissions'
+import { canEditFinanzas, canEditOrder } from '../../utils/permissions'
 import { useTelas } from '../../hooks/useTelas'
 import BordadosMiniaturas from './BordadosMiniaturas'
 import { useProductosByCliente } from '../../hooks/useProductosByCliente'
@@ -188,6 +189,8 @@ function ItemSummary({ item, index, mostrador }) {
 export default function OrderItemsCard({ order, onUpdated }) {
   const { role } = useAuth()
   const mostrador = useLineasMostrador(order.id)
+  // Fase 1A — toda la orden es de mostrador: una sola etiqueta arriba.
+  const todaMostrador = ordenEsMostradorPorClaves(order.items, mostrador)
   const prendasOps = usePrendasOperaciones()
   const editable = canEditOrder(role, order)
   const [editing, setEditing] = useState(false)
@@ -245,12 +248,25 @@ export default function OrderItemsCard({ order, onUpdated }) {
     const cleanItems = esOrdenBordado(order.order_type_key) ? normalizarItemsBordado(cleanItemsBase) : fijarPrendasOperaciones(cleanItemsBase, order.client_name, prendasOps)
 
     const { error: saveError } = await setOrderItems(order.id, cleanItems)
-    setSaving(false)
 
     if (saveError) {
+      setSaving(false)
       setError(saveError)
       return
     }
+    // Fase 1A — si la orden era de mostrador, las tallas nuevas también lo son
+    // (si no, quedarían "sin precio" y no se podría entregar).
+    if (todaMostrador && canEditFinanzas(role)) {
+      const { error: lineasError } = await setOrdenLineas(order.id, lineasParaGuardar(cleanItems, { ventaMostrador: true }))
+      refrescarLineasMostrador(order.id)
+      if (lineasError) {
+        setSaving(false)
+        setError(new Error(`Las prendas se guardaron, pero no se pudo dejar toda la orden como venta de mostrador: ${lineasError.message}. Actívalo de nuevo en "Precios y facturación".`))
+        onUpdated?.()
+        return
+      }
+    }
+    setSaving(false)
     setEditing(false)
     onUpdated?.()
   }
@@ -286,6 +302,7 @@ export default function OrderItemsCard({ order, onUpdated }) {
         <div className="section-header">
           <h3 className="section-title section-title--small" style={{ marginBottom: 0 }}>
             Prendas
+            {todaMostrador && <span className="badge badge--mostrador" style={{ marginLeft: 8, verticalAlign: 'middle' }}>Venta de mostrador</span>}
           </h3>
           {editable && (
             <button type="button" className="btn btn--ghost" onClick={startEditing}>
@@ -299,7 +316,7 @@ export default function OrderItemsCard({ order, onUpdated }) {
           <>
             <div className="document-list">
               {order.items.map((item, i) => (
-                <ItemSummary key={item.id || i} item={item} index={i} mostrador={mostrador} />
+                <ItemSummary key={item.id || i} item={item} index={i} mostrador={todaMostrador ? null : mostrador} />
               ))}
             </div>
             <p className="pantone-hint" style={{ textAlign: 'right', marginTop: 10 }}>
