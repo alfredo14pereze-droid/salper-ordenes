@@ -260,8 +260,9 @@ function TablaOperaciones({ operaciones, columnas }) {
   )
 }
 
-export function CatalogoOperacionesDoc({ operaciones, columnas = TODAS_LAS_COLUMNAS, porPrenda = false }) {
-  if (porPrenda) {
+// V175 — `titulo`: el que se escribió al imprimir (una sola prenda); va arriba en lugar de "CATÁLOGO DE OPERACIONES".
+export function CatalogoOperacionesDoc({ operaciones, columnas = TODAS_LAS_COLUMNAS, porPrenda = false, titulo = '' }) {
+  if (porPrenda && !titulo) {
     const grupos = []
     for (const o of operaciones) {
       const g = grupos.find((x) => x.prenda === o.prenda)
@@ -281,9 +282,9 @@ export function CatalogoOperacionesDoc({ operaciones, columnas = TODAS_LAS_COLUM
     )
   }
   return (
-    <Document title="Catálogo de operaciones · SALPER">
+    <Document title={titulo ? `${titulo} · SALPER` : 'Catálogo de operaciones · SALPER'}>
       <Page size="LETTER" style={s.page}>
-        <Text style={s.brand}>SALPER · CATÁLOGO DE OPERACIONES</Text>
+        <Text style={s.brand}>SALPER · {titulo ? titulo.toUpperCase() : 'CATÁLOGO DE OPERACIONES'}</Text>
         <Text style={s.sub}>{operaciones.length} operaciones · generado el {hoy()}</Text>
         <TablaOperaciones operaciones={operaciones} columnas={columnas} />
       </Page>

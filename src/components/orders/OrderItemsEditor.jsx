@@ -8,7 +8,7 @@ import BordadoItemsEditor from './BordadoItemsEditor'
 import { esOrdenBordado } from '../../utils/bordadoOrden'
 import { FILA_ROSTER_VACIA, filaRosterConDatos } from '../../utils/roster'
 import { usePrendasOperaciones } from '../../hooks/usePrendasOperaciones'
-import { prendaOperacionesDe } from '../../utils/operacionesOrden'
+import { esHoja, prendaOperacionesDe } from '../../utils/operacionesOrden'
 
 const OTRO_COLOR = '__otro__'
 
@@ -267,6 +267,8 @@ function OrderItemsEditorGeneral({
               {prendasOps && prendasOps.length > 0 && (() => {
                 const valor = prendaOperacionesDe(item, clienteNombre, prendasOps)
                 const sugerida = typeof item.prenda_operaciones !== 'string' && valor
+                const catalogo = prendasOps.filter((o) => !esHoja(o.valor))
+                const hojas = prendasOps.filter((o) => esHoja(o.valor))
                 return (
                   <label>
                     Operaciones (hoja para fábrica)
@@ -276,12 +278,25 @@ function OrderItemsEditorGeneral({
                       onChange={(e) => updateItem(itemIndex, { prenda_operaciones: e.target.value })}
                     >
                       <option value="">Sin hoja de operaciones</option>
-                      {prendasOps.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
-                      {valor && !prendasOps.includes(valor) && <option value={valor}>{valor} (ya no está en el catálogo)</option>}
+                      {hojas.length > 0 && (
+                        <optgroup label="Hojas guardadas">
+                          {hojas.map((o) => (
+                            <option key={o.valor} value={o.valor}>
+                              {o.etiqueta}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label="Prenda completa del catálogo">
+                        {catalogo.map((o) => (
+                          <option key={o.valor} value={o.valor}>
+                            {o.etiqueta}
+                          </option>
+                        ))}
+                      </optgroup>
+                      {valor && !prendasOps.some((o) => o.valor === valor) && (
+                        <option value={valor}>{esHoja(valor) ? 'Hoja guardada' : valor} (ya no existe)</option>
+                      )}
                     </select>
                     {sugerida && <span className="template-hint">Sugerida por la prenda y el cliente. Sale en el PDF interno.</span>}
                   </label>

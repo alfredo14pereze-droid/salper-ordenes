@@ -7,6 +7,8 @@ import { useAuth } from '../../contexts/AuthContext'
 import { canCapturarProduccion, esFabricaSoloLectura } from '../../utils/permissions'
 import HojasImpresas from './HojasImpresas'
 import { buildCatalogoOperacionesPdfBlob, catalogoPdfFileName } from '../../utils/generateProduccionPdf'
+import { registrarHojaImpresa } from '../../services/hojasImpresasService'
+import { olvidarOpcionesOperaciones } from '../../hooks/usePrendasOperaciones'
 import { COLUMNAS_DEFAULT, COLUMNAS_OPCIONALES, operacionesParaImprimir } from '../../utils/imprimirOperaciones'
 import {
   centena,
@@ -370,8 +372,13 @@ function ImprimirOperaciones({ ops, visibles, marcadas, filtro, onClose }) {
   const [generando, setGenerando] = useState(false)
   const [error, setError] = useState(null)
   const [preview, setPreview] = useState(null)
+  const [titulo, setTitulo] = useState(null) // null = todavía no se escribe: arranca con la prenda
 
   const lista = operacionesParaImprimir(ops, { modo, visibles, marcadas, incluirInactivas })
+  // V175 — con una sola prenda se le pone título y la hoja se guarda en «Hojas impresas».
+  const prendasLista = [...new Set(lista.map((o) => o.prenda))]
+  const unicaPrenda = prendasLista.length === 1 ? prendasLista[0] : null
+  const tituloFinal = (titulo ?? unicaPrenda ?? '').trim()
   const descripcionFiltro = [filtro.prenda, filtro.q.trim() && `"${filtro.q.trim()}"`].filter(Boolean).join(' · ') || 'sin filtro'
   const toggleColumna = (key) => setColumnas((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
 
@@ -379,8 +386,13 @@ function ImprimirOperaciones({ ops, visibles, marcadas, filtro, onClose }) {
     setGenerando(true)
     setError(null)
     try {
-      const blob = await buildCatalogoOperacionesPdfBlob(lista, { columnas, porPrenda })
-      setPreview({ blob, fileName: catalogoPdfFileName('operaciones') })
+      if (unicaPrenda) {
+        const { error: err } = await registrarHojaImpresa({ prenda: unicaPrenda, titulo: tituloFinal || unicaPrenda, folios: lista.map((o) => o.folio) })
+        if (err) throw new Error(`no se pudo guardar en «Hojas impresas»: ${err.message}`)
+        olvidarOpcionesOperaciones()
+      }
+      const blob = await buildCatalogoOperacionesPdfBlob(lista, { columnas, porPrenda, titulo: unicaPrenda ? tituloFinal || unicaPrenda : '' })
+      setPreview({ blob, fileName: unicaPrenda ? `${(tituloFinal || unicaPrenda).replace(/[^\p{L}\p{N}]+/gu, '-')}.pdf` : catalogoPdfFileName('operaciones') })
     } catch (e) {
       setError(`No se pudo generar el PDF: ${e.message}`)
     }
@@ -429,6 +441,17 @@ function ImprimirOperaciones({ ops, visibles, marcadas, filtro, onClose }) {
           <input type="checkbox" checked={porPrenda} onChange={(e) => setPorPrenda(e.target.checked)} />
           Una hoja por prenda (con el nombre de la prenda de título)
         </label>
+        {unicaPrenda ? (
+          <label>
+            Título de la hoja
+            <input className="input" value={titulo ?? unicaPrenda} onChange={(e) => setTitulo(e.target.value)} placeholder={unicaPrenda} />
+            <span className="template-hint">
+              Ej. «Chamarra Vasco de Quiroga secundaria». Al ver el PDF se guarda en «Hojas impresas» y luego se puede escoger en las prendas de una orden.
+            </span>
+          </label>
+        ) : (
+          lista.length > 0 && <p className="template-hint">Son de varias prendas: para ponerle título y guardarla, escoge operaciones de una sola prenda.</p>
+        )}
         <p className="template-hint">
           Se imprimirán <b>{lista.length}</b> {lista.length === 1 ? 'operación' : 'operaciones'}.
         </p>

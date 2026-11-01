@@ -1,7 +1,7 @@
 // node --test src/utils/operacionesOrden.test.js
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { armarHojasOperaciones, fijarPrendasOperaciones, prendaOperacionesDe, sugerirPrendaOperaciones } from './operacionesOrden.js'
+import { armarHojasOperaciones, armarOpciones, fijarPrendasOperaciones, prendaOperacionesDe, sugerirPrendaOperaciones } from './operacionesOrden.js'
 
 const prendas = ['CAMISA', 'CHAMARRA ESCOLAR', 'CHAMARRA DE TRABAJO', 'CHAMARRA CON FORRO', 'CHAMARRA DOMUS', 'PANTS DOMUS']
 
@@ -44,4 +44,20 @@ test('hojas del PDF: una por prenda con operaciones, agrupada por parte', () => 
   assert.equal(hojas.length, 1)
   assert.equal(hojas[0].piezas, 5)
   assert.deepEqual(hojas[0].grupos.map((g) => [g.parte, g.operaciones.map((o) => o.folio)]), [['MANGA', [1601]], ['CUELLO', [1602, 1603]]])
+})
+
+test('hojas guardadas: se escogen, se sugieren y salen con su título', () => {
+  const hojas = [{ id: 'h1', titulo: 'CHAMARRA VASCO DE QUIROGA SECUNDARIA', prenda: 'CHAMARRA ESCOLAR', operaciones: [
+    { folio: 705, parte: 'CUELLO', operacion: 'X', segundos: 10 },
+    { folio: 701, parte: 'MANGA', operacion: 'Y', segundos: 12 },
+  ] }]
+  const opciones = armarOpciones(prendas, hojas)
+  assert.equal(sugerirPrendaOperaciones('Chamarra', 'Colegio Vasco de Quiroga', opciones), 'hoja:h1')
+  assert.equal(sugerirPrendaOperaciones('Chamarra', 'Colegio Domus', opciones), 'CHAMARRA DOMUS')
+  const r = armarHojasOperaciones([{ garment: 'Chamarra', sizes: [{ talla: 'M', cantidad: 4 }] }], 'Colegio Vasco de Quiroga', opciones, [], hojas)
+  assert.equal(r.length, 1)
+  assert.equal(r[0].prenda, 'CHAMARRA VASCO DE QUIROGA SECUNDARIA')
+  assert.deepEqual(r[0].grupos.map((g) => g.parte), ['MANGA', 'CUELLO'])
+  // Hoja que ya no existe: no sale nada.
+  assert.equal(armarHojasOperaciones([{ garment: 'X', prenda_operaciones: 'hoja:zz' }], '', opciones, [], hojas).length, 0)
 })

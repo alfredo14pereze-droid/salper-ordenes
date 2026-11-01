@@ -277,3 +277,17 @@ export async function fetchOperacionesParaOrden(prendas) {
   if (!prendas || prendas.length === 0) return { data: [], error: null }
   return supabase.rpc('operaciones_para_orden', { p_prendas: prendas })
 }
+
+// V175 — hojas guardadas («Hojas impresas») que se pueden escoger en la orden.
+export async function fetchHojasParaOrden() {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('hojas_para_orden')
+}
+
+export async function fetchHojasOperacionesParaOrden(ids) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  if (!ids || ids.length === 0) return { data: [], error: null }
+  return supabase.rpc('hojas_operaciones_para_orden', { p_ids: ids })
+}

@@ -7279,3 +7279,13 @@ todos puedan marcar sus tareas").
 - `datos_2026-11-01_quitar_chamarra_domus.sql`: borró las 88 operaciones de CHAMARRA DOMUS (1601–1688 quedan
   libres), su hoja impresa y la liga en órdenes. CHAMARRA ESCOLAR intacta. V174 (operaciones en la orden y en
   el PDF interno) y la hoja por parte se quedan.
+
+## V175 — Título al imprimir en Admin producción + hojas guardadas en la orden (2026-11-01, SQL PENDIENTE)
+- "Imprimir…" del catálogo de operaciones: si todas las operaciones son de una prenda, pide "Título de la
+  hoja" (arranca con la prenda). Al ver el PDF se guarda en «Hojas impresas» (registrar_hoja_impresa) y el PDF
+  sale con ese título.
+- `schema_v175_hojas_en_orden.sql`: `hojas_para_orden()` y `hojas_operaciones_para_orden(uuid[])` (security
+  definer, cualquiera con rol). En la orden, "Operaciones" ofrece "Hojas guardadas" además de "Prenda completa
+  del catálogo"; se guarda como `prenda_operaciones = 'hoja:<id>'`. El PDF interno usa la copia de la hoja y su
+  título. No se crean folios: la hoja guarda los folios originales.
+- La sugerencia automática (prenda + cliente) también busca en los títulos de las hojas.

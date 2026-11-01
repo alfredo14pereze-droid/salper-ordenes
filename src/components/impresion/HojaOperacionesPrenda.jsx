@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { fetchOperacionesDePrenda } from '../../services/produccionService'
 import { registrarHojaImpresa } from '../../services/hojasImpresasService'
 import { agruparPorParte } from '../../utils/imprimirOperaciones'
+import { olvidarOpcionesOperaciones } from '../../hooks/usePrendasOperaciones'
 import './impresion.css'
 
 // Hoja informativa para pegar en la línea: folio, operación y tiempo de cada
@@ -26,6 +27,7 @@ export default function HojaOperacionesPrenda({ prenda, volverA, operaciones = n
     setAviso(null)
     const { error: err } = await registrarHojaImpresa({ prenda, titulo: titulo.trim() || prenda, folios: ops.map((o) => o.folio) })
     setRegistrando(false)
+    if (!err) olvidarOpcionesOperaciones()
     setAviso(err ? { error: true, texto: `No se pudo guardar en «Hojas impresas»: ${err.message}` } : { error: false, texto: '✓ Guardada en «Hojas impresas».' })
     window.print()
   }

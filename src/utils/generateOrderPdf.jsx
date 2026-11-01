@@ -3,8 +3,9 @@ import OrderConfirmationPdf from '../components/pdf/OrderConfirmationPdf'
 import RemisionPdf from '../components/pdf/RemisionPdf'
 import { fetchOrdenTotales } from '../services/finanzasService'
 import { marcasDePrenda, resumenPagosPdf } from './pagosPdf'
-import { fetchOperacionesParaOrden, fetchPrendasConOperaciones } from '../services/produccionService'
-import { armarHojasOperaciones, prendaOperacionesDe } from './operacionesOrden'
+import { fetchHojasOperacionesParaOrden, fetchOperacionesParaOrden } from '../services/produccionService'
+import { armarHojasOperaciones, esHoja, idDeHoja, prendaOperacionesDe } from './operacionesOrden'
+import { cargarOpcionesOperaciones } from '../hooks/usePrendasOperaciones'
 
 // Genera el blob del PDF de confirmación de una orden (sin descargarlo —
 // ver PdfPreviewModal.jsx, que se encarga de mostrarlo y de la descarga
@@ -41,13 +42,17 @@ async function prepararHojasOperaciones(order) {
   try {
     const items = order.items || []
     if (items.length === 0) return []
-    const { data: prendas, error: e1 } = await fetchPrendasConOperaciones()
-    if (e1 || !prendas) return []
-    const usadas = [...new Set(items.map((it) => prendaOperacionesDe(it, order.client_name, prendas)).filter(Boolean))]
+    const opciones = await cargarOpcionesOperaciones()
+    if (!opciones) return []
+    const usadas = [...new Set(items.map((it) => prendaOperacionesDe(it, order.client_name, opciones)).filter(Boolean))]
     if (usadas.length === 0) return []
-    const { data: ops, error: e2 } = await fetchOperacionesParaOrden(usadas)
-    if (e2) return []
-    return armarHojasOperaciones(items, order.client_name, prendas, ops)
+    const prendas = usadas.filter((v) => !esHoja(v))
+    const hojaIds = usadas.filter(esHoja).map(idDeHoja)
+    const [{ data: ops, error: e2 }, { data: hojas, error: e3 }] = await Promise.all([
+      fetchOperacionesParaOrden(prendas),
+      fetchHojasOperacionesParaOrden(hojaIds),
+    ])
+    return armarHojasOperaciones(items, order.client_name, opciones, e2 ? [] : ops, e3 ? [] : hojas)
   } catch (err) {
     console.error('No se pudieron agregar las operaciones al PDF:', err)
     return []
