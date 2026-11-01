@@ -51,3 +51,16 @@ test('V159: con una línea de mostrador manda el total calculado', () => {
   const totales = { renglones: [{ precio_unitario: 100, venta_mostrador: false }, { precio_unitario: null, venta_mostrador: true }], total: 1000, anticipos: 0 }
   assert.equal(resumenPagosPdf({ total_orden: 9999 }, totales).total, 1000)
 })
+
+test('V176: orden de un pedido → cuenta del pedido, sin anticipo de la orden', async () => {
+  const { resumenPedidoPdf } = await import('./pagosPdf.js')
+  const r = resumenPedidoPdf({ subtotal: null, iva: null, total: 2250, anticipos: 0, saldo: 2250 }, {
+    folio: 'PED-0001', es_mostrador: false, total: 10110, anticipo: 500, abonos: 1000, anticipos_ordenes: 0, saldo: 8610,
+    ordenes: [{ activa: true }, { activa: true }, { activa: false }],
+  })
+  assert.equal(r.total, 2250)
+  assert.equal(r.anticipos, null)
+  assert.equal(r.saldo, null)
+  assert.deepEqual(r.pedido, { folio: 'PED-0001', esMostrador: false, total: 10110, anticipo: 500, abonos: 1000, anticiposOrdenes: 0, saldo: 8610, ordenes: 2 })
+  assert.equal(resumenPedidoPdf(null, { folio: 'PED-0002', es_mostrador: true, ordenes: [] }).pedido.esMostrador, true)
+})

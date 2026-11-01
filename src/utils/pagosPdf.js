@@ -20,6 +20,28 @@ export function resumenPagosPdf(order, totales) {
   }
 }
 
+// V176 — orden de un pedido: se queda el total de la orden y el dinero se
+// muestra del pedido (anticipo, abonos, saldo). `tot` = pedido_totales().
+export function resumenPedidoPdf(pagos, tot) {
+  return {
+    subtotal: pagos?.subtotal ?? null,
+    iva: pagos?.iva ?? null,
+    total: pagos?.total ?? null,
+    anticipos: null,
+    saldo: null,
+    pedido: {
+      folio: tot.folio,
+      esMostrador: !!tot.es_mostrador,
+      total: Number(tot.total) || 0,
+      anticipo: Number(tot.anticipo) || 0,
+      abonos: Number(tot.abonos) || 0,
+      anticiposOrdenes: Number(tot.anticipos_ordenes) || 0,
+      saldo: Number(tot.saldo) || 0,
+      ordenes: (tot.ordenes || []).filter((o) => o.activa).length,
+    },
+  }
+}
+
 // Filas del roster de una prenda (nombre, talla y número) que sí traen datos.
 export function rosterParaPdf(item) {
   if (!item?.tiene_roster || !Array.isArray(item.roster)) return []

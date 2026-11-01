@@ -7363,4 +7363,8 @@ probadas en el arnés. SQL aplicado por Alfredo el 2026-11-01 (verificado: RPC s
   pedido nuevo (bloquea sin razón social sin crear nada; crea PED-0001 ligado), cuenta 10,110 − 500 − 1,000 = 8,610,
   abono, agregar orden existente, "+ Nueva orden" desde el pedido, pedido de mostrador, agregar/quitar desde el
   detalle, celular. 106 pruebas `node --test` y `vite build` limpios.
-- **No hecho**: folio del pedido en las tarjetas del Dashboard; PDF de la orden o del pedido con datos del pedido.
+- **Folio del pedido en tarjetas y PDF** (2026-11-01, sin SQL): etiqueta "Pedido PED-0001" en `OrderCard`
+  (`hooks/useFolioPedido.js`, una consulta por tanda a `pedidos`). Por RLS solo la ven los roles de dinero; para
+  fábrica haría falta una función nueva (no se hizo). PDF de la orden (`fetchPagosParaPdf` + `resumenPedidoPdf`):
+  "Pedido PED-0001" bajo el folio y, en "Total y anticipo", total de la orden + total, anticipo y abonos y restante
+  DEL PEDIDO (no el anticipo de la orden); pedido de mostrador: "venta de mostrador, sin cobro".

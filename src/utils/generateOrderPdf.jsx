@@ -2,7 +2,8 @@ import { pdf } from '@react-pdf/renderer'
 import OrderConfirmationPdf from '../components/pdf/OrderConfirmationPdf'
 import RemisionPdf from '../components/pdf/RemisionPdf'
 import { fetchOrdenTotales } from '../services/finanzasService'
-import { marcasDePrenda, resumenPagosPdf } from './pagosPdf'
+import { fetchPedidoTotales } from '../services/pedidosService'
+import { marcasDePrenda, resumenPagosPdf, resumenPedidoPdf } from './pagosPdf'
 import { fetchHojasOperacionesParaOrden, fetchOperacionesParaOrden } from '../services/produccionService'
 import { armarHojasOperaciones, esHoja, idDeHoja, prendaOperacionesDe } from './operacionesOrden'
 import { cargarOpcionesOperaciones } from '../hooks/usePrendasOperaciones'
@@ -121,11 +122,13 @@ function urlsDeMarcas(item, tipo) {
 // demás. Si la consulta falla, el PDF se genera sin la sección.
 export async function fetchPagosParaPdf(order) {
   const { data, error } = await fetchOrdenTotales(order.id)
-  if (error) {
-    console.error('No se pudieron leer los totales para el PDF:', error)
-    return resumenPagosPdf(order, null)
-  }
-  return resumenPagosPdf(order, data)
+  if (error) console.error('No se pudieron leer los totales para el PDF:', error)
+  const pagos = resumenPagosPdf(order, error ? null : data)
+  // V176 — orden de un pedido: el anticipo y el saldo son del pedido.
+  if (!order.pedido_id) return pagos
+  const { data: tot, error: pErr } = await fetchPedidoTotales(order.pedido_id)
+  if (pErr || !tot) return pagos
+  return resumenPedidoPdf(pagos, tot)
 }
 
 // Remisión de entrega (V26, Parte 4) — solo tiene sentido con la orden

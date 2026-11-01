@@ -780,11 +780,13 @@ function NewOrderForm() {
         clientId: form.clienteIncidental ? '' : form.clientId,
         esMostrador: ventaMostrador,
       })
-      const { error: pErr } = await crearPedido(datos, [data.id])
+      const { data: nuevoPedido, error: pErr } = await crearPedido(datos, [data.id])
       if (pErr) pedidoError = `La orden se creó, pero no se pudo crear el pedido: ${pErr.message}`
+      else data = { ...data, pedido_id: nuevoPedido.id } // para el PDF de abajo
     } else if (agrupacion === 'existente' && pedidoExistente) {
       const { error: pErr } = await agregarOrdenAPedido(pedidoExistente.id, data.id)
       if (pErr) pedidoError = `La orden se creó, pero no se pudo agregar al pedido ${pedidoExistente.folio}: ${pErr.message}`
+      else data = { ...data, pedido_id: pedidoExistente.id }
     }
     // La orden ya existe (tiene id): subimos las fotos elegidas a mano. Si
     // esto falla, no se cancela la creación de la orden — se puede

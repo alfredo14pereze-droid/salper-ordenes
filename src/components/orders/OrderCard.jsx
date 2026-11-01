@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { canConfirmOrderChanges } from '../../utils/permissions'
 import { codigoProductoFrisa, etiquetaSecuencia, secuenciaDeOrden } from '../../utils/frisa'
 import { useLineasMostrador } from '../../hooks/useLineasMostrador'
+import { useFolioPedido } from '../../hooks/useFolioPedido'
 import EntregaRapida from './EntregaRapida'
 
 export default function OrderCard({ order, orderType, onUpdated }) {
@@ -26,6 +27,8 @@ export default function OrderCard({ order, orderType, onUpdated }) {
   // V159 — si alguna línea es "venta de mostrador", etiqueta en la tarjeta.
   const lineasMostrador = useLineasMostrador(order.id)
   const conMostrador = !!lineasMostrador && lineasMostrador.size > 0
+  // V176 — folio del pedido al que pertenece (solo lo ven los roles de dinero).
+  const folioPedido = useFolioPedido(order.pedido_id)
   // V155 — órdenes de Frisa: código del producto y su secuencia de procesos.
   const codigoFrisa = codigoProductoFrisa(order)
   const secuenciaFrisa = etiquetaSecuencia(secuenciaDeOrden(order))
@@ -102,6 +105,7 @@ export default function OrderCard({ order, orderType, onUpdated }) {
         <div className="order-card__meta">
           <TypeBadge type={orderType} />
           {conMostrador && <span className="badge badge--mostrador">Mostrador</span>}
+          {folioPedido && <span className="badge badge--pedido">Pedido {folioPedido}</span>}
           <span className={dueClass}>{dueLabel}</span>
         </div>
         <div className="order-card__footer">
@@ -121,6 +125,7 @@ export default function OrderCard({ order, orderType, onUpdated }) {
             #{order.order_number}
             {nota && <span className="order-card__nota-chip">✎ Nota</span>}
             {conMostrador && <span className="badge badge--mostrador" style={{ marginLeft: 6 }}>Mostrador</span>}
+            {folioPedido && <span className="badge badge--pedido" style={{ marginLeft: 6 }}>{folioPedido}</span>}
           </span>
           <span className="order-card__compact-sub">
             {order.client_name} · {dueLabel}

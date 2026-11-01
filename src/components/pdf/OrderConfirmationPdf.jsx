@@ -55,6 +55,7 @@ const styles = StyleSheet.create({
   },
   folioValue: { fontFamily: 'Helvetica-Bold', fontSize: 20, color: COLOR_INK },
   createdAt: { fontSize: 8, color: COLOR_MUTED, marginTop: 4 },
+  pedidoFolio: { fontFamily: 'Helvetica-Bold', fontSize: 10, color: COLOR_INK, marginTop: 4 },
   statusBox: { paddingVertical: 4, paddingHorizontal: 12, marginTop: 6 },
   statusLabel: { fontFamily: 'Helvetica-Bold', fontSize: 9 },
 
@@ -381,6 +382,8 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 
             <View style={styles.folioBox}>
               <Text style={styles.folioValue}>{order.order_number}</Text>
             </View>
+            {/* V176 — folio del pedido (solo si quien genera ve dinero). */}
+            {pagos?.pedido && <Text style={styles.pedidoFolio}>Pedido {pagos.pedido.folio}</Text>}
             <View style={[styles.statusBox, { backgroundColor: currentStatus.color }]}>
               <Text style={[styles.statusLabel, { color: currentStatus.textColor }]}>
                 Estado actual: {currentStatus.label}
@@ -477,10 +480,36 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 
                     <Text style={styles.pagosTotal}>{formatMxn(pagos.total)}</Text>
                   </View>
                 )}
-                <View style={styles.pagosRow}>
-                  <Text style={styles.pagosLabel}>Anticipo recibido</Text>
-                  <Text style={styles.pagosValue}>{formatMxn(pagos.anticipos)}</Text>
-                </View>
+                {pagos.anticipos != null && (
+                  <View style={styles.pagosRow}>
+                    <Text style={styles.pagosLabel}>Anticipo recibido</Text>
+                    <Text style={styles.pagosValue}>{formatMxn(pagos.anticipos)}</Text>
+                  </View>
+                )}
+                {pagos.pedido && pagos.pedido.esMostrador && (
+                  <Text style={styles.pagosLabel}>Pedido {pagos.pedido.folio}: venta de mostrador, sin cobro.</Text>
+                )}
+                {pagos.pedido && !pagos.pedido.esMostrador && (
+                  <>
+                    <Text style={[styles.pagosLabel, { marginTop: 6, fontFamily: 'Helvetica-Bold' }]}>
+                      Pedido {pagos.pedido.folio} ({pagos.pedido.ordenes} {pagos.pedido.ordenes === 1 ? 'orden' : 'órdenes'})
+                    </Text>
+                    <View style={styles.pagosRow}>
+                      <Text style={styles.pagosLabel}>Total del pedido</Text>
+                      <Text style={styles.pagosValue}>{formatMxn(pagos.pedido.total)}</Text>
+                    </View>
+                    <View style={styles.pagosRow}>
+                      <Text style={styles.pagosLabel}>Anticipo y abonos</Text>
+                      <Text style={styles.pagosValue}>
+                        {formatMxn(pagos.pedido.anticipo + pagos.pedido.abonos + pagos.pedido.anticiposOrdenes)}
+                      </Text>
+                    </View>
+                    <View style={styles.pagosSaldo}>
+                      <Text style={styles.pagosLabel}>Restante del pedido</Text>
+                      <Text style={styles.pagosSaldoValue}>{formatMxn(pagos.pedido.saldo)}</Text>
+                    </View>
+                  </>
+                )}
                 {pagos.saldo != null && (
                   <View style={styles.pagosSaldo}>
                     <Text style={styles.pagosLabel}>Restante por pagar</Text>

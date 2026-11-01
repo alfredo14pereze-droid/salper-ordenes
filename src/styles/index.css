@@ -5191,3 +5191,4 @@ h4 {
 .aviso-fiscal { margin: 0; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--color-orange-soft); color: var(--color-orange-strong); font-size: 13px; font-weight: 600; }
 .agrupacion .seg { flex-wrap: wrap; }
 .pedido-banner { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.badge--pedido { background: var(--color-surface); color: var(--color-black); border: 1px solid var(--color-black); }
