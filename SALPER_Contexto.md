@@ -7274,3 +7274,8 @@ todos puedan marcar sus tareas").
   UNA prenda del catálogo con la primera palabra de la prenda y una palabra del cliente (Chamarra + Colegio
   Domus → CHAMARRA DOMUS); `utils/operacionesOrden.js`.
 - PDF interno (no el del cliente): una página por prenda con su hoja de operaciones agrupada por parte.
+
+## 2026-11-01 — Se quitó la copia a CHAMARRA DOMUS (APLICADO)
+- `datos_2026-11-01_quitar_chamarra_domus.sql`: borró las 88 operaciones de CHAMARRA DOMUS (1601–1688 quedan
+  libres), su hoja impresa y la liga en órdenes. CHAMARRA ESCOLAR intacta. V174 (operaciones en la orden y en
+  el PDF interno) y la hoja por parte se quedan.
