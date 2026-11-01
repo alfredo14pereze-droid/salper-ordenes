@@ -7290,7 +7290,7 @@ todos puedan marcar sus tareas").
   título. No se crean folios: la hoja guarda los folios originales.
 - La sugerencia automática (prenda + cliente) también busca en los títulos de las hojas.
 
-## Fase 1 (pedidos) — Venta de mostrador por orden + precio por prenda (2026-11-01, rama `ui-precios-mostrador`, SIN SQL)
+## Fase 1 (pedidos) — Venta de mostrador por orden + precio por prenda (2026-11-01, SIN SQL, en main)
 Pedido de Alfredo en dos fases (1 = solo pantalla; 2 = tabla `pedidos`, con esquema). Fase 1 hecha, a la espera
 de que Alfredo la valide; Fase 2 no empezada.
 - **1A — Venta de mostrador de toda la orden.** Se revisó dónde vive la bandera: por LÍNEA,
@@ -7328,9 +7328,9 @@ de que Alfredo la valide; Fase 2 no empezada.
   scroll horizontal. 101 pruebas `node --test` y `vite build` limpios.
 - **No probado**: con la base real (nada se escribió en Supabase).
 
-## V176 — Pedidos: agrupar órdenes (Fase 2, 2026-11-01, rama `ui-precios-mostrador`, SQL SIN APLICAR)
+## V176 — Pedidos: agrupar órdenes (Fase 2, 2026-11-01, APLICADO)
 SQL `supabase/schema_v176_pedidos.sql` confirmado por Alfredo (aditivo; compatible con V1). Pantallas hechas y
-probadas en el arnés; falta aplicar el SQL y subir.
+probadas en el arnés. SQL aplicado por Alfredo el 2026-11-01 (verificado: RPC sin sesión → 401 "permission denied"; tabla `pedidos` existe).
 - **Esquema**: tabla `pedidos` (folio `PED-0001` por trigger desde `pedido_folio_seq`, no se cambia ni se reusa;
   `client_id` opcional, `cliente`, `es_mostrador`, `anticipo` + método/quién lo recibió, `requiere_factura`, razón
   social/RFC/régimen/uso CFDI/CP/dirección, notas, `created_by(_nombre)`, `deleted_at`). Checks: mostrador ⇒ anticipo
