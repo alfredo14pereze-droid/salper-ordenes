@@ -593,6 +593,17 @@ export function canMarcarEntregado(role) {
 // servidor (ver supabase/schema_v88_admin_fabrica_lectura.sql). No entra a
 // "Producción" (captura diaria, /produccion/captura): es una pantalla de
 // captura pura, sin nada que valga la pena ver de solo lectura ahí.
+// V177 — hojas impresas: las ven también admin_fabrica / admin_fabrica_lectura
+// aunque les quiten los permisos de producción; las editan quien captura,
+// admin_general y admin_fabrica (misma regla que puede_*_hojas_impresas()).
+export function canVerHojasImpresas(role) {
+  return canCapturarProduccion(role) || canViewProduccionMontos(role) || ['admin_general', 'admin_fabrica', 'admin_fabrica_lectura'].includes(role)
+}
+
+export function canEditarHojasImpresas(role) {
+  return canCapturarProduccion(role) || role === 'admin_general' || role === 'admin_fabrica'
+}
+
 export function esFabricaSoloLectura(role) {
   return role === 'admin_fabrica_lectura'
 }

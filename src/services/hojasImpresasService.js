@@ -27,6 +27,13 @@ export async function registrarHojaImpresa({ prenda, titulo, folios }) {
   return supabase.rpc('registrar_hoja_impresa', { p_prenda: prenda, p_titulo: titulo, p_folios: folios }).single()
 }
 
+// V177 — reemplaza las operaciones (de la misma prenda) y el título.
+export async function editarHojaImpresa({ id, titulo, folios }) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('editar_hoja_impresa', { p_id: id, p_titulo: titulo, p_folios: folios }).single()
+}
+
 export async function quitarHojaImpresa(id) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }

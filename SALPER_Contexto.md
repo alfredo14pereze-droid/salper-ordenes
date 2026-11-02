@@ -7368,3 +7368,16 @@ probadas en el arnés. SQL aplicado por Alfredo el 2026-11-01 (verificado: RPC s
   fábrica haría falta una función nueva (no se hizo). PDF de la orden (`fetchPagosParaPdf` + `resumenPedidoPdf`):
   "Pedido PED-0001" bajo el folio y, en "Total y anticipo", total de la orden + total, anticipo y abonos y restante
   DEL PEDIDO (no el anticipo de la orden); pedido de mostrador: "venta de mostrador, sin cobro".
+
+## V177 — Editar hojas impresas + admin fábrica siempre las ve (2026-11-02, APLICADO)
+- SQL `supabase/schema_v177_editar_hojas_impresas.sql` (aplicado por Alfredo, verificado: 4 funciones).
+- `puede_ver_hojas_impresas()`: prod.capturar o prod.ver_lectura, o rol admin_general / admin_fabrica /
+  admin_fabrica_lectura (aunque les quiten permisos). La política de lectura de `hojas_impresas` y
+  `registrar_hoja_impresa` usan esta regla.
+- `puede_editar_hojas_impresas()`: prod.capturar, admin_general o admin_fabrica (admin_fabrica_lectura no edita).
+- `editar_hoja_impresa(id, titulo, folios[])`: reemplaza operaciones (solo de la misma prenda; copia desde
+  prod_operaciones) y título; no cambia `veces` ni `ultima_en`. Título repetido en la misma prenda o hoja vacía → error.
+- Frontend: `canVerHojasImpresas` / `canEditarHojasImpresas` (permissions.js); en «Hojas impresas» botón
+  «Editar operaciones» → modal `EditarHoja` (operaciones activas de la prenda + las que ya traía, por parte).
+- Mismo día, sin SQL: casillas de marcar más grandes (`.ops-marca`), palomitas y título por prenda guardados en
+  localStorage (`salper.operaciones.marcadas` / `salper.operaciones.titulos`), botón «Marcar estas operaciones».

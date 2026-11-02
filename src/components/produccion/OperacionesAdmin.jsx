@@ -4,7 +4,7 @@ import Modal from '../talleros/Modal'
 import PdfPreviewModal from '../pdf/PdfPreviewModal'
 import { fetchOperacionesTodas, guardarOperacion } from '../../services/produccionService'
 import { useAuth } from '../../contexts/AuthContext'
-import { canCapturarProduccion, esFabricaSoloLectura } from '../../utils/permissions'
+import { canCapturarProduccion, canEditarHojasImpresas, canVerHojasImpresas, esFabricaSoloLectura } from '../../utils/permissions'
 import HojasImpresas from './HojasImpresas'
 import { buildCatalogoOperacionesPdfBlob, catalogoPdfFileName } from '../../utils/generateProduccionPdf'
 import { registrarHojaImpresa } from '../../services/hojasImpresasService'
@@ -141,9 +141,11 @@ export default function OperacionesAdmin({ consulta = false }) {
           <button type="button" className="btn btn--secondary btn--small" onClick={() => setImprimir(true)}>
             Imprimir…
           </button>
-          <button type="button" className={'btn btn--small ' + (verHojas ? 'btn--primary' : 'btn--secondary')} aria-pressed={verHojas} onClick={() => setVerHojas((v) => !v)}>
-            {verHojas ? 'Ocultar hojas impresas' : 'Hojas impresas'}
-          </button>
+          {canVerHojasImpresas(role) && (
+            <button type="button" className={'btn btn--small ' + (verHojas ? 'btn--primary' : 'btn--secondary')} aria-pressed={verHojas} onClick={() => setVerHojas((v) => !v)}>
+              {verHojas ? 'Ocultar hojas impresas' : 'Hojas impresas'}
+            </button>
+          )}
           {!soloLectura && (
             <button type="button" className="btn btn--secondary btn--small" onClick={() =>
                 // Si ya hay prenda filtrada, el folio sugerido sale desde el inicio.
@@ -158,6 +160,8 @@ export default function OperacionesAdmin({ consulta = false }) {
       {verHojas && (
         <HojasImpresas
           puedeQuitar={canCapturarProduccion(role)}
+          puedeEditar={canEditarHojasImpresas(role)}
+          catalogo={ops}
           onMarcar={(h) => {
             // Vuelve a dejar marcadas las operaciones de esa hoja, con su título.
             setMarcadas(new Set((h.operaciones || []).map((o) => o.folio)))
