@@ -21,6 +21,26 @@ import {
 
 const NUEVA = '__nueva__'
 
+// Las palomitas y el título de cada prenda se guardan en este navegador para
+// que no se pierdan al imprimir, recargar o salir de la página.
+const LS_MARCADAS = 'salper.operaciones.marcadas'
+const LS_TITULOS = 'salper.operaciones.titulos'
+function leerLS(key, fallback) {
+  try {
+    const v = JSON.parse(localStorage.getItem(key))
+    return v ?? fallback
+  } catch {
+    return fallback
+  }
+}
+function escribirLS(key, valor) {
+  try {
+    localStorage.setItem(key, JSON.stringify(valor))
+  } catch {
+    // sin localStorage (modo privado) — no es crítico
+  }
+}
+
 // V70 — Catálogo de operaciones. Los folios se organizan por centenas según la prenda: al dar de alta se
 // sugiere el siguiente folio libre; las operaciones NUNCA se borran (solo se desactivan) y un folio jamás se reutiliza.
 // `consulta`: vista de solo consulta (Juanis, /produccion/operaciones): buscar y
@@ -36,7 +56,11 @@ export default function OperacionesAdmin({ consulta = false }) {
   const [alta, setAlta] = useState(null)
   const [edit, setEdit] = useState(null)
   // Palomitas para escoger qué imprimir (se conservan al cambiar el filtro).
-  const [marcadas, setMarcadas] = useState(() => new Set())
+  const [marcadas, setMarcadas] = useState(() => {
+    const v = leerLS(LS_MARCADAS, [])
+    return new Set(Array.isArray(v) ? v.filter(Number.isFinite) : [])
+  })
+  useEffect(() => escribirLS(LS_MARCADAS, [...marcadas]), [marcadas])
   const [imprimir, setImprimir] = useState(false)
   const [verHojas, setVerHojas] = useState(false) // V173
 
@@ -131,7 +155,20 @@ export default function OperacionesAdmin({ consulta = false }) {
         </div>
       </div>
       {error && <p className="form-error">{error}</p>}
-      {verHojas && <HojasImpresas puedeQuitar={canCapturarProduccion(role)} />}
+      {verHojas && (
+        <HojasImpresas
+          puedeQuitar={canCapturarProduccion(role)}
+          onMarcar={(h) => {
+            // Vuelve a dejar marcadas las operaciones de esa hoja, con su título.
+            setMarcadas(new Set((h.operaciones || []).map((o) => o.folio)))
+            const t = leerLS(LS_TITULOS, {})
+            escribirLS(LS_TITULOS, { ...t, [h.prenda]: h.titulo })
+            setFPrenda(h.prenda)
+            setQ('')
+            setVerHojas(false)
+          }}
+        />
+      )}
       {marcadas.size > 0 && (
         <p className="template-hint">
           {marcadas.size} {marcadas.size === 1 ? 'operación marcada' : 'operaciones marcadas'} para imprimir.{' '}
@@ -178,14 +215,10 @@ export default function OperacionesAdmin({ consulta = false }) {
         <table className="simple-table">
           <thead>
             <tr>
-              <th>
-                <input
-                  type="checkbox"
-                  checked={todasVisiblesMarcadas}
-                  onChange={marcarVisibles}
-                  title={`Marcar las ${filtradas.length} que se ven`}
-                  aria-label={`Marcar las ${filtradas.length} que se ven`}
-                />
+              <th className="ops-marca">
+                <label className="ops-marca__area" title={`Marcar las ${filtradas.length} que se ven`}>
+                  <input type="checkbox" checked={todasVisiblesMarcadas} onChange={marcarVisibles} aria-label={`Marcar las ${filtradas.length} que se ven`} />
+                </label>
               </th>
               <th>Folio</th>
               <th>Prenda</th>
@@ -199,8 +232,10 @@ export default function OperacionesAdmin({ consulta = false }) {
           <tbody>
             {filtradas.slice(0, 300).map((o) => (
               <tr key={o.folio} className={o.activa ? '' : 'mt-catalogo__item--off'}>
-                <td>
-                  <input type="checkbox" checked={marcadas.has(o.folio)} onChange={() => marcar(o.folio)} aria-label={`Marcar ${o.folio} para imprimir`} />
+                <td className="ops-marca">
+                  <label className="ops-marca__area">
+                    <input type="checkbox" checked={marcadas.has(o.folio)} onChange={() => marcar(o.folio)} aria-label={`Marcar ${o.folio} para imprimir`} />
+                  </label>
                 </td>
                 <td>{o.folio}</td>
                 <td>{o.prenda}</td>
@@ -372,13 +407,15 @@ function ImprimirOperaciones({ ops, visibles, marcadas, filtro, onClose }) {
   const [generando, setGenerando] = useState(false)
   const [error, setError] = useState(null)
   const [preview, setPreview] = useState(null)
-  const [titulo, setTitulo] = useState(null) // null = todavía no se escribe: arranca con la prenda
+  const [titulo, setTitulo] = useState(null) // null = todavía no se escribe: arranca con el último de la prenda
 
   const lista = operacionesParaImprimir(ops, { modo, visibles, marcadas, incluirInactivas })
   // V175 — con una sola prenda se le pone título y la hoja se guarda en «Hojas impresas».
   const prendasLista = [...new Set(lista.map((o) => o.prenda))]
   const unicaPrenda = prendasLista.length === 1 ? prendasLista[0] : null
-  const tituloFinal = (titulo ?? unicaPrenda ?? '').trim()
+  const tituloGuardado = unicaPrenda ? leerLS(LS_TITULOS, {})[unicaPrenda] : null
+  const tituloInicial = (typeof tituloGuardado === 'string' && tituloGuardado.trim()) || unicaPrenda || ''
+  const tituloFinal = (titulo ?? tituloInicial).trim()
   const descripcionFiltro = [filtro.prenda, filtro.q.trim() && `"${filtro.q.trim()}"`].filter(Boolean).join(' · ') || 'sin filtro'
   const toggleColumna = (key) => setColumnas((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
 
@@ -390,6 +427,7 @@ function ImprimirOperaciones({ ops, visibles, marcadas, filtro, onClose }) {
         const { error: err } = await registrarHojaImpresa({ prenda: unicaPrenda, titulo: tituloFinal || unicaPrenda, folios: lista.map((o) => o.folio) })
         if (err) throw new Error(`no se pudo guardar en «Hojas impresas»: ${err.message}`)
         olvidarOpcionesOperaciones()
+        escribirLS(LS_TITULOS, { ...leerLS(LS_TITULOS, {}), [unicaPrenda]: tituloFinal || unicaPrenda })
       }
       const blob = await buildCatalogoOperacionesPdfBlob(lista, { columnas, porPrenda, titulo: unicaPrenda ? tituloFinal || unicaPrenda : '' })
       setPreview({ blob, fileName: unicaPrenda ? `${(tituloFinal || unicaPrenda).replace(/[^\p{L}\p{N}]+/gu, '-')}.pdf` : catalogoPdfFileName('operaciones') })
@@ -444,7 +482,7 @@ function ImprimirOperaciones({ ops, visibles, marcadas, filtro, onClose }) {
         {unicaPrenda ? (
           <label>
             Título de la hoja
-            <input className="input" value={titulo ?? unicaPrenda} onChange={(e) => setTitulo(e.target.value)} placeholder={unicaPrenda} />
+            <input className="input" value={titulo ?? tituloInicial} onChange={(e) => setTitulo(e.target.value)} placeholder={unicaPrenda} />
             <span className="template-hint">
               Ej. «Chamarra Vasco de Quiroga secundaria». Al ver el PDF se guarda en «Hojas impresas» y luego se puede escoger en las prendas de una orden.
             </span>

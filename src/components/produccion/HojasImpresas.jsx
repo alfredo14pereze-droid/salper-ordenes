@@ -9,7 +9,7 @@ import '../impresion/impresion.css'
 
 // V173 — hojas de operaciones que ya se imprimieron (una por prenda + título).
 // Se pueden ver, volver a imprimir y quitar. Ver schema_v173_hojas_impresas.sql.
-export default function HojasImpresas({ puedeQuitar }) {
+export default function HojasImpresas({ puedeQuitar, onMarcar }) {
   const [lista, setLista] = useState(null)
   const [error, setError] = useState(null)
   const [busqueda, setBusqueda] = useState('')
@@ -92,6 +92,11 @@ export default function HojasImpresas({ puedeQuitar }) {
                   <Link to={`/produccion/operaciones/imprimir?hoja=${h.id}`} className="btn btn--secondary btn--small">
                     Volver a imprimir
                   </Link>
+                  {onMarcar && (
+                    <button type="button" className="btn btn--secondary btn--small" onClick={() => onMarcar(h)}>
+                      Marcar estas operaciones
+                    </button>
+                  )}
                   {puedeQuitar && (
                     <button type="button" className="btn btn--ghost btn--small" disabled={quitando === h.id} onClick={() => quitar(h)}>
                       {quitando === h.id ? 'Quitando…' : 'Quitar de la lista'}

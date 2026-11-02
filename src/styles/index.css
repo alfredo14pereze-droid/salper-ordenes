@@ -5192,3 +5192,26 @@ h4 {
 .agrupacion .seg { flex-wrap: wrap; }
 .pedido-banner { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 .badge--pedido { background: var(--color-surface); color: var(--color-black); border: 1px solid var(--color-black); }
+
+/* Casillas para marcar operaciones a imprimir (Admin producción): grandes y
+   con toda la celda como área para tocar. */
+.ops-marca {
+  width: 52px;
+  padding: 0 !important;
+  text-align: center;
+}
+.ops-marca__area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 0;
+  cursor: pointer;
+}
+.ops-marca__area input[type='checkbox'] {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--color-primary, #2563eb);
+}
