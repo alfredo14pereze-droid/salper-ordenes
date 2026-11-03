@@ -7421,3 +7421,17 @@ lo surtido y otros procesos.
   `orden_cambios` existe y `anon` recibe "permission denied" (401) en ella y en `confirm_order_changes`. No se pudo
   comprobar sin sesión el trigger ni lo de costura: se ve en la primera edición real de una orden confirmada.
   Las órdenes que ya estaban en azul no tienen detalle (se ven con el aviso de antes).
+
+## V179 — Cambios anteriores a V178 en el historial (2026-11-03, SQL APLICADO)
+Pedido de Alfredo: que las órdenes que ya estaban en azul antes de V178 también muestren sus cambios.
+- `supabase/schema_v179_cambios_anteriores.sql`, solo datos (insert en `orden_cambios`, marca `campos._anterior`;
+  rollback `delete from orden_cambios where campos ? '_anterior'`). Por orden con `pending_reconfirmation_at`:
+  cada guardado de prendas de ventas/admin_tienda/admin_general en `orden_items_historial` (V152, desde 14-oct)
+  después de que salió de "por confirmar" y hasta la bandera; y si la hora de la bandera no coincide con un cambio
+  de prendas, un renglón `_nota` "se modificaron los datos generales… no se sabe cuál ni quién" (antes de V178 no
+  se guardaba). Todo pendiente de aceptar; "Aceptar cambios" los acepta con lo nuevo.
+- Pantalla: `CambioDetalle` muestra `_nota` y "No se registró quién"; `cambiosVisibles` (en `useOrdenCambios`)
+  esconde los renglones `_anterior` sin diferencia visible.
+- Aplicado por Alfredo el 2026-11-03 (Supabase avisó "creates a table without RLS": falsa alarma, la tabla ya tenía
+  RLS; eligió "Run and enable RLS"). Resultado: ESC-049 3 cambios de prendas; IND-009 y ESC-043 un cambio de datos
+  sin detalle. Probado antes en PGlite (9 casos) y en el ejemplo local (ESC-104/105).
