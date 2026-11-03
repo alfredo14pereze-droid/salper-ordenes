@@ -10,6 +10,7 @@ import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import EstacionCard from '../components/orders/EstacionCard'
 import SublimadoHomePage from './SublimadoHomePage'
 import { coincideBusquedaOrden } from '../utils/ordenesBusqueda'
+import { estacionVeCambios } from '../utils/cambiosOrden'
 
 // V96 — "Siguientes órdenes": pantalla de inicio de cada estación de
 // fábrica (corte/bordado/sublimado/produccion/terminado). Sin menú
@@ -105,7 +106,7 @@ function SiguientesOrdenes() {
         ) : (
           <div className="estacion-list">
             {encontradas.map((o) => (
-              <EstacionCard key={o.id} order={o} />
+              <EstacionCard key={o.id} order={o} conCambios={estacionVeCambios(o, estacion, etapasPorOrden[o.id])} />
             ))}
           </div>
         ))}
@@ -123,7 +124,7 @@ function SiguientesOrdenes() {
           ) : (
             <div className="estacion-list">
               {ordenes.map((o) => (
-                <EstacionCard key={o.id} order={o}>
+                <EstacionCard key={o.id} order={o} conCambios={estacionVeCambios(o, estacion, etapasPorOrden[o.id])}>
                   <EstadoDeMiEtapa etapa={(etapasPorOrden[o.id] || []).find((e) => e.etapa === etapa)} />
                 </EstacionCard>
               ))}

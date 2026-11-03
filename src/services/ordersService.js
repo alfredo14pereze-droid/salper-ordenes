@@ -247,6 +247,21 @@ export async function confirmOrderChanges(orderId) {
   return supabase.rpc('confirm_order_changes', { p_order_id: orderId }).single()
 }
 
+// V178: qué cambió en la orden, quién y cuándo (orden_cambios). Lo llena un
+// trigger al guardar datos o prendas; se acepta con confirmOrderChanges.
+// Si la tabla todavía no existe (SQL sin aplicar) regresa lista vacía.
+export async function fetchOrdenCambios(orderId) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: [], error: cfgError }
+
+  const { data, error } = await supabase
+    .from('orden_cambios')
+    .select('*')
+    .eq('order_id', orderId)
+    .order('hecho_en', { ascending: false })
+  return { data: data || [], error }
+}
+
 // Etapas paralelas (V23, ver supabase/schema_v23_etapas_paralelas.sql):
 // cada orden tiene una fila por etapa aplicable a su tipo (corte,
 // sublimado, producción, bordado, terminado), cada una con su propio

@@ -7381,3 +7381,40 @@ probadas en el arnés. SQL aplicado por Alfredo el 2026-11-01 (verificado: RPC s
   «Editar operaciones» → modal `EditarHoja` (operaciones activas de la prenda + las que ya traía, por parte).
 - Mismo día, sin SQL: casillas de marcar más grandes (`.ops-marca`), palomitas y título por prenda guardados en
   localStorage (`salper.operaciones.marcadas` / `salper.operaciones.titulos`), botón «Marcar estas operaciones».
+
+## V178 — Cambios de la orden: qué cambió, quién, cuándo y quién lo aceptó (2026-11-03, rama `cambios-orden`, SQL SIN aplicar)
+Pedido de Alfredo: "que diga qué fue lo que cambió y que lo tengan que aceptar, como con las notas; cuáles fueron
+los cambios, quién los hizo y cuándo". Se reusa la reconfirmación de V38 (`pending_reconfirmation_at`,
+`confirm_order_changes`, aviso azul); V152 (`orden_items_historial`) no alcanzaba: solo prendas y también guarda
+lo surtido y otros procesos.
+- **Decisiones de Alfredo:** 1A una sola persona de fábrica acepta y se quita para todos (como hoy); 2 las
+  estaciones ven los cambios SOLO si la orden ya les aparece en "Siguientes órdenes" (`situacionEnEstacion` =
+  'lista'), si su parte todavía no llega no se les muestra; 3A lo editado antes de que fábrica confirme (o en una
+  orden completada) se guarda pero no se pide aceptar; 4A cuentan datos generales (`update_order_details`) y
+  prendas/tallas (`set_order_items`), no equipo ni precios.
+- **SQL** `supabase/schema_v178_cambios_orden.sql` (aditivo, se puede correr dos veces): tabla `orden_cambios`
+  (campos antes/después en jsonb, `items_antes/_despues` solo si cambiaron prendas, `requiere_aceptar`,
+  `hecho_por/_nombre/_en`, `aceptado_en/_por/_por_nombre`; lectura para cualquiera con sesión, anon nada).
+  Trigger `orders_cambios_trg` (BEFORE UPDATE, `orders_registrar_cambios`): registra solo si la llamada viene de
+  `update_order_details` o `set_order_items` (lo detecta con `GET DIAGNOSTICS pg_context`, sin tocar esas
+  funciones); `requiere_aceptar` = esas funciones movieron la bandera (misma regla de V38); si se guardó sin cambiar
+  nada no registra y regresa la bandera (ya no se pone azul por un guardado vacío). Cuando la bandera se apaga
+  (`confirm_order_changes`) marca los pendientes como aceptados por `auth.uid()`. Parche de una línea con guarda a
+  `confirm_order_changes`: agrega `costura` (la pantalla le mostraba el botón y la base lo rechazaba).
+- **Pantallas:** `OrderReconfirmBanner` ahora lista los cambios pendientes (`CambioDetalle`: "Fecha de entrega:
+  ~~20 nov~~ → 24 nov", "Playera polo · Talla M: 10 → 12 · Se agregó talla XL ×3", "Se agregó/Se quitó: prenda",
+  "Total de piezas") y el botón dice "✓ Aceptar cambios"; si la bandera es de antes de V178 muestra el aviso viejo.
+  `OrderCambiosHistorial` ("▸ Historial de cambios (N)", cerrado) en el detalle, con "✓ Aceptado por X · fecha" /
+  "Pendiente de aceptar" / "Antes de confirmarse". Estaciones: `EstacionOrderPage` muestra el aviso y
+  `EstacionCard` "✎ Se modificó: revisa los cambios" (Siguientes órdenes, buscador y dashboard de Samuel) según
+  `estacionVeCambios` (`utils/cambiosOrden.js`, que también arma el resumen; prendas emparejadas por `id`, sin id
+  por posición). `useOrdenCambios` / `fetchOrdenCambios`: si la tabla no existe todavía, lista vacía (la app no
+  se rompe si se sube el código antes del SQL). "Historial de estados" vacío ahora dice "Todavía no hay cambios de
+  estado" (antes "historial de cambios", se confundía).
+- **Probado:** 18 casos SQL en PGlite con las funciones reales (V38/V42/V152): fecha, prendas, guardado sin
+  cambios, surtido no se registra, costura acepta y se quita el azul, por confirmar y completada sin aceptar,
+  ventas no acepta, candado V152 sigue. Pantallas en el ejemplo local `salper-cambios-harness` (puerto 5191,
+  `.claude/harness-cambios/`, selector "Entrar como"): costura ve solo ESC-101, corte solo ESC-102, terminado
+  ninguna; aceptar como costura; historial como admin tienda; edición real del teléfono queda registrada; celular.
+- **Pendiente:** que Alfredo aplique el SQL y pida subir a `main`. Las órdenes que hoy ya están en azul no tienen
+  detalle (se ven con el aviso de antes).

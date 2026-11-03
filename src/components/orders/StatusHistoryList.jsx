@@ -5,7 +5,7 @@ import { EmptyState } from '../common/States'
 // Timeline con fecha/hora de cada cambio de estado (más reciente primero).
 export default function StatusHistoryList({ history }) {
   if (!history || history.length === 0) {
-    return <EmptyState>Todavía no hay historial de cambios.</EmptyState>
+    return <EmptyState>Todavía no hay cambios de estado.</EmptyState>
   }
 
   return (

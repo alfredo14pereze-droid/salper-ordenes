@@ -4173,7 +4173,7 @@ h4 {
 .roles-perm__nota { font-size: 0.875rem; color: var(--color-text-muted, #666); margin: 0 0 12px; }
 .roles-perm__modulo { margin-top: 12px; display: flex; flex-direction: column; gap: 4px; }
 .roles-perm__titulo { margin: 0 0 4px; font-size: 1rem; }
-.roles-perm__fila { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-top: 1px solid var(--color-border, #e5e5e5); cursor: pointer; }
+.roles-perm__fila { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-top: 1px solid var(--color-border); cursor: pointer; }
 .roles-perm__fila:first-of-type { border-top: 0; }
 .roles-perm__fila input[type='checkbox'] { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 2px; }
 .roles-perm__texto { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -5229,3 +5229,23 @@ h4 {
 .imp-ops__mas-cuerpo { display: flex; flex-direction: column; gap: 2px; padding: 0 12px 12px; }
 .imp-ops__columnas { display: flex; flex-wrap: wrap; column-gap: 18px; }
 .imp-ops__acciones { display: flex; justify-content: flex-end; gap: 10px; }
+
+/* ---------- V178: cambios de la orden ---------- */
+.reconfirm-banner--cambios { align-items: flex-start; }
+.reconfirm-banner__cuerpo { flex: 1 1 260px; min-width: 0; }
+.cambio { margin: 8px 0 4px; }
+.cambio__quien { margin: 0 0 2px; font-size: 13px; }
+.cambio__estado { color: var(--color-text-muted); }
+.cambio__lista { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.45; }
+.cambio__lista ul { margin: 0; padding-left: 16px; }
+.cambio__campo { font-weight: 600; }
+.cambio__antes { color: var(--color-text-muted); }
+.cambio__prenda--agregada > .cambio__campo { color: var(--color-good); }
+.cambio__prenda--quitada > .cambio__campo { color: var(--color-danger); }
+.cambios-historial { margin: -6px 0 16px; }
+.cambios-historial__toggle { background: none; border: 0; padding: 4px 0; font: inherit; font-size: 13px; color: var(--color-info); cursor: pointer; font-weight: 600; }
+.cambios-historial__lista { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.cambios-historial__item { padding: 8px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.cambios-historial__item--pendiente { border-color: var(--color-info); background: var(--color-info-soft); }
+.estacion-card--cambios { box-shadow: inset 4px 0 0 var(--color-info); }
+.estacion-card__cambios { font-size: 13px; font-weight: 700; color: var(--color-info); }

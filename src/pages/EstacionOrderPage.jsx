@@ -16,6 +16,9 @@ import { ETAPA_LABELS } from '../lib/constants'
 import { esOrdenFrisa, secuenciaDeOrden } from '../utils/frisa'
 import { etapaAnteriorEnSecuencia } from '../utils/ordenesDeEstacion'
 import FrisaSecuencia from '../components/orders/FrisaSecuencia'
+import OrderReconfirmBanner from '../components/orders/OrderReconfirmBanner'
+import { useOrdenCambios } from '../hooks/useOrdenCambios'
+import { estacionVeCambios } from '../utils/cambiosOrden'
 import { Loading, ErrorState } from '../components/common/States'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import Modal from '../components/talleros/Modal'
@@ -545,6 +548,7 @@ export default function EstacionOrderPage() {
   const [loadingEtapas, setLoadingEtapas] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  const { cambios } = useOrdenCambios(order)
 
   const loadEtapas = useCallback(async () => {
     const { data, error: fetchError } = await fetchOrdenEtapas(id)
@@ -628,6 +632,8 @@ export default function EstacionOrderPage() {
         </>
       )}
       <AvisoTallasDanadas order={order} paraEstacion />
+      {/* V178 — cambios sin aceptar, solo si la orden ya le toca a esta estación. */}
+      {estacionVeCambios(order, estacion, etapas) && <OrderReconfirmBanner order={order} cambios={cambios} onUpdated={refresh} />}
 
       <div className="estacion-list" style={{ marginTop: 14 }}>
         {(order.items || []).map((item, i) => (

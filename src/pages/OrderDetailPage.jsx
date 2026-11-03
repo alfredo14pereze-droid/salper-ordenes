@@ -17,6 +17,8 @@ import PedidoDeOrdenCard from '../components/pedidos/PedidoDeOrdenCard'
 import OrderDetailsCard from '../components/orders/OrderDetailsCard'
 import OrderNotesCard from '../components/orders/OrderNotesCard'
 import OrderReconfirmBanner from '../components/orders/OrderReconfirmBanner'
+import OrderCambiosHistorial from '../components/orders/OrderCambiosHistorial'
+import { useOrdenCambios } from '../hooks/useOrdenCambios'
 import AvisoTallasDanadas from '../components/orders/AvisoTallasDanadas'
 import EstimatedDaysCard from '../components/orders/EstimatedDaysCard'
 import CancelOrderCard from '../components/orders/CancelOrderCard'
@@ -66,6 +68,7 @@ function OrderDetailContent() {
   const location = useLocation()
   const { order, history, loading, error, refresh } = useOrder(id)
   const { orderTypes, typesByKey } = useOrderTypes()
+  const { cambios } = useOrdenCambios(order)
   const [generatingPdf, setGeneratingPdf] = useState(null) // null | 'interno' | 'cliente' | 'remision'
   const [pdfError, setPdfError] = useState(null)
   // Si venimos de crear la orden (NewOrderPage.jsx), el PDF de confirmación
@@ -175,7 +178,9 @@ function OrderDetailContent() {
       {preview && <PdfPreviewModal blob={preview.blob} fileName={preview.fileName} onClose={() => setPreview(null)} />}
 
       <AvisoTallasDanadas order={order} />
-      <OrderReconfirmBanner order={order} onUpdated={refresh} />
+      <OrderReconfirmBanner order={order} cambios={cambios} tiposPorClave={typesByKey} onUpdated={refresh} />
+      {/* V178 — qué cambió, quién y cuándo (cerrado por default). */}
+      {user && <OrderCambiosHistorial cambios={cambios} tiposPorClave={typesByKey} />}
 
       <StatusStepper status={order.status} />
 

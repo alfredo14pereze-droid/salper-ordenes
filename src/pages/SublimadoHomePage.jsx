@@ -10,6 +10,8 @@ import { useAuth } from '../contexts/AuthContext'
 import { badgesSublimado, bandejasSublimado } from '../utils/flujoSublimado'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import EstacionCard from '../components/orders/EstacionCard'
+import { estacionVeCambios } from '../utils/cambiosOrden'
+import { estacionDeRol } from '../config/vistasPorRol'
 import Modal from '../components/talleros/Modal'
 import { LoteImpresionModal, LoteReporte, LotesImpresionLista } from '../components/orders/LoteImpresion'
 import { telasDeOrden } from '../utils/loteImpresion'
@@ -62,6 +64,7 @@ export default function SublimadoHomePage() {
   const { etapasPorOrden, loading: loadingEtapas, error: errorEtapas, refresh: refreshEtapas } = useAllOrdenEtapas()
   const [disenosPorOrden, setDisenosPorOrden] = useState({})
   const { role } = useAuth()
+  const estacion = estacionDeRol(role)
   const puedeAutorizar = canAutorizarDiseno(role)
   const puedeLote = canImprimirLote(role)
   const [tab, setTab] = useState('diseno')
@@ -187,7 +190,7 @@ export default function SublimadoHomePage() {
             const sinDisenoFinal = !disenosPorOrden[o.id]?.has('final')
             const telas = telasDeOrden(o)
             const card = (
-              <EstacionCard key={o.id} order={o}>
+              <EstacionCard key={o.id} order={o} conCambios={estacionVeCambios(o, estacion, etapasPorOrden[o.id])}>
                 {telas.length > 0 && (
                   <span className="estacion-card__prendas">
                     Tela: <b>{telas.join(' · ')}</b>
