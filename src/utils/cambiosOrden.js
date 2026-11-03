@@ -157,7 +157,16 @@ export function resumenCambio(cambio, tiposPorClave) {
     if (pa !== pd) total = `${pa} → ${pd} piezas`
     if (prendas.length === 0 && !total) prendas.push({ titulo: 'Prendas', lineas: ['Cambios menores en la captura de las prendas'], tipo: 'cambiada' })
   }
-  return { generales, prendas, total }
+  // V179 — cambios anteriores a V178: aviso de "datos generales sin detalle".
+  const nota = typeof cambio?.campos?._nota === 'string' ? cambio.campos._nota : null
+  const vacio = !nota && generales.length === 0 && !total && prendas.every((p) => p.titulo === 'Prendas')
+  return { generales, prendas, total, nota, vacio }
+}
+
+// V179 — los cambios rellenados de antes de V178 que no cambiaron nada que se
+// vea (p. ej. un guardado de prendas igual) no se muestran.
+export function cambiosVisibles(cambios) {
+  return (cambios || []).filter((c) => !(c?.campos?._anterior && resumenCambio(c).vacio))
 }
 
 export function cambiosPendientes(cambios) {

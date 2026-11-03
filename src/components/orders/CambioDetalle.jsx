@@ -4,14 +4,16 @@ import { formatDateTime } from '../../utils/dates'
 // V178 — un cambio registrado: quién y cuándo, y qué cambió campo por campo.
 // `estado` (opcional) va al final de la línea de quién/cuándo.
 export default function CambioDetalle({ cambio, tiposPorClave, estado }) {
-  const { generales, prendas, total } = resumenCambio(cambio, tiposPorClave)
+  const { generales, prendas, total, nota } = resumenCambio(cambio, tiposPorClave)
+  const quien = cambio.hecho_por_nombre || (cambio.campos?._anterior ? 'No se registró quién' : 'Alguien')
   return (
     <div className="cambio">
       <p className="cambio__quien">
-        <b>{cambio.hecho_por_nombre || 'Alguien'}</b> · {formatDateTime(cambio.hecho_en)}
+        <b>{quien}</b> · {formatDateTime(cambio.hecho_en)}
         {estado && <span className="cambio__estado"> · {estado}</span>}
       </p>
       <ul className="cambio__lista">
+        {nota && <li>{nota}</li>}
         {generales.map((g) => (
           <li key={g.label}>
             <span className="cambio__campo">{g.label}:</span> <s className="cambio__antes">{g.antes}</s> → <b>{g.despues}</b>

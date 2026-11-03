@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchOrdenCambios } from '../services/ordersService'
+import { cambiosVisibles } from '../utils/cambiosOrden'
 
 // V178 — cambios registrados de una orden (más reciente primero). Se vuelve
 // a leer cuando la orden cambia (updated_at / bandera de reconfirmación).
@@ -12,7 +13,7 @@ export function useOrdenCambios(order) {
     if (!orderId) return
     const { data, error } = await fetchOrdenCambios(orderId)
     setDisponible(!error)
-    setCambios(error ? [] : data)
+    setCambios(error ? [] : cambiosVisibles(data))
   }, [orderId])
 
   useEffect(() => {
