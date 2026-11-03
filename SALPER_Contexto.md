@@ -7382,7 +7382,7 @@ probadas en el arnés. SQL aplicado por Alfredo el 2026-11-01 (verificado: RPC s
 - Mismo día, sin SQL: casillas de marcar más grandes (`.ops-marca`), palomitas y título por prenda guardados en
   localStorage (`salper.operaciones.marcadas` / `salper.operaciones.titulos`), botón «Marcar estas operaciones».
 
-## V178 — Cambios de la orden: qué cambió, quién, cuándo y quién lo aceptó (2026-11-03, rama `cambios-orden`, SQL SIN aplicar)
+## V178 — Cambios de la orden: qué cambió, quién, cuándo y quién lo aceptó (2026-11-03, en `main`/producción, SQL APLICADO)
 Pedido de Alfredo: "que diga qué fue lo que cambió y que lo tengan que aceptar, como con las notas; cuáles fueron
 los cambios, quién los hizo y cuándo". Se reusa la reconfirmación de V38 (`pending_reconfirmation_at`,
 `confirm_order_changes`, aviso azul); V152 (`orden_items_historial`) no alcanzaba: solo prendas y también guarda
@@ -7416,5 +7416,8 @@ lo surtido y otros procesos.
   ventas no acepta, candado V152 sigue. Pantallas en el ejemplo local `salper-cambios-harness` (puerto 5191,
   `.claude/harness-cambios/`, selector "Entrar como"): costura ve solo ESC-101, corte solo ESC-102, terminado
   ninguna; aceptar como costura; historial como admin tienda; edición real del teléfono queda registrada; celular.
-- **Pendiente:** que Alfredo aplique el SQL y pida subir a `main`. Las órdenes que hoy ya están en azul no tienen
-  detalle (se ven con el aviso de antes).
+- **Estado:** código en `main` (commit `2c6fdac`, bundle de producción confirmado con "Historial de cambios"). SQL
+  pegado a mano por Alfredo el 2026-11-03 (Claude en Chrome no conectó); verificado sin sesión: la tabla
+  `orden_cambios` existe y `anon` recibe "permission denied" (401) en ella y en `confirm_order_changes`. No se pudo
+  comprobar sin sesión el trigger ni lo de costura: se ve en la primera edición real de una orden confirmada.
+  Las órdenes que ya estaban en azul no tienen detalle (se ven con el aviso de antes).
