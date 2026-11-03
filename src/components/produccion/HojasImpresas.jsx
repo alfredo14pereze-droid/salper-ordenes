@@ -45,7 +45,7 @@ export default function HojasImpresas({ puedeQuitar, puedeEditar = false, catalo
   if (error) return <ErrorState error={error} onRetry={load} />
   if (!lista) return <Loading label="Cargando hojas impresas…" />
   if (lista.length === 0) {
-    return <EmptyState>Todavía no se ha impreso ninguna hoja. Elige una prenda y toca «Imprimir operaciones»: al imprimirla se guarda aquí.</EmptyState>
+    return <EmptyState>Todavía no se ha impreso ninguna hoja. Toca «Imprimir operaciones» con operaciones de una sola prenda: al ver el PDF se guarda aquí.</EmptyState>
   }
 
   const visibles = lista.filter((h) => coincideNombre(busqueda, h.titulo, h.prenda))

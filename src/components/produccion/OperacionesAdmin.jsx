@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import Modal from '../talleros/Modal'
 import PdfPreviewModal from '../pdf/PdfPreviewModal'
 import { fetchOperacionesTodas, guardarOperacion } from '../../services/produccionService'
@@ -133,13 +132,8 @@ export default function OperacionesAdmin({ consulta = false }) {
               {verCentenas ? 'Ocultar' : 'Folios libres por centena'}
             </button>
           )}
-          {fPrenda && (
-            <Link to={`/produccion/operaciones/imprimir?prenda=${encodeURIComponent(fPrenda)}`} className="btn btn--primary btn--small">
-              Imprimir operaciones
-            </Link>
-          )}
-          <button type="button" className="btn btn--secondary btn--small" onClick={() => setImprimir(true)}>
-            Imprimir…
+          <button type="button" className="btn btn--primary btn--small" onClick={() => setImprimir(true)}>
+            Imprimir operaciones
           </button>
           {canVerHojasImpresas(role) && (
             <button type="button" className={'btn btn--small ' + (verHojas ? 'btn--primary' : 'btn--secondary')} aria-pressed={verHojas} onClick={() => setVerHojas((v) => !v)}>
@@ -404,23 +398,32 @@ function AltaOperacion({ ops, prendas, valores, onClose, onDone }) {
 // búsqueda), solo las marcadas o todo el catálogo; con o sin inactivas; qué
 // columnas; y si cada prenda va en su propia hoja.
 function ImprimirOperaciones({ ops, visibles, marcadas, filtro, onClose }) {
-  const [modo, setModo] = useState(marcadas.size > 0 ? 'marcadas' : 'visibles')
+  const [modo, setModo] = useState(marcadas.size > 0 ? 'marcadas' : filtro.prenda || filtro.q.trim() ? 'visibles' : 'todas')
   const [incluirInactivas, setIncluirInactivas] = useState(false)
   const [columnas, setColumnas] = useState(COLUMNAS_DEFAULT)
   const [porPrenda, setPorPrenda] = useState(false)
+  const [porParte, setPorParte] = useState(true) // como la hoja para la línea: cuello, manga…
   const [generando, setGenerando] = useState(false)
   const [error, setError] = useState(null)
   const [preview, setPreview] = useState(null)
   const [titulo, setTitulo] = useState(null) // null = todavía no se escribe: arranca con el último de la prenda
 
-  const lista = operacionesParaImprimir(ops, { modo, visibles, marcadas, incluirInactivas })
+  // Qué se puede imprimir: las marcadas (si hay), lo que deja el filtro (si hay
+  // filtro) y todo el catálogo.
+  const hayFiltro = Boolean(filtro.prenda || filtro.q.trim())
+  const fuentes = [
+    marcadas.size > 0 && { valor: 'marcadas', texto: `Marcadas (${marcadas.size})` },
+    hayFiltro && { valor: 'visibles', texto: `${filtro.prenda || 'La búsqueda'} (${visibles.length})` },
+    { valor: 'todas', texto: `Todo el catálogo (${ops.length})` },
+  ].filter(Boolean)
+  const modoActual = fuentes.some((f) => f.valor === modo) ? modo : fuentes[0].valor
+  const lista = operacionesParaImprimir(ops, { modo: modoActual, visibles, marcadas, incluirInactivas })
   // V175 — con una sola prenda se le pone título y la hoja se guarda en «Hojas impresas».
   const prendasLista = [...new Set(lista.map((o) => o.prenda))]
   const unicaPrenda = prendasLista.length === 1 ? prendasLista[0] : null
   const tituloGuardado = unicaPrenda ? leerLS(LS_TITULOS, {})[unicaPrenda] : null
   const tituloInicial = (typeof tituloGuardado === 'string' && tituloGuardado.trim()) || unicaPrenda || ''
   const tituloFinal = (titulo ?? tituloInicial).trim()
-  const descripcionFiltro = [filtro.prenda, filtro.q.trim() && `"${filtro.q.trim()}"`].filter(Boolean).join(' · ') || 'sin filtro'
   const toggleColumna = (key) => setColumnas((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
 
   async function verPdf() {
@@ -433,7 +436,7 @@ function ImprimirOperaciones({ ops, visibles, marcadas, filtro, onClose }) {
         olvidarOpcionesOperaciones()
         escribirLS(LS_TITULOS, { ...leerLS(LS_TITULOS, {}), [unicaPrenda]: tituloFinal || unicaPrenda })
       }
-      const blob = await buildCatalogoOperacionesPdfBlob(lista, { columnas, porPrenda, titulo: unicaPrenda ? tituloFinal || unicaPrenda : '' })
+      const blob = await buildCatalogoOperacionesPdfBlob(lista, { columnas: unicaPrenda ? columnas.filter((k) => k !== 'prenda') : columnas, porPrenda, porParte, titulo: unicaPrenda ? tituloFinal || unicaPrenda : '' })
       setPreview({ blob, fileName: unicaPrenda ? `${(tituloFinal || unicaPrenda).replace(/[^\p{L}\p{N}]+/gu, '-')}.pdf` : catalogoPdfFileName('operaciones') })
     } catch (e) {
       setError(`No se pudo generar el PDF: ${e.message}`)
@@ -443,62 +446,74 @@ function ImprimirOperaciones({ ops, visibles, marcadas, filtro, onClose }) {
 
   if (preview) return <PdfPreviewModal blob={preview.blob} fileName={preview.fileName} onClose={onClose} />
 
-  const opcion = (valor, texto, deshabilitada = false) => (
-    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 400, opacity: deshabilitada ? 0.5 : 1 }}>
-      <input type="radio" name="modo-impresion" checked={modo === valor} disabled={deshabilitada} onChange={() => setModo(valor)} />
+
+  const check = (checked, onChange, texto) => (
+    <label className="imp-ops__check">
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
       {texto}
     </label>
   )
+  const columnasVisibles = COLUMNAS_OPCIONALES.filter((c) => !(c.key === 'prenda' && unicaPrenda) && !(c.key === 'parte' && porParte))
 
   return (
     <Modal title="Imprimir operaciones" onClose={onClose}>
-      <div className="order-form">
-        <div>
-          <span className="field-label" style={{ display: 'block', marginBottom: 6 }}>
-            ¿Qué operaciones?
-          </span>
-          {opcion('visibles', `Las que se ven ahora (${visibles.length}) — ${descripcionFiltro}`)}
-          {opcion('marcadas', `Solo las marcadas (${marcadas.size})`, marcadas.size === 0)}
-          {opcion('todas', `Todo el catálogo (${ops.length})`)}
-          {marcadas.size === 0 && <p className="template-hint">Para escoger una por una, márcalas con la casilla de la izquierda en la tabla.</p>}
-        </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 400 }}>
-          <input type="checkbox" checked={incluirInactivas} onChange={(e) => setIncluirInactivas(e.target.checked)} />
-          Incluir operaciones inactivas
-        </label>
-        <div>
-          <span className="field-label" style={{ display: 'block', marginBottom: 6 }}>
-            Columnas (folio y operación siempre van)
-          </span>
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-            {COLUMNAS_OPCIONALES.map((c) => (
-              <label key={c.key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 400 }}>
-                <input type="checkbox" checked={columnas.includes(c.key)} onChange={() => toggleColumna(c.key)} />
-                {c.label}
-              </label>
-            ))}
+      <div className="imp-ops">
+        {fuentes.length > 1 && (
+          <div className="imp-ops__bloque">
+            <span className="imp-ops__label">¿Qué imprimir?</span>
+            <div className="seg imp-ops__seg" role="group" aria-label="Qué operaciones imprimir">
+              {fuentes.map((f) => (
+                <button key={f.valor} type="button" className={'seg__btn' + (modoActual === f.valor ? ' seg__btn--on' : '')} aria-pressed={modoActual === f.valor} onClick={() => setModo(f.valor)}>
+                  {f.texto}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 400 }}>
-          <input type="checkbox" checked={porPrenda} onChange={(e) => setPorPrenda(e.target.checked)} />
-          Una hoja por prenda (con el nombre de la prenda de título)
-        </label>
+        )}
+
         {unicaPrenda ? (
-          <label>
-            Título de la hoja
+          <label className="imp-ops__bloque">
+            <span className="imp-ops__label">Título de la hoja</span>
             <input className="input" value={titulo ?? tituloInicial} onChange={(e) => setTitulo(e.target.value)} placeholder={unicaPrenda} />
-            <span className="template-hint">
-              Ej. «Chamarra Vasco de Quiroga secundaria». Al ver el PDF se guarda en «Hojas impresas» y luego se puede escoger en las prendas de una orden.
-            </span>
+            <span className="template-hint">Se guarda en «Hojas impresas» para escogerla después en una orden.</span>
           </label>
         ) : (
-          lista.length > 0 && <p className="template-hint">Son de varias prendas: para ponerle título y guardarla, escoge operaciones de una sola prenda.</p>
+          lista.length > 0 && <p className="template-hint">Son de varias prendas: para ponerle título y guardarla, filtra o marca operaciones de una sola prenda.</p>
         )}
-        <p className="template-hint">
-          Se imprimirán <b>{lista.length}</b> {lista.length === 1 ? 'operación' : 'operaciones'}.
+
+        <p className="imp-ops__resumen">
+          {lista.length === 0 ? (
+            'No hay operaciones para imprimir.'
+          ) : (
+            <>
+              <b>{lista.length}</b> {lista.length === 1 ? 'operación' : 'operaciones'}
+              {unicaPrenda ? ` de ${unicaPrenda}` : ` de ${prendasLista.length} prendas`}
+              {porParte ? ', agrupadas por parte' : ''}.
+            </>
+          )}
         </p>
+
+        <details className="imp-ops__mas">
+          <summary>Más opciones</summary>
+          <div className="imp-ops__mas-cuerpo">
+            {check(porParte, setPorParte, 'Agrupar por parte (cuello, manga…)')}
+            {check(incluirInactivas, setIncluirInactivas, 'Incluir operaciones inactivas')}
+            {!unicaPrenda && check(porPrenda, setPorPrenda, 'Una hoja por prenda')}
+            {columnasVisibles.length > 0 && (
+              <div>
+                <span className="imp-ops__label">Columnas (folio y operación siempre van)</span>
+                <div className="imp-ops__columnas">
+                  {columnasVisibles.map((c) => (
+                    <Fragment key={c.key}>{check(columnas.includes(c.key), () => toggleColumna(c.key), c.label)}</Fragment>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </details>
+
         {error && <p className="form-error">{error}</p>}
-        <div className="order-form__actions">
+        <div className="imp-ops__acciones">
           <button type="button" className="btn btn--ghost" onClick={onClose}>
             Cancelar
           </button>

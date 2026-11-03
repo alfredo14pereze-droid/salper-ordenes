@@ -1,4 +1,5 @@
 import { Document, Page, View, Text, StyleSheet, Font } from '@react-pdf/renderer'
+import { agruparPorParte } from '../../utils/imprimirOperaciones'
 import { textoMejora, textoVs, textoMejoraCompleto, etiquetaPocasSemanas, baseMejora, esPromedio } from '../../utils/produccionMejora'
 
 // V70 — Imprimibles de producción. Terminología: "valor generado" (NO es el sueldo).
@@ -226,6 +227,7 @@ const t = StyleSheet.create({
   rowPar: { backgroundColor: '#f6f4ef' },
   cell: { paddingVertical: 4, paddingHorizontal: 5, fontSize: 9, borderRightWidth: 0.5, borderRightColor: LINE },
   headCell: { paddingVertical: 5, paddingHorizontal: 5, fontSize: 8, color: '#fff', fontFamily: 'Helvetica-Bold', borderRightWidth: 0.5, borderRightColor: '#55524c' },
+  parte: { paddingVertical: 4, paddingHorizontal: 5, fontSize: 9, fontFamily: 'Helvetica-Bold', backgroundColor: '#e6e1d6', textTransform: 'uppercase', borderLeftWidth: 0.5, borderLeftColor: LINE, borderBottomWidth: 0.5, borderBottomColor: LINE },
 })
 
 const estiloCol = (col) => ({
@@ -233,11 +235,45 @@ const estiloCol = (col) => ({
   textAlign: col.align || 'left',
 })
 
-function TablaOperaciones({ operaciones, columnas }) {
+// `porParte`: un renglón de encabezado por parte (cuello, manga…), cada parte en
+// orden de folio; la columna "Parte" ya no hace falta. Con varias prendas, el
+// encabezado lleva también la prenda.
+function TablaOperaciones({ operaciones, columnas, porParte = false }) {
   const c = new Set(columnas)
   const cols = ['folio', 'prenda', 'parte', 'operacion', 'segundos', 'estado']
-    .filter((k) => k === 'folio' || k === 'operacion' || c.has(k))
+    .filter((k) => k === 'folio' || k === 'operacion' || (c.has(k) && !(porParte && k === 'parte')))
     .map((k) => COLS_OPERACIONES[k])
+  if (porParte) {
+    const variasPrendas = new Set(operaciones.map((o) => o.prenda)).size > 1
+    const grupos = agruparPorParte(operaciones.map((o) => ({ ...o, parte: variasPrendas ? `${o.prenda} · ${o.parte || 'Sin parte'}` : o.parte || 'Sin parte' })))
+    return (
+      <>
+        <View style={t.head} fixed>
+          {cols.map((col) => (
+            <Text key={col.titulo} style={[t.headCell, estiloCol(col)]}>
+              {col.titulo}
+            </Text>
+          ))}
+        </View>
+        {grupos.map((g) => (
+          <View key={g.parte}>
+            <Text style={t.parte} minPresenceAhead={30}>
+              {g.parte}
+            </Text>
+            {g.operaciones.map((o, i) => (
+              <View key={o.folio} style={[t.row, i % 2 === 1 && t.rowPar]} wrap={false}>
+                {cols.map((col) => (
+                  <Text key={col.titulo} style={[t.cell, estiloCol(col)]}>
+                    {String(col.valor(o) ?? '')}
+                  </Text>
+                ))}
+              </View>
+            ))}
+          </View>
+        ))}
+      </>
+    )
+  }
   return (
     <>
       <View style={t.head} fixed>
@@ -261,7 +297,7 @@ function TablaOperaciones({ operaciones, columnas }) {
 }
 
 // V175 — `titulo`: el que se escribió al imprimir (una sola prenda); va arriba en lugar de "CATÁLOGO DE OPERACIONES".
-export function CatalogoOperacionesDoc({ operaciones, columnas = TODAS_LAS_COLUMNAS, porPrenda = false, titulo = '' }) {
+export function CatalogoOperacionesDoc({ operaciones, columnas = TODAS_LAS_COLUMNAS, porPrenda = false, porParte = false, titulo = '' }) {
   if (porPrenda && !titulo) {
     const grupos = []
     for (const o of operaciones) {
@@ -275,7 +311,7 @@ export function CatalogoOperacionesDoc({ operaciones, columnas = TODAS_LAS_COLUM
           <Page key={g.prenda} size="LETTER" style={s.page}>
             <Text style={s.brand}>SALPER · {g.prenda}</Text>
             <Text style={s.sub}>{g.operaciones.length} operaciones · generado el {hoy()}</Text>
-            <TablaOperaciones operaciones={g.operaciones} columnas={columnas.filter((x) => x !== 'prenda')} />
+            <TablaOperaciones operaciones={g.operaciones} columnas={columnas.filter((x) => x !== 'prenda')} porParte={porParte} />
           </Page>
         ))}
       </Document>
@@ -286,7 +322,7 @@ export function CatalogoOperacionesDoc({ operaciones, columnas = TODAS_LAS_COLUM
       <Page size="LETTER" style={s.page}>
         <Text style={s.brand}>SALPER · {titulo ? titulo.toUpperCase() : 'CATÁLOGO DE OPERACIONES'}</Text>
         <Text style={s.sub}>{operaciones.length} operaciones · generado el {hoy()}</Text>
-        <TablaOperaciones operaciones={operaciones} columnas={columnas} />
+        <TablaOperaciones operaciones={operaciones} columnas={columnas} porParte={porParte} />
       </Page>
     </Document>
   )
