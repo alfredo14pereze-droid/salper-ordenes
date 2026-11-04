@@ -7436,7 +7436,7 @@ Pedido de Alfredo: que las órdenes que ya estaban en azul antes de V178 tambié
   RLS; eligió "Run and enable RLS"). Resultado: ESC-049 3 cambios de prendas; IND-009 y ESC-043 un cambio de datos
   sin detalle. Probado antes en PGlite (9 casos) y en el ejemplo local (ESC-104/105).
 
-## Frisa – prueba: inventario a consignación (V180, 2026-11-04, rama `frisa-prueba`, SQL SIN aplicar)
+## Frisa – prueba: inventario a consignación (V180, 2026-11-04, rama `frisa-prueba`, SQL APLICADO)
 Prueba de concepto pedida por Alfredo (prompt "Módulo Frisa (PRUEBA)"). Rama `frisa-prueba` (sale de `main` d8c29c3),
 **sin merge**. Sección **"Frisa (prueba)"** en el menú (`/frisa`), solo `admin_general` (el "super_admin" del prompt).
 - **Negocio:** 5 plantas en Monterrey, un viaje cada 10 días desde Torreón para todas, sin entregas parciales; Frisa
@@ -7483,8 +7483,9 @@ Prueba de concepto pedida por Alfredo (prompt "Módulo Frisa (PRUEBA)"). Rama `f
   un ejemplo local con PGlite **en el navegador corriendo el SQL real** (`.claude/harness-consignacion/`, servidor
   `salper-frisa-consignacion-harness`, puerto 5190, `?rol=ventas` para ver el bloqueo): cargar, producción (rojo → verde),
   entrega bloqueada y luego guardada, consumo $6,520, confirmación −3, filtros del historial, borrar, celular 375px.
-  **No probado:** con sesión real en Supabase (el SQL no está aplicado).
-- **Pendiente / para decidir:** aplicar el SQL (Alfredo lo revisa antes); alta/edición de plantas y SKUs reales desde la
+  **SQL aplicado por Alfredo el 2026-11-04**; verificado sin sesión: las 4 tablas existen y anon recibe 401 en ellas y en
+  las 8 funciones (las 7 de escritura + `frisa_stock_bodega`). **No probado:** con sesión real (el código no está subido).
+- **Pendiente / para decidir:** subir la rama para probar con sesión real; alta/edición de plantas y SKUs reales desde la
   app (hoy solo vienen de los datos de prueba) y marcar los reales `es_prueba = false`; ligar `frisa_productos` con
   `productos_frisa` (V155) y la producción con las órdenes FR; corregir/anular un movimiento capturado por error (hoy no
   hay); ajuste de bodega (conteo físico en Torreón); fecha real de cada entrega vs viaje programado; qué pasa con rojo
