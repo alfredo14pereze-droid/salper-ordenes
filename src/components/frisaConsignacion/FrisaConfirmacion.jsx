@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { calcularStock, stockPlanta, formatNum, formatFecha, hoyISO } from '../../utils/frisaConsignacion'
+import { calcularStock, stockPlanta, formatNum, formatFecha, hoyISO , ordenarProductos } from '../../utils/frisaConsignacion'
 import { registrarConfirmacion } from '../../services/frisaConsignacionService'
 
 const finMesAnterior = (iso) => {
@@ -11,7 +11,7 @@ const finMesAnterior = (iso) => {
 // contra lo calculado y, al confirmar, se guardan los ajustes.
 export default function FrisaConfirmacion({ datos, recargar }) {
   const plantas = datos.plantas.filter((p) => p.activa !== false)
-  const productos = datos.productos.filter((p) => p.activo !== false)
+  const productos = ordenarProductos(datos.productos.filter((p) => p.activo !== false))
   const [plantaId, setPlantaId] = useState(plantas[0]?.id || '')
   const [fecha, setFecha] = useState(finMesAnterior(hoyISO()))
   const [conf, setConf] = useState({})

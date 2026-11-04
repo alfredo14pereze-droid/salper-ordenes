@@ -1,15 +1,21 @@
 import { useMemo, useState } from 'react'
-import { calcularStock, stockPlanta, mapaMaximos, aReponer, formatNum } from '../../utils/frisaConsignacion'
+import { calcularStock, stockPlanta, mapaMaximos, aReponer, formatNum, agruparPorModelo, ordenarProductos } from '../../utils/frisaConsignacion'
+import { VistaToggle } from './FrisaSemaforo'
 import { setMaximo } from '../../services/frisaConsignacionService'
 
 // Pantalla 2 — matriz planta × SKU: stock actual vs máximo de Frisa y "a
 // reponer hasta máximo" (informativo; la entrega real es libre).
 export default function FrisaPorPlanta({ datos, recargar }) {
   const plantas = datos.plantas.filter((p) => p.activa !== false)
-  const productos = datos.productos.filter((p) => p.activo !== false)
-  const stock = useMemo(() => calcularStock(datos.movimientos), [datos])
-  const maximos = useMemo(() => mapaMaximos(datos.maximos), [datos])
-  const [editando, setEditando] = useState(false)
+  // V181 — por modelo (suma tallas y máximos) o por SKU; los máximos se editan por SKU.
+  const [porModelo, setPorModelo] = useState(true)
+  const base = useMemo(() => (porModelo ? agruparPorModelo(datos.productos, datos.movimientos, datos.maximos)
+    : { productos: ordenarProductos(datos.productos), movimientos: datos.movimientos, maximos: datos.maximos }), [datos, porModelo])
+  const productos = base.productos.filter((p) => p.activo !== false)
+  const stock = useMemo(() => calcularStock(base.movimientos), [base])
+  const maximos = useMemo(() => mapaMaximos(base.maximos), [base])
+  const [editando, setEditandoRaw] = useState(false)
+  const setEditando = (fn) => { setPorModelo(false); setEditandoRaw(fn) }
   const [error, setError] = useState(null)
 
   async function guardarMaximo(plantaId, productoId, valor, actual) {
@@ -32,6 +38,7 @@ export default function FrisaPorPlanta({ datos, recargar }) {
           {editando ? 'Listo' : 'Editar máximos'}
         </button>
       </div>
+      <VistaToggle porModelo={porModelo} setPorModelo={(v) => { setPorModelo(v); if (v) setEditandoRaw(false) }} />
       {error && <p className="form-error">{error}</p>}
       <div className="revision__tabla-wrap">
         <table className="simple-table frisa-tabla frisa-matriz">

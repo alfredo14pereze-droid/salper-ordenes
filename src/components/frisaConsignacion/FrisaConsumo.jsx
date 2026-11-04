@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { calcularStock, stockPlanta, quincenaDe, quincenasHasta, facturacionPorQuincena, formatNum, formatPesos, hoyISO, sumarDias } from '../../utils/frisaConsignacion'
+import { calcularStock, stockPlanta, quincenaDe, quincenasHasta, facturacionPorQuincena, formatNum, formatPesos, hoyISO, sumarDias , ordenarProductos } from '../../utils/frisaConsignacion'
 import { registrarConsumo } from '../../services/frisaConsignacionService'
 
 // Pantalla 4 — consumo de una quincena por planta, con el monto a facturar
@@ -7,7 +7,7 @@ import { registrarConsumo } from '../../services/frisaConsignacionService'
 // de la quincena.
 export default function FrisaConsumo({ datos, recargar }) {
   const plantas = datos.plantas.filter((p) => p.activa !== false)
-  const productos = datos.productos.filter((p) => p.activo !== false)
+  const productos = ordenarProductos(datos.productos.filter((p) => p.activo !== false))
   const hoy = hoyISO()
   // Solo quincenas ya terminadas (la de hoy cuenta si hoy es su último día):
   // capturar una en curso movería el promedio semanal.

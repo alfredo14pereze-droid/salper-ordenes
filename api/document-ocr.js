@@ -106,9 +106,43 @@ const ORDEN_TOOL = {
   },
 }
 
+// V181 — orden de compra de Frisa (PDF por correo). Una OC es de una sola
+// planta y trae fecha límite; cada renglón es un material con su talla.
+const FRISA_OC_TOOL = {
+  name: 'registrar_oc_frisa',
+  description:
+    'Registra los datos de una orden de compra de Frisa que se alcancen a leer con certeza: número de la orden, planta, fechas y los renglones con descripción, talla y cantidad.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      numero: { type: 'string', description: 'Número de la orden de compra (pedido), p. ej. "4500659851". Cadena vacía si no se lee.' },
+      planta: { type: 'string', description: 'Planta, sociedad o lugar de entrega de Frisa tal como aparece (p. ej. "FRISA ACERIA"). Cadena vacía si no se lee.' },
+      fecha_oc: { type: 'string', description: 'Fecha del documento en YYYY-MM-DD, solo si es explícita. Cadena vacía si no.' },
+      fecha_limite: { type: 'string', description: 'Fecha de entrega / fecha límite en YYYY-MM-DD, solo si es explícita. Si cada renglón trae su fecha, la más temprana. Cadena vacía si no.' },
+      articulos: {
+        type: 'array',
+        description: 'Un elemento por renglón de la orden. Nunca inventes renglones.',
+        items: {
+          type: 'object',
+          properties: {
+            nombre: { type: 'string', description: 'Descripción del material SIN la talla (quita "T-M", "TALLA 32", etc.). Misma prenda en varias tallas = mismo texto exacto.' },
+            talla: { type: 'string', description: 'Talla del renglón (p. ej. "M", "2XL", "32"). Cadena vacía si no trae.' },
+            cantidad: { type: 'number', description: 'Cantidad pedida.' },
+            codigo: { type: 'string', description: 'Código o número de material de Frisa si aparece. Cadena vacía si no.' },
+          },
+          required: ['nombre', 'cantidad'],
+        },
+      },
+    },
+    required: ['articulos'],
+  },
+}
+
 const PROMPTS = {
   pedido_proveedor:
     'Este es un pedido a un proveedor (foto o PDF de la nota/remisión). Usa la herramienta disponible para registrar los artículos, cantidades y tallas que se alcancen a leer con certeza. No inventes ni adivines datos que no se vean con claridad — omite ese artículo en vez de inventarlo.',
+  frisa_oc:
+    'Esta es una orden de compra (PDF) que el cliente Frisa le manda a SALPER, fabricante de uniformes. Usa la herramienta para registrar el número de la orden, la planta de Frisa, la fecha del documento, la fecha de entrega y cada renglón con su descripción (sin la talla), talla y cantidad. No inventes ni adivines nada que no se vea con claridad: deja vacío lo que no se lea.',
   orden:
     'Este es un documento (foto o PDF) con información de una orden de producción para un taller de uniformes/sublimación. Usa la herramienta disponible para registrar el cliente y la fecha de entrega SOLO si aparecen explícitos y sin ambigüedad, más las prendas con cantidad y talla que se alcancen a leer con certeza. Si la misma prenda aparece en varias tallas (renglones separados para M, L, etc.), regístrala como un artículo por cada talla pero con el nombre IDÉNTICO en todos — no repitas la talla dentro del nombre, va en su propio campo. No inventes ni adivines nada que no se vea con claridad — deja cliente/fecha_entrega vacíos y omite cualquier prenda que no puedas leer bien.',
 }
@@ -132,7 +166,7 @@ export default async function handler(req, res) {
   }
 
   const { fileBase64, mediaType, context } = req.body || {}
-  const mode = context === 'orden' ? 'orden' : 'pedido_proveedor'
+  const mode = context === 'orden' ? 'orden' : context === 'frisa_oc' ? 'frisa_oc' : 'pedido_proveedor'
 
   if (typeof fileBase64 !== 'string' || !fileBase64) {
     res.status(400).json({ error: 'Falta el archivo.' })
@@ -155,7 +189,7 @@ export default async function handler(req, res) {
       ? { type: 'document', source: { type: 'base64', media_type: mediaType, data: fileBase64 } }
       : { type: 'image', source: { type: 'base64', media_type: mediaType, data: fileBase64 } }
 
-  const tool = mode === 'orden' ? ORDEN_TOOL : PEDIDO_TOOL
+  const tool = mode === 'orden' ? ORDEN_TOOL : mode === 'frisa_oc' ? FRISA_OC_TOOL : PEDIDO_TOOL
 
   // La extracción de una nota manuscrita, un PDF escaneado o de mala
   // calidad nunca va a ser perfecta — cualquier tropiezo aquí (API
@@ -165,7 +199,7 @@ export default async function handler(req, res) {
   try {
     const response = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: MAX_TOKENS,
+      max_tokens: mode === 'frisa_oc' ? 8192 : MAX_TOKENS, // una OC puede traer muchos renglones
       tools: [tool],
       tool_choice: { type: 'tool', name: tool.name },
       messages: [
@@ -187,6 +221,23 @@ export default async function handler(req, res) {
         cantidad: Math.round(Number(a.cantidad)),
         talla: typeof a.talla === 'string' && a.talla.trim() ? a.talla.trim() : null,
       }))
+
+    if (mode === 'frisa_oc') {
+      const texto = (v) => (typeof v === 'string' && v.trim() ? v.trim() : null)
+      const lineas = articulosRaw
+        .filter((a) => a && typeof a.nombre === 'string' && a.nombre.trim() && Number(a.cantidad) > 0)
+        .map((a) => ({ nombre: a.nombre.trim(), talla: texto(a.talla), cantidad: Math.round(Number(a.cantidad)), codigo: texto(a.codigo) }))
+      const out = {
+        numero: texto(raw.numero),
+        planta: texto(raw.planta),
+        fechaOc: isValidIsoDate(raw.fecha_oc) ? raw.fecha_oc : null,
+        fechaLimite: isValidIsoDate(raw.fecha_limite) ? raw.fecha_limite : null,
+        articulos: lineas,
+      }
+      if (!lineas.length && !out.numero) out.warning = 'No se reconoció la orden de compra — llena los campos a mano.'
+      res.status(200).json(out)
+      return
+    }
 
     if (mode === 'orden') {
       const cliente = typeof raw.cliente === 'string' && raw.cliente.trim() ? raw.cliente.trim() : null
@@ -218,6 +269,7 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('[api/document-ocr] error:', err)
     const fallback = { articulos: [], warning: 'No se pudo leer el archivo automáticamente — llena los campos a mano.' }
+    if (mode === 'frisa_oc') Object.assign(fallback, { numero: null, planta: null, fechaOc: null, fechaLimite: null })
     if (mode === 'orden') {
       fallback.cliente = null
       fallback.fechaEntrega = null

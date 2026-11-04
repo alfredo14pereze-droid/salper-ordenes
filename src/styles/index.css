@@ -5286,3 +5286,33 @@ h4 {
 .frisa__encabezado .page-subtitle { margin: 0; }
 .frisa-tabla td > strong:first-child { white-space: nowrap; }
 .frisa-matriz th:first-child, .frisa-matriz td:first-child { position: sticky; left: 0; z-index: 1; background: var(--color-bg); }
+/* V181 — Frisa: órdenes de compra y de taller */
+.frisa__chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.frisa-nivel--neutro { background: var(--color-bg); color: var(--color-text-muted); border: 1px solid var(--color-border); }
+.frisa-oc-lista { display: grid; gap: 8px; }
+.frisa-oc { padding: 0; overflow: hidden; margin-bottom: 8px; }
+.frisa-oc--abierta { box-shadow: 0 0 0 2px var(--color-amber-strong); }
+.frisa-oc__cabeza { width: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 14px; background: none; border: none; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.frisa-oc__cabeza--fija { cursor: default; }
+.frisa-oc__num { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 17px; }
+.frisa-oc__planta { font-weight: 600; }
+.frisa-oc__meta { flex-basis: 100%; }
+.frisa-oc__detalle { padding: 0 14px 14px; border-top: 1px solid var(--color-border); padding-top: 12px; }
+.frisa-oc__acciones { margin: 8px 0; }
+.frisa-estado { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--color-bg); border: 1px solid var(--color-border); white-space: nowrap; }
+.frisa-estado--recibida { background: var(--color-orange-soft); color: var(--color-orange-strong); border-color: transparent; }
+.frisa-estado--en_taller { background: #fff3cc; color: var(--color-orange-strong); border-color: transparent; }
+.frisa-estado--lista { background: var(--color-black); color: var(--color-amber); border-color: transparent; }
+.frisa-estado--armada { background: var(--color-amber); color: var(--color-black); border-color: transparent; }
+.frisa-estado--entregada { background: var(--color-good-soft); color: var(--color-good); border-color: transparent; }
+.frisa-estado--cancelada { color: var(--color-text-muted); text-decoration: line-through; }
+.frisa-panel { display: grid; gap: 10px; padding: 14px; margin: 10px 0; }
+.frisa-panel summary { cursor: pointer; }
+.frisa-check { display: flex; gap: 8px; align-items: center; font-weight: 600; }
+.frisa-subir { display: block; border: 2px dashed var(--color-border); border-radius: 10px; padding: 16px; text-align: center; cursor: pointer; background: var(--color-surface); }
+.frisa-subir input { display: block; margin: 0 auto 8px; max-width: 100%; }
+.frisa-form__ancho { display: grid; gap: 4px; max-width: 560px; }
+.frisa-input--ancho { width: 96px; }
+.frisa-ot__lineas { margin: 0 0 10px; font-size: 14px; line-height: 1.6; }
+.frisa-catalogo__plantas { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 6px; }
+.frisa-catalogo__plantas li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

@@ -22,7 +22,7 @@ function fileToBase64(file) {
   })
 }
 
-// `context`: 'pedido_proveedor' | 'orden' — decide qué tool/prompt usa
+// `context`: 'pedido_proveedor' | 'orden' | 'frisa_oc' (V181) — decide qué tool/prompt usa
 // el endpoint y qué trae la respuesta:
 //   - 'pedido_proveedor' -> { articulos: [{nombre, cantidad, talla}], warning? }
 //   - 'orden'            -> { articulos: [...], cliente, fechaEntrega, warning? }

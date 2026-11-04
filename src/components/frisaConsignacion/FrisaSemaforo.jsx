@@ -1,8 +1,18 @@
 import { useMemo, useState } from 'react'
-import { filasSemaforo, formatNum, formatFecha, hoyISO, SEMANAS_MINIMO, SEMANAS_OBJETIVO, DIAS_DOS_ENTREGAS } from '../../utils/frisaConsignacion'
+import { filasSemaforo, agruparPorModelo, ordenarProductos, formatNum, formatFecha, hoyISO, SEMANAS_MINIMO, SEMANAS_OBJETIVO, DIAS_DOS_ENTREGAS } from '../../utils/frisaConsignacion'
 import { registrarProduccion } from '../../services/frisaConsignacionService'
 
 export const ETIQUETA_COLOR = { rojo: 'Rojo', amarillo: 'Pedir producción', verde: 'Bien' }
+
+
+export function VistaToggle({ porModelo, setPorModelo }) {
+  return (
+    <div className="order-filters__chips frisa__chips">
+      <button type="button" className={'chip' + (porModelo ? ' chip--active' : '')} onClick={() => setPorModelo(true)}>Por modelo</button>
+      <button type="button" className={'chip' + (!porModelo ? ' chip--active' : '')} onClick={() => setPorModelo(false)}>Por talla (SKU)</button>
+    </div>
+  )
+}
 
 export function NivelBadge({ color }) {
   return <span className={'frisa-nivel frisa-nivel--' + color}>{ETIQUETA_COLOR[color]}</span>
@@ -10,7 +20,13 @@ export function NivelBadge({ color }) {
 
 // Pantalla 1 — Semáforo por SKU + registrar producción (entra a bodega).
 export default function FrisaSemaforo({ datos, recargar }) {
-  const { filas, ventana } = useMemo(() => filasSemaforo(datos.productos, datos.movimientos), [datos])
+  // V181 — por modelo (suma sus tallas) o por SKU (cada talla).
+  const [porModelo, setPorModelo] = useState(true)
+  const { filas, ventana } = useMemo(() => {
+    const base = porModelo ? agruparPorModelo(datos.productos, datos.movimientos) : { productos: ordenarProductos(datos.productos), movimientos: datos.movimientos }
+    return filasSemaforo(base.productos, base.movimientos)
+  }, [datos, porModelo])
+  const productosForm = useMemo(() => ordenarProductos(datos.productos), [datos])
   const [form, setForm] = useState({ fecha: hoyISO(), productoId: '', cantidad: '', referencia: '' })
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState(null)
@@ -42,6 +58,7 @@ export default function FrisaSemaforo({ datos, recargar }) {
         (2 entregas). <strong>Amarillo</strong>: menos de {SEMANAS_MINIMO} semanas de cobertura. Sugerido = {SEMANAS_OBJETIVO} semanas − stock
         total, en múltiplos de 10.
       </p>
+      <VistaToggle porModelo={porModelo} setPorModelo={setPorModelo} />
       <div className="revision__tabla-wrap">
         <table className="simple-table frisa-tabla">
           <thead>
@@ -75,10 +92,10 @@ export default function FrisaSemaforo({ datos, recargar }) {
                 <td><NivelBadge color={f.color} /></td>
                 <td className="num"><strong>{f.sugerido ? formatNum(f.sugerido) : '—'}</strong></td>
                 <td>
-                  <button type="button" className="btn btn--ghost btn--small"
+                  {!porModelo && <button type="button" className="btn btn--ghost btn--small"
                     onClick={() => setForm((x) => ({ ...x, productoId: f.producto.id, cantidad: f.sugerido ? String(f.sugerido) : '' }))}>
                     Registrar producción
-                  </button>
+                  </button>}
                 </td>
               </tr>
             ))}
@@ -97,7 +114,7 @@ export default function FrisaSemaforo({ datos, recargar }) {
             <span className="field-label">SKU</span>
             <select className="input" value={form.productoId} onChange={(e) => setForm({ ...form, productoId: e.target.value })} required>
               <option value="">Elige…</option>
-              {datos.productos.map((p) => <option key={p.id} value={p.id}>{p.sku} · {p.nombre}</option>)}
+              {productosForm.map((p) => <option key={p.id} value={p.id}>{p.sku} · {p.nombre}</option>)}
             </select>
           </label>
           <label>

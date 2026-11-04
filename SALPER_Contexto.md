@@ -7493,3 +7493,49 @@ Prueba de concepto pedida por Alfredo (prompt "Módulo Frisa (PRUEBA)"). Rama `f
   hay); ajuste de bodega (conteo físico en Torreón); fecha real de cada entrega vs viaje programado; qué pasa con rojo
   cuando el sugerido sale 0 (el stock está en plantas pero la bodega no cubre 2 entregas); factura (hoy solo muestra el
   monto); lead time de 10 días todavía no entra al cálculo (el rojo de 20 días ya lo cubre en la práctica).
+
+## Frisa – prueba, parte 2: orden de compra → orden de taller → armar → entregar (V181, 2026-11-04, SQL SIN aplicar)
+Alfredo vio V180 en producción: "no me gusta… quiero que salga desde cargar la orden de compra que nos llega de Frisa,
+hacer las órdenes de taller para surtir, y armar las órdenes". En sus Excel reales (`~/salper-frisa`) cada remisión trae la
+**Orden** (número de OC de Frisa, 4500…) y la planta, y todo es **por producto y talla**. Respuestas de Alfredo: 1 la OC
+llega en PDF por correo; 2 una OC = una planta, con fecha límite; 3 por ahora una orden de taller por OC (opción a), pero
+quieren llegar a tener inventario; 4 se arma y se entrega por OC completa; 5 la remisión sale de Microsip, aquí solo se
+registra el folio; 6 se quedan semáforo/consumo/confirmación; 7 por ahora solo él, después varias personas.
+- **SQL** `supabase/schema_v181_frisa_ordenes_compra.sql` (aditivo, solo tablas `frisa_*`, se puede correr dos veces,
+  rollback al final): `frisa_productos` + `modelo`/`talla` (un SKU = modelo en una talla); tablas `frisa_ordenes_compra`
+  (número único, planta, fecha OC, fecha límite, estado `recibida → en_taller → lista → armada → entregada` o `cancelada`,
+  folio de remisión, `leido_pdf` = lo que se leyó del PDF), `frisa_oc_lineas`, `frisa_ordenes_taller` (folio `OT-0001`
+  con `frisa_ot_folio_seq`; las de prueba `OT-PRB-…` sin gastar la secuencia), `frisa_ot_lineas`, `frisa_producto_alias`
+  (descripción del PDF + talla → SKU, se aprende al guardar); `frisa_movimientos` + `oc_id`/`ot_id`. **Trigger
+  `frisa_mov_es_prueba`**: un movimiento es de prueba solo si su SKU o planta lo son (V180 los marcaba siempre como prueba:
+  con datos reales "Borrar datos de prueba" se habría llevado consumos reales). Funciones (admin_general): catálogo
+  `frisa_guardar_planta`/`frisa_guardar_producto` (reales, `es_prueba=false`); `frisa_guardar_oc` (rechaza número repetido,
+  renglones sin SKU o SKU repetido; aprende alias), `frisa_cancelar_oc` (con motivo; cancela su OT abierta),
+  `frisa_crear_ot` (solo SKUs de la OC, una abierta por OC), `frisa_terminar_ot` (producción a bodega ligada a OT y OC; la
+  OC queda "lista"), `frisa_armar_oc` (todo o nada contra bodega − lo apartado por otras OCs armadas; aparta),
+  `frisa_desarmar_oc`, `frisa_entregar_oc` (exige armada y folio; entrega a la planta de la OC con referencia "Rem. X · OC
+  Y"). `frisa_cargar_datos_prueba`/`frisa_borrar_datos_prueba` reemplazadas (misma firma) para incluir OCs/OTs/alias.
+- **Lectura del PDF:** modo nuevo `frisa_oc` en `api/document-ocr.js` (los modos `orden`/`pedido_proveedor` no cambian):
+  número, planta, fechas y renglones (descripción sin talla, talla, cantidad, código). `max_tokens` 8192 en este modo.
+  En pantalla se sugiere la planta por palabras y el SKU por lo aprendido ("✓ como la vez pasada") o por parecido + talla.
+- **Pantallas** (pestañas): **Órdenes de compra** (filtros por paso con contador, vencidas primero, "Vence en N días";
+  al abrir: renglones con disponible/falta, "Hacer orden de taller" (todo lo de la OC; casilla "Tomar lo que haya en
+  bodega" = solo lo que falta), "Terminar OT", "Armar orden" (bloqueado si falta), "Entregar" (fecha + folio de remisión),
+  "Desarmar", "Cancelar OC"; "+ Subir orden de compra" (`FrisaNuevaOC`)); **Órdenes de taller** (abiertas/terminadas,
+  total a producir de las abiertas, "Terminar"); Semáforo y Por planta con **"Por modelo / Por talla"**; Consumo,
+  Confirmación e Historial ordenados por modelo y talla; **Catálogo** (plantas, alta de modelo con tallas → un SKU por
+  talla, precio por SKU, activar/desactivar). Se quitó "Armar entrega" (viaje libre): ahora se entrega por OC.
+- **Datos de prueba:** 10 modelos `(prueba)` con sus tallas = 38 SKUs; cada viaje lleva una OC entregada por planta (50
+  OCs con su remisión) y 6 abiertas: 2 recibidas (una vencida), 2 en taller con OT abierta, 1 lista (OT terminada ayer),
+  1 armada. Siguen 1 modelo en rojo y 2 en amarillo (comprobado cada día de 2026–2027). PDF de ejemplo marcado "DOCUMENTO
+  DE PRUEBA": `~/Downloads/OC_PRUEBA_Frisa_4500999001.pdf` (planta Norte (prueba), 7 renglones, 60 pzas).
+- **Probado:** 119 pruebas (`node --test src/utils/*.test.js`), `npm run build`, SQL V180+V181 en PGlite (43
+  comprobaciones: flujo completo, apartado entre dos OCs, cancelar, trigger de prueba, catálogo real, carga y borrado);
+  pantallas en el ejemplo local (`salper-frisa-consignacion-harness`, puerto 5190, con lector de PDF simulado): subir OC →
+  7 SKUs sugeridos bien → guardar (7 alias) → OT → terminar (bodega 130→145) → armar → entregar Rem. 812; casilla de
+  bodega, órdenes de taller, semáforo por modelo/talla, catálogo, celular. **No probado:** la lectura real del PDF (la
+  llave de Anthropic solo está en Vercel) ni con sesión real.
+- **Orden para subir:** primero el SQL V181 y después el código (el código nuevo lee tablas que V180 no tiene).
+- **Pendiente:** guardar el PDF original; ligar las OT a órdenes FR reales (estaciones); terminar una OT por partes;
+  imprimir la OT/la hoja de armado; varias personas (rol o permiso propio en vez de solo admin_general); mandar una OC real
+  para afinar la lectura.
