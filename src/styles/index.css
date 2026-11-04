@@ -5249,3 +5249,40 @@ h4 {
 .cambios-historial__item--pendiente { border-color: var(--color-info); background: var(--color-info-soft); }
 .estacion-card--cambios { box-shadow: inset 4px 0 0 var(--color-info); }
 .estacion-card__cambios { font-size: 13px; font-weight: 700; color: var(--color-info); }
+
+/* ---------- V180 — Frisa a consignación (prueba) ---------- */
+.frisa__encabezado { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.frisa__prueba-botones, .frisa__botones { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.frisa__pestanas { overflow-x: auto; flex-wrap: nowrap; }
+.frisa__pestanas .notas-pestana { white-space: nowrap; }
+.frisa__nota { margin: 0 0 12px; font-size: 14px; color: var(--color-text-muted); line-height: 1.45; }
+.frisa__barra { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.frisa__sub { font-size: 12px; color: var(--color-text-muted); font-weight: 400; }
+.frisa__ok { color: var(--color-good); font-weight: 600; }
+.frisa__falta, .frisa__exceso { color: var(--color-danger); font-weight: 600; font-size: 12px; }
+.frisa__exceso { font-size: inherit; }
+.frisa__reponer { font-size: 12px; color: var(--color-orange-strong); font-weight: 600; }
+.frisa__titulo { margin-top: 24px; }
+.frisa__vacio { padding: 20px; }
+.frisa__prueba { margin-left: 6px; padding: 0 6px; border-radius: 6px; background: var(--color-bg); border: 1px solid var(--color-border); font-size: 11px; color: var(--color-text-muted); }
+.frisa-tabla { margin-bottom: 14px; }
+.frisa-tabla .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.frisa-tabla tfoot td { border-top: 2px solid var(--color-black); }
+.frisa-matriz td { vertical-align: top; }
+.frisa-input { width: 72px; text-align: right; padding: 6px 8px; }
+.frisa-form { margin-top: 20px; display: grid; gap: 12px; }
+.frisa-form__fila { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 14px; }
+.frisa-form__fila label { display: grid; gap: 4px; min-width: 150px; flex: 1 1 150px; max-width: 280px; }
+.frisa-form .frisa-form__fila { margin-bottom: 0; }
+/* Semáforo: rojo/verde solo como indicador de estado; amarillo = ámbar de la marca. */
+.frisa-nivel { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.frisa-nivel--rojo { background: var(--color-danger-soft); color: var(--color-danger); }
+.frisa-nivel--amarillo { background: #fff3cc; color: var(--color-orange-strong); }
+.frisa-nivel--verde { background: var(--color-good-soft); color: var(--color-good); }
+.frisa-fila--rojo td:first-child { box-shadow: inset 4px 0 0 var(--color-danger); }
+.frisa-fila--amarillo td:first-child { box-shadow: inset 4px 0 0 var(--color-amber-strong); }
+.frisa-fila--verde td:first-child { box-shadow: inset 4px 0 0 var(--color-good); }
+.frisa__encabezado .page-title { margin: 0 0 4px; }
+.frisa__encabezado .page-subtitle { margin: 0; }
+.frisa-tabla td > strong:first-child { white-space: nowrap; }
+.frisa-matriz th:first-child, .frisa-matriz td:first-child { position: sticky; left: 0; z-index: 1; background: var(--color-bg); }

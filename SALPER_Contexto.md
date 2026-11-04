@@ -7435,3 +7435,58 @@ Pedido de Alfredo: que las órdenes que ya estaban en azul antes de V178 tambié
 - Aplicado por Alfredo el 2026-11-03 (Supabase avisó "creates a table without RLS": falsa alarma, la tabla ya tenía
   RLS; eligió "Run and enable RLS"). Resultado: ESC-049 3 cambios de prendas; IND-009 y ESC-043 un cambio de datos
   sin detalle. Probado antes en PGlite (9 casos) y en el ejemplo local (ESC-104/105).
+
+## Frisa – prueba: inventario a consignación (V180, 2026-11-04, rama `frisa-prueba`, SQL SIN aplicar)
+Prueba de concepto pedida por Alfredo (prompt "Módulo Frisa (PRUEBA)"). Rama `frisa-prueba` (sale de `main` d8c29c3),
+**sin merge**. Sección **"Frisa (prueba)"** en el menú (`/frisa`), solo `admin_general` (el "super_admin" del prompt).
+- **Negocio:** 5 plantas en Monterrey, un viaje cada 10 días desde Torreón para todas, sin entregas parciales; Frisa
+  consume, SALPER factura por planta cada quincena a precio fijo por SKU; Frisa confirma su stock cada mes; los máximos
+  por planta/SKU los define Frisa; lead time de producción 10 días.
+- **Política (por SKU, sobre stock total = bodega SALPER + plantas):** consumo semanal = consumo de las 6 quincenas más
+  recientes que tienen consumo capturado ÷ las semanas que cubren (días/7); cobertura = total ÷ consumo semanal; **rojo**
+  = bodega < consumo de 20 días (manda sobre amarillo); **amarillo** = cobertura < 4 semanas ("Pedir producción"); verde
+  ≥ 4 (objetivo 6); sugerido = 6 × consumo semanal − total, mínimo 0, hacia arriba a múltiplos de 10. Sin consumo = verde.
+- **SQL** `supabase/schema_v180_frisa_consignacion_prueba.sql` (aditivo, se puede correr dos veces, rollback al final del
+  archivo). NO toca nada existente (tampoco `productos_frisa` de V155, que es el catálogo de órdenes de producción; aquí
+  los SKUs van aparte). Tablas: `frisa_plantas`, `frisa_productos` (sku único sin mayúsculas, `precio_consumo`),
+  `frisa_maximos` (PK planta+producto), `frisa_movimientos` (fecha, tipo, producto, planta nula solo en producción,
+  cantidad, `confirmado` solo en ajustes, `lote_id` = lo capturado junto, referencia, notas, `es_prueba` default true,
+  `creado_por`/`creado_por_nombre`). Todas con `es_prueba`. Tipos: `produccion` (+bodega), `entrega` (−bodega +planta),
+  `consumo` (−planta), `ajuste_confirmacion` (± planta = confirmado − calculado; se guarda aunque sea 0 para que quede
+  registro de la confirmación). **El stock no se guarda**: lo suma la pantalla (`utils/frisaConsignacion.js`) y las
+  funciones lo recalculan para validar (`frisa_stock_bodega`, `frisa_stock_planta`, internas).
+  Seguridad como Pedidos Colegio: RLS, lectura solo admin_general, anon nada, sin escritura directa. Funciones (todas
+  revisan admin_general, `revoke public/anon`, `grant authenticated`, candado `pg_advisory_xact_lock`):
+  `frisa_registrar_produccion`, `frisa_registrar_entrega` (todo o nada: si a algún SKU no le alcanza la bodega no guarda
+  nada y dice cuánto falta), `frisa_registrar_consumo` (fecha = último día de la quincena; rechaza quincena que no ha
+  terminado — hora de Monterrey —, repetir planta+SKU en la misma quincena, y consumir más de lo que hay),
+  `frisa_registrar_confirmacion`, `frisa_set_maximo` (null lo quita), `frisa_cargar_datos_prueba(jsonb)` (se niega si ya
+  hay datos de prueba; revisa que no quede stock negativo), `frisa_borrar_datos_prueba()`.
+- **Pantallas** (`pages/FrisaConsignacionPage.jsx`, `components/frisaConsignacion/*`, `services/frisaConsignacionService.js`
+  — lee por páginas de 1000): **Semáforo** (bodega, en plantas, total, consumo/sem, cobertura, nivel, sugerido; ordenado
+  rojo → verde; + "Registrar producción" que entra a bodega, el botón de cada fila precarga el sugerido); **Por planta**
+  (matriz stock / máximo, "+N" a reponer, total a reponer vs bodega; "Editar máximos"); **Armar entrega** (matriz de
+  cantidades, "Llenar hasta máximo", aviso por SKU si la bodega no alcanza y botón bloqueado); **Consumo quincenal**
+  (planta + quincena terminada; lo ya capturado sale fijo con ✓; monto a facturar por SKU y total; tabla "A facturar por
+  planta y quincena"); **Confirmación mensual** (planta + fecha, calculado a esa fecha vs lo que confirma Frisa,
+  diferencias, "Copiar lo calculado", genera ajustes; lista de confirmaciones anteriores); **Historial** (filtros SKU,
+  planta/bodega, tipo). Botones "Cargar datos de prueba" / "Borrar datos de prueba" (con confirmación) arriba.
+- **Datos de prueba** (`generarDatosPrueba(hoy)`, determinista): 5 plantas "(prueba)", 10 SKUs `PRB-*` (3 de alta
+  rotación: PLA-MC, CAM-MZ, PLA-ML), máximos = 3 semanas de consumo por planta, desde el día 1 de hace 3 meses: entregas
+  cada 10 días reponiendo al máximo según lo que de verdad hay, consumo diario con ruido capturado por quincena, una
+  confirmación el último fin de mes con diferencias de −3 a +2 en ~1 de cada 4, y un último lote de producción ayer que
+  deja **CAM-MZ en rojo y PLA-ML + CHA-RF en amarillo** (para los amarillos, los viajes de los últimos 35 días solo
+  completan 15% del máximo). Comprobado para cada día de 2026–2027.
+- **Probado:** `node --test src/utils/*.test.js` (116, 9 de Frisa), `npm run build`; el SQL en PGlite (42 comprobaciones:
+  se aplica dos veces, permisos anon/authenticated, RLS, entrega sin parciales, consumo repetido/excedido/futuro,
+  ajuste −2 y 0, máximos, carga de 685+ movimientos sin negativos, borrar no toca lo que no es prueba) y las pantallas en
+  un ejemplo local con PGlite **en el navegador corriendo el SQL real** (`.claude/harness-consignacion/`, servidor
+  `salper-frisa-consignacion-harness`, puerto 5190, `?rol=ventas` para ver el bloqueo): cargar, producción (rojo → verde),
+  entrega bloqueada y luego guardada, consumo $6,520, confirmación −3, filtros del historial, borrar, celular 375px.
+  **No probado:** con sesión real en Supabase (el SQL no está aplicado).
+- **Pendiente / para decidir:** aplicar el SQL (Alfredo lo revisa antes); alta/edición de plantas y SKUs reales desde la
+  app (hoy solo vienen de los datos de prueba) y marcar los reales `es_prueba = false`; ligar `frisa_productos` con
+  `productos_frisa` (V155) y la producción con las órdenes FR; corregir/anular un movimiento capturado por error (hoy no
+  hay); ajuste de bodega (conteo físico en Torreón); fecha real de cada entrega vs viaje programado; qué pasa con rojo
+  cuando el sugerido sale 0 (el stock está en plantas pero la bodega no cubre 2 entregas); factura (hoy solo muestra el
+  monto); lead time de 10 días todavía no entra al cálculo (el rojo de 20 días ya lo cubre en la práctica).

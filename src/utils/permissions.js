@@ -452,6 +452,12 @@ export function canManagePedidosColegio(role) {
   return role === 'admin_general'
 }
 
+// V180 — Frisa a consignación (PRUEBA): solo admin_general (el "super_admin"
+// del prompt). Espejo de la RLS y de frisa_exigir_admin() en el servidor.
+export function canViewFrisaConsignacion(role) {
+  return role === 'admin_general'
+}
+
 // V116 — consulta_tienda ve Pedidos Colegio (folios, anticipos/abonos, PDFs)
 // pero no crea/edita/elimina nada — eso se queda exclusivo de
 // canManagePedidosColegio. Espejo de la política SELECT que ahora también

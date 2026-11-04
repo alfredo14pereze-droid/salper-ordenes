@@ -11,6 +11,7 @@ import {
   canManageUsers,
   canViewDesignSystem,
   canViewPedidosColegio,
+  canViewFrisaConsignacion,
   canViewTalleros,
   isCapturaProduccion,
   canCapturarProduccion,
@@ -184,6 +185,8 @@ export default function AppLayout({ children }) {
     // V57 — beta oculta: solo admin_general. V116 — también consulta_tienda,
     // de solo lectura (ver canViewPedidosColegio).
     { to: '/pedidos-colegio', label: 'Pedidos Colegio', show: canViewPedidosColegio(role) },
+    // V180 — Frisa a consignación (prueba de concepto), solo admin_general.
+    { to: '/frisa', label: 'Frisa (prueba)', show: canViewFrisaConsignacion(role) },
     { to: '/usuarios', label: 'Usuarios', show: canManageUsers(role) },
     // V125 — qué puede hacer cada rol (editable), solo admin_general.
     { to: '/roles-permisos', label: 'Roles y permisos', show: canManageUsers(role) },
