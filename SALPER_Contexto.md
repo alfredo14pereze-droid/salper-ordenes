@@ -7494,7 +7494,7 @@ Prueba de concepto pedida por Alfredo (prompt "Módulo Frisa (PRUEBA)"). Rama `f
   cuando el sugerido sale 0 (el stock está en plantas pero la bodega no cubre 2 entregas); factura (hoy solo muestra el
   monto); lead time de 10 días todavía no entra al cálculo (el rojo de 20 días ya lo cubre en la práctica).
 
-## Frisa – prueba, parte 2: orden de compra → orden de taller → armar → entregar (V181, 2026-11-04, SQL SIN aplicar)
+## Frisa – prueba, parte 2: orden de compra → orden de taller → armar → entregar (V181, 2026-11-04, SQL APLICADO, en `main`/producción)
 Alfredo vio V180 en producción: "no me gusta… quiero que salga desde cargar la orden de compra que nos llega de Frisa,
 hacer las órdenes de taller para surtir, y armar las órdenes". En sus Excel reales (`~/salper-frisa`) cada remisión trae la
 **Orden** (número de OC de Frisa, 4500…) y la planta, y todo es **por producto y talla**. Respuestas de Alfredo: 1 la OC
@@ -7535,7 +7535,10 @@ registra el folio; 6 se quedan semáforo/consumo/confirmación; 7 por ahora solo
   7 SKUs sugeridos bien → guardar (7 alias) → OT → terminar (bodega 130→145) → armar → entregar Rem. 812; casilla de
   bodega, órdenes de taller, semáforo por modelo/talla, catálogo, celular. **No probado:** la lectura real del PDF (la
   llave de Anthropic solo está en Vercel) ni con sesión real.
-- **Orden para subir:** primero el SQL V181 y después el código (el código nuevo lee tablas que V180 no tiene).
+- **Estado:** SQL V181 aplicado por Alfredo el 2026-11-04; verificado sin sesión (las 5 tablas nuevas, `modelo`/`talla`,
+  `oc_id`/`ot_id` y las 11 funciones existen; anon recibe 401). Código en `main` (40b728d), bundle `index-BFuasnnn.js`
+  confirmado; `/api/document-ocr` responde 401 sin sesión. Los datos de prueba de V180 que ya estuvieran cargados no traen
+  OCs: borrar y volver a cargar.
 - **Pendiente:** guardar el PDF original; ligar las OT a órdenes FR reales (estaciones); terminar una OT por partes;
   imprimir la OT/la hoja de armado; varias personas (rol o permiso propio en vez de solo admin_general); mandar una OC real
   para afinar la lectura.
