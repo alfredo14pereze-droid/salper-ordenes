@@ -425,7 +425,7 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 
               return (
                 <View key={i} style={styles.itemCard}>
                   <View style={styles.itemHeader}>
-                    <Text style={styles.itemName}>{item.garment || `Prenda ${i + 1}`}</Text>
+                    <Text style={styles.itemName}>{item.garment || `Prenda ${i + 1}`}{item.comprada === true ? ' (Comprada)' : ''}</Text>
                     <Text style={styles.itemMeta}>
                       {[item.color, item.pantone].filter(Boolean).join(' · ')}
                     </Text>

@@ -16,7 +16,8 @@ const prendaConContenido = (item) =>
 
 // Mensaje de error (o null): la primera prenda que no tiene tela.
 export function faltaTela(items = []) {
-  const llenas = items.filter(prendaConContenido)
+  // V183 — una playera comprada no lleva tela.
+  const llenas = items.filter((it) => prendaConContenido(it) && it.comprada !== true)
   for (const [i, item] of llenas.entries()) {
     if (!String(item.tela_id ?? '').trim()) {
       const nombre = String(item.garment ?? '').trim() || `Prenda ${i + 1}`

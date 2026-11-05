@@ -1,4 +1,5 @@
 import BordadosMiniaturas from '../components/orders/BordadosMiniaturas'
+import { esComprada, prendasParaCorte } from '../utils/prendaComprada'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useOrder } from '../hooks/useOrder'
@@ -128,6 +129,7 @@ function PrendaResumen({ item, completa = false }) {
       <p className="estacion-prenda__nombre">
         {item.garment || '—'}
         {item.color ? ` · ${item.color}` : ''}
+        {esComprada(item) && <span className="badge badge--comprada">Comprada</span>}
       </p>
       {item.tela_nombre && <p className="estacion-prenda__detalle">Tela: {item.tela_nombre}</p>}
       {detalles.map(([etiqueta, valor]) => (
@@ -640,8 +642,9 @@ export default function EstacionOrderPage() {
       {estacionVeCambios(order, estacion, etapas) && <OrderReconfirmBanner order={order} cambios={cambios} onUpdated={refresh} />}
 
       <div className="estacion-list" style={{ marginTop: 14 }}>
-        {(order.items || []).map((item, i) => (
-          <PrendaResumen key={item.id || i} item={item} completa={!!estacion?.dashboardSublimado} />
+        {/* V183 — corte no ve las playeras compradas (no se cortan). */}
+        {(role === 'corte' ? prendasParaCorte(order.items) : (order.items || []).map((item, index) => ({ item, index }))).map(({ item, index }) => (
+          <PrendaResumen key={item.id || index} item={item} completa={!!estacion?.dashboardSublimado} />
         ))}
       </div>
 

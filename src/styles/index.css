@@ -5342,3 +5342,6 @@ h4 {
   font-size: 22px;
   line-height: 1;
 }
+
+/* V183 — playera comprada (no se corta ni usa tela) */
+.badge--comprada { margin-left: 8px; background: #e8f0fb; color: #1f4f8f; border: 1px solid #9db8dd; white-space: nowrap; }

@@ -7577,3 +7577,18 @@ guardaba PDFs de diseños.
 - Sin cambio: el import CSV de consumos (es un archivo de datos).
 - Probado: `npm run build` y las miniaturas en un ejemplo local (`salper-pdf-harness`, puerto 5194). **No
   probado** subir un PDF real con sesión.
+
+## V183 — Playeras compradas (2026-11-05)
+Pedido de Alfredo: en cada playera de una orden, botón "¿Se fabrica o se compra?": Fabricada por defecto,
+Comprada si se compra hecha (solo se le pone reflejante, etc.). Comprada: no le aparece a corte y no consume tela.
+- Marca en la prenda: `orders.items[].comprada = true` (sin clave = fabricada). Solo se ofrece en prendas cuyo nombre
+  dice "playera" (`puedeSerComprada`, `utils/prendaComprada.js`). Al escoger Comprada se quita la tela
+  (`tela_id`/`tela_nombre` vacíos), así no cuenta en consumo estimado ni comprometido. Si la prenda deja de ser
+  playera o se aplica un producto del catálogo, vuelve a fabricada.
+- Corte (EstacionOrderPage, rol `corte`) no ve las prendas compradas; las demás estaciones las ven con la
+  etiqueta "Comprada". Detalle de la orden: "Comprada (no se corta)"; PDF de la orden: "(Comprada)".
+- SQL `supabase/schema_v183_playera_comprada.sql`: `orders_tela_obligatoria` (V154) ya no exige tela a una prenda
+  comprada (candado md5); `orden_todo_comprado(items)` + disparador diferido `orders_corte_compradas_trg`
+  (after insert/update of items): si TODAS las prendas son compradas se borra la etapa de corte pendiente (como
+  bordado en V25); si vuelve una fabricada, regresa. Corte en proceso/completado no se toca. No aplica a maquila,
+  bordado ni frisa. No reemplaza create_order ni set_order_items.

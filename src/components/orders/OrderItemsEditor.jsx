@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { cambioDePrenda, esComprada, marcarComprada, puedeSerComprada } from '../../utils/prendaComprada'
 import { GARMENT_COLORS, GARMENT_OPTIONS_SUBLIMACION, GARMENT_SHORT_KEYS_SUBLIMACION, GARMENT_SIN_ROSTER_SUBLIMACION, GARMENT_TOP_KEYS_SUBLIMACION, ORDER_TYPES_REQUIRING_PANTONE } from '../../lib/constants'
 import TelaSelect from './TelaSelect'
 import ProductoAutocomplete from './ProductoAutocomplete'
@@ -229,7 +230,10 @@ function OrderItemsEditorGeneral({
                 productos={productos}
                 telas={telas}
                 item={item}
-                onApply={(patch) => updateItem(itemIndex, patch)}
+                onApply={(patch) =>
+                  // V183 — un producto del catálogo trae su tela: la prenda vuelve a ser fabricada.
+                  updateItem(itemIndex, { ...patch, ...(esComprada(item) ? marcarComprada(false) : {}) })
+                }
                 onProductoCreated={onProductoCreated}
                 canSaveAsProducto={!isSublimacion}
               />
@@ -245,7 +249,7 @@ function OrderItemsEditorGeneral({
                   <select
                     className="input"
                     value={item.garment}
-                    onChange={(e) => updateItem(itemIndex, { garment: e.target.value })}
+                    onChange={(e) => updateItem(itemIndex, cambioDePrenda(item, e.target.value))}
                   >
                     <option value="">Selecciona…</option>
                     {GARMENT_OPTIONS_SUBLIMACION.map((g) => (
@@ -260,10 +264,37 @@ function OrderItemsEditorGeneral({
                     className="input"
                     placeholder="Ej. Playera, Short, Chamarra…"
                     value={item.garment}
-                    onChange={(e) => updateItem(itemIndex, { garment: e.target.value })}
+                    onChange={(e) => updateItem(itemIndex, cambioDePrenda(item, e.target.value))}
                   />
                 )}
               </label>
+              {/* V183 — playeras: Fabricada (por defecto) o Comprada. Comprada no
+                  lleva tela y no le aparece a corte. */}
+              {puedeSerComprada(item.garment) && (
+                <div>
+                  <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
+                    ¿Se fabrica o se compra?
+                  </span>
+                  <div className="seg" role="group" aria-label={`¿${item.garment} se fabrica o se compra?`}>
+                    <button
+                      type="button"
+                      className={'seg__btn' + (!esComprada(item) ? ' seg__btn--on' : '')}
+                      aria-pressed={!esComprada(item)}
+                      onClick={() => updateItem(itemIndex, marcarComprada(false))}
+                    >
+                      Fabricada
+                    </button>
+                    <button
+                      type="button"
+                      className={'seg__btn' + (esComprada(item) ? ' seg__btn--on' : '')}
+                      aria-pressed={esComprada(item)}
+                      onClick={() => updateItem(itemIndex, marcarComprada(true))}
+                    >
+                      Comprada
+                    </button>
+                  </div>
+                </div>
+              )}
               {prendasOps && prendasOps.length > 0 && (() => {
                 const valor = prendaOperacionesDe(item, clienteNombre, prendasOps)
                 const sugerida = typeof item.prenda_operaciones !== 'string' && valor
@@ -438,14 +469,18 @@ function OrderItemsEditorGeneral({
               </label>
               <div>
                 <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
-                  Tela *
+                  Tela{esComprada(item) ? '' : ' *'}
                 </span>
+              {esComprada(item) ? (
+                <p className="template-hint" style={{ margin: 0 }}>Comprada: no usa tela ni pasa por corte.</p>
+              ) : (
               <TelaSelect
                 telas={telas}
                 value={item.tela_id}
                 onChange={(telaId, telaNombre) => updateItem(itemIndex, { tela_id: telaId, tela_nombre: telaNombre })}
                 onTelaCreated={onTelaCreated}
               />
+              )}
               </div>
               <label>
                 Logotipos

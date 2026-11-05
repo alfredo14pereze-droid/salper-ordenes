@@ -1,4 +1,5 @@
 import { esOrdenBordado, normalizarItemsBordado, validarItemsBordado } from '../../utils/bordadoOrden'
+import { esComprada } from '../../utils/prendaComprada'
 import { limpiarRoster } from '../../utils/roster'
 import { useState } from 'react'
 import { refrescarLineasMostrador, useLineasMostrador } from '../../hooks/useLineasMostrador'
@@ -107,6 +108,7 @@ function ItemSummary({ item, index, mostrador }) {
           <dd>
             {item.garment || '—'}
             {item.color ? ` · ${item.color}` : ''}
+            {esComprada(item) && <span className="badge badge--comprada">Comprada (no se corta)</span>}
           </dd>
         </div>
         {detalleRows.map(([label, value]) => (
