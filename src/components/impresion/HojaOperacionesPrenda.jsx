@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchOperacionesDePrenda } from '../../services/produccionService'
 import { registrarHojaImpresa } from '../../services/hojasImpresasService'
-import { agruparPorParte } from '../../utils/imprimirOperaciones'
+import { agruparPorParte, marcarOtraPrenda } from '../../utils/imprimirOperaciones'
 import { olvidarOpcionesOperaciones } from '../../hooks/usePrendasOperaciones'
 import './impresion.css'
 
@@ -81,7 +81,7 @@ export default function HojaOperacionesPrenda({ prenda, volverA, operaciones = n
               <th className="hoja-impresion__num">Tiempo (seg)</th>
             </tr>
           </thead>
-          {agruparPorParte(ops).map((g) => (
+          {agruparPorParte(marcarOtraPrenda(ops, prenda)).map((g) => (
             <tbody key={g.parte}>
               <tr className="hoja-impresion__parte">
                 <th colSpan={3}>{g.parte}</th>

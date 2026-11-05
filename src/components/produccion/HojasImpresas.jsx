@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { editarHojaImpresa, fetchHojasImpresas, quitarHojaImpresa } from '../../services/hojasImpresasService'
-import { agruparPorParte } from '../../utils/imprimirOperaciones'
+import { agruparPorParte, marcarOtraPrenda } from '../../utils/imprimirOperaciones'
 import { olvidarOpcionesOperaciones } from '../../hooks/usePrendasOperaciones'
 import Modal from '../talleros/Modal'
 import { coincideNombre } from '../../utils/buscarPorNombre'
@@ -45,7 +45,7 @@ export default function HojasImpresas({ puedeQuitar, puedeEditar = false, catalo
   if (error) return <ErrorState error={error} onRetry={load} />
   if (!lista) return <Loading label="Cargando hojas impresas…" />
   if (lista.length === 0) {
-    return <EmptyState>Todavía no se ha impreso ninguna hoja. Toca «Imprimir operaciones» con operaciones de una sola prenda: al ver el PDF se guarda aquí.</EmptyState>
+    return <EmptyState>Todavía no se ha impreso ninguna hoja. Marca las operaciones que lleva la hoja (pueden ser de varias prendas) y toca «Imprimir operaciones»: al ver el PDF se guarda aquí.</EmptyState>
   }
 
   const visibles = lista.filter((h) => coincideNombre(busqueda, h.titulo, h.prenda))
@@ -84,7 +84,7 @@ export default function HojasImpresas({ puedeQuitar, puedeEditar = false, catalo
                       </tr>
                     </thead>
                     <tbody>
-                      {ops.map((o) => (
+                      {marcarOtraPrenda(ops, h.prenda).map((o) => (
                         <tr key={o.folio}>
                           <td>{o.folio}</td>
                           <td>{o.operacion}</td>
@@ -137,15 +137,23 @@ export default function HojasImpresas({ puedeQuitar, puedeEditar = false, catalo
 
 // V177 — escoger qué operaciones de la prenda lleva la hoja. Salen todas las
 // activas de la prenda, más las que ya traía la hoja aunque estén inactivas.
+// V182 — también se pueden agregar operaciones de otras prendas (ej. una de
+// PLAYERA en la hoja de CAMISOLA): se escoge la prenda y salen sus operaciones.
 function EditarHoja({ hoja, catalogo, onClose, onDone }) {
   const enHoja = new Set((hoja.operaciones || []).map((o) => o.folio));
   const [titulo, setTitulo] = useState(hoja.titulo);
   const [sel, setSel] = useState(enHoja);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState(null);
+  const [otras, setOtras] = useState(() => new Set());
 
+  const prendasCatalogo = [...new Set(catalogo.map((o) => o.prenda))]
+    .filter((p) => p !== hoja.prenda && !otras.has(p))
+    .sort();
   const delCatalogo = catalogo.filter(
-    (o) => o.prenda === hoja.prenda && (o.activa || enHoja.has(o.folio)),
+    (o) =>
+      (o.prenda === hoja.prenda || otras.has(o.prenda) || enHoja.has(o.folio)) &&
+      (o.activa || enHoja.has(o.folio)),
   );
   // Si la operación ya no está en el catálogo cargado, se muestra la copia de la hoja.
   const faltantes = (hoja.operaciones || [])
@@ -154,7 +162,7 @@ function EditarHoja({ hoja, catalogo, onClose, onDone }) {
   const lista = [...delCatalogo, ...faltantes].sort(
     (a, b) => a.folio - b.folio,
   );
-  const grupos = agruparPorParte(lista);
+  const grupos = agruparPorParte(marcarOtraPrenda(lista, hoja.prenda));
   const agregadas = [...sel].filter((f) => !enHoja.has(f)).length;
   const quitadas = [...enHoja].filter((f) => !sel.has(f)).length;
 
@@ -198,6 +206,31 @@ function EditarHoja({ hoja, catalogo, onClose, onDone }) {
             ` · ${quitadas} ${quitadas === 1 ? "quitada" : "quitadas"}`}
           . Los cambios no cuentan como impresión.
         </p>
+        {prendasCatalogo.length > 0 && (
+          <label>
+            Agregar operaciones de otra prenda
+            <select
+              className="input"
+              value=""
+              onChange={(e) => {
+                const p = e.target.value;
+                if (p) setOtras((prev) => new Set([...prev, p]));
+              }}
+            >
+              <option value="">Escoge una prenda…</option>
+              {prendasCatalogo.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+            {otras.size > 0 && (
+              <span className="template-hint">
+                Mostrando también: {[...otras].join(", ")}. Palomea las que lleva la hoja.
+              </span>
+            )}
+          </label>
+        )}
         <div className="revision__tabla-wrap hojas-impresas__editar">
           <table className="simple-table">
             <tbody>

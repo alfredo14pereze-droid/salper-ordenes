@@ -1,4 +1,4 @@
-import { agruparPorParte } from './imprimirOperaciones.js'
+import { agruparPorParte, marcarOtraPrenda } from './imprimirOperaciones.js'
 // Operaciones de producción en la orden: cada prenda de la orden puede llevar
 // `prenda_operaciones`, con lo que el PDF interno agrega su hoja de operaciones:
 //   · 'CHAMARRA DOMUS'  → todas las operaciones activas de esa prenda del catálogo (V174).
@@ -83,7 +83,7 @@ export function armarHojasOperaciones(items, clienteNombre, opciones, ops, hojas
       const h = porHoja.get(idDeHoja(valor))
       if (h) {
         titulo = h.titulo
-        lista = h.operaciones
+        lista = marcarOtraPrenda(h.operaciones, h.prenda) // V182: puede traer operaciones de otra prenda
       }
     } else {
       lista = porPrenda.get(valor)

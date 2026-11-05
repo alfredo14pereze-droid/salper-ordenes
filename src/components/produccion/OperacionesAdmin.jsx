@@ -8,7 +8,7 @@ import HojasImpresas from './HojasImpresas'
 import { buildCatalogoOperacionesPdfBlob, catalogoPdfFileName } from '../../utils/generateProduccionPdf'
 import { registrarHojaImpresa } from '../../services/hojasImpresasService'
 import { olvidarOpcionesOperaciones } from '../../hooks/usePrendasOperaciones'
-import { COLUMNAS_DEFAULT, COLUMNAS_OPCIONALES, operacionesParaImprimir } from '../../utils/imprimirOperaciones'
+import { COLUMNAS_DEFAULT, COLUMNAS_OPCIONALES, marcarOtraPrenda, operacionesParaImprimir, prendaPrincipal, textoPorPrenda } from '../../utils/imprimirOperaciones'
 import {
   centena,
   sugerirFolioPrendaExistente,
@@ -407,6 +407,7 @@ function ImprimirOperaciones({ ops, visibles, marcadas, filtro, onClose }) {
   const [error, setError] = useState(null)
   const [preview, setPreview] = useState(null)
   const [titulo, setTitulo] = useState(null) // null = todavía no se escribe: arranca con el último de la prenda
+  const [prendaElegida, setPrendaElegida] = useState(null) // V182: de qué prenda es la hoja (si mezcla prendas)
 
   // Qué se puede imprimir: las marcadas (si hay), lo que deja el filtro (si hay
   // filtro) y todo el catálogo.
@@ -418,11 +419,17 @@ function ImprimirOperaciones({ ops, visibles, marcadas, filtro, onClose }) {
   ].filter(Boolean)
   const modoActual = fuentes.some((f) => f.valor === modo) ? modo : fuentes[0].valor
   const lista = operacionesParaImprimir(ops, { modo: modoActual, visibles, marcadas, incluirInactivas })
-  // V175 — con una sola prenda se le pone título y la hoja se guarda en «Hojas impresas».
+  // V175 — la hoja lleva título y se guarda en «Hojas impresas».
+  // V182 — también si mezcla prendas (ej. 7 de CAMISOLA + 2 de PLAYERA): se
+  // guarda como hoja de una prenda (la que más lleva, o la que se escoja).
+  // Solo no se guarda con "Todo el catálogo" o "Una hoja por prenda".
   const prendasLista = [...new Set(lista.map((o) => o.prenda))]
   const unicaPrenda = prendasLista.length === 1 ? prendasLista[0] : null
-  const tituloGuardado = unicaPrenda ? leerLS(LS_TITULOS, {})[unicaPrenda] : null
-  const tituloInicial = (typeof tituloGuardado === 'string' && tituloGuardado.trim()) || unicaPrenda || ''
+  const mezcla = prendasLista.length > 1
+  const conTitulo = lista.length > 0 && (!mezcla || (modoActual !== 'todas' && !porPrenda))
+  const prendaHoja = !conTitulo ? null : prendasLista.includes(prendaElegida) ? prendaElegida : prendaPrincipal(lista)
+  const tituloGuardado = prendaHoja ? leerLS(LS_TITULOS, {})[prendaHoja] : null
+  const tituloInicial = (typeof tituloGuardado === 'string' && tituloGuardado.trim()) || prendaHoja || ''
   const tituloFinal = (titulo ?? tituloInicial).trim()
   const toggleColumna = (key) => setColumnas((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
 
@@ -430,14 +437,19 @@ function ImprimirOperaciones({ ops, visibles, marcadas, filtro, onClose }) {
     setGenerando(true)
     setError(null)
     try {
-      if (unicaPrenda) {
-        const { error: err } = await registrarHojaImpresa({ prenda: unicaPrenda, titulo: tituloFinal || unicaPrenda, folios: lista.map((o) => o.folio) })
+      const tituloHoja = prendaHoja ? tituloFinal || prendaHoja : ''
+      if (prendaHoja) {
+        const { error: err } = await registrarHojaImpresa({ prenda: prendaHoja, titulo: tituloHoja, folios: lista.map((o) => o.folio) })
         if (err) throw new Error(`no se pudo guardar en «Hojas impresas»: ${err.message}`)
         olvidarOpcionesOperaciones()
-        escribirLS(LS_TITULOS, { ...leerLS(LS_TITULOS, {}), [unicaPrenda]: tituloFinal || unicaPrenda })
+        escribirLS(LS_TITULOS, { ...leerLS(LS_TITULOS, {}), [prendaHoja]: tituloHoja })
       }
-      const blob = await buildCatalogoOperacionesPdfBlob(lista, { columnas: unicaPrenda ? columnas.filter((k) => k !== 'prenda') : columnas, porPrenda, porParte, titulo: unicaPrenda ? tituloFinal || unicaPrenda : '' })
-      setPreview({ blob, fileName: unicaPrenda ? `${(tituloFinal || unicaPrenda).replace(/[^\p{L}\p{N}]+/gu, '-')}.pdf` : catalogoPdfFileName('operaciones') })
+      // Hoja de una prenda (aunque lleve operaciones de otra): sin columna "Prenda";
+      // las de otra prenda dicen de cuál vienen en el nombre ("… (PLAYERA)").
+      const blob = prendaHoja
+        ? await buildCatalogoOperacionesPdfBlob(marcarOtraPrenda(lista, prendaHoja), { columnas: columnas.filter((k) => k !== 'prenda'), porParte, titulo: tituloHoja })
+        : await buildCatalogoOperacionesPdfBlob(lista, { columnas, porPrenda, porParte, titulo: '' })
+      setPreview({ blob, fileName: prendaHoja ? `${tituloHoja.replace(/[^\p{L}\p{N}]+/gu, '-')}.pdf` : catalogoPdfFileName('operaciones') })
     } catch (e) {
       setError(`No se pudo generar el PDF: ${e.message}`)
     }
@@ -453,7 +465,7 @@ function ImprimirOperaciones({ ops, visibles, marcadas, filtro, onClose }) {
       {texto}
     </label>
   )
-  const columnasVisibles = COLUMNAS_OPCIONALES.filter((c) => !(c.key === 'prenda' && unicaPrenda) && !(c.key === 'parte' && porParte))
+  const columnasVisibles = COLUMNAS_OPCIONALES.filter((c) => !(c.key === 'prenda' && prendaHoja) && !(c.key === 'parte' && porParte))
 
   return (
     <Modal title="Imprimir operaciones" onClose={onClose}>
@@ -471,14 +483,40 @@ function ImprimirOperaciones({ ops, visibles, marcadas, filtro, onClose }) {
           </div>
         )}
 
-        {unicaPrenda ? (
-          <label className="imp-ops__bloque">
-            <span className="imp-ops__label">Título de la hoja</span>
-            <input className="input" value={titulo ?? tituloInicial} onChange={(e) => setTitulo(e.target.value)} placeholder={unicaPrenda} />
-            <span className="template-hint">Se guarda en «Hojas impresas» para escogerla después en una orden.</span>
-          </label>
+        {prendaHoja ? (
+          <>
+            {mezcla && (
+              <label className="imp-ops__bloque">
+                <span className="imp-ops__label">Es la hoja de</span>
+                <select
+                  className="input"
+                  value={prendaHoja}
+                  onChange={(e) => {
+                    setPrendaElegida(e.target.value)
+                    setTitulo(null)
+                  }}
+                >
+                  {prendasLista.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+                <span className="template-hint">Lleva {textoPorPrenda(lista)}: todas salen en la misma hoja.</span>
+              </label>
+            )}
+            <label className="imp-ops__bloque">
+              <span className="imp-ops__label">Título de la hoja</span>
+              <input className="input" value={titulo ?? tituloInicial} onChange={(e) => setTitulo(e.target.value)} placeholder={prendaHoja} />
+              <span className="template-hint">Se guarda en «Hojas impresas» para escogerla después en una orden.</span>
+            </label>
+          </>
         ) : (
-          lista.length > 0 && <p className="template-hint">Son de varias prendas: para ponerle título y guardarla, filtra o marca operaciones de una sola prenda.</p>
+          lista.length > 0 && mezcla && (
+            <p className="template-hint">
+              {porPrenda && modoActual !== 'todas'
+                ? 'Una hoja por prenda: no se guarda en «Hojas impresas».'
+                : 'Todo el catálogo no se guarda en «Hojas impresas». Para guardar una hoja, marca las operaciones que lleva (pueden ser de varias prendas).'}
+            </p>
+          )
         )}
 
         <p className="imp-ops__resumen">
@@ -487,7 +525,7 @@ function ImprimirOperaciones({ ops, visibles, marcadas, filtro, onClose }) {
           ) : (
             <>
               <b>{lista.length}</b> {lista.length === 1 ? 'operación' : 'operaciones'}
-              {unicaPrenda ? ` de ${unicaPrenda}` : ` de ${prendasLista.length} prendas`}
+              {unicaPrenda ? ` de ${unicaPrenda}` : prendaHoja ? ` (${textoPorPrenda(lista)})` : ` de ${prendasLista.length} prendas`}
               {porParte ? ', agrupadas por parte' : ''}.
             </>
           )}
@@ -498,7 +536,7 @@ function ImprimirOperaciones({ ops, visibles, marcadas, filtro, onClose }) {
           <div className="imp-ops__mas-cuerpo">
             {check(porParte, setPorParte, 'Agrupar por parte (cuello, manga…)')}
             {check(incluirInactivas, setIncluirInactivas, 'Incluir operaciones inactivas')}
-            {!unicaPrenda && check(porPrenda, setPorPrenda, 'Una hoja por prenda')}
+            {mezcla && check(porPrenda, setPorPrenda, 'Una hoja por prenda (no se guarda)')}
             {columnasVisibles.length > 0 && (
               <div>
                 <span className="imp-ops__label">Columnas (folio y operación siempre van)</span>

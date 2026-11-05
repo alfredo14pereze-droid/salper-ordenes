@@ -40,3 +40,35 @@ export function agruparPorParte(ops) {
   }
   return [...grupos.values()]
 }
+
+// V182 — una hoja puede llevar operaciones de varias prendas (ej. 7 de
+// CAMISOLA + 2 de PLAYERA). [{ prenda, n }] de la que más tiene a la que menos;
+// empate: la de folio más bajo.
+export function conteoPorPrenda(ops) {
+  const m = new Map()
+  for (const o of [...ops].sort((a, b) => a.folio - b.folio)) m.set(o.prenda, (m.get(o.prenda) || 0) + 1)
+  return [...m.entries()].map(([prenda, n]) => ({ prenda, n })).sort((a, b) => b.n - a.n)
+}
+
+// La prenda "de" la hoja: la que más operaciones lleva.
+export function prendaPrincipal(ops) {
+  return conteoPorPrenda(ops)[0]?.prenda ?? null
+}
+
+// "7 de CAMISOLA y 2 de PLAYERA"
+export function textoPorPrenda(ops) {
+  const partes = conteoPorPrenda(ops).map((c) => `${c.n} de ${c.prenda}`)
+  return partes.length <= 1 ? partes.join('') : `${partes.slice(0, -1).join(', ')} y ${partes.at(-1)}`
+}
+
+// V182 — en la hoja de una prenda, las operaciones que vienen de otra prenda
+// llevan su prenda en el nombre: "Pegar cuello (PLAYERA)". Todas quedan como de
+// la prenda de la hoja, así se agrupan por parte juntas (cuello con cuello).
+// Las copias viejas (sin prenda) no cambian.
+export function marcarOtraPrenda(ops, prendaHoja) {
+  return (ops || []).map((o) =>
+    o.prenda && prendaHoja && o.prenda !== prendaHoja
+      ? { ...o, operacion: `${o.operacion} (${o.prenda})`, prenda: prendaHoja }
+      : o,
+  )
+}

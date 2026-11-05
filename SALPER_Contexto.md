@@ -7542,3 +7542,19 @@ registra el folio; 6 se quedan semáforo/consumo/confirmación; 7 por ahora solo
 - **Pendiente:** guardar el PDF original; ligar las OT a órdenes FR reales (estaciones); terminar una OT por partes;
   imprimir la OT/la hoja de armado; varias personas (rol o permiso propio en vez de solo admin_general); mandar una OC real
   para afinar la lectura.
+
+## V182 — Hojas de operaciones con operaciones de varias prendas (2026-11-05)
+Pedido de Alfredo: en la hoja de una prenda (ej. CAMISOLA) poder poner operaciones de otra (ej. PLAYERA) cuando
+es la misma operación; ej. 7 de camisola + 2 de playera en una sola hoja.
+- SQL `supabase/schema_v182_hojas_varias_prendas.sql`: solo `registrar_hoja_impresa` y `editar_hoja_impresa`
+  (antes rechazaban "Algunas operaciones no son de X"). Aceptan folios de cualquier prenda (el folio es único en
+  el catálogo); la copia guarda también `prenda` de cada operación. Candado md5: solo aplica si las dos funciones
+  son las de V177 (o ya las de V182). Rollback: volver a correr V177.
+- "Imprimir…" del catálogo: con operaciones marcadas o filtradas de varias prendas ya se pone título y se guarda;
+  "Es la hoja de" (por defecto la prenda con más operaciones). No se guarda con "Todo el catálogo" ni con
+  "Una hoja por prenda".
+- En la hoja (PDF, "Volver a imprimir", «Hojas impresas», PDF interno de la orden) las operaciones de otra prenda
+  salen en su parte junto con las de la prenda y dicen la prenda: "Pegar cuello playera (PLAYERA)"
+  (`marcarOtraPrenda` en `utils/imprimirOperaciones.js`).
+- «Editar operaciones»: "Agregar operaciones de otra prenda" muestra las de esa prenda para palomearlas.
+- Ejemplo local: `salper-ops-harness` (puerto 5189, `.claude/harness-ops/`, PGlite con V173+V177+V182).
