@@ -7809,3 +7809,21 @@ en la pestaña **Revisión Microsip**.
   `pages/FrisaConsignacionPage.jsx`, `components/frisaConsignacion/`, `services/frisaConsignacionService.js` y
   `utils/frisaConsignacion.js`. Sus tablas (`frisa_plantas`, `frisa_productos`, `frisa_movimientos`, `frisa_ordenes_compra`…)
   y funciones siguen en la base sin usarse. El modo `frisa_oc` de `api/document-ocr.js` sí se sigue usando (surtido).
+
+## V189 — Frisa fase 5: inventario en plantas + V190 surtido renglón por renglón (2026-11-06, SQL APLICADO, en `main`/producción)
+- **Plantas Frisa** (pestaña nueva): stock en cada planta = remisiones − facturas, APARTE de la bodega de la fábrica.
+  Tablas `frisa_pl_plantas` (5: Acería, Aerospace, Precision, Santa Catarina, Villa García; nombre_microsip = "FRISA …"),
+  `frisa_pl_importaciones`, `frisa_pl_folios` (PK tipo+folio, cada documento cuenta una vez), `frisa_pl_movimientos`
+  (inmutable). RPC `frisa_pl_importar(archivo, docs jsonb, sin_clave, notas)`: salta folios ya contados, rechaza planta desconocida.
+  Permisos `fp.ver` (3 admins) y `fp.importar` (admin_general).
+- Se alimenta SOLO subiendo los "Diarios del inventario" de Microsip (Concepto: Remisión / Venta; hojas Entregas/Facturado),
+  NUNCA con "Salió el chofer" (contaría doble). Lector: `utils/frisaPlantas.js` (igual que salper-frisa `leer_hoja`) +
+  `leerXlsxHojas` en `utils/xlsxLector.js`. Liga artículos a clave por nombre normalizado.
+- Arranque `datos_2026-11-06_frisa_plantas_inicial.sql` (corrido por Alfredo): acumulado al 15/10/2026 = 18,867 remitidas −
+  16,170 facturadas = 2,697 en plantas; 776 remisiones y 70 facturas ya contadas. "FRISA ENTREGAS 16 OCT.xlsx" es todo del
+  15/10 y ya está incluido (al subirlo, salta los 37). Precision PLAFR-00XL-01MLMA1I queda en −3 (así viene en el resumen).
+- **V190:** `frisa_surtido_lineas.embolsada/_por_nombre/_en` + `frisa_surtido_marcar_renglon` (fs.surtir, solo pendiente):
+  palomear cada renglón conforme se embolsa; "Surtida toda" marca todo. Palomear no aparta; se aparta al marcar surtida.
+- Chofer tiene fn.ver/fs.ver/fs.surtir (dado 2026-11-06 para que Alfredo pruebe la vista de Leo).
+- Pendientes: subir remisiones/facturas posteriores al 15/10; pedido de lisas del lunes; SQL de limpieza de OCs PRUEBA cuando
+  Alfredo termine de probar (NO crear OTs de restock en pruebas: gastan folios FR); probar con un PDF real de OC.
