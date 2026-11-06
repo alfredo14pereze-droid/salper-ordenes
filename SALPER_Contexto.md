@@ -7653,5 +7653,15 @@ cosa y por ahora no entra; (3) todos los roles con sesión consultan.
   mínimo 3). Debajo de la fila TOTAL el Sheet trae leyendas: el lector termina en la primera fila sin clave.
 - **Estado:** SQL aplicado por Alfredo el 2026-11-06 (pegado en el SQL Editor); verificado sin sesión: las 3 tablas y
   las 3 funciones existen y anon recibe 401. Código subido a `main`.
-- **Pendiente:** importar los CSV reales desde la app (Frisa → Niveles → Importar del Sheet). Después: stock en plantas (lo dejó para luego), ligar con `frisa_productos` y con las
+- **Carga inicial hecha (2026-11-06):** Alfredo pidió que quedara cargado el stock actual del Sheet; se generó
+  `supabase/datos_2026-11-06_frisa_niveles_inicial.sql` (68 claves, 3,386 pzas, supuestos 289/42/28/20, conteo
+  "importacion" por clave, idempotente) y Alfredo lo corrió en el SQL Editor: dio 68 claves / 3386 piezas. El aviso
+  "Potential issue detected… creates a table without RLS" que sale con ese archivo es un falso positivo (solo hace
+  insert; la RLS ya está desde V184).
+- **Siguiente (en diseño, ver flujo):** inventario por movimientos (este stock = `inicial`), órdenes de surtido desde
+  el PDF de la OC, Urgente, surtido con quién surtió, "salió el chofer" (cualquier admin), restock por niveles
+  (máximo − (disponible + en proceso + por entrar), solo CRÍTICO/PEDIR) con órdenes FR o pedido de compra
+  (pantalón = comprado), playera lisa como bolsa común por color + manga + talla (sin mín./máx.), revisión subiendo el
+  Excel de existencias de Microsip (trae código numérico; se liga por nombre, los 63 artículos ligaron). Resumen para
+  Alfredo: `~/Downloads/SALPER_Flujo_Frisa.pdf`. Después: stock en plantas (lo dejó para luego), ligar con `frisa_productos` y con las
   órdenes FR, calcular la tendencia en vez de importarla, editar la nota desde la app.
