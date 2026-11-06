@@ -7774,3 +7774,23 @@ Después de entregar se repone el inventario de la fábrica. Pestaña **Restock*
 - **Probado:** 159 pruebas, build, SQL en PGlite sobre todo lo anterior (16 comprobaciones: 6 playeras/30 lisas, lisa compartida,
   conteo inicial/ajuste, ligar descuenta una vez, quitar regresa, compra de lisas y de claves, inmutables, anon) y en el
   ejemplo local: conteo roja M 50 → crear FR-041 ×17 → 33 en anaquel y 17 en proceso; los 6 reportes en CSV y el PDF.
+
+## V188 — Frisa fase 3: revisión contra Microsip (2026-11-06, rama `frisa-niveles`, SQL SIN aplicar)
+Cada 10 días se sube el reporte de Microsip "Existencia y valor del inventario" (línea FRISA) tal cual sale (Excel o CSV)
+en la pestaña **Revisión Microsip**.
+- **Lector de Excel sin dependencias** (`utils/xlsxLector.js`): el .xlsx es un ZIP; se lee el directorio central y se
+  descomprime con `DecompressionStream('deflate-raw')` (navegador y Node 18+); sharedStrings + primera hoja → renglones.
+  Probado con el archivo real (72 renglones, 63 artículos, 3,717).
+- **Ligar y comparar** (`utils/frisaMicrosip.js`, con pruebas): artículo = código + nombre + existencia numérica (salta
+  encabezados y "Total N artículos"); liga por código de Microsip aprendido → la clave misma → el nombre (sin acentos ni
+  espacios de más: Microsip trae "AZUL M.  FRISA"). Muestra diferencias (de mayor a menor), artículos sin clave (se elige
+  a mano y se aprende) y claves que no vienen (no se tocan). La fecha del reporte se toma solo si no es futura (el de
+  Microsip dice "Al 31 de diciembre del 2026").
+- **SQL** `supabase/schema_v188_frisa_revision_microsip.sql`: `frisa_clave_microsip` (código → clave),
+  `frisa_revisiones_microsip` (fecha, archivo, conteos, piezas página vs Microsip, detalle jsonb), permiso `fm.revisar`
+  (admin_general, admin_fabrica, admin_tienda), `frisa_microsip_guardar(fecha, archivo, lineas, ajustar uuid[], sin_ligar,
+  notas)`: ajusta solo las claves marcadas, contra el stock AL GUARDAR (movimiento 'ajuste' "Revisión Microsip del …" +
+  conteo), aprende los códigos y guarda la revisión.
+- Aviso "Ya toca revisar" si la última revisión tiene 10 días o más; historial con "Ver diferencias".
+- **Probado:** 163 pruebas, build, SQL en PGlite (10 comprobaciones) y en el ejemplo local con el Excel real: 15 diferencias,
+  14 ajustadas (una desmarcada), al volver a subir 1 diferencia y los 63 ligados por código guardado.

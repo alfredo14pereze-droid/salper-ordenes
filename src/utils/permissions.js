@@ -506,6 +506,11 @@ export function canComprasFrisa(role) {
   return tiene(role, 'fr.compras', () => ['admin_general', 'admin_fabrica', 'admin_tienda'].includes(role))
 }
 
+// V188 — revisión contra Microsip (fm.revisar); fallback = siembra de schema_v188.
+export function canRevisarMicrosip(role) {
+  return tiene(role, 'fm.revisar', () => ['admin_general', 'admin_fabrica', 'admin_tienda'].includes(role))
+}
+
 // La sección "Frisa" se ve si se puede ver cualquiera de sus partes.
 export function canViewSeccionFrisa(role) {
   return canViewFrisaNiveles(role) || canViewFrisaSurtido(role) || canViewFrisaConsignacion(role)

@@ -5451,3 +5451,7 @@ h4 {
 .frisa-reportes__item { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; }
 .frisa-reportes__item .section-title, .frisa-reportes__item p { margin: 0; }
 .frisa-reportes__rango { margin: 0; }
+.frisa-microsip__ultima { padding: 10px 14px; border-left: 4px solid var(--color-good); }
+.frisa-microsip__ultima.is-vencida { border-left-color: var(--color-orange); }
+.frisa-microsip__ultima p { margin: 0; }
+.frisa-microsip__manual { display: grid; gap: 4px; margin-bottom: 8px; }

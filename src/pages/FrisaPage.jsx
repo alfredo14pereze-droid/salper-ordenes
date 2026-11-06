@@ -6,6 +6,7 @@ import FrisaNiveles from '../components/frisaNiveles/FrisaNiveles'
 import FrisaSurtidoSeccion from '../components/frisaSurtido/FrisaSurtidoSeccion'
 import FrisaRestock from '../components/frisaRestock/FrisaRestock'
 import FrisaReportes from '../components/frisaReportes/FrisaReportes'
+import FrisaMicrosip from '../components/frisaMicrosip/FrisaMicrosip'
 import FrisaConsignacionPage from './FrisaConsignacionPage'
 
 // V184 — sección "Frisa": Niveles de inventario (todos con fn.ver) y, solo
@@ -25,6 +26,7 @@ function FrisaSeccion() {
     canViewFrisaSurtido(role) && ['surtido', 'Órdenes de surtido'],
     canViewFrisaSurtido(role) && ['urgente', 'Urgente'],
     canViewFrisaNiveles(role) && ['restock', 'Restock'],
+    canViewFrisaNiveles(role) && ['microsip', 'Revisión Microsip'],
     canViewFrisaNiveles(role) && ['reportes', 'Reportes'],
     canViewFrisaConsignacion(role) && ['consignacion', 'Consignación (prueba)'],
   ].filter(Boolean)
@@ -48,6 +50,7 @@ function FrisaSeccion() {
       {(parte === 'surtido' || parte === 'urgente') && <FrisaSurtidoSeccion key={parte} vista={parte} />}
       {parte === 'restock' && <FrisaRestock />}
       {parte === 'reportes' && <FrisaReportes />}
+      {parte === 'microsip' && <FrisaMicrosip />}
       {parte === 'consignacion' && <FrisaConsignacionPage />}
     </div>
   )
