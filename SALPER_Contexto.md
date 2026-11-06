@@ -7749,7 +7749,7 @@ Después de entregar se repone el inventario de la fábrica. Pestaña **Restock*
 - **Pendiente:** playera lisa (fase 4) y su pedido junto con las órdenes de taller; Microsip (fase 3); plantas (fase 5);
   pantalla para corregir la liga clave ↔ producto.
 
-## V187 — Frisa fase 4: playera lisa + Reportes (2026-11-06, rama `frisa-niveles`, SQL SIN aplicar)
+## V187 — Frisa fase 4: playera lisa + Reportes (2026-11-06, rama `frisa-niveles`, SQL APLICADO, en `main`/producción)
 - **Inventario inicial:** el que se cargó el 2026-11-06 es el **stock actual del Sheet** "Consumos Frisa Niveles" (3,386 pzas),
   no el Excel de Microsip "frisa noviembre 2026" (3,717; difiere en 15 claves). Alfredo lo preguntó; pendiente si se cambia.
 - **Playera lisa** (sin procesos) por color + manga + talla: `frisa_producto_lisa` (qué lisa usa cada playera: AM-MC marino MC,
@@ -7766,6 +7766,11 @@ Después de entregar se repone el inventario de la fábrica. Pestaña **Restock*
   estado (un renglón por clave), restock, playera lisa y pedidos de compra; CSV o PDF con vista previa
   (`utils/frisaReportes.js`, `components/pdf/FrisaReportePdf.jsx`, playeras en su color).
 - Se corrigió el signo "−" (no existe en Helvetica) en el PDF de A PEDIR, que ya estaba en producción.
+- **Estado:** SQL aplicado por Alfredo el 2026-11-06 (6 playeras con lisa / 30 lisas); verificado sin sesión (4 tablas y
+  funciones, anon 401). Código en `main`. Las lisas arrancan en 0: Alfredo tiene que capturar el conteo del anaquel.
+- **Inventario a Microsip:** `supabase/datos_2026-11-06_frisa_inventario_microsip.sql` (ajustes contra el stock al correrlo;
+  63 claves, 3,717 pzas; 15 cambian; idempotente; código Microsip en la nota del ajuste). Se le dio a Alfredo en el chat;
+  pendiente confirmar que lo corrió (debe dar 3717 / 0 diferencias).
 - **Probado:** 159 pruebas, build, SQL en PGlite sobre todo lo anterior (16 comprobaciones: 6 playeras/30 lisas, lisa compartida,
   conteo inicial/ajuste, ligar descuenta una vez, quitar regresa, compra de lisas y de claves, inmutables, anon) y en el
   ejemplo local: conteo roja M 50 → crear FR-041 ×17 → 33 en anaquel y 17 en proceso; los 6 reportes en CSV y el PDF.
