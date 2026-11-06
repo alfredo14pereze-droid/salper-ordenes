@@ -1,16 +1,15 @@
 import { useState } from 'react'
 import RequireRole from '../components/common/RequireRole'
 import { useAuth } from '../contexts/AuthContext'
-import { canViewSeccionFrisa, canViewFrisaNiveles, canViewFrisaConsignacion, canViewFrisaSurtido, canSurtirFrisa, canSubirOCFrisa } from '../utils/permissions'
+import { canViewSeccionFrisa, canViewFrisaNiveles, canViewFrisaSurtido, canSurtirFrisa, canSubirOCFrisa } from '../utils/permissions'
 import FrisaNiveles from '../components/frisaNiveles/FrisaNiveles'
 import FrisaSurtidoSeccion from '../components/frisaSurtido/FrisaSurtidoSeccion'
 import FrisaRestock from '../components/frisaRestock/FrisaRestock'
 import FrisaReportes from '../components/frisaReportes/FrisaReportes'
 import FrisaMicrosip from '../components/frisaMicrosip/FrisaMicrosip'
-import FrisaConsignacionPage from './FrisaConsignacionPage'
 
-// V184 — sección "Frisa": Niveles de inventario (todos con fn.ver) y, solo
-// para admin_general, la consignación de prueba de V180/V181.
+// V184 — sección "Frisa". 2026-11-06: se quitó la consignación de prueba de
+// V180/V181 (sus tablas siguen en la base, ya no se muestran).
 export default function FrisaPage() {
   return (
     <RequireRole allow={canViewSeccionFrisa}>
@@ -28,7 +27,6 @@ function FrisaSeccion() {
     canViewFrisaNiveles(role) && ['restock', 'Restock'],
     canViewFrisaNiveles(role) && ['microsip', 'Revisión Microsip'],
     canViewFrisaNiveles(role) && ['reportes', 'Reportes'],
-    canViewFrisaConsignacion(role) && ['consignacion', 'Consignación (prueba)'],
   ].filter(Boolean)
   // Quien surte pero no administra (Leo) entra directo a las órdenes de surtido.
   const inicial = canSurtirFrisa(role) && !canSubirOCFrisa(role) && partes.some(([k]) => k === 'surtido') ? 'surtido' : partes[0][0]
@@ -51,7 +49,6 @@ function FrisaSeccion() {
       {parte === 'restock' && <FrisaRestock />}
       {parte === 'reportes' && <FrisaReportes />}
       {parte === 'microsip' && <FrisaMicrosip />}
-      {parte === 'consignacion' && <FrisaConsignacionPage />}
     </div>
   )
 }

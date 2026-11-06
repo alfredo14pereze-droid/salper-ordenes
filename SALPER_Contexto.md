@@ -7805,3 +7805,7 @@ en la pestaña **Revisión Microsip**.
   demás roles (queda en rol_permisos_log). En la app: el link "Surtido Frisa" del chofer solo sale si su rol puede ver Frisa,
   y los permisos de respaldo de `permissions.js` (si no cargó rol_permisos) quedaron igual: ver = 3 admins, editar =
   admin_general.
+- **2026-11-06 — Se quitó "Consignación (prueba)"** (V180/V181) de la app a pedido de Alfredo: se borraron
+  `pages/FrisaConsignacionPage.jsx`, `components/frisaConsignacion/`, `services/frisaConsignacionService.js` y
+  `utils/frisaConsignacion.js`. Sus tablas (`frisa_plantas`, `frisa_productos`, `frisa_movimientos`, `frisa_ordenes_compra`…)
+  y funciones siguen en la base sin usarse. El modo `frisa_oc` de `api/document-ocr.js` sí se sigue usando (surtido).

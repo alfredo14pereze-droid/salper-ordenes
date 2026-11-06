@@ -452,11 +452,6 @@ export function canManagePedidosColegio(role) {
   return role === 'admin_general'
 }
 
-// V180 — Frisa a consignación (PRUEBA): solo admin_general (el "super_admin"
-// del prompt). Espejo de la RLS y de frisa_exigir_admin() en el servidor.
-export function canViewFrisaConsignacion(role) {
-  return role === 'admin_general'
-}
 
 // V184 — Niveles de inventario Frisa (fn.ver / fn.capturar / fn.supuestos);
 // fallback = siembra de schema_v184_frisa_niveles.sql (todos ven; capturan y
@@ -514,7 +509,7 @@ export function canRevisarMicrosip(role) {
 
 // La sección "Frisa" se ve si se puede ver cualquiera de sus partes.
 export function canViewSeccionFrisa(role) {
-  return canViewFrisaNiveles(role) || canViewFrisaSurtido(role) || canViewFrisaConsignacion(role)
+  return canViewFrisaNiveles(role) || canViewFrisaSurtido(role)
 }
 
 // V116 — consulta_tienda ve Pedidos Colegio (folios, anticipos/abonos, PDFs)
