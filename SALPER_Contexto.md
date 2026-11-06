@@ -7769,8 +7769,8 @@ Después de entregar se repone el inventario de la fábrica. Pestaña **Restock*
 - **Estado:** SQL aplicado por Alfredo el 2026-11-06 (6 playeras con lisa / 30 lisas); verificado sin sesión (4 tablas y
   funciones, anon 401). Código en `main`. Las lisas arrancan en 0: Alfredo tiene que capturar el conteo del anaquel.
 - **Inventario a Microsip:** `supabase/datos_2026-11-06_frisa_inventario_microsip.sql` (ajustes contra el stock al correrlo;
-  63 claves, 3,717 pzas; 15 cambian; idempotente; código Microsip en la nota del ajuste). Se le dio a Alfredo en el chat;
-  pendiente confirmar que lo corrió (debe dar 3717 / 0 diferencias).
+  63 claves, 3,717 pzas; 15 cambian; idempotente; código Microsip en la nota del ajuste). **Corrido por Alfredo el
+  2026-11-06: 3717 piezas, 0 diferencias.** El inventario de la fábrica arranca con las existencias de Microsip.
 - **Probado:** 159 pruebas, build, SQL en PGlite sobre todo lo anterior (16 comprobaciones: 6 playeras/30 lisas, lisa compartida,
   conteo inicial/ajuste, ligar descuenta una vez, quitar regresa, compra de lisas y de claves, inmutables, anon) y en el
   ejemplo local: conteo roja M 50 → crear FR-041 ×17 → 33 en anaquel y 17 en proceso; los 6 reportes en CSV y el PDF.
