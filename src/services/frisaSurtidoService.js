@@ -93,3 +93,6 @@ export async function fetchSurtidosYLineas() {
   const error = su.error || li.error
   return error ? { data: null, error } : { data: { surtidos: su.data, lineas: li.data }, error: null }
 }
+
+// V190 — palomear un renglón como embolsado.
+export const marcarRenglon = (lineaId, embolsada) => rpc('frisa_surtido_marcar_renglon', { p_linea_id: lineaId, p_embolsada: embolsada })

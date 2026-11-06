@@ -53,14 +53,26 @@ function columna(ref) {
   return n - 1
 }
 
-export async function leerXlsx(arrayBuffer) {
+// Todas las hojas con su nombre: [{ nombre, filas }]
+export async function leerXlsxHojas(arrayBuffer) {
   const zip = entradasZip(arrayBuffer)
-  const hoja = zip['xl/worksheets/sheet1.xml'] || Object.entries(zip).find(([k]) => /^xl\/worksheets\/sheet\d+\.xml$/.test(k))?.[1]
-  if (!hoja) throw new Error('El Excel no tiene hojas.')
   const compartidos = zip['xl/sharedStrings.xml']
     ? [...(await leerEntrada(arrayBuffer, zip['xl/sharedStrings.xml'])).matchAll(/<si>([\s\S]*?)<\/si>/g)].map((m) => textoDe(m[1]))
     : []
-  const xml = await leerEntrada(arrayBuffer, hoja)
+  const libro = zip['xl/workbook.xml'] ? await leerEntrada(arrayBuffer, zip['xl/workbook.xml']) : ''
+  const rels = zip['xl/_rels/workbook.xml.rels'] ? await leerEntrada(arrayBuffer, zip['xl/_rels/workbook.xml.rels']) : ''
+  const destino = new Map([...rels.matchAll(/<Relationship\b[^>]*?Id="([^"]+)"[^>]*?Target="([^"]+)"/g)].map((m) => [m[1], m[2]]))
+  const hojas = []
+  for (const m of libro.matchAll(/<sheet\b[^>]*?name="([^"]*)"[^>]*?r:id="([^"]+)"/g)) {
+    let ruta = destino.get(m[2]) || ''
+    ruta = ruta.startsWith('/') ? ruta.slice(1) : `xl/${ruta.replace(/^\.\//, '')}`
+    if (zip[ruta]) hojas.push({ nombre: desescapar(m[1]), filas: filasDeHoja(await leerEntrada(arrayBuffer, zip[ruta]), compartidos) })
+  }
+  if (!hojas.length) hojas.push({ nombre: 'Hoja1', filas: await leerXlsx(arrayBuffer) })
+  return hojas
+}
+
+function filasDeHoja(xml, compartidos) {
   const filas = []
   for (const fila of xml.matchAll(/<row\b[^>]*?(?:\/>|>([\s\S]*?)<\/row>)/g)) {
     const celdas = []
@@ -82,4 +94,14 @@ export async function leerXlsx(arrayBuffer) {
     filas.push(Array.from(celdas, (x) => (x === undefined ? null : x)))
   }
   return filas
+}
+
+export async function leerXlsx(arrayBuffer) {
+  const zip = entradasZip(arrayBuffer)
+  const hoja = zip['xl/worksheets/sheet1.xml'] || Object.entries(zip).find(([k]) => /^xl\/worksheets\/sheet\d+\.xml$/.test(k))?.[1]
+  if (!hoja) throw new Error('El Excel no tiene hojas.')
+  const compartidos = zip['xl/sharedStrings.xml']
+    ? [...(await leerEntrada(arrayBuffer, zip['xl/sharedStrings.xml'])).matchAll(/<si>([\s\S]*?)<\/si>/g)].map((m) => textoDe(m[1]))
+    : []
+  return filasDeHoja(await leerEntrada(arrayBuffer, hoja), compartidos)
 }

@@ -5455,3 +5455,6 @@ h4 {
 .frisa-microsip__ultima.is-vencida { border-left-color: var(--color-orange); }
 .frisa-microsip__ultima p { margin: 0; }
 .frisa-microsip__manual { display: grid; gap: 4px; margin-bottom: 8px; }
+.frisa-surtido__check { width: 44px; text-align: center; }
+.frisa-surtido__check input { width: 24px; height: 24px; cursor: pointer; }
+.frisa-surtido__embolsada td { background: var(--color-good-soft); }

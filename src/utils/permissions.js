@@ -507,9 +507,18 @@ export function canRevisarMicrosip(role) {
   return tiene(role, 'fm.revisar', () => role === 'admin_general')
 }
 
+// V189 — inventario en plantas de Frisa (fp.ver / fp.importar); fallback = siembra de schema_v189.
+export function canViewFrisaPlantas(role) {
+  return tiene(role, 'fp.ver', () => ['admin_general', 'admin_fabrica', 'admin_tienda'].includes(role))
+}
+
+export function canImportarPlantasFrisa(role) {
+  return tiene(role, 'fp.importar', () => role === 'admin_general')
+}
+
 // La sección "Frisa" se ve si se puede ver cualquiera de sus partes.
 export function canViewSeccionFrisa(role) {
-  return canViewFrisaNiveles(role) || canViewFrisaSurtido(role)
+  return canViewFrisaNiveles(role) || canViewFrisaSurtido(role) || canViewFrisaPlantas(role)
 }
 
 // V116 — consulta_tienda ve Pedidos Colegio (folios, anticipos/abonos, PDFs)

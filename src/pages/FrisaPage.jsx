@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import RequireRole from '../components/common/RequireRole'
 import { useAuth } from '../contexts/AuthContext'
-import { canViewSeccionFrisa, canViewFrisaNiveles, canViewFrisaSurtido, canSurtirFrisa, canSubirOCFrisa } from '../utils/permissions'
+import { canViewSeccionFrisa, canViewFrisaNiveles, canViewFrisaSurtido, canSurtirFrisa, canSubirOCFrisa, canViewFrisaPlantas } from '../utils/permissions'
 import FrisaNiveles from '../components/frisaNiveles/FrisaNiveles'
 import FrisaSurtidoSeccion from '../components/frisaSurtido/FrisaSurtidoSeccion'
 import FrisaRestock from '../components/frisaRestock/FrisaRestock'
 import FrisaReportes from '../components/frisaReportes/FrisaReportes'
 import FrisaMicrosip from '../components/frisaMicrosip/FrisaMicrosip'
+import FrisaPlantas from '../components/frisaPlantas/FrisaPlantas'
 
 // V184 — sección "Frisa". 2026-11-06: se quitó la consignación de prueba de
 // V180/V181 (sus tablas siguen en la base, ya no se muestran).
@@ -26,6 +27,7 @@ function FrisaSeccion() {
     canViewFrisaSurtido(role) && ['urgente', 'Urgente'],
     canViewFrisaNiveles(role) && ['restock', 'Restock'],
     canViewFrisaNiveles(role) && ['microsip', 'Revisión Microsip'],
+    canViewFrisaPlantas(role) && ['plantas', 'Plantas Frisa'],
     canViewFrisaNiveles(role) && ['reportes', 'Reportes'],
   ].filter(Boolean)
   // Quien surte pero no administra (Leo) entra directo a las órdenes de surtido.
@@ -49,6 +51,7 @@ function FrisaSeccion() {
       {parte === 'restock' && <FrisaRestock />}
       {parte === 'reportes' && <FrisaReportes />}
       {parte === 'microsip' && <FrisaMicrosip />}
+      {parte === 'plantas' && <FrisaPlantas />}
     </div>
   )
 }

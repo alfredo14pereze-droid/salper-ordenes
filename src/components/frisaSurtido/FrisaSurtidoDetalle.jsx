@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Modal from '../talleros/Modal'
 import {
-  fetchEventosSurtido, personasSurtido, marcarSurtida, regresarSurtida, entregarSurtido, cancelarSurtido, urlPdfOC,
+  fetchEventosSurtido, personasSurtido, marcarSurtida, regresarSurtida, entregarSurtido, cancelarSurtido, urlPdfOC, marcarRenglon,
 } from '../../services/frisaSurtidoService'
 import { faltantesDeOrden, piezasDe, textoLimite, hoyISO } from '../../utils/frisaSurtido'
 import { fechaCorta, NombreFrisa } from '../frisaNiveles/comunes'
@@ -20,6 +20,8 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
   const [form, setForm] = useState({ persona: '', otra: '', remision: '', fecha: hoyISO(), motivo: '' })
   const [trabajando, setTrabajando] = useState(false)
   const [error, setError] = useState(null)
+  // V190 — renglones palomeados (embolsados); se guardan al tocarlos.
+  const [embolsada, setEmbolsada] = useState(() => Object.fromEntries(lineas.map((l) => [l.id, Boolean(l.embolsada)])))
 
   useEffect(() => {
     let vivo = true
@@ -36,6 +38,18 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
   }, [accion, personas])
 
   const filas = faltantesDeOrden(lineas, inv)
+  const palomear = s.estado === 'pendiente' && permisos.surtir
+  const hechas = lineas.filter((l) => embolsada[l.id]).length
+
+  async function tocarRenglon(l) {
+    const nuevo = !embolsada[l.id]
+    setEmbolsada((e) => ({ ...e, [l.id]: nuevo }))
+    const { error: e } = await marcarRenglon(l.id, nuevo)
+    if (e) {
+      setEmbolsada((x) => ({ ...x, [l.id]: !nuevo }))
+      setError(e.message)
+    }
+  }
   const falta = filas.some((f) => f.falta > 0)
   const lim = textoLimite(s.fecha_limite)
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
@@ -88,6 +102,7 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
           <table className="simple-table frisa-tabla">
             <thead>
               <tr>
+                {palomear && <th aria-label="Embolsado">✓</th>}
                 <th>Clave</th>
                 <th className="num">Pide</th>
               </tr>
@@ -96,8 +111,14 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
               {filas.map((l) => {
                 const p = productos.find((x) => x.id === l.producto_id)
                 return (
-                  <tr key={l.id || l.producto_id}>
-                    <td><strong>{l.clave}</strong><NombreFrisa producto={p} /></td>
+                  <tr key={l.id || l.producto_id} className={embolsada[l.id] ? 'frisa-surtido__embolsada' : ''}>
+                    {palomear && (
+                      <td className="frisa-surtido__check">
+                        <input type="checkbox" checked={Boolean(embolsada[l.id])} onChange={() => tocarRenglon(l)} aria-label={`Embolsado ${l.clave}`} />
+                      </td>
+                    )}
+                    <td><strong>{l.clave}</strong><NombreFrisa producto={p} />
+                      {!palomear && s.estado === 'pendiente' && embolsada[l.id] && <div className="frisa__ok frisa__sub">Embolsado</div>}</td>
                     <td className="num">
                       <strong>{num(l.cantidad)}</strong>
                       {s.estado === 'pendiente' && (l.falta > 0
@@ -108,10 +129,14 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
                 )
               })}
             </tbody>
-            <tfoot><tr><td>Total</td><td className="num"><strong>{num(piezasDe(lineas))}</strong></td></tr></tfoot>
+            <tfoot><tr>{palomear && <td />}<td>Total</td><td className="num"><strong>{num(piezasDe(lineas))}</strong></td></tr></tfoot>
           </table>
         </div>
 
+        {s.estado === 'pendiente' && lineas.length > 1 && (
+          <p className="frisa__sub">{hechas === lineas.length ? <strong className="frisa__ok">Todo embolsado ✓</strong> : `Embolsados ${hechas} de ${lineas.length} renglones`}
+            {palomear ? ' · palomea cada renglón conforme lo embolsas, o marca la orden surtida toda de una vez.' : ''}</p>
+        )}
         {s.surtido_por_nombre && (
           <p className="frisa__sub">Surtió <strong>{s.surtido_por_nombre}</strong>{s.surtido_en ? ` · ${fechaHora(s.surtido_en)}` : ''}
             {s.surtido_registrado_por && s.surtido_registrado_por !== s.surtido_por_nombre ? ` (lo registró ${s.surtido_registrado_por})` : ''}</p>
@@ -127,7 +152,7 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
             {s.estado === 'pendiente' && permisos.surtir && (
               <button type="button" className="btn btn--primary" disabled={falta} onClick={() => { setError(null); setAccion('surtir') }}
                 title={falta ? 'No alcanza el inventario para surtirla completa' : ''}>
-                Marcar surtida
+                Surtida toda
               </button>
             )}
             {s.estado === 'surtida' && permisos.entregar && (
