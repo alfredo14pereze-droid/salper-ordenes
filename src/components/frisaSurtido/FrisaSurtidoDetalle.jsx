@@ -13,7 +13,7 @@ const fechaHora = (d) => new Date(d).toLocaleString('es-MX', { dateStyle: 'mediu
 const OTRA = '__otra__'
 
 // Detalle de una orden de surtido con sus acciones según estado y permisos.
-export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos, productos, alias, onClose, onCambio }) {
+export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos, productos, alias, urgente, onClose, onCambio }) {
   const [accion, setAccion] = useState(null) // 'surtir' | 'entregar' | 'cancelar' | 'regresar' | 'corregir'
   const [eventos, setEventos] = useState(null)
   const [personas, setPersonas] = useState(null)
@@ -168,6 +168,12 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
               <button type="button" className="btn btn--ghost" onClick={() => { setError(null); setAccion('cancelar') }}>Cancelar OC</button>
             )}
           </div>
+        )}
+        {s.estado === 'pendiente' && !falta && urgente && !urgente.completa && !accion && (
+          <p className="frisa__nota">
+            <strong>Ojo:</strong> sí alcanza para esta orden, pero {urgente.compiteCon.length ? `la OC ${urgente.compiteCon.join(', OC ')} vence antes y usa` : 'otra OC que vence antes usa'} las
+            mismas piezas. Si surtes esta primero, a esa le van a faltar.
+          </p>
         )}
         {s.estado === 'pendiente' && falta && !accion && (
           <p className="frisa__falta">No alcanza el inventario: Frisa no acepta parciales, hay que esperar a tenerla completa.</p>

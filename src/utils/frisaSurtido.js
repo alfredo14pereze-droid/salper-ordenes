@@ -64,6 +64,7 @@ export function calcularUrgente(productosInv, surtidos, lineas) {
   const pendientes = ordenarPendientes((surtidos || []).filter((s) => s.estado === 'pendiente'))
   const ordenes = []
   const pendientePorClave = new Map()
+  const usadoPor = new Map() // producto_id → OCs (que vencen antes) que ya se llevan esas piezas
   for (const s of pendientes) {
     const ls = porSurtido.get(s.id) || []
     const faltantes = []
@@ -73,8 +74,15 @@ export function calcularUrgente(productosInv, surtidos, lineas) {
       if (hay < l.cantidad) faltantes.push({ producto_id: l.producto_id, clave: l.clave, falta: l.cantidad - Math.max(0, hay) })
     }
     const completa = ls.length > 0 && faltantes.length === 0
-    if (completa) for (const l of ls) restante.set(l.producto_id, restante.get(l.producto_id) - l.cantidad)
-    ordenes.push({ surtido: s, lineas: ls, completa, faltantes })
+    if (completa) for (const l of ls) {
+      restante.set(l.producto_id, restante.get(l.producto_id) - l.cantidad)
+      if (!usadoPor.has(l.producto_id)) usadoPor.set(l.producto_id, [])
+      usadoPor.get(l.producto_id).push(s.numero_oc)
+    }
+    // Sola sí alcanza (sin contar las otras pendientes), pero otras que vencen antes ocupan esas piezas.
+    const alcanzaSola = ls.length > 0 && ls.every((l) => l.cantidad <= (prod.get(l.producto_id)?.disponible ?? 0))
+    const compiteCon = completa ? [] : [...new Set(faltantes.flatMap((f) => usadoPor.get(f.producto_id) || []))]
+    ordenes.push({ surtido: s, lineas: ls, completa, faltantes, alcanzaSola, compiteCon })
   }
   const porClave = [...pendientePorClave.entries()].map(([id, pendiente]) => {
     const p = prod.get(id)

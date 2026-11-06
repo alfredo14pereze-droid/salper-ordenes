@@ -86,3 +86,16 @@ test('texto de la fecha límite', () => {
   assert.deepEqual(textoLimite('2026-11-06', '2026-11-06'), { texto: 'Vence hoy', urgente: true })
   assert.deepEqual(textoLimite('2026-11-16', '2026-11-06'), { texto: 'Vence en 10 días', urgente: false })
 })
+
+test('urgente: orden que alcanza sola pero compite con otra que vence antes', async () => {
+  const { calcularUrgente } = await import('./frisaSurtido.js')
+  const inv = [{ id: 'a', clave: 'A', disponible: 16 }]
+  const u = calcularUrgente(inv, [
+    { id: 'x', numero_oc: '4004', estado: 'pendiente', fecha_limite: '2026-11-10' },
+    { id: 'y', numero_oc: '4003', estado: 'pendiente', fecha_limite: '2026-11-12' },
+  ], [{ surtido_id: 'x', producto_id: 'a', clave: 'A', cantidad: 2 }, { surtido_id: 'y', producto_id: 'a', clave: 'A', cantidad: 15 }])
+  const y = u.ordenes.find((o) => o.surtido.id === 'y')
+  assert.equal(y.completa, false)
+  assert.equal(y.alcanzaSola, true)
+  assert.deepEqual(y.compiteCon, ['4004'])
+})

@@ -49,7 +49,9 @@ export default function FrisaUrgente({ datos, inv, urgente, permisos, recargar }
                     <span className="frisa-oc__num">OC {o.surtido.numero_oc}</span>
                     {o.completa
                       ? <span className="frisa-nivel frisa-nivel--verde">Se puede surtir completa</span>
-                      : <span className="frisa-nivel frisa-nivel--rojo">Falta inventario</span>}
+                      : o.alcanzaSola
+                        ? <span className="frisa-nivel frisa-nivel--naranja">Alcanza, pero la ocupa {o.compiteCon.length ? `OC ${o.compiteCon.join(', OC ')}` : 'otra OC'}</span>
+                        : <span className="frisa-nivel frisa-nivel--rojo">Falta inventario</span>}
                   </span>
                   <span className="frisa-oc__planta">{o.surtido.planta}</span>
                   <span className="frisa__sub">{num(piezasDe(o.lineas))} pzas · <span className={lim.urgente ? 'frisa__falta' : ''}>{lim.texto}</span></span>
@@ -85,7 +87,7 @@ export default function FrisaUrgente({ datos, inv, urgente, permisos, recargar }
       )}
 
       {abiertaO && (
-        <FrisaSurtidoDetalle surtido={abiertaO.surtido} lineas={abiertaO.lineas} inv={inv} permisos={permisos}
+        <FrisaSurtidoDetalle surtido={abiertaO.surtido} lineas={abiertaO.lineas} inv={inv} permisos={permisos} urgente={abiertaO}
           productos={datos.productos} alias={datos.alias}
           onClose={() => setAbierta(null)} onCambio={async (msg) => { setAviso(msg); setAbierta(null); await recargar() }} />
       )}

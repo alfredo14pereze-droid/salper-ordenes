@@ -85,7 +85,9 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
                 {s.estado === 'pendiente' && u && (
                   u.completa
                     ? <span className="frisa-nivel frisa-nivel--verde">Se puede surtir</span>
-                    : <span className="frisa-nivel frisa-nivel--rojo">Falta inventario</span>
+                    : u.alcanzaSola
+                      ? <span className="frisa-nivel frisa-nivel--naranja">Alcanza, pero la ocupa {u.compiteCon.length ? `OC ${u.compiteCon.join(', OC ')}` : 'otra OC'}</span>
+                      : <span className="frisa-nivel frisa-nivel--rojo">Falta inventario</span>
                 )}
               </span>
               <span className="frisa-oc__planta">{s.planta}</span>
@@ -104,7 +106,7 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
       </div>
 
       {abiertaS && (
-        <FrisaSurtidoDetalle surtido={abiertaS} lineas={porSurtido.get(abiertaS.id) || []} inv={inv} permisos={permisos}
+        <FrisaSurtidoDetalle surtido={abiertaS} lineas={porSurtido.get(abiertaS.id) || []} inv={inv} permisos={permisos} urgente={completaPorId.get(abiertaS.id)}
           productos={datos.productos} alias={datos.alias}
           onClose={() => setAbierta(null)} onCambio={(msg) => despuesDeGuardar(msg, abiertaS.id)} />
       )}
