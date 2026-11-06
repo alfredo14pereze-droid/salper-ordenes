@@ -8,7 +8,7 @@ import { conInventario } from '../../utils/frisaSurtido'
 import {
   CONFIG_INICIAL, ESTADOS, calcularNiveles, conNiveles, filtrarNiveles, opcionesDe, ordenarPorEstado, resumenNiveles,
 } from '../../utils/frisaNiveles'
-import { EstadoBadge, fechaCorta } from './comunes'
+import { EstadoBadge, fechaCorta, NombreFrisa, ColorFrisa } from './comunes'
 import FrisaNivelesDetalle from './FrisaNivelesDetalle'
 import FrisaNivelesSupuestos from './FrisaNivelesSupuestos'
 import FrisaNivelesImportar from './FrisaNivelesImportar'
@@ -234,9 +234,9 @@ function FilaNivel({ fila, cfg, puedeCapturar, onGuardado, onDetalle }) {
     <tr className={'frisa-niveles__fila--' + n.estado + (fila.niveles.sinMovimiento ? ' frisa-niveles__fila--quieta' : '')}>
       <td data-label="Clave">
         <button type="button" className="frisa-niveles__clave" onClick={onDetalle}>{fila.clave}</button>
-        <div className="frisa__sub">{fila.nombre}</div>
+        <NombreFrisa producto={fila} />
       </td>
-      <td data-label="Color">{fila.color || '—'}</td>
+      <td data-label="Color"><ColorFrisa producto={fila} /></td>
       <td data-label="Real" className="num">
         {editando ? (
           <span className="frisa-niveles__editar">

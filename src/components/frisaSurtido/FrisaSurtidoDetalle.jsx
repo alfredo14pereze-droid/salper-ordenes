@@ -4,7 +4,7 @@ import {
   fetchEventosSurtido, personasSurtido, marcarSurtida, regresarSurtida, entregarSurtido, cancelarSurtido, urlPdfOC,
 } from '../../services/frisaSurtidoService'
 import { faltantesDeOrden, piezasDe, textoLimite, hoyISO } from '../../utils/frisaSurtido'
-import { fechaCorta } from '../frisaNiveles/comunes'
+import { fechaCorta, NombreFrisa } from '../frisaNiveles/comunes'
 import { EstadoSurtido } from './comunes'
 import FrisaSurtidoForm from './FrisaSurtidoForm'
 
@@ -97,7 +97,7 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
                 const p = productos.find((x) => x.id === l.producto_id)
                 return (
                   <tr key={l.id || l.producto_id}>
-                    <td><strong>{l.clave}</strong><div className="frisa__sub">{p?.nombre}</div></td>
+                    <td><strong>{l.clave}</strong><NombreFrisa producto={p} /></td>
                     <td className="num">
                       <strong>{num(l.cantidad)}</strong>
                       {s.estado === 'pendiente' && (l.falta > 0

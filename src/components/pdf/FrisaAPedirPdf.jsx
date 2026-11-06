@@ -1,6 +1,7 @@
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
 import logo from '../../assets/salper-logo.png'
 import { ESTADOS } from '../../utils/frisaNiveles'
+import { colorPlayera, COLORES_PLAYERA } from '../../utils/frisaColores'
 
 // V184 — Frisa: lista A PEDIR (claves en CRÍTICO o PEDIR), para producción.
 const INK = '#1a1a1a'
@@ -24,6 +25,7 @@ const s = StyleSheet.create({
   cClave: { width: 118, paddingRight: 4, fontFamily: 'Helvetica-Bold' },
   cNombre: { flexGrow: 1, flexShrink: 1, flexBasis: 0, paddingRight: 6 },
   cColor: { width: 58, paddingRight: 4 },
+  pill: { fontFamily: 'Helvetica-Bold', paddingHorizontal: 3, paddingVertical: 1, borderRadius: 2 },
   cNum: { width: 38, textAlign: 'right' },
   cEstado: { width: 50, textAlign: 'center' },
   cPedir: { width: 46, textAlign: 'right', fontFamily: 'Helvetica-Bold', fontSize: 10 },
@@ -70,7 +72,7 @@ export default function FrisaAPedirPdf({ lista, cfg, generado }) {
         {lista.map((f) => (
           <View key={f.id || f.clave} style={s.tr} wrap={false}>
             <Text style={s.cClave}>{f.clave}</Text>
-            <Text style={s.cNombre}>{f.nombre}</Text>
+            <View style={s.cNombre}><Text style={colorPlayera(f) ? [s.pill, { color: COLORES_PLAYERA[colorPlayera(f)].texto, backgroundColor: COLORES_PLAYERA[colorPlayera(f)].fondo }] : null}>{f.nombre}</Text></View>
             <Text style={s.cColor}>{f.color || ''}</Text>
             <Text style={s.cNum}>{n(f.disponible ?? f.stock_actual)}</Text>
             <Text style={s.cNum}>{n(f.niveles.minimo)}</Text>

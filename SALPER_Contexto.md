@@ -7712,3 +7712,10 @@ Excel de existencias; playera lisa como bolsa común por color + manga + talla, 
 - **Siguiente:** fase 2 (restock: órdenes FR por niveles, por entrar → subido a bodega, pantalón comprado), fase 3
   (Excel de Microsip: viene con código numérico, se liga por nombre — los 63 artículos ligaron), fase 4 (playera lisa),
   fase 5 (inventario por planta). También sirve el reporte de Microsip "Pendientes de surtir por artículo" para comparar.
+
+### 2026-11-06 — Playeras de Frisa en su color (sin SQL)
+Pedido de Alfredo: el nombre de cada playera en el color de la playera, texto oscuro en negritas y fondo claro del mismo
+color: roja, amarilla (oro mango), verde, azul marino. `utils/frisaColores.js` (`colorPlayera`, por tipo/color/nombre;
+solo playeras) + `NombreFrisa` / `ColorFrisa` en `components/frisaNiveles/comunes.jsx` y clases `.frisa-color--*`. Se ve en
+Niveles (nombre y columna Color), detalle de clave, órdenes de surtido, Urgente, lista A PEDIR y su PDF. Excepción pedida
+por Alfredo a la regla de "rojo y verde solo para estados".

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { piezasDe, textoLimite } from '../../utils/frisaSurtido'
 import FrisaSurtidoDetalle from './FrisaSurtidoDetalle'
+import { NombreFrisa } from '../frisaNiveles/comunes'
 
 const num = (n) => Number(n || 0).toLocaleString('es-MX')
 
@@ -71,7 +72,7 @@ export default function FrisaUrgente({ datos, inv, urgente, permisos, recargar }
               <tbody>
                 {faltan.map((c) => (
                   <tr key={c.producto.id}>
-                    <td><strong>{c.producto.clave}</strong><div className="frisa__sub">{c.producto.nombre}</div></td>
+                    <td><strong>{c.producto.clave}</strong><NombreFrisa producto={c.producto} /></td>
                     <td className="num">{num(c.pendiente)}</td>
                     <td className="num">{num(c.disponible)}</td>
                     <td className="num"><strong className="frisa__falta">{num(c.falta)}</strong></td>

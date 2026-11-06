@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Modal from '../talleros/Modal'
 import { fetchConteosStock, capturarStock } from '../../services/frisaNivelesService'
 import { calcularNiveles, formatoDemanda } from '../../utils/frisaNiveles'
-import { EstadoBadge, fechaCorta } from './comunes'
+import { EstadoBadge, fechaCorta, NombreFrisa } from './comunes'
 
 const num = (n) => (n == null ? '—' : Number(n).toLocaleString('es-MX'))
 const fechaHora = (d) => new Date(d).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })
@@ -53,7 +53,7 @@ export default function FrisaNivelesDetalle({ fila, cfg, puedeCapturar, onGuarda
   return (
     <Modal title={fila.clave} onClose={onClose}>
       <div className="frisa-niveles__detalle">
-        <p className="frisa-niveles__nombre">{fila.nombre}</p>
+        <NombreFrisa producto={fila} className="frisa-niveles__nombre" />
         {atributos.length > 0 && (
           <p className="frisa__sub">{atributos.map(([k, v]) => `${k}: ${v}`).join(' · ')}</p>
         )}

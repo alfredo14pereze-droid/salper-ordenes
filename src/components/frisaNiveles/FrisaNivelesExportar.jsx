@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Modal from '../talleros/Modal'
+import { NombreFrisa } from './comunes'
 import PdfPreviewModal from '../pdf/PdfPreviewModal'
 import { ESTADOS, aPedirCSV, listaAPedir } from '../../utils/frisaNiveles'
 import { buildFrisaAPedirPdfBlob, frisaAPedirFileName } from '../../utils/generateFrisaAPedirPdf'
@@ -49,7 +50,7 @@ export default function FrisaNivelesExportar({ filas, cfg, onClose }) {
               <tbody>
                 {lista.map((f) => (
                   <tr key={f.id}>
-                    <td><strong>{f.clave}</strong><div className="frisa__sub">{f.nombre}</div></td>
+                    <td><strong>{f.clave}</strong><NombreFrisa producto={f} /></td>
                     <td className="num">{num(f.disponible ?? f.stock_actual)}</td>
                     <td>{ESTADOS[f.niveles.estado].label}</td>
                     <td className="num"><strong>{num(f.niveles.aPedir)}</strong></td>
