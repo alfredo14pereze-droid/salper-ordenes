@@ -7602,3 +7602,56 @@ Pedido de Alfredo: un PDF de las órdenes pendientes de entrega y otro de las qu
   atrasadas), por cliente (entrega más próxima primero): folio, tipo, estado, creada, entrega ("Atrasada N
   días" en rojo), prendas con tallas (las compradas dicen "(comprada)") y piezas. Lógica en
   `utils/reportePendientes.js` (con pruebas), armado en `utils/generatePendientesPdf.jsx`.
+
+## V184 — Frisa: niveles de inventario (2026-11-06, rama `frisa-niveles`, SQL APLICADO, en `main`/producción)
+Reemplaza el Google Sheet "Consumos Frisa Niveles": el Sheet se importa una vez y la app pasa a ser la fuente de
+verdad. Decisiones de Alfredo: (1a) tabla nueva ligada por clave, sin tocar `productos_frisa` (V155) ni
+`frisa_productos` (V180/V181); la clave es la de Microsip (CAMFR-000L-01MZ1B1I = `frisa_productos.sku` cuando
+exista); (2) **stock actual = lo que hay en el almacén de la fábrica**; lo que hay en las plantas de Frisa es otra
+cosa y por ahora no entra; (3) todos los roles con sesión consultan.
+- **Negocio:** demanda diaria = consumo 2026 ÷ días del periodo (289 = 1 ene–16 oct 2026). Mínimo = ceil(demanda ×
+  20) → CRÍTICO si stock **≤** mínimo; reorden = ceil(× 28) → PEDIR si stock **≤** reorden; máximo = ceil(× 42) =
+  objetivo; si no, OK. Se usa ≤ como el Sheet (su leyenda dice "Stock ≤ mínimo"; el prompt decía "<"; Alfredo eligió
+  el Sheet el 2026-11-06). A PEDIR
+  = máximo − stock solo en CRÍTICO/PEDIR. **No se guardan** niveles, estado ni A PEDIR: los calcula
+  `utils/frisaNiveles.js` (con pruebas), con enteros (`ceil(consumo × días ÷ periodo)`) para que un 3.0000000004 no
+  suba a 4. Demanda 0 → todo 0 y OK ("sin movimiento", oculto por defecto).
+- **SQL** `supabase/schema_v184_frisa_niveles.sql` (aditivo, se puede correr dos veces, rollback al final):
+  `frisa_niveles_config` (una fila: `dias_periodo/maximo/reorden/minimo`, `fecha_inicio_consumo`,
+  `fecha_corte_consumo`; candado mínimo ≤ reorden ≤ máximo), `frisa_productos_niveles` (clave única sin
+  mayúsculas, nombre, tipo, reflejante, manga, color — vacío = null, "-" = no aplica —, `consumo_2025/2026`,
+  `clase_abc`, `tendencia`, `nota`, `stock_actual` + `stock_actualizado_en/_por/_por_nombre`, `activo`),
+  `frisa_conteos_stock` (historial: `stock_anterior`, `stock_nuevo`, `origen` captura/importacion, usuario,
+  fecha, comentario). RLS: lectura con permiso `fn.ver`; sin escritura directa; anon nada. Permisos nuevos en
+  `rol_permisos` (módulo "Frisa niveles"): `fn.ver` (los 17 roles), `fn.capturar` y `fn.supuestos`
+  (admin_fabrica, admin_general). Funciones: `frisa_niveles_capturar_stock(clave, stock, comentario)`,
+  `frisa_niveles_guardar_config(...)`, `frisa_niveles_importar(productos jsonb, config jsonb)`.
+- **Cómo reimportar consumos:** Frisa → Niveles → "Importar del Sheet" con Niveles.csv (encabezados en la fila 3; se
+  busca la fila que empieza con "Clave") y Supuestos.csv. Upsert por clave: reemplaza nombre, atributos, consumos,
+  clase ABC y tendencia (la nota solo si el CSV trae una); **no toca el stock capturado** (el del CSV solo entra en
+  claves nuevas, con un conteo "importación"); claves que no vienen no se tocan; claves repetidas rechazan todo.
+  Antes de importar muestra la comparación app vs. Sheet (mínimo, reorden, máximo, estado, A PEDIR) y después la
+  repite con lo guardado. Para cambiar solo el periodo (p. ej. nueva fecha de corte) basta "Supuestos".
+- **Pantallas:** el menú "Frisa (prueba)" pasó a **"Frisa"** (`pages/FrisaPage.jsx`): pestaña **Niveles de
+  inventario** para todos (fn.ver) y **Consignación (prueba)** solo admin_general (V180/V181 sin cambios).
+  `components/frisaNiveles/*`: tarjetas CRÍTICO/PEDIR/OK/piezas a pedir (tocar una filtra), filtros de estado
+  ("Solo CRÍTICO + PEDIR"), tipo, color, búsqueda, "Mostrar sin movimiento"; orden CRÍTICO → PEDIR → OK y A PEDIR
+  desc; captura inline del stock (Enter guarda, Esc cancela; el estado se ve cambiar mientras escribes); detalle por
+  clave (consumo 2025 vs 2026, demanda, ABC, nota, captura con comentario, historial); "Supuestos" (fechas → días
+  del periodo, vista previa de cuántas claves cambian); "Exportar A PEDIR" (vista previa, CSV o PDF con
+  `PdfPreviewModal`, `components/pdf/FrisaAPedirPdf.jsx`). En celular cada clave es una tarjeta.
+  Las estaciones (corte, costura…) y chofer tienen permiso de lectura pero su menú mínimo no muestra Frisa.
+- **Probado:** `node --test src/utils/*.test.js` (141, 10 de niveles), `npm run build`, SQL en PGlite (21
+  comprobaciones: dos veces, permisos por rol, RLS, historial, reimportar sin tocar stock, nota conservada, claves
+  repetidas, anon) y las pantallas en un ejemplo local con PGlite en el navegador corriendo el SQL real y la RLS
+  (`.claude/harness-niveles/`, servidor `salper-frisa-niveles-harness`, puerto 5188, `?rol=corte`, `?demo`; CSV de
+  ejemplo ahí mismo): importar 12 claves (todas coinciden), captura inline, detalle/historial, supuestos, PDF,
+  solo lectura y celular 375px.
+- **Validado con los CSV reales** (2026-11-06, `Consumos Frisa Niveles - Niveles.csv` / `- Supuestos.csv`): 68 claves,
+  supuestos 289/42/28/20; con la regla ≤ coinciden mínimo, reorden, máximo, estado y A PEDIR en las 68 (13 CRÍTICO,
+  4 PEDIR, 51 OK, 1,377 piezas a pedir = fila TOTAL del Sheet). Con "<" fallaba CAMFR-00XL-01MZ1B1I (stock 3 =
+  mínimo 3). Debajo de la fila TOTAL el Sheet trae leyendas: el lector termina en la primera fila sin clave.
+- **Estado:** SQL aplicado por Alfredo el 2026-11-06 (pegado en el SQL Editor); verificado sin sesión: las 3 tablas y
+  las 3 funciones existen y anon recibe 401. Código subido a `main`.
+- **Pendiente:** importar los CSV reales desde la app (Frisa → Niveles → Importar del Sheet). Después: stock en plantas (lo dejó para luego), ligar con `frisa_productos` y con las
+  órdenes FR, calcular la tendencia en vez de importarla, editar la nota desde la app.

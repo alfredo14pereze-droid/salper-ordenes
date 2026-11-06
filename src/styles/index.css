@@ -5345,3 +5345,72 @@ h4 {
 
 /* V183 — playera comprada (no se corta ni usa tela) */
 .badge--comprada { margin-left: 8px; background: #e8f0fb; color: #1f4f8f; border: 1px solid #9db8dd; white-space: nowrap; }
+
+/* V184 — Frisa · niveles de inventario */
+.frisa__secciones { margin-bottom: 20px; }
+.frisa-nivel--naranja { background: var(--color-orange-soft); color: var(--color-orange-strong); }
+.frisa-niveles { gap: 16px; }
+.frisa-niveles__resumen { margin-bottom: 0; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.frisa-niveles__tarjeta { text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.frisa-niveles__tarjeta.is-activa { box-shadow: 0 0 0 2px var(--color-black); }
+.frisa-niveles__tarjeta--critico .stat-card__value { color: var(--color-danger); }
+.frisa-niveles__tarjeta--pedir .stat-card__value { color: var(--color-orange-strong); }
+.frisa-niveles__tarjeta--ok .stat-card__value { color: var(--color-good); }
+.frisa-niveles__filtros { display: grid; gap: 8px; }
+.frisa-niveles__filtros .frisa__chips { margin: 0; }
+.frisa-niveles__campos { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.frisa-niveles__campos .input { flex: 1 1 160px; max-width: 280px; }
+.frisa-niveles__toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; white-space: nowrap; }
+.frisa-niveles .frisa__nota { margin: 0; }
+.frisa-niveles__fila--critico td:first-child { box-shadow: inset 4px 0 0 var(--color-danger); }
+.frisa-niveles__fila--pedir td:first-child { box-shadow: inset 4px 0 0 var(--color-orange); }
+.frisa-niveles__fila--ok td:first-child { box-shadow: inset 4px 0 0 var(--color-good); }
+.frisa-niveles__fila--quieta { opacity: 0.55; }
+.frisa-niveles__clave { background: none; border: none; padding: 0; font: inherit; font-weight: 700; color: inherit; text-decoration: underline; text-decoration-color: var(--color-border); text-underline-offset: 3px; cursor: pointer; white-space: nowrap; text-align: left; }
+.frisa-niveles__stock { min-width: 64px; padding: 5px 10px; border: 1px dashed var(--color-text-muted); border-radius: 8px; background: var(--color-surface); font: inherit; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; text-align: right; }
+.frisa-niveles__stock:hover { border-style: solid; border-color: var(--color-black); }
+.frisa-niveles__editar { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; align-items: center; }
+.frisa-niveles__error { flex-basis: 100%; text-align: right; font-size: 12px; white-space: normal; }
+.frisa-niveles__detalle { display: grid; gap: 10px; }
+.frisa-niveles__detalle p { margin: 0; }
+.frisa-niveles__nombre { font-weight: 600; }
+.frisa-niveles__consumos { display: grid; gap: 6px; }
+.frisa-niveles__barra { display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; align-items: center; font-size: 14px; }
+.frisa-niveles__barra-anio { color: var(--color-text-muted); }
+.frisa-niveles__barra-pista { height: 10px; background: var(--color-bg); border-radius: 999px; overflow: hidden; }
+.frisa-niveles__barra-relleno { display: block; height: 100%; background: var(--color-text-muted); border-radius: 999px; }
+.frisa-niveles__barra-relleno.is-actual { background: var(--color-black); }
+.frisa-niveles__datos { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px 14px; margin: 0; }
+.frisa-niveles__datos dt { font-size: 12px; color: var(--color-text-muted); }
+.frisa-niveles__datos dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.frisa-niveles__notatxt { background: var(--color-bg); border-radius: 8px; padding: 8px 10px; font-size: 14px; }
+.frisa-niveles__captura { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; padding: 10px; border: 1px solid var(--color-border); border-radius: 10px; }
+.frisa-niveles__captura label { display: grid; gap: 4px; }
+.frisa-niveles__captura label:first-child .input { width: 110px; }
+.frisa-niveles__captura-comentario { flex: 1 1 180px; }
+.frisa-niveles__captura .form-error, .frisa-niveles__captura .frisa__ok { flex-basis: 100%; margin: 0; }
+.frisa-niveles__historial { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 240px; overflow-y: auto; }
+.frisa-niveles__historial li { display: grid; gap: 2px; padding: 6px 0; border-bottom: 1px solid var(--color-border); }
+.frisa-niveles__supuestos, .frisa-niveles__importar { display: grid; gap: 12px; }
+.frisa-niveles__supuesto { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; }
+.frisa-niveles__supuesto .frisa__sub { grid-column: 1 / -1; }
+.frisa-niveles__archivo { display: grid; gap: 4px; }
+.frisa-niveles__errores { margin: 0; padding-left: 18px; }
+.frisa-niveles__dif { max-height: 320px; overflow-y: auto; }
+
+/* Celular: cada clave es una tarjeta (sin scroll horizontal). */
+@media (max-width: 720px) {
+  .frisa-niveles__tabla, .frisa-niveles__tabla tbody, .frisa-niveles__tabla tr, .frisa-niveles__tabla td { display: block; width: 100%; }
+  .frisa-niveles__tabla thead { display: none; }
+  .frisa-niveles__tabla tr { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 10px; padding: 10px 12px; margin-bottom: 8px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); }
+  .frisa-niveles__tabla td { padding: 0; border: none; text-align: left !important; }
+  .frisa-niveles__tabla td:first-child { grid-column: 1 / -1; box-shadow: none !important; }
+  .frisa-niveles__tabla tr.frisa-niveles__fila--critico { border-left: 5px solid var(--color-danger); }
+  .frisa-niveles__tabla tr.frisa-niveles__fila--pedir { border-left: 5px solid var(--color-orange); }
+  .frisa-niveles__tabla tr.frisa-niveles__fila--ok { border-left: 5px solid var(--color-good); }
+  .frisa-niveles__tabla td[data-label]:not(:first-child)::before { content: attr(data-label); display: block; font-size: 11px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.02em; }
+  .frisa-niveles__tabla td[data-label="Stock actual"] { grid-column: span 2; }
+  .frisa-niveles__editar { justify-content: flex-start; }
+  .frisa-niveles__error { text-align: left; }
+  .frisa-niveles__campos .input { max-width: none; }
+}

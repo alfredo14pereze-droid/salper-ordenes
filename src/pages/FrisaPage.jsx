@@ -1,0 +1,42 @@
+import { useState } from 'react'
+import RequireRole from '../components/common/RequireRole'
+import { useAuth } from '../contexts/AuthContext'
+import { canViewSeccionFrisa, canViewFrisaNiveles, canViewFrisaConsignacion } from '../utils/permissions'
+import FrisaNiveles from '../components/frisaNiveles/FrisaNiveles'
+import FrisaConsignacionPage from './FrisaConsignacionPage'
+
+// V184 — sección "Frisa": Niveles de inventario (todos con fn.ver) y, solo
+// para admin_general, la consignación de prueba de V180/V181.
+export default function FrisaPage() {
+  return (
+    <RequireRole allow={canViewSeccionFrisa}>
+      <FrisaSeccion />
+    </RequireRole>
+  )
+}
+
+function FrisaSeccion() {
+  const { role } = useAuth()
+  const partes = [
+    canViewFrisaNiveles(role) && ['niveles', 'Niveles de inventario'],
+    canViewFrisaConsignacion(role) && ['consignacion', 'Consignación (prueba)'],
+  ].filter(Boolean)
+  const [parte, setParte] = useState(partes[0][0])
+
+  return (
+    <div>
+      {partes.length > 1 && (
+        <div className="notas-pestanas frisa__secciones" role="tablist">
+          {partes.map(([k, label]) => (
+            <button key={k} type="button" role="tab" aria-selected={parte === k}
+              className={'notas-pestana' + (parte === k ? ' notas-pestana--activa' : '')} onClick={() => setParte(k)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+      {parte === 'niveles' && <FrisaNiveles />}
+      {parte === 'consignacion' && <FrisaConsignacionPage />}
+    </div>
+  )
+}

@@ -458,6 +458,26 @@ export function canViewFrisaConsignacion(role) {
   return role === 'admin_general'
 }
 
+// V184 — Niveles de inventario Frisa (fn.ver / fn.capturar / fn.supuestos);
+// fallback = siembra de schema_v184_frisa_niveles.sql (todos ven; capturan y
+// editan supuestos admin_fabrica / admin_general).
+export function canViewFrisaNiveles(role) {
+  return tiene(role, 'fn.ver', () => Boolean(role))
+}
+
+export function canCapturarStockFrisa(role) {
+  return tiene(role, 'fn.capturar', () => role === 'admin_fabrica' || role === 'admin_general')
+}
+
+export function canEditarSupuestosFrisa(role) {
+  return tiene(role, 'fn.supuestos', () => role === 'admin_fabrica' || role === 'admin_general')
+}
+
+// La sección "Frisa" se ve si se puede ver cualquiera de sus partes.
+export function canViewSeccionFrisa(role) {
+  return canViewFrisaNiveles(role) || canViewFrisaConsignacion(role)
+}
+
 // V116 — consulta_tienda ve Pedidos Colegio (folios, anticipos/abonos, PDFs)
 // pero no crea/edita/elimina nada — eso se queda exclusivo de
 // canManagePedidosColegio. Espejo de la política SELECT que ahora también

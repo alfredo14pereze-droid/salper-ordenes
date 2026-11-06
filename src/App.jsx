@@ -25,7 +25,7 @@ import ConsumosPrendaPage from './pages/ConsumosPrendaPage'
 import ControlRapidoPage from './pages/ControlRapidoPage'
 import EstadisticasPage from './pages/EstadisticasPage'
 import PedidosColegioPage from './pages/PedidosColegioPage'
-import FrisaConsignacionPage from './pages/FrisaConsignacionPage'
+import FrisaPage from './pages/FrisaPage'
 import TallerosPage from './pages/TallerosPage'
 import NotasTiendaPage from './pages/NotasTiendaPage'
 import TareasPage from './pages/TareasPage'
@@ -151,8 +151,8 @@ function AuthGate() {
           <Route path="/inventario/admin" element={<InventarioAdminPage />} />
           {/* V121 — clasificar en modelos los artículos que ya existían. */}
           <Route path="/inventario/sin-clasificar" element={<InventarioSinClasificarPage />} />
-          {/* V180 — Frisa a consignación (prueba, solo admin_general). */}
-          <Route path="/frisa" element={<FrisaConsignacionPage />} />
+          {/* V180 — Frisa a consignación (prueba, solo admin_general). V184 — + Niveles de inventario (todos). */}
+          <Route path="/frisa" element={<FrisaPage />} />
           <Route path="/pedidos-colegio" element={<PedidosColegioPage />} />
           <Route path="/pedidos-colegio/nuevo" element={<NewPedidoColegioPage />} />
           <Route path="/pedidos-colegio/:id" element={<PedidoColegioDetailPage />} />
