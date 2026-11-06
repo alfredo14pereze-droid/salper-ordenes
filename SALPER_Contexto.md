@@ -7795,3 +7795,8 @@ en la pestaña **Revisión Microsip**.
 - **Probado:** 163 pruebas, build, SQL en PGlite (10 comprobaciones) y en el ejemplo local con el Excel real: 15 diferencias,
   14 ajustadas (una desmarcada), al volver a subir 1 diferencia y los 63 ligados por código guardado.
 - **Estado:** SQL aplicado por Alfredo el 2026-11-06 (3 roles con fm.revisar, 1 función); verificado sin sesión (anon 401). Código en `main`.
+- **2026-11-06 — Frisa: solo admin_general edita.** Pedido de Alfredo: "yo el único que le puede mover, los demás solo
+  vista". `supabase/datos_2026-11-06_frisa_solo_admin_general_edita.sql` quita a los demás roles fn.capturar, fn.supuestos,
+  fs.oc, fs.surtir, fs.entregar, fr.ordenes, fr.bodega, fr.compras y fm.revisar (15 filas: admin_fabrica, admin_tienda,
+  chofer; queda en rol_permisos_log). fn.ver / fs.ver siguen para los 17 roles. Se revierte en Roles y permisos. Leo
+  (chofer) ya no puede marcar surtidas hasta que se le regrese fs.surtir.
