@@ -7666,7 +7666,7 @@ cosa y por ahora no entra; (3) todos los roles con sesión consultan.
   Alfredo: `~/Downloads/SALPER_Flujo_Frisa.pdf`. Después: stock en plantas (lo dejó para luego), ligar con `frisa_productos` y con las
   órdenes FR, calcular la tendencia en vez de importarla, editar la nota desde la app.
 
-## V185 — Frisa fase 1: inventario por movimientos + órdenes de surtido (2026-11-06, rama `frisa-niveles`, SQL SIN aplicar)
+## V185 — Frisa fase 1: inventario por movimientos + órdenes de surtido (2026-11-06, rama `frisa-niveles`, SQL APLICADO, en `main`/producción)
 Flujo acordado con Alfredo (resumen en `~/Downloads/SALPER_Flujo_Frisa.pdf`): llega la OC de Frisa en PDF → se sube y se
 vuelve **orden de surtido** → **Urgente** (disponible − pendientes) → se **surte** (aparta) → **salió el chofer**
 (descuenta) → restock (fase 2). Respuestas de Alfredo: no se surte parcial (Frisa no acepta parciales, se espera a tenerla
@@ -7706,6 +7706,8 @@ Excel de existencias; playera lisa como bolsa común por color + manga + talla, 
   ejemplo local (`salper-frisa-niveles-harness`, puerto 5188, `?rol=chofer`, `?demo` = 3 OCs de ejemplo; lector de PDF
   simulado): Urgente, surtir eligiendo a Leo (Niveles: real 180 / apartado 60 / disponible 120), salió el chofer (93→63,
   115→65, 180→120), subir OC (5 de 6 renglones sugeridos, 5 alias), vista del chofer en celular.
+- **Estado:** SQL aplicado por Alfredo el 2026-11-06 (comprobación: 68 iniciales, suma 3386 = stock 3386); verificado sin
+  sesión: las 5 tablas y las 7 funciones existen y anon recibe 401. Código subido a `main`.
 - **No probado:** lectura de un PDF real de Frisa (solo funciona en Vercel), con sesión real.
 - **Siguiente:** fase 2 (restock: órdenes FR por niveles, por entrar → subido a bodega, pantalón comprado), fase 3
   (Excel de Microsip: viene con código numérico, se liga por nombre — los 63 artículos ligaron), fase 4 (playera lisa),
