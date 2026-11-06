@@ -7592,3 +7592,13 @@ Comprada si se compra hecha (solo se le pone reflejante, etc.). Comprada: no le 
   (after insert/update of items): si TODAS las prendas son compradas se borra la etapa de corte pendiente (como
   bordado en V25); si vuelve una fabricada, regresa. Corte en proceso/completado no se toca. No aplica a maquila,
   bordado ni frisa. No reemplaza create_order ni set_order_items.
+
+## PDFs de pendientes de la fábrica (2026-11-05, SIN SQL)
+Pedido de Alfredo: un PDF de las órdenes pendientes de entrega y otro de las que no han empezado ningún proceso.
+- Dashboard → Resumen: botones «PDF: pendientes de entrega» y «PDF: sin empezar».
+- Pendientes de entrega = no entregadas, no canceladas, no eliminadas. Sin empezar = de esas, las que no tienen
+  ninguna etapa `en_proceso` ni `completado` en `orden_etapas` (o no tienen etapas).
+- PDF carta horizontal (`components/pdf/PendientesFabricaPdf.jsx`): totales (órdenes, clientes, piezas,
+  atrasadas), por cliente (entrega más próxima primero): folio, tipo, estado, creada, entrega ("Atrasada N
+  días" en rojo), prendas con tallas (las compradas dicen "(comprada)") y piezas. Lógica en
+  `utils/reportePendientes.js` (con pruebas), armado en `utils/generatePendientesPdf.jsx`.

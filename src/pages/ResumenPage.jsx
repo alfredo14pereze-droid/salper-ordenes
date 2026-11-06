@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useOrders } from '../hooks/useOrders'
 import { useOrderTypes } from '../hooks/useOrderTypes'
 import { isActiveStatus } from '../utils/status'
@@ -8,6 +8,9 @@ import StatusBadge from '../components/orders/StatusBadge'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import Miniatura from '../components/common/Miniatura'
 import { esPdf } from '../utils/archivos'
+import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
+import { fetchAllOrdenEtapas } from '../services/ordersService'
+import { buildPendientesPdfBlob, pendientesPdfFileName } from '../utils/generatePendientesPdf'
 
 // Resumen de todo lo que sigue pendiente (no completado, no cancelado),
 // agrupado por CLIENTE — no por orden — porque un mismo cliente puede
@@ -26,6 +29,28 @@ function orderTotal(order) {
 export default function ResumenPage() {
   const { orders, loading, error, refresh } = useOrders()
   const { typesByKey } = useOrderTypes()
+  // PDFs para la fábrica: pendientes de entrega y sin empezar.
+  const [generando, setGenerando] = useState(null)
+  const [pdfError, setPdfError] = useState(null)
+  const [preview, setPreview] = useState(null)
+
+  async function verPdf(tipo) {
+    setGenerando(tipo)
+    setPdfError(null)
+    try {
+      let etapas = []
+      if (tipo === 'sin_empezar') {
+        const { data, error: err } = await fetchAllOrdenEtapas()
+        if (err) throw err
+        etapas = data || []
+      }
+      const blob = await buildPendientesPdfBlob(tipo, { orders, etapas, typesByKey })
+      setPreview({ blob, fileName: pendientesPdfFileName(tipo) })
+    } catch (e) {
+      setPdfError(e.message || String(e))
+    }
+    setGenerando(null)
+  }
 
   const clientGroups = useMemo(() => {
     const pending = orders.filter((o) => isActiveStatus(o.status) && !o.cancelled_at)
@@ -62,7 +87,17 @@ export default function ResumenPage() {
     <div className="page">
       <div className="section-header">
         <h2 className="section-title">Resumen</h2>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button type="button" className="btn btn--secondary btn--small" disabled={!!generando} onClick={() => verPdf('entrega')}>
+            {generando === 'entrega' ? 'Generando…' : 'PDF: pendientes de entrega'}
+          </button>
+          <button type="button" className="btn btn--secondary btn--small" disabled={!!generando} onClick={() => verPdf('sin_empezar')}>
+            {generando === 'sin_empezar' ? 'Generando…' : 'PDF: sin empezar'}
+          </button>
+        </div>
       </div>
+      {pdfError && <p className="form-error">No se pudo generar el PDF: {pdfError}</p>}
+      {preview && <PdfPreviewModal blob={preview.blob} fileName={preview.fileName} onClose={() => setPreview(null)} />}
       <p className="page-subtitle">
         Todo lo que sigue pendiente ahora mismo, agrupado por cliente — para ver de un vistazo lo que hay en
         proceso aunque sean tipos de orden distintos al mismo tiempo.
