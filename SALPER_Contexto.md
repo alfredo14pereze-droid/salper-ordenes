@@ -7800,3 +7800,8 @@ en la pestaña **Revisión Microsip**.
   fs.oc, fs.surtir, fs.entregar, fr.ordenes, fr.bodega, fr.compras y fm.revisar (15 filas: admin_fabrica, admin_tienda,
   chofer; queda en rol_permisos_log). fn.ver / fs.ver siguen para los 17 roles. Se revierte en Roles y permisos. Leo
   (chofer) ya no puede marcar surtidas hasta que se le regrese fs.surtir.
+- **2026-11-06 — Frisa la ven solo los administradores.** Pedido de Alfredo: ver = admin_general, admin_fabrica,
+  admin_tienda; editar = solo admin_general. `supabase/datos_2026-11-06_frisa_ver_solo_admins.sql` quita fn.ver/fs.ver a los
+  demás roles (queda en rol_permisos_log). En la app: el link "Surtido Frisa" del chofer solo sale si su rol puede ver Frisa,
+  y los permisos de respaldo de `permissions.js` (si no cargó rol_permisos) quedaron igual: ver = 3 admins, editar =
+  admin_general.

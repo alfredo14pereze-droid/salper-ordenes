@@ -462,53 +462,54 @@ export function canViewFrisaConsignacion(role) {
 // fallback = siembra de schema_v184_frisa_niveles.sql (todos ven; capturan y
 // editan supuestos admin_fabrica / admin_general).
 export function canViewFrisaNiveles(role) {
-  return tiene(role, 'fn.ver', () => Boolean(role))
+  // 2026-11-06 — la ven solo los administradores; solo admin_general edita.
+  return tiene(role, 'fn.ver', () => ['admin_general', 'admin_fabrica', 'admin_tienda'].includes(role))
 }
 
 export function canCapturarStockFrisa(role) {
-  return tiene(role, 'fn.capturar', () => role === 'admin_fabrica' || role === 'admin_general')
+  return tiene(role, 'fn.capturar', () => role === 'admin_general')
 }
 
 export function canEditarSupuestosFrisa(role) {
-  return tiene(role, 'fn.supuestos', () => role === 'admin_fabrica' || role === 'admin_general')
+  return tiene(role, 'fn.supuestos', () => role === 'admin_general')
 }
 
 // V185 — Frisa surtido (fs.ver / fs.oc / fs.surtir / fs.entregar);
 // fallback = siembra de schema_v185_frisa_surtido.sql.
 export function canViewFrisaSurtido(role) {
-  return tiene(role, 'fs.ver', () => Boolean(role))
+  return tiene(role, 'fs.ver', () => ['admin_general', 'admin_fabrica', 'admin_tienda'].includes(role))
 }
 
 export function canSubirOCFrisa(role) {
-  return tiene(role, 'fs.oc', () => ['admin_general', 'admin_fabrica', 'admin_tienda'].includes(role))
+  return tiene(role, 'fs.oc', () => role === 'admin_general')
 }
 
 export function canSurtirFrisa(role) {
-  return tiene(role, 'fs.surtir', () => ['chofer', 'admin_general', 'admin_fabrica'].includes(role))
+  return tiene(role, 'fs.surtir', () => role === 'admin_general')
 }
 
 export function canEntregarFrisa(role) {
-  return tiene(role, 'fs.entregar', () => ['admin_general', 'admin_fabrica', 'admin_tienda'].includes(role))
+  return tiene(role, 'fs.entregar', () => role === 'admin_general')
 }
 
 // V186 — Frisa restock (fr.ordenes / fr.bodega / fr.compras); fallback =
 // siembra de schema_v186_frisa_restock.sql. Crear órdenes FR: mismos roles
 // que create_order_frisa (ventas / admin_tienda / admin_general).
 export function canCrearOrdenesRestock(role) {
-  return tiene(role, 'fr.ordenes', () => ['admin_general', 'admin_tienda'].includes(role))
+  return tiene(role, 'fr.ordenes', () => role === 'admin_general')
 }
 
 export function canSubirBodegaFrisa(role) {
-  return tiene(role, 'fr.bodega', () => ['admin_general', 'admin_fabrica', 'admin_tienda'].includes(role))
+  return tiene(role, 'fr.bodega', () => role === 'admin_general')
 }
 
 export function canComprasFrisa(role) {
-  return tiene(role, 'fr.compras', () => ['admin_general', 'admin_fabrica', 'admin_tienda'].includes(role))
+  return tiene(role, 'fr.compras', () => role === 'admin_general')
 }
 
 // V188 — revisión contra Microsip (fm.revisar); fallback = siembra de schema_v188.
 export function canRevisarMicrosip(role) {
-  return tiene(role, 'fm.revisar', () => ['admin_general', 'admin_fabrica', 'admin_tienda'].includes(role))
+  return tiene(role, 'fm.revisar', () => role === 'admin_general')
 }
 
 // La sección "Frisa" se ve si se puede ver cualquiera de sus partes.
