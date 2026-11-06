@@ -1,0 +1,182 @@
+// V185 — Frisa fase 1: inventario SALPER por clave y órdenes de surtido.
+// Ver supabase/schema_v185_frisa_surtido.sql.
+//
+//   real       = stock_actual (lo mantienen los movimientos)
+//   apartado   = líneas de órdenes 'surtida' (aún no entregadas)
+//   disponible = real − apartado
+//
+// Urgente: las órdenes pendientes se revisan por fecha límite (la más
+// próxima primero). Una orden se surte completa o no se surte (Frisa no
+// acepta parciales): si alcanza, "toma" su parte del disponible; si no
+// alcanza, no toma nada y dice cuánto falta de cada clave.
+
+export const ESTADOS_SURTIDO = {
+  pendiente: { label: 'Pendiente', clase: 'neutro' },
+  surtida: { label: 'Surtida', clase: 'naranja' },
+  entregada: { label: 'Entregada', clase: 'verde' },
+  cancelada: { label: 'Cancelada', clase: 'neutro' },
+}
+
+export function lineasPorSurtido(lineas) {
+  const m = new Map()
+  for (const l of lineas || []) {
+    if (!m.has(l.surtido_id)) m.set(l.surtido_id, [])
+    m.get(l.surtido_id).push(l)
+  }
+  return m
+}
+
+// { producto_id → piezas apartadas }
+export function apartadoPorProducto(surtidos, lineas) {
+  const surtidas = new Set((surtidos || []).filter((s) => s.estado === 'surtida').map((s) => s.id))
+  const m = new Map()
+  for (const l of lineas || []) {
+    if (!surtidas.has(l.surtido_id)) continue
+    m.set(l.producto_id, (m.get(l.producto_id) || 0) + l.cantidad)
+  }
+  return m
+}
+
+// Agrega real / apartado / disponible a cada producto.
+export function conInventario(productos, surtidos, lineas) {
+  const ap = apartadoPorProducto(surtidos, lineas)
+  return (productos || []).map((p) => {
+    const real = Number(p.stock_actual) || 0
+    const apartado = ap.get(p.id) || 0
+    return { ...p, real, apartado, disponible: real - apartado }
+  })
+}
+
+const fechaOrden = (s) => s.fecha_limite || '9999-12-31'
+
+export function ordenarPendientes(surtidos) {
+  return [...surtidos].sort((a, b) =>
+    fechaOrden(a).localeCompare(fechaOrden(b)) || String(a.creado_en || '').localeCompare(String(b.creado_en || '')))
+}
+
+// Calcula Urgente. productosInv: salida de conInventario.
+// Regresa { ordenes: [{ surtido, lineas, completa, faltantes: [{producto_id, clave, falta}] }],
+//           porClave: [{ producto, pendiente, disponible, falta }], completas, piezasFaltantes }
+export function calcularUrgente(productosInv, surtidos, lineas) {
+  const prod = new Map(productosInv.map((p) => [p.id, p]))
+  const restante = new Map(productosInv.map((p) => [p.id, p.disponible]))
+  const porSurtido = lineasPorSurtido(lineas)
+  const pendientes = ordenarPendientes((surtidos || []).filter((s) => s.estado === 'pendiente'))
+  const ordenes = []
+  const pendientePorClave = new Map()
+  for (const s of pendientes) {
+    const ls = porSurtido.get(s.id) || []
+    const faltantes = []
+    for (const l of ls) {
+      pendientePorClave.set(l.producto_id, (pendientePorClave.get(l.producto_id) || 0) + l.cantidad)
+      const hay = restante.get(l.producto_id) ?? 0
+      if (hay < l.cantidad) faltantes.push({ producto_id: l.producto_id, clave: l.clave, falta: l.cantidad - Math.max(0, hay) })
+    }
+    const completa = ls.length > 0 && faltantes.length === 0
+    if (completa) for (const l of ls) restante.set(l.producto_id, restante.get(l.producto_id) - l.cantidad)
+    ordenes.push({ surtido: s, lineas: ls, completa, faltantes })
+  }
+  const porClave = [...pendientePorClave.entries()].map(([id, pendiente]) => {
+    const p = prod.get(id)
+    const disponible = p ? p.disponible : 0
+    return { producto: p || { id, clave: '?', nombre: '' }, pendiente, disponible, falta: Math.max(0, pendiente - Math.max(0, disponible)) }
+  }).sort((a, b) => b.falta - a.falta || String(a.producto.clave).localeCompare(String(b.producto.clave)))
+  return {
+    ordenes,
+    porClave,
+    completas: ordenes.filter((o) => o.completa).length,
+    piezasFaltantes: porClave.reduce((t, c) => t + c.falta, 0),
+  }
+}
+
+// Una orden concreta contra el disponible de hoy (sin competir con otras).
+export function faltantesDeOrden(lineasOrden, productosInv) {
+  const prod = new Map(productosInv.map((p) => [p.id, p]))
+  return lineasOrden
+    .map((l) => ({ ...l, disponible: prod.get(l.producto_id)?.disponible ?? 0 }))
+    .map((l) => ({ ...l, falta: Math.max(0, l.cantidad - Math.max(0, l.disponible)) }))
+}
+
+export function piezasDe(lineas) {
+  return (lineas || []).reduce((t, l) => t + (Number(l.cantidad) || 0), 0)
+}
+
+// Días para la fecha límite (hoy en Monterrey = fecha local del navegador).
+export function diasParaLimite(fecha, hoy = hoyISO()) {
+  if (!fecha) return null
+  const a = Date.UTC(...hoy.split('-').map((x, i) => Number(x) - (i === 1 ? 1 : 0)))
+  const b = Date.UTC(...String(fecha).slice(0, 10).split('-').map((x, i) => Number(x) - (i === 1 ? 1 : 0)))
+  return Math.round((b - a) / 86400000)
+}
+
+export function textoLimite(fecha, hoy) {
+  const d = diasParaLimite(fecha, hoy)
+  if (d == null) return { texto: 'Sin fecha límite', urgente: false }
+  if (d < 0) return { texto: `Vencida hace ${-d} día${d === -1 ? '' : 's'}`, urgente: true }
+  if (d === 0) return { texto: 'Vence hoy', urgente: true }
+  return { texto: `Vence en ${d} día${d === 1 ? '' : 's'}`, urgente: d <= 2 }
+}
+
+export function hoyISO() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+// ---------------------------------------------------------------------
+// Sugerir la clave de un renglón del PDF
+// ---------------------------------------------------------------------
+const sinAcentos = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
+
+// Mismo texto que frisa_texto_alias_niveles() en el SQL.
+export function textoAlias(texto, talla) {
+  return `${String(texto ?? '').trim().replace(/\s+/g, ' ').toUpperCase()} | ${String(talla ?? '').trim().toUpperCase()}`
+}
+
+const PALABRAS_VACIAS = new Set(['DE', 'LA', 'EL', 'CON', 'SIN', 'Y', 'FRISA', 'T', 'TALLA', 'C', 'R', 'M', 'IMP'])
+
+// Manga y reflejante pesan: "M/C" = "MANGA CORTA", "S/REFLEJANTE" = "SIN REFLEJANTE".
+function marcas(s) {
+  return s
+    .replace(/\bM\s*\/\s*C\b|\bMANGA\s+CORTA\b/g, ' MANGACORTA ')
+    .replace(/\bM\s*\/\s*L\b|\bMANGA\s+LARGA\b/g, ' MANGALARGA ')
+    .replace(/\bS\s*\/\s*REFLEJANTE\b|\bSIN\s+REFLEJANTE\b/g, ' SINREFLEJANTE ')
+    .replace(/\bC\s*\/\s*REFLEJANTE\b|\bCON\s+REFLEJANTE\b/g, ' CONREFLEJANTE ')
+}
+
+function palabras(s) {
+  return new Set(marcas(sinAcentos(s)).replace(/[^A-Z0-9]+/g, ' ').split(' ').filter((w) => w && !PALABRAS_VACIAS.has(w)))
+}
+
+// Talla de una clave: del nombre ("… T-XL", "TALLA 32 … LARGO 34") o del código.
+export function tallaDeProducto(p) {
+  const n = sinAcentos(p?.nombre)
+  const t = n.match(/\bT-([0-9]*X*[SML]|[0-9]+)\s*$/)
+  if (t) return t[1]
+  const pan = n.match(/TALLA\s+(\d+)/)
+  if (pan) return /LARGO\s+(\d+)/.test(n) ? `${pan[1]}/${n.match(/LARGO\s+(\d+)/)[1]}` : pan[1]
+  const c = String(p?.clave || '').match(/^[A-Z]+-([0-9A-Z]{4})-/)
+  return c ? c[1].replace(/^0+/, '') : ''
+}
+
+export function normalizarTalla(t) {
+  const s = sinAcentos(t).replace(/^T-?/, '').replace(/\s+/g, '').replace(/^0+(?=\d)/, '')
+  return s.replace(/^(\d)X/, '$1X').replace(/^XXL$/, '2XL').replace(/^XXXL$/, '3XL')
+}
+
+// productos: claves (frisa_productos_niveles); alias: [{texto, producto_id}]
+export function sugerirClave(texto, talla, productos, alias = []) {
+  const a = alias.find((x) => x.texto === textoAlias(texto, talla))
+  if (a && productos.some((p) => p.id === a.producto_id)) return { producto_id: a.producto_id, como: 'aprendido' }
+  const t = normalizarTalla(talla)
+  const w = palabras(texto)
+  let mejor = null
+  for (const p of productos) {
+    if (p.activo === false) continue
+    if (t && normalizarTalla(tallaDeProducto(p)) !== t) continue
+    const pw = palabras(String(p.nombre).replace(/\bT-\S+\s*$/, ''))
+    let n = 0
+    for (const x of w) if (pw.has(x)) n++
+    if (n > 0 && (!mejor || n > mejor.n)) mejor = { producto_id: p.id, n }
+  }
+  return mejor ? { producto_id: mejor.producto_id, como: 'parecido' } : { producto_id: null, como: null }
+}

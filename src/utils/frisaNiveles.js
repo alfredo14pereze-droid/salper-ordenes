@@ -11,6 +11,8 @@
 //   A PEDIR = máximo − stock, solo en CRÍTICO o PEDIR (si no, null)
 //
 // stock = lo que hay en el almacén de la fábrica (no en las plantas).
+// V185 — si la fila trae `disponible` (real − apartado), los niveles se
+// calculan con el disponible; si no, con stock_actual.
 
 export const ESTADOS = {
   critico: { key: 'critico', label: 'CRÍTICO', orden: 0 },
@@ -38,7 +40,7 @@ export function demandaDiaria(consumo2026, diasPeriodo) {
 // prod: { consumo_2026, stock_actual }; cfg: dias_*
 export function calcularNiveles(prod, cfg = CONFIG_INICIAL) {
   const consumo = Number(prod?.consumo_2026) || 0
-  const stock = Number(prod?.stock_actual) || 0
+  const stock = Number(prod?.disponible ?? prod?.stock_actual) || 0
   const minimo = nivel(consumo, cfg.dias_minimo, cfg.dias_periodo)
   const reorden = nivel(consumo, cfg.dias_reorden, cfg.dias_periodo)
   const maximo = nivel(consumo, cfg.dias_maximo, cfg.dias_periodo)
@@ -301,11 +303,11 @@ const csvCampo = (v) => {
 }
 
 export function aPedirCSV(filas) {
-  const head = ['Clave', 'Nombre', 'Color', 'Stock actual', 'Mínimo', 'Reorden', 'Máximo', 'Estado', 'A PEDIR']
+  const head = ['Clave', 'Nombre', 'Color', 'Disponible', 'Mínimo', 'Reorden', 'Máximo', 'Estado', 'A PEDIR']
   const lineas = [head.join(',')]
   for (const f of listaAPedir(filas)) {
     const n = f.niveles
-    lineas.push([f.clave, f.nombre, f.color, f.stock_actual, n.minimo, n.reorden, n.maximo, ESTADOS[n.estado].label, n.aPedir].map(csvCampo).join(','))
+    lineas.push([f.clave, f.nombre, f.color, f.disponible ?? f.stock_actual, n.minimo, n.reorden, n.maximo, ESTADOS[n.estado].label, n.aPedir].map(csvCampo).join(','))
   }
   return '﻿' + lineas.join('\r\n') + '\r\n'
 }

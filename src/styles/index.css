@@ -5409,8 +5409,26 @@ h4 {
   .frisa-niveles__tabla tr.frisa-niveles__fila--pedir { border-left: 5px solid var(--color-orange); }
   .frisa-niveles__tabla tr.frisa-niveles__fila--ok { border-left: 5px solid var(--color-good); }
   .frisa-niveles__tabla td[data-label]:not(:first-child)::before { content: attr(data-label); display: block; font-size: 11px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.02em; }
-  .frisa-niveles__tabla td[data-label="Stock actual"] { grid-column: span 2; }
   .frisa-niveles__editar { justify-content: flex-start; }
   .frisa-niveles__error { text-align: left; }
   .frisa-niveles__campos .input { max-width: none; }
 }
+
+/* V185 — Frisa · órdenes de surtido y Urgente */
+.frisa__secciones { overflow-x: auto; flex-wrap: nowrap; }
+.frisa__secciones .notas-pestana { white-space: nowrap; }
+.frisa-surtido { gap: 16px; }
+.frisa-surtido .frisa__nota, .frisa-surtido .section-title { margin: 0; }
+.frisa-surtido__tarjeta { display: grid; gap: 4px; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; padding: 12px 14px; margin: 0; border-left: 4px solid var(--color-border); }
+.frisa-surtido__tarjeta:hover { border-color: var(--color-black); }
+.frisa-surtido__tarjeta--ok { border-left-color: var(--color-good); }
+.frisa-surtido__tarjeta--falta { border-left-color: var(--color-danger); }
+.frisa-surtido__fila1 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0; }
+.frisa-surtido__renglones { display: grid; gap: 8px; }
+.frisa-surtido__renglon { display: grid; gap: 4px; padding: 8px 10px; border: 1px solid var(--color-border); border-radius: 8px; }
+.frisa-surtido__renglon.is-error { border-color: var(--color-danger); }
+.frisa-surtido__renglon-campos { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; }
+.frisa-surtido__renglon-campos select { min-width: 0; }
+.frisa-surtido__lineas table { width: 100%; min-width: 0; }
+.frisa-surtido__lineas td:first-child { word-break: break-word; }
+.frisa-surtido__lineas .num { white-space: normal; }

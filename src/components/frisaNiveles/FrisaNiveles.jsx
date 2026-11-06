@@ -3,6 +3,8 @@ import { useAuth } from '../../contexts/AuthContext'
 import { Loading, ErrorState } from '../common/States'
 import { canCapturarStockFrisa, canEditarSupuestosFrisa } from '../../utils/permissions'
 import { fetchFrisaNiveles, capturarStock } from '../../services/frisaNivelesService'
+import { fetchSurtidosYLineas } from '../../services/frisaSurtidoService'
+import { conInventario } from '../../utils/frisaSurtido'
 import {
   CONFIG_INICIAL, ESTADOS, calcularNiveles, conNiveles, filtrarNiveles, opcionesDe, ordenarPorEstado, resumenNiveles,
 } from '../../utils/frisaNiveles'
@@ -34,11 +36,12 @@ export default function FrisaNiveles() {
   const [modal, setModal] = useState(null) // { tipo: 'detalle'|'supuestos'|'importar'|'exportar', clave? }
 
   const recargar = useCallback(async () => {
-    const { data, error: e } = await fetchFrisaNiveles()
-    if (e) setError(e)
+    // V185 — también las órdenes surtidas sin entregar (apartado).
+    const [{ data, error: e }, sl] = await Promise.all([fetchFrisaNiveles(), fetchSurtidosYLineas()])
+    if (e || sl.error) setError(e || sl.error)
     else {
       setError(null)
-      setDatos(data)
+      setDatos({ ...data, surtidos: sl.data.surtidos, lineas: sl.data.lineas })
     }
     setCargando(false)
   }, [])
@@ -48,7 +51,7 @@ export default function FrisaNiveles() {
   }, [recargar])
 
   const cfg = datos?.config || CONFIG_INICIAL
-  const filas = useMemo(() => conNiveles(datos?.productos || [], cfg), [datos, cfg])
+  const filas = useMemo(() => conNiveles(conInventario(datos?.productos || [], datos?.surtidos, datos?.lineas), cfg), [datos, cfg])
   const resumen = useMemo(() => resumenNiveles(filas), [filas])
   const visibles = useMemo(() => ordenarPorEstado(filtrarNiveles(filas, filtros)), [filas, filtros])
   const tipos = useMemo(() => opcionesDe(filas, 'tipo'), [filas])
@@ -72,7 +75,8 @@ export default function FrisaNiveles() {
         <div>
           <h1 className="page-title">Frisa · niveles de inventario</h1>
           <p className="page-subtitle">
-            Stock del almacén de la fábrica. Demanda diaria = consumo 2026 ÷ {cfg.dias_periodo} días
+            Inventario del almacén de la fábrica: real − apartado (surtido sin entregar) = disponible; los niveles se calculan con el
+            disponible. Demanda diaria = consumo 2026 ÷ {cfg.dias_periodo} días
             {cfg.fecha_corte_consumo ? ` (${fechaCorta(cfg.fecha_inicio_consumo)} – ${fechaCorta(cfg.fecha_corte_consumo)})` : ''}.
             Mínimo {cfg.dias_minimo} días · reorden {cfg.dias_reorden} · máximo {cfg.dias_maximo}.
           </p>
@@ -149,7 +153,7 @@ export default function FrisaNiveles() {
           </div>
 
           <p className="frisa__nota">
-            {visibles.length} de {filas.length} claves.{puedeCapturar ? ' Toca el stock para capturarlo; toca la clave para ver el detalle.' : ' Toca la clave para ver el detalle.'}
+            {visibles.length} de {filas.length} claves.{puedeCapturar ? ' Toca el real para capturar un conteo; toca la clave para ver el detalle.' : ' Toca la clave para ver el detalle.'}
           </p>
 
           <div className="revision__tabla-wrap">
@@ -158,7 +162,9 @@ export default function FrisaNiveles() {
                 <tr>
                   <th>Clave</th>
                   <th>Color</th>
-                  <th className="num">Stock actual</th>
+                  <th className="num">Real</th>
+                  <th className="num">Apartado</th>
+                  <th className="num">Disponible</th>
                   <th className="num">Mínimo</th>
                   <th className="num">Reorden</th>
                   <th className="num">Máximo</th>
@@ -173,7 +179,7 @@ export default function FrisaNiveles() {
                     onDetalle={() => setModal({ tipo: 'detalle', clave: f.clave })} />
                 ))}
                 {!visibles.length && (
-                  <tr><td colSpan={9} className="frisa__sub">Ninguna clave con estos filtros.</td></tr>
+                  <tr><td colSpan={11} className="frisa__sub">Ninguna clave con estos filtros.</td></tr>
                 )}
               </tbody>
             </table>
@@ -205,7 +211,7 @@ function FilaNivel({ fila, cfg, puedeCapturar, onGuardado, onDetalle }) {
   const [error, setError] = useState(null)
 
   const borrador = editando && valor !== '' && /^\d+$/.test(valor) ? Number(valor) : null
-  const n = borrador == null ? fila.niveles : calcularNiveles({ ...fila, stock_actual: borrador }, cfg)
+  const n = borrador == null ? fila.niveles : calcularNiveles({ ...fila, stock_actual: borrador, disponible: borrador - fila.apartado }, cfg)
 
   function abrir() {
     setValor(String(fila.stock_actual))
@@ -231,7 +237,7 @@ function FilaNivel({ fila, cfg, puedeCapturar, onGuardado, onDetalle }) {
         <div className="frisa__sub">{fila.nombre}</div>
       </td>
       <td data-label="Color">{fila.color || '—'}</td>
-      <td data-label="Stock actual" className="num">
+      <td data-label="Real" className="num">
         {editando ? (
           <span className="frisa-niveles__editar">
             <input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" autoFocus value={valor}
@@ -248,6 +254,8 @@ function FilaNivel({ fila, cfg, puedeCapturar, onGuardado, onDetalle }) {
           <strong>{num(fila.stock_actual)}</strong>
         )}
       </td>
+      <td data-label="Apartado" className="num">{fila.apartado ? num(fila.apartado) : ''}</td>
+      <td data-label="Disponible" className="num"><strong>{num(borrador == null ? fila.disponible : borrador - fila.apartado)}</strong></td>
       <td data-label="Mínimo" className="num">{num(n.minimo)}</td>
       <td data-label="Reorden" className="num">{num(n.reorden)}</td>
       <td data-label="Máximo" className="num">{num(n.maximo)}</td>

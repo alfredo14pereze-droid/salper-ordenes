@@ -29,7 +29,8 @@ export default function FrisaNivelesDetalle({ fila, cfg, puedeCapturar, onGuarda
   }, [fila.id, fila.stock_actual])
 
   const valido = /^\d+$/.test(stock)
-  const n = valido ? calcularNiveles({ ...fila, stock_actual: Number(stock) }, cfg) : fila.niveles
+  const apartado = fila.apartado || 0
+  const n = valido ? calcularNiveles({ ...fila, stock_actual: Number(stock), disponible: Number(stock) - apartado }, cfg) : fila.niveles
   const max25 = Math.max(fila.consumo_2025 || 0, fila.consumo_2026 || 0, 1)
   const atributos = [
     ['Tipo', fila.tipo], ['Reflejante', fila.reflejante], ['Manga', fila.manga], ['Color', fila.color],
@@ -71,6 +72,9 @@ export default function FrisaNivelesDetalle({ fila, cfg, puedeCapturar, onGuarda
         </div>
 
         <dl className="frisa-niveles__datos">
+          <div><dt>Real (en bodega)</dt><dd>{num(fila.stock_actual)}</dd></div>
+          <div><dt>Apartado</dt><dd>{num(apartado)}</dd></div>
+          <div><dt>Disponible</dt><dd>{num((valido ? Number(stock) : fila.stock_actual) - apartado)}</dd></div>
           <div><dt>Demanda diaria</dt><dd>{formatoDemanda(n.demanda)}</dd></div>
           <div><dt>Clase ABC</dt><dd>{fila.clase_abc || '—'}</dd></div>
           <div><dt>Tendencia</dt><dd>{fila.tendencia || '—'}</dd></div>
@@ -86,7 +90,7 @@ export default function FrisaNivelesDetalle({ fila, cfg, puedeCapturar, onGuarda
         {puedeCapturar ? (
           <form className="frisa-niveles__captura" onSubmit={guardar}>
             <label>
-              <span className="field-label">Stock actual (almacén fábrica)</span>
+              <span className="field-label">Real contado (almacén fábrica)</span>
               <input className="input" type="number" min="0" step="1" inputMode="numeric" value={stock} onChange={(e) => setStock(e.target.value)} />
             </label>
             <label className="frisa-niveles__captura-comentario">

@@ -473,9 +473,27 @@ export function canEditarSupuestosFrisa(role) {
   return tiene(role, 'fn.supuestos', () => role === 'admin_fabrica' || role === 'admin_general')
 }
 
+// V185 — Frisa surtido (fs.ver / fs.oc / fs.surtir / fs.entregar);
+// fallback = siembra de schema_v185_frisa_surtido.sql.
+export function canViewFrisaSurtido(role) {
+  return tiene(role, 'fs.ver', () => Boolean(role))
+}
+
+export function canSubirOCFrisa(role) {
+  return tiene(role, 'fs.oc', () => ['admin_general', 'admin_fabrica', 'admin_tienda'].includes(role))
+}
+
+export function canSurtirFrisa(role) {
+  return tiene(role, 'fs.surtir', () => ['chofer', 'admin_general', 'admin_fabrica'].includes(role))
+}
+
+export function canEntregarFrisa(role) {
+  return tiene(role, 'fs.entregar', () => ['admin_general', 'admin_fabrica', 'admin_tienda'].includes(role))
+}
+
 // La sección "Frisa" se ve si se puede ver cualquiera de sus partes.
 export function canViewSeccionFrisa(role) {
-  return canViewFrisaNiveles(role) || canViewFrisaConsignacion(role)
+  return canViewFrisaNiveles(role) || canViewFrisaSurtido(role) || canViewFrisaConsignacion(role)
 }
 
 // V116 — consulta_tienda ve Pedidos Colegio (folios, anticipos/abonos, PDFs)
@@ -734,7 +752,8 @@ export const ROLE_LABELS = {
 export function esChofer(role) {
   return role === 'chofer'
 }
-export const RUTAS_CHOFER = ['/', '/tareas', '/pendientes']
+// V185 — + /frisa (surtido de órdenes de Frisa).
+export const RUTAS_CHOFER = ['/', '/tareas', '/pendientes', '/frisa']
 
 // V158 — Notas de tienda. Permisos editables en "Roles y permisos"
 // (nt.ver / nt.escribir / nt.resolver); el fallback reproduce la siembra

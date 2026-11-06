@@ -44,7 +44,7 @@ export default function FrisaAPedirPdf({ lista, cfg, generado }) {
           <View>
             <Text style={s.title}>Frisa · lista A PEDIR</Text>
             <Text style={s.sub}>
-              Stock del almacén de la fábrica. Demanda = consumo 2026 ÷ {cfg.dias_periodo} días · mínimo {cfg.dias_minimo} d · reorden {cfg.dias_reorden} d · máximo {cfg.dias_maximo} d.
+              Disponible = real en el almacén de la fábrica − apartado. Demanda = consumo 2026 ÷ {cfg.dias_periodo} días · mínimo {cfg.dias_minimo} d · reorden {cfg.dias_reorden} d · máximo {cfg.dias_maximo} d.
             </Text>
             <Text style={s.sub}>Generado el {generado}</Text>
           </View>
@@ -60,7 +60,7 @@ export default function FrisaAPedirPdf({ lista, cfg, generado }) {
           <Text style={[s.th, s.cClave]}>Clave</Text>
           <Text style={[s.th, s.cNombre]}>Nombre</Text>
           <Text style={[s.th, s.cColor]}>Color</Text>
-          <Text style={[s.th, s.cNum]}>Stock</Text>
+          <Text style={[s.th, s.cNum]}>Disp.</Text>
           <Text style={[s.th, s.cNum]}>Mín.</Text>
           <Text style={[s.th, s.cNum]}>Reord.</Text>
           <Text style={[s.th, s.cNum]}>Máx.</Text>
@@ -72,7 +72,7 @@ export default function FrisaAPedirPdf({ lista, cfg, generado }) {
             <Text style={s.cClave}>{f.clave}</Text>
             <Text style={s.cNombre}>{f.nombre}</Text>
             <Text style={s.cColor}>{f.color || ''}</Text>
-            <Text style={s.cNum}>{n(f.stock_actual)}</Text>
+            <Text style={s.cNum}>{n(f.disponible ?? f.stock_actual)}</Text>
             <Text style={s.cNum}>{n(f.niveles.minimo)}</Text>
             <Text style={s.cNum}>{n(f.niveles.reorden)}</Text>
             <Text style={s.cNum}>{n(f.niveles.maximo)}</Text>

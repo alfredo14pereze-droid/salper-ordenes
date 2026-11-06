@@ -7665,3 +7665,48 @@ cosa y por ahora no entra; (3) todos los roles con sesión consultan.
   Excel de existencias de Microsip (trae código numérico; se liga por nombre, los 63 artículos ligaron). Resumen para
   Alfredo: `~/Downloads/SALPER_Flujo_Frisa.pdf`. Después: stock en plantas (lo dejó para luego), ligar con `frisa_productos` y con las
   órdenes FR, calcular la tendencia en vez de importarla, editar la nota desde la app.
+
+## V185 — Frisa fase 1: inventario por movimientos + órdenes de surtido (2026-11-06, rama `frisa-niveles`, SQL SIN aplicar)
+Flujo acordado con Alfredo (resumen en `~/Downloads/SALPER_Flujo_Frisa.pdf`): llega la OC de Frisa en PDF → se sube y se
+vuelve **orden de surtido** → **Urgente** (disponible − pendientes) → se **surte** (aparta) → **salió el chofer**
+(descuenta) → restock (fase 2). Respuestas de Alfredo: no se surte parcial (Frisa no acepta parciales, se espera a tenerla
+completa); restock por niveles = máximo − (disponible + en proceso + por entrar), solo claves en PEDIR/CRÍTICO, desglosado
+(playera: libres sin procesos, en proceso, disponibles); OTs = órdenes FR con los productos y procesos de la página;
+pantalón = producto Frisa **comprado** (pedido a proveedor, no OT); surtidor = Leo (chofer) y 1-2 personas más o personal de
+fábrica, **siempre se elige quién surtió**; "salió el chofer" lo marca cualquier admin; Microsip se compara subiendo su
+Excel de existencias; playera lisa como bolsa común por color + manga + talla, sin mínimos ni máximos.
+- **Inventario SALPER por clave:** real = suma de `frisa_inv_movimientos` (tipos `inicial`, `ajuste`, `entrega`,
+  `ingreso_bodega`); un disparador mantiene `frisa_productos_niveles.stock_actual` = real (check ≥ 0) y otro impide editar
+  o borrar movimientos. Apartado = líneas de órdenes `surtida`; disponible = real − apartado. Los niveles
+  (CRÍTICO/PEDIR/OK, A PEDIR) ahora se calculan con el **disponible**. El stock cargado del Sheet quedó como `inicial` (68
+  movimientos, se registra una sola vez sin volver a sumarlo). Capturar el stock en Niveles deja un `ajuste` (diferencia) +
+  conteo; importar una clave nueva entra en 0 + movimiento `inicial` (las dos funciones de V184 se reemplazaron con la misma
+  firma).
+- **SQL** `supabase/schema_v185_frisa_surtido.sql` (aditivo, se puede correr dos veces, rollback al final): tablas
+  `frisa_surtidos` (OC, planta, fechas, estado `pendiente → surtida → entregada` o `cancelada`, PDF, lo leído, quién creó /
+  surtió (`surtido_por_id/_nombre` elegido + `surtido_registrado_por`) / entregó, remisión, cancelación; número de OC único
+  salvo canceladas), `frisa_surtido_lineas` (clave única por orden), `frisa_surtido_eventos` (historial), `frisa_inv_movimientos`,
+  `frisa_niveles_alias` (descripción + talla del PDF → clave, se aprende al guardar). Permisos `fs.ver` (todos), `fs.oc`
+  (admin_general/admin_fabrica/admin_tienda), `fs.surtir` (chofer, admin_general, admin_fabrica), `fs.entregar` (los 3
+  admins). Funciones: `frisa_surtido_crear`, `frisa_surtido_editar` (solo pendiente), `frisa_surtido_personas` (personal
+  activo para elegir), `frisa_surtido_marcar_surtida` (todo o nada contra el disponible, candado `frisa_inventario`; dice
+  qué falta), `frisa_surtido_regresar` (surtida → pendiente), `frisa_surtido_entregar` (exige remisión; movimientos `entrega`),
+  `frisa_surtido_cancelar` (con motivo; libera lo apartado).
+- **Pantallas** (Frisa): pestañas **Niveles de inventario** (columnas Real / Apartado / Disponible; captura sobre el real),
+  **Órdenes de surtido** (por estado, buscador, tarjeta con "Se puede surtir" / "Falta inventario" y fecha límite; "+ Subir
+  orden de compra": PDF al bucket `orden-documentos` en `frisa-oc/…` + lector `frisa_oc` de `api/document-ocr.js`, renglones
+  con clave sugerida por lo aprendido o por parecido (`sugerirClave`: talla + palabras, distingue manga corta/larga y
+  con/sin reflejante); detalle con disponible por renglón, "Marcar surtida" (elegir persona o escribir otra), "Salió el
+  chofer" (remisión + fecha), corregir, regresar, cancelar, ver PDF, historial) y **Urgente** (por fecha límite, cada orden
+  completa o nada; faltantes por clave). `utils/frisaSurtido.js` (+ pruebas). El chofer tiene "Surtido Frisa" en su menú
+  (`RUTAS_CHOFER` + `/frisa`) y entra directo a las órdenes de surtido.
+- **Probado:** 148 pruebas, `npm run build`, SQL en PGlite sobre V184 + la carga real (37 comprobaciones: inicial una vez,
+  permisos por rol, todo o nada, apartar sin descontar, entregar descuenta, regresar/cancelar liberan, corregir, OC repetida
+  y re-subir cancelada, ajuste por captura, importar con movimiento, inmutables, stock no negativo, anon, RLS); pantallas en el
+  ejemplo local (`salper-frisa-niveles-harness`, puerto 5188, `?rol=chofer`, `?demo` = 3 OCs de ejemplo; lector de PDF
+  simulado): Urgente, surtir eligiendo a Leo (Niveles: real 180 / apartado 60 / disponible 120), salió el chofer (93→63,
+  115→65, 180→120), subir OC (5 de 6 renglones sugeridos, 5 alias), vista del chofer en celular.
+- **No probado:** lectura de un PDF real de Frisa (solo funciona en Vercel), con sesión real.
+- **Siguiente:** fase 2 (restock: órdenes FR por niveles, por entrar → subido a bodega, pantalón comprado), fase 3
+  (Excel de Microsip: viene con código numérico, se liga por nombre — los 63 artículos ligaron), fase 4 (playera lisa),
+  fase 5 (inventario por planta). También sirve el reporte de Microsip "Pendientes de surtir por artículo" para comparar.

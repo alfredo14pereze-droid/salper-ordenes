@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import RequireRole from '../components/common/RequireRole'
 import { useAuth } from '../contexts/AuthContext'
-import { canViewSeccionFrisa, canViewFrisaNiveles, canViewFrisaConsignacion } from '../utils/permissions'
+import { canViewSeccionFrisa, canViewFrisaNiveles, canViewFrisaConsignacion, canViewFrisaSurtido, canSurtirFrisa, canSubirOCFrisa } from '../utils/permissions'
 import FrisaNiveles from '../components/frisaNiveles/FrisaNiveles'
+import FrisaSurtidoSeccion from '../components/frisaSurtido/FrisaSurtidoSeccion'
 import FrisaConsignacionPage from './FrisaConsignacionPage'
 
 // V184 — sección "Frisa": Niveles de inventario (todos con fn.ver) y, solo
@@ -19,9 +20,13 @@ function FrisaSeccion() {
   const { role } = useAuth()
   const partes = [
     canViewFrisaNiveles(role) && ['niveles', 'Niveles de inventario'],
+    canViewFrisaSurtido(role) && ['surtido', 'Órdenes de surtido'],
+    canViewFrisaSurtido(role) && ['urgente', 'Urgente'],
     canViewFrisaConsignacion(role) && ['consignacion', 'Consignación (prueba)'],
   ].filter(Boolean)
-  const [parte, setParte] = useState(partes[0][0])
+  // Quien surte pero no administra (Leo) entra directo a las órdenes de surtido.
+  const inicial = canSurtirFrisa(role) && !canSubirOCFrisa(role) && partes.some(([k]) => k === 'surtido') ? 'surtido' : partes[0][0]
+  const [parte, setParte] = useState(inicial)
 
   return (
     <div>
@@ -36,6 +41,7 @@ function FrisaSeccion() {
         </div>
       )}
       {parte === 'niveles' && <FrisaNiveles />}
+      {(parte === 'surtido' || parte === 'urgente') && <FrisaSurtidoSeccion key={parte} vista={parte} />}
       {parte === 'consignacion' && <FrisaConsignacionPage />}
     </div>
   )

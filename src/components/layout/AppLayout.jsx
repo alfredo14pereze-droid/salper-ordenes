@@ -222,6 +222,8 @@ export default function AppLayout({ children }) {
           { to: '/', label: 'Inicio', end: true },
           { to: '/tareas', label: 'Tareas' },
           { to: '/pendientes', label: 'Pendientes' },
+          // V185 — Leo surte las órdenes de Frisa.
+          { to: '/frisa', label: 'Surtido Frisa' },
         ]
       : [{ to: '/', label: 'Órdenes', end: true }, ...(canViewPendientes(role) ? [{ to: '/pendientes', label: 'Pendientes' }] : [])]
     const rutaPermitida = !chofer || RUTAS_CHOFER.some((r) => location.pathname === r || (r !== '/' && location.pathname.startsWith(r + '/')))
