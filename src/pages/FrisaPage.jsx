@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { canViewSeccionFrisa, canViewFrisaNiveles, canViewFrisaConsignacion, canViewFrisaSurtido, canSurtirFrisa, canSubirOCFrisa } from '../utils/permissions'
 import FrisaNiveles from '../components/frisaNiveles/FrisaNiveles'
 import FrisaSurtidoSeccion from '../components/frisaSurtido/FrisaSurtidoSeccion'
+import FrisaRestock from '../components/frisaRestock/FrisaRestock'
 import FrisaConsignacionPage from './FrisaConsignacionPage'
 
 // V184 — sección "Frisa": Niveles de inventario (todos con fn.ver) y, solo
@@ -22,6 +23,7 @@ function FrisaSeccion() {
     canViewFrisaNiveles(role) && ['niveles', 'Niveles de inventario'],
     canViewFrisaSurtido(role) && ['surtido', 'Órdenes de surtido'],
     canViewFrisaSurtido(role) && ['urgente', 'Urgente'],
+    canViewFrisaNiveles(role) && ['restock', 'Restock'],
     canViewFrisaConsignacion(role) && ['consignacion', 'Consignación (prueba)'],
   ].filter(Boolean)
   // Quien surte pero no administra (Leo) entra directo a las órdenes de surtido.
@@ -42,6 +44,7 @@ function FrisaSeccion() {
       )}
       {parte === 'niveles' && <FrisaNiveles />}
       {(parte === 'surtido' || parte === 'urgente') && <FrisaSurtidoSeccion key={parte} vista={parte} />}
+      {parte === 'restock' && <FrisaRestock />}
       {parte === 'consignacion' && <FrisaConsignacionPage />}
     </div>
   )

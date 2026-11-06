@@ -1,0 +1,424 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
+import { Loading, ErrorState } from '../common/States'
+import Modal from '../talleros/Modal'
+import { canCrearOrdenesRestock, canSubirBodegaFrisa, canComprasFrisa } from '../../utils/permissions'
+import {
+  fetchRestockTodo, buscarOrdenPorFolio, ligarOrden, desligarOrden, subirABodega, crearCompra, recibirCompra, cancelarCompra,
+} from '../../services/frisaRestockService'
+import { createOrderFrisa } from '../../services/frisaService'
+import { conInventario } from '../../utils/frisaSurtido'
+import { CONFIG_INICIAL } from '../../utils/frisaNiveles'
+import { calcularRestock, itemsOrdenRestock, propuestaIngreso } from '../../utils/frisaRestock'
+import { EstadoBadge, NombreFrisa, fechaCorta } from '../frisaNiveles/comunes'
+
+const num = (n) => Number(n || 0).toLocaleString('es-MX')
+const masDias = (d) => { const x = new Date(); x.setDate(x.getDate() + d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}` }
+const ESTADO_OT = {
+  en_proceso: ['En proceso', 'neutro'], por_entrar: ['Por entrar (terminada)', 'naranja'],
+  en_bodega: ['En bodega', 'verde'], cancelada: ['Cancelada', 'neutro'],
+}
+
+// V186 — Restock: qué pedir (órdenes de taller FR o pedido de compra), lo
+// que está en proceso / por entrar, subir a bodega y recibir compras.
+export default function FrisaRestock() {
+  const { role } = useAuth()
+  const puede = { ordenes: canCrearOrdenesRestock(role), bodega: canSubirBodegaFrisa(role), compras: canComprasFrisa(role) }
+  const [datos, setDatos] = useState(null)
+  const [error, setError] = useState(null)
+  const [cargando, setCargando] = useState(true)
+  const [aviso, setAviso] = useState(null)
+  const [todas, setTodas] = useState(false)
+  const [ingresar, setIngresar] = useState(null) // fila de orden
+  const [recibir, setRecibir] = useState(null) // compra
+
+  const recargar = useCallback(async () => {
+    const { data, error: e } = await fetchRestockTodo()
+    if (e) setError(e)
+    else { setError(null); setDatos(data) }
+    setCargando(false)
+  }, [])
+  useEffect(() => { recargar() }, [recargar])
+
+  const r = useMemo(() => {
+    if (!datos) return null
+    const productosInv = conInventario(datos.productos, datos.surtidos, datos.lineas)
+    return calcularRestock({ ...datos, productosInv, cfg: datos.config || CONFIG_INICIAL })
+  }, [datos])
+
+  if (cargando) return <Loading />
+  if (error) return <div className="page"><ErrorState error={error} onRetry={recargar} /></div>
+
+  const pfPorId = new Map(datos.productosFrisa.map((p) => [p.id, p]))
+  const listo = async (msg) => { setAviso(msg); await recargar() }
+  const ORDEN = { critico: 0, pedir: 1, ok: 2 }
+  const visibles = r.filas.filter((f) => todas || f.aPedir > 0 || f.enProceso > 0 || f.porEntrar > 0)
+    .sort((a, b) => ORDEN[a.estado] - ORDEN[b.estado] || b.aPedir - a.aPedir || a.producto.clave.localeCompare(b.producto.clave))
+  const porEntrar = r.ordenes.filter((o) => o.estado === 'por_entrar')
+  const enProceso = r.ordenes.filter((o) => o.estado === 'en_proceso')
+  const comprasPedidas = datos.compras.filter((c) => c.estado === 'pedida')
+
+  return (
+    <div className="page frisa frisa-surtido">
+      <div className="frisa__encabezado">
+        <div>
+          <h1 className="page-title">Frisa · restock</h1>
+          <p className="page-subtitle">
+            Para cada clave: disponible + en proceso + por entrar = proyectado. Si el proyectado llega al reorden, se pide lo que falta
+            para el máximo: lo que se fabrica como orden de taller (FR) y lo que se compra hecho como pedido de compra.
+          </p>
+        </div>
+      </div>
+      {aviso && <p className="frisa__ok">{aviso}</p>}
+
+      <div className="stats-grid frisa-niveles__resumen">
+        <div className="stat-card"><span className="stat-card__label">Por pedir (taller)</span><span className="stat-card__value">{num(r.talleresPropuestos.reduce((t, g) => t + g.lineas.reduce((a, l) => a + l.cantidad, 0), 0))}</span><span className="stat-card__hint">{r.talleresPropuestos.length} órdenes FR</span></div>
+        <div className="stat-card"><span className="stat-card__label">Por comprar</span><span className="stat-card__value">{num(r.compraPropuesta.reduce((t, l) => t + l.cantidad, 0))}</span><span className="stat-card__hint">{r.compraPropuesta.length} claves</span></div>
+        <div className="stat-card"><span className="stat-card__label">En proceso</span><span className="stat-card__value">{enProceso.length + comprasPedidas.length}</span><span className="stat-card__hint">órdenes y compras</span></div>
+        <div className="stat-card frisa-niveles__tarjeta--pedir"><span className="stat-card__label">Por entrar</span><span className="stat-card__value">{porEntrar.length}</span><span className="stat-card__hint">terminadas, sin subir a bodega</span></div>
+      </div>
+
+      {porEntrar.length > 0 && (
+        <section className="frisa-restock__seccion">
+          <h2 className="section-title section-title--small">Por entrar: terminadas, falta subirlas a bodega</h2>
+          <ListaOrdenes filas={porEntrar} pfPorId={pfPorId} puede={puede} onSubir={setIngresar} onListo={listo} />
+        </section>
+      )}
+
+      <section className="frisa-restock__seccion">
+        <div className="frisa__barra">
+          <h2 className="section-title section-title--small">Por pedir</h2>
+          <label className="frisa-niveles__toggle"><input type="checkbox" checked={todas} onChange={(e) => setTodas(e.target.checked)} /> Ver todas las claves</label>
+        </div>
+        <TablaRestock filas={visibles} />
+        <p className="frisa__sub">Playera lisa (sin procesos) a comprar: llega en la fase 4.</p>
+      </section>
+
+      {r.talleresPropuestos.map((g) => (
+        <PropuestaTaller key={g.producto_frisa_id} grupo={g} productoFrisa={pfPorId.get(g.producto_frisa_id)} puede={puede.ordenes} onListo={listo} />
+      ))}
+      {r.compraPropuesta.length > 0 && <PropuestaCompra lineas={r.compraPropuesta} productos={datos.productos} puede={puede.compras} onListo={listo} />}
+
+      <section className="frisa-restock__seccion">
+        <h2 className="section-title section-title--small">Órdenes de taller en proceso</h2>
+        {!enProceso.length && <p className="frisa__sub">Ninguna.</p>}
+        <ListaOrdenes filas={enProceso} pfPorId={pfPorId} puede={puede} onListo={listo} />
+        {puede.ordenes && <LigarExistente onListo={listo} />}
+      </section>
+
+      <section className="frisa-restock__seccion">
+        <h2 className="section-title section-title--small">Pedidos de compra</h2>
+        {!datos.compras.length && <p className="frisa__sub">Ninguno todavía.</p>}
+        <div className="frisa-oc-lista">
+          {datos.compras.slice(0, 20).map((c) => {
+            const ls = datos.compraLineas.filter((l) => l.compra_id === c.id)
+            return (
+              <div key={c.id} className="card frisa-surtido__tarjeta frisa-restock__compra">
+                <span className="frisa-surtido__fila1">
+                  <span className="frisa-oc__num">Compra #{c.folio}</span>
+                  <span className={'frisa-nivel frisa-nivel--' + (c.estado === 'recibida' ? 'verde' : c.estado === 'pedida' ? 'naranja' : 'neutro')}>
+                    {c.estado === 'pedida' ? 'Pedida' : c.estado === 'recibida' ? 'Recibida' : 'Cancelada'}
+                  </span>
+                </span>
+                <span className="frisa-oc__planta">{c.proveedor}</span>
+                <span className="frisa__sub">{ls.map((l) => `${l.clave} ×${num(l.cantidad)}${l.recibida != null ? ` (llegaron ${num(l.recibida)})` : ''}`).join(' · ')}</span>
+                <span className="frisa__sub">{c.estado === 'pedida' ? (c.fecha_esperada ? `Se espera ${fechaCorta(c.fecha_esperada)}` : 'Sin fecha') : c.estado === 'recibida' ? `Recibió ${c.recibido_por_nombre} · ${fechaCorta(c.recibido_en)}` : c.cancelado_motivo}</span>
+                {c.estado === 'pedida' && (
+                  <span className="frisa__botones">
+                    {puede.bodega && <button type="button" className="btn btn--primary btn--small" onClick={() => setRecibir(c)}>Recibir</button>}
+                    {puede.compras && <BotonCancelarCompra compra={c} onListo={listo} />}
+                  </span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
+      {ingresar && (
+        <ModalIngreso fila={ingresar} datos={datos} pfPorId={pfPorId} onClose={() => setIngresar(null)}
+          onListo={(m) => { setIngresar(null); listo(m) }} />
+      )}
+      {recibir && (
+        <ModalRecibir compra={recibir} lineas={datos.compraLineas.filter((l) => l.compra_id === recibir.id)} onClose={() => setRecibir(null)}
+          onListo={(m) => { setRecibir(null); listo(m) }} />
+      )}
+    </div>
+  )
+}
+
+function TablaRestock({ filas }) {
+  if (!filas.length) return <p className="frisa__ok">Nada por pedir: todas las claves están arriba del reorden (contando lo que ya viene).</p>
+  return (
+    <div className="revision__tabla-wrap">
+      <table className="simple-table frisa-tabla frisa-niveles__tabla">
+        <thead>
+          <tr><th>Clave</th><th className="num">Disponible</th><th className="num">En proceso</th><th className="num">Por entrar</th><th className="num">Proyectado</th><th className="num">Reorden</th><th className="num">Máximo</th><th>Estado</th><th className="num">A PEDIR</th><th>Se</th></tr>
+        </thead>
+        <tbody>
+          {filas.map((f) => (
+            <tr key={f.producto.id} className={'frisa-niveles__fila--' + f.estado}>
+              <td data-label="Clave"><strong>{f.producto.clave}</strong><NombreFrisa producto={f.producto} /></td>
+              <td data-label="Disponible" className="num">{num(f.disponible)}</td>
+              <td data-label="En proceso" className="num">{f.enProceso ? num(f.enProceso) : ''}</td>
+              <td data-label="Por entrar" className="num">{f.porEntrar ? num(f.porEntrar) : ''}</td>
+              <td data-label="Proyectado" className="num"><strong>{num(f.proyectado)}</strong></td>
+              <td data-label="Reorden" className="num">{num(f.reorden)}</td>
+              <td data-label="Máximo" className="num">{num(f.maximo)}</td>
+              <td data-label="Estado"><EstadoBadge estado={f.estado} /></td>
+              <td data-label="A PEDIR" className="num"><strong>{f.aPedir ? num(f.aPedir) : ''}</strong></td>
+              <td data-label="Se">{f.se === 'fabrica' ? 'Taller' : 'Compra'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function PropuestaTaller({ grupo, productoFrisa, puede, onListo }) {
+  const [cant, setCant] = useState(() => Object.fromEntries(grupo.lineas.map((l) => [l.producto_id, String(l.cantidad)])))
+  const [fecha, setFecha] = useState(masDias(10))
+  const [trabajando, setTrabajando] = useState(false)
+  const [error, setError] = useState(null)
+  const total = grupo.lineas.reduce((t, l) => t + (Number(cant[l.producto_id]) || 0), 0)
+
+  async function crear() {
+    setTrabajando(true)
+    setError(null)
+    const lineas = grupo.lineas.map((l) => ({ ...l, cantidad: Number(cant[l.producto_id]) || 0 }))
+    const { data: orden, error: e } = await createOrderFrisa({
+      productoId: grupo.producto_frisa_id, requestedDeliveryDate: fecha, items: itemsOrdenRestock(productoFrisa, lineas),
+      description: 'Restock del inventario de Frisa', foliosExternos: [], llevaBordado: false,
+    })
+    if (e) { setTrabajando(false); return setError(e.message) }
+    const { error: e2 } = await ligarOrden(orden.id, 'restock')
+    setTrabajando(false)
+    if (e2) return setError(`Se creó la orden ${orden.order_number} pero no se pudo ligar: ${e2.message}. Lígala abajo con su folio.`)
+    onListo(`Se creó la orden de taller ${orden.order_number} (${productoFrisa?.codigo}, ${num(total)} pzas). Ya está en las estaciones.`)
+  }
+
+  return (
+    <div className="card frisa-restock__propuesta">
+      <h3 className="section-title section-title--small">Orden de taller: {productoFrisa?.codigo} · {productoFrisa?.nombre}</h3>
+      <div className="frisa-restock__tallas">
+        {grupo.lineas.map((l) => (
+          <label key={l.producto_id}>
+            <span className="field-label">{l.talla}</span>
+            <input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" value={cant[l.producto_id]}
+              disabled={!puede} onChange={(e) => setCant({ ...cant, [l.producto_id]: e.target.value })} />
+          </label>
+        ))}
+        <label><span className="field-label">Entrega</span><input className="input" type="date" value={fecha} disabled={!puede} onChange={(e) => setFecha(e.target.value)} /></label>
+      </div>
+      {error && <p className="form-error">{error}</p>}
+      {puede
+        ? <button type="button" className="btn btn--primary" disabled={trabajando || total <= 0} onClick={crear}>{trabajando ? 'Creando…' : `Crear orden de taller FR (${num(total)} pzas)`}</button>
+        : <p className="frisa__sub">Las órdenes FR las crea ventas, admin de tienda o el administrador general.</p>}
+    </div>
+  )
+}
+
+function PropuestaCompra({ lineas, productos, puede, onListo }) {
+  const [cant, setCant] = useState(() => Object.fromEntries(lineas.map((l) => [l.producto_id, String(l.cantidad)])))
+  const [proveedor, setProveedor] = useState('')
+  const [fecha, setFecha] = useState('')
+  const [trabajando, setTrabajando] = useState(false)
+  const [error, setError] = useState(null)
+  const nombre = (id) => productos.find((p) => p.id === id)
+  const total = lineas.reduce((t, l) => t + (Number(cant[l.producto_id]) || 0), 0)
+
+  async function crear() {
+    setTrabajando(true)
+    setError(null)
+    const ls = lineas.map((l) => ({ producto_id: l.producto_id, cantidad: Number(cant[l.producto_id]) || 0 })).filter((l) => l.cantidad > 0)
+    const { data, error: e } = await crearCompra({ proveedor, fechaEsperada: fecha, lineas: ls })
+    setTrabajando(false)
+    if (e) return setError(e.message)
+    onListo(`Se creó el pedido de compra #${data.folio} a ${data.proveedor} (${num(total)} pzas).`)
+  }
+
+  return (
+    <div className="card frisa-restock__propuesta">
+      <h3 className="section-title section-title--small">Pedido de compra (lo que se compra hecho)</h3>
+      <div className="revision__tabla-wrap">
+        <table className="simple-table frisa-tabla">
+          <tbody>
+            {lineas.map((l) => (
+              <tr key={l.producto_id}>
+                <td><strong>{l.clave}</strong><NombreFrisa producto={nombre(l.producto_id)} /></td>
+                <td className="num"><input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" value={cant[l.producto_id]}
+                  disabled={!puede} onChange={(e) => setCant({ ...cant, [l.producto_id]: e.target.value })} aria-label={`Cantidad de ${l.clave}`} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {puede ? (
+        <>
+          <div className="frisa-form__fila">
+            <label><span className="field-label">Proveedor</span><input className="input" value={proveedor} onChange={(e) => setProveedor(e.target.value)} placeholder="Quién nos lo fabrica" /></label>
+            <label><span className="field-label">Se espera (opcional)</span><input className="input" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} /></label>
+          </div>
+          {error && <p className="form-error">{error}</p>}
+          <button type="button" className="btn btn--primary" disabled={trabajando || total <= 0 || !proveedor.trim()} onClick={crear}>{trabajando ? 'Guardando…' : `Crear pedido de compra (${num(total)} pzas)`}</button>
+        </>
+      ) : <p className="frisa__sub">Los pedidos de compra los hacen los administradores.</p>}
+    </div>
+  )
+}
+
+function ListaOrdenes({ filas, pfPorId, puede, onSubir, onListo }) {
+  const [error, setError] = useState(null)
+  async function quitar(f) {
+    if (!window.confirm(`¿Quitar la orden ${f.order?.order_number} del restock? La orden sigue en las estaciones; solo deja de contar para el inventario de Frisa.`)) return
+    const { error: e } = await desligarOrden(f.liga.order_id)
+    if (e) return setError(e.message)
+    onListo(`La orden ${f.order?.order_number} ya no cuenta en el restock.`)
+  }
+  return (
+    <div className="frisa-oc-lista">
+      {error && <p className="form-error">{error}</p>}
+      {filas.map((f) => {
+        const pf = pfPorId.get(f.order?.producto_frisa_id)
+        const [label, clase] = ESTADO_OT[f.estado]
+        return (
+          <div key={f.liga.order_id} className="card frisa-surtido__tarjeta frisa-restock__orden">
+            <span className="frisa-surtido__fila1">
+              <span className="frisa-oc__num">{f.order?.order_number || 'Orden'}</span>
+              <span className={'frisa-nivel frisa-nivel--' + clase}>{label}</span>
+            </span>
+            <span className="frisa-oc__planta">{pf?.codigo} · {pf?.nombre}</span>
+            <span className="frisa__sub">{num(f.piezas)} pzas{f.order?.requested_delivery_date ? ` · entrega ${fechaCorta(f.order.requested_delivery_date)}` : ''}</span>
+            <span className="frisa__botones">
+              {f.estado === 'por_entrar' && puede.bodega && <button type="button" className="btn btn--primary btn--small" onClick={() => onSubir(f)}>Subir a bodega</button>}
+              {f.estado === 'en_proceso' && puede.ordenes && <button type="button" className="btn btn--ghost btn--small" onClick={() => quitar(f)}>Quitar del restock</button>}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function LigarExistente({ onListo }) {
+  const [folio, setFolio] = useState('')
+  const [error, setError] = useState(null)
+  async function ligar(e) {
+    e.preventDefault()
+    setError(null)
+    const { data, error: e1 } = await buscarOrdenPorFolio(folio)
+    if (e1) return setError(e1.message)
+    if (!data) return setError(`No encontré la orden ${folio}.`)
+    const { error: e2 } = await ligarOrden(data.id, 'ligada')
+    if (e2) return setError(e2.message)
+    setFolio('')
+    onListo(`La orden ${data.order_number} ya cuenta en el restock.`)
+  }
+  return (
+    <form className="frisa-niveles__captura" onSubmit={ligar}>
+      <label className="frisa-niveles__captura-comentario">
+        <span className="field-label">Ligar una orden FR que ya existe</span>
+        <input className="input" value={folio} onChange={(e) => setFolio(e.target.value)} placeholder="Ej. FR-012" />
+      </label>
+      <button type="submit" className="btn btn--secondary" disabled={!folio.trim()}>Ligar</button>
+      {error && <p className="form-error">{error}</p>}
+    </form>
+  )
+}
+
+function ModalIngreso({ fila, datos, pfPorId, onClose, onListo }) {
+  const { lineas, sinClave } = propuestaIngreso(fila.order, datos.clavesProducto)
+  const [cant, setCant] = useState(() => Object.fromEntries(lineas.map((l) => [l.producto_id, String(l.cantidad)])))
+  const [notas, setNotas] = useState('')
+  const [trabajando, setTrabajando] = useState(false)
+  const [error, setError] = useState(null)
+  const prod = (id) => datos.productos.find((p) => p.id === id)
+  const total = lineas.reduce((t, l) => t + (Number(cant[l.producto_id]) || 0), 0)
+
+  async function guardar(e) {
+    e.preventDefault()
+    setTrabajando(true)
+    setError(null)
+    const { error: err } = await subirABodega(fila.liga.order_id, lineas.map((l) => ({ producto_id: l.producto_id, cantidad: Number(cant[l.producto_id]) || 0 })), notas)
+    setTrabajando(false)
+    if (err) return setError(err.message)
+    onListo(`Se subieron ${num(total)} piezas de ${fila.order.order_number} a la bodega.`)
+  }
+
+  return (
+    <Modal title={`Subir a bodega · ${fila.order.order_number}`} onClose={onClose}>
+      <form className="frisa-niveles__supuestos" onSubmit={guardar}>
+        <p className="frisa__nota">{pfPorId.get(fila.order.producto_frisa_id)?.nombre}. Corrige si subieron menos (merma, defectos).</p>
+        <div className="revision__tabla-wrap">
+          <table className="simple-table frisa-tabla">
+            <tbody>
+              {lineas.map((l) => (
+                <tr key={l.producto_id}>
+                  <td><strong>{prod(l.producto_id)?.clave}</strong> · talla {l.talla}<NombreFrisa producto={prod(l.producto_id)} /></td>
+                  <td className="num"><input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" value={cant[l.producto_id]}
+                    onChange={(e) => setCant({ ...cant, [l.producto_id]: e.target.value })} aria-label={`Piezas talla ${l.talla}`} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {sinClave.length > 0 && <p className="frisa__falta">Sin clave de inventario (no se suman): {sinClave.map((s) => `${s.talla} ×${s.cantidad}`).join(', ')}.</p>}
+        <label><span className="field-label">Notas (opcional)</span><input className="input" value={notas} onChange={(e) => setNotas(e.target.value)} /></label>
+        {error && <p className="form-error">{error}</p>}
+        <div className="frisa__botones">
+          <button type="submit" className="btn btn--primary" disabled={trabajando || total <= 0}>{trabajando ? 'Guardando…' : `Confirmar: subir ${num(total)} pzas`}</button>
+          <button type="button" className="btn btn--ghost" onClick={onClose}>Cancelar</button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+function ModalRecibir({ compra, lineas, onClose, onListo }) {
+  const [cant, setCant] = useState(() => Object.fromEntries(lineas.map((l) => [l.producto_id, String(l.cantidad)])))
+  const [notas, setNotas] = useState('')
+  const [trabajando, setTrabajando] = useState(false)
+  const [error, setError] = useState(null)
+  const total = lineas.reduce((t, l) => t + (Number(cant[l.producto_id]) || 0), 0)
+  async function guardar(e) {
+    e.preventDefault()
+    setTrabajando(true)
+    setError(null)
+    const { error: err } = await recibirCompra(compra.id, lineas.map((l) => ({ producto_id: l.producto_id, cantidad: Number(cant[l.producto_id]) || 0 })), notas)
+    setTrabajando(false)
+    if (err) return setError(err.message)
+    onListo(`Compra #${compra.folio} recibida: ${num(total)} piezas a la bodega.`)
+  }
+  return (
+    <Modal title={`Recibir compra #${compra.folio} · ${compra.proveedor}`} onClose={onClose}>
+      <form className="frisa-niveles__supuestos" onSubmit={guardar}>
+        <p className="frisa__nota">Escribe lo que llegó de verdad.</p>
+        {lineas.map((l) => (
+          <label key={l.producto_id} className="frisa-niveles__supuesto">
+            <span className="field-label">{l.clave} (pedidas {num(l.cantidad)})</span>
+            <input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" value={cant[l.producto_id]} onChange={(e) => setCant({ ...cant, [l.producto_id]: e.target.value })} />
+          </label>
+        ))}
+        <label><span className="field-label">Notas (opcional)</span><input className="input" value={notas} onChange={(e) => setNotas(e.target.value)} /></label>
+        {error && <p className="form-error">{error}</p>}
+        <div className="frisa__botones">
+          <button type="submit" className="btn btn--primary" disabled={trabajando || total <= 0}>{trabajando ? 'Guardando…' : `Recibir ${num(total)} pzas`}</button>
+          <button type="button" className="btn btn--ghost" onClick={onClose}>Cancelar</button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+function BotonCancelarCompra({ compra, onListo }) {
+  async function cancelar() {
+    const motivo = window.prompt(`¿Por qué se cancela la compra #${compra.folio}?`)
+    if (!motivo || !motivo.trim()) return
+    const { error } = await cancelarCompra(compra.id, motivo)
+    if (error) return window.alert(error.message)
+    onListo(`Compra #${compra.folio} cancelada.`)
+  }
+  return <button type="button" className="btn btn--ghost btn--small" onClick={cancelar}>Cancelar</button>
+}
+

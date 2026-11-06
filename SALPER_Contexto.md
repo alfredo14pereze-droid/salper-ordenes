@@ -7719,3 +7719,30 @@ color: roja, amarilla (oro mango), verde, azul marino. `utils/frisaColores.js` (
 solo playeras) + `NombreFrisa` / `ColorFrisa` en `components/frisaNiveles/comunes.jsx` y clases `.frisa-color--*`. Se ve en
 Niveles (nombre y columna Color), detalle de clave, órdenes de surtido, Urgente, lista A PEDIR y su PDF. Excepción pedida
 por Alfredo a la regla de "rojo y verde solo para estados".
+
+## V186 — Frisa fase 2: restock (2026-11-06, rama `frisa-niveles`, SQL SIN aplicar)
+Después de entregar se repone el inventario de la fábrica. Pestaña **Restock** (Frisa).
+- **Cálculo** (`utils/frisaRestock.js`, con pruebas): por clave, proyectado = disponible + en proceso (órdenes de taller
+  ligadas sin terminar + compras pedidas) + por entrar (órdenes terminadas sin subir a bodega); si proyectado ≤ reorden →
+  A PEDIR = máximo − proyectado (decisión de Alfredo). Tabla con CRÍTICO primero; "Ver todas las claves" para el desglose.
+- **Se fabrica o se compra:** `frisa_clave_producto` liga cada clave con su producto de Catálogos → Frisa + talla (se llenó
+  sola por el modelo de la clave de Microsip: 01MCMA1I→FR-PLA-AM-MC, 01MLMA1I→FR-PLA-AM-ML, 01MCOM1I→FR-PLA-OM-MC,
+  01MCVE2I→FR-PLA-VE-MC, 01MCRO2I→FR-PLA-RO-MC, 01MLMA1IS→FR-PLA-AM-SR-ML, 01MZ1B1I→FR-CAM-NI, 01MZ1B/01MEZ1B→FR-CAM-BAS;
+  talla = segmento sin ceros). Con la carga real: 49 claves ligadas (playeras y camisas) y 19 sin liga = se compran
+  (17 pantalones, bata, bolsa). Cambiar una liga: `frisa_clave_producto_guardar` (fn.supuestos; sin pantalla todavía).
+- **Orden de taller** = orden FR normal: la pantalla propone una por producto con sus tallas (editables) y entrega a 10
+  días; crea con `create_order_frisa` (mismos roles de siempre: ventas/admin_tienda/admin_general) y la liga con
+  `frisa_restock_ligar` (`frisa_restock_ordenes`). Se puede ligar una FR que ya existía por su folio, o quitarla si no se ha
+  subido. Terminada (etapa terminado completada, o status terminado/completado) = **por entrar**; "Subir a bodega"
+  (`frisa_restock_ingresar`, fr.bodega; cantidades editables por merma) deja movimientos `ingreso_bodega` con `order_id`.
+- **Pedido de compra** (`frisa_compras` + `frisa_compra_lineas`, folio consecutivo): proveedor, fecha esperada; "Recibir"
+  con lo que llegó (`frisa_compra_recibir` → `ingreso_bodega` con `compra_id`), o cancelar con motivo.
+- **SQL** `supabase/schema_v186_frisa_restock.sql`: 4 tablas, `order_id`/`compra_id` en `frisa_inv_movimientos`, permisos
+  `fr.ordenes` (admin_general, admin_tienda), `fr.bodega` y `fr.compras` (los 3 admins); no toca orders, orden_etapas ni
+  create_order_frisa (solo los lee). Lectura con fn.ver.
+- **Probado:** 154 pruebas, build, SQL en PGlite sobre V184 + carga real + V185 (24 comprobaciones: liga 49/19, tallas,
+  permisos, no subir sin terminar ni dos veces, clave de otro producto, compras recibir/cancelar, suma = stock) y en el
+  ejemplo local (`?rol=admin_general&demo`, con `create_order_frisa` de prueba): subir FR-039 (61→121, 80→110), crear FR-041
+  roja M ×17 (ligada sola, deja de proponerse), compra #1 de pantalones 353 pzas → recibida (llegan al máximo).
+- **Pendiente:** playera lisa (fase 4) y su pedido junto con las órdenes de taller; Microsip (fase 3); plantas (fase 5);
+  pantalla para corregir la liga clave ↔ producto.

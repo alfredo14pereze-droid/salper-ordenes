@@ -491,6 +491,21 @@ export function canEntregarFrisa(role) {
   return tiene(role, 'fs.entregar', () => ['admin_general', 'admin_fabrica', 'admin_tienda'].includes(role))
 }
 
+// V186 — Frisa restock (fr.ordenes / fr.bodega / fr.compras); fallback =
+// siembra de schema_v186_frisa_restock.sql. Crear órdenes FR: mismos roles
+// que create_order_frisa (ventas / admin_tienda / admin_general).
+export function canCrearOrdenesRestock(role) {
+  return tiene(role, 'fr.ordenes', () => ['admin_general', 'admin_tienda'].includes(role))
+}
+
+export function canSubirBodegaFrisa(role) {
+  return tiene(role, 'fr.bodega', () => ['admin_general', 'admin_fabrica', 'admin_tienda'].includes(role))
+}
+
+export function canComprasFrisa(role) {
+  return tiene(role, 'fr.compras', () => ['admin_general', 'admin_fabrica', 'admin_tienda'].includes(role))
+}
+
 // La sección "Frisa" se ve si se puede ver cualquiera de sus partes.
 export function canViewSeccionFrisa(role) {
   return canViewFrisaNiveles(role) || canViewFrisaSurtido(role) || canViewFrisaConsignacion(role)

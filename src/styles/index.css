@@ -5439,3 +5439,11 @@ h4 {
 .frisa-color--amarilla { color: #7a5600; background: #fff1bf; }
 .frisa-color--verde { color: #1d5c30; background: #dcf2e2; }
 .frisa-color--marino { color: #1a2a52; background: #dfe6f4; }
+
+/* V186 — Frisa · restock */
+.frisa-restock__seccion { display: grid; gap: 10px; }
+.frisa-restock__propuesta { display: grid; gap: 10px; padding: 14px; }
+.frisa-restock__propuesta .section-title { margin: 0; }
+.frisa-restock__tallas { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.frisa-restock__tallas label { display: grid; gap: 4px; }
+.frisa-restock__orden, .frisa-restock__compra { cursor: default; }
