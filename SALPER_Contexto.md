@@ -7720,7 +7720,7 @@ solo playeras) + `NombreFrisa` / `ColorFrisa` en `components/frisaNiveles/comune
 Niveles (nombre y columna Color), detalle de clave, órdenes de surtido, Urgente, lista A PEDIR y su PDF. Excepción pedida
 por Alfredo a la regla de "rojo y verde solo para estados".
 
-## V186 — Frisa fase 2: restock (2026-11-06, rama `frisa-niveles`, SQL SIN aplicar)
+## V186 — Frisa fase 2: restock (2026-11-06, rama `frisa-niveles`, SQL APLICADO, en `main`/producción)
 Después de entregar se repone el inventario de la fábrica. Pestaña **Restock** (Frisa).
 - **Cálculo** (`utils/frisaRestock.js`, con pruebas): por clave, proyectado = disponible + en proceso (órdenes de taller
   ligadas sin terminar + compras pedidas) + por entrar (órdenes terminadas sin subir a bodega); si proyectado ≤ reorden →
@@ -7744,5 +7744,7 @@ Después de entregar se repone el inventario de la fábrica. Pestaña **Restock*
   permisos, no subir sin terminar ni dos veces, clave de otro producto, compras recibir/cancelar, suma = stock) y en el
   ejemplo local (`?rol=admin_general&demo`, con `create_order_frisa` de prueba): subir FR-039 (61→121, 80→110), crear FR-041
   roja M ×17 (ligada sola, deja de proponerse), compra #1 de pantalones 353 pzas → recibida (llegan al máximo).
+- **Estado:** SQL aplicado por Alfredo el 2026-11-06 (comprobación: 49 ligadas / 19 se compran, igual que en PGlite);
+  verificado sin sesión: 4 tablas, `order_id`/`compra_id` y 7 funciones existen, anon 401. Código subido a `main`.
 - **Pendiente:** playera lisa (fase 4) y su pedido junto con las órdenes de taller; Microsip (fase 3); plantas (fase 5);
   pantalla para corregir la liga clave ↔ producto.
