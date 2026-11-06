@@ -7775,7 +7775,7 @@ Después de entregar se repone el inventario de la fábrica. Pestaña **Restock*
   conteo inicial/ajuste, ligar descuenta una vez, quitar regresa, compra de lisas y de claves, inmutables, anon) y en el
   ejemplo local: conteo roja M 50 → crear FR-041 ×17 → 33 en anaquel y 17 en proceso; los 6 reportes en CSV y el PDF.
 
-## V188 — Frisa fase 3: revisión contra Microsip (2026-11-06, rama `frisa-niveles`, SQL SIN aplicar)
+## V188 — Frisa fase 3: revisión contra Microsip (2026-11-06, rama `frisa-niveles`, SQL APLICADO, en `main`/producción)
 Cada 10 días se sube el reporte de Microsip "Existencia y valor del inventario" (línea FRISA) tal cual sale (Excel o CSV)
 en la pestaña **Revisión Microsip**.
 - **Lector de Excel sin dependencias** (`utils/xlsxLector.js`): el .xlsx es un ZIP; se lee el directorio central y se
@@ -7794,3 +7794,4 @@ en la pestaña **Revisión Microsip**.
 - Aviso "Ya toca revisar" si la última revisión tiene 10 días o más; historial con "Ver diferencias".
 - **Probado:** 163 pruebas, build, SQL en PGlite (10 comprobaciones) y en el ejemplo local con el Excel real: 15 diferencias,
   14 ajustadas (una desmarcada), al volver a subir 1 diferencia y los 63 ligados por código guardado.
+- **Estado:** SQL aplicado por Alfredo el 2026-11-06 (3 roles con fm.revisar, 1 función); verificado sin sesión (anon 401). Código en `main`.
