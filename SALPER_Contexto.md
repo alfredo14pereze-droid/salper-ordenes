@@ -7748,3 +7748,24 @@ Después de entregar se repone el inventario de la fábrica. Pestaña **Restock*
   verificado sin sesión: 4 tablas, `order_id`/`compra_id` y 7 funciones existen, anon 401. Código subido a `main`.
 - **Pendiente:** playera lisa (fase 4) y su pedido junto con las órdenes de taller; Microsip (fase 3); plantas (fase 5);
   pantalla para corregir la liga clave ↔ producto.
+
+## V187 — Frisa fase 4: playera lisa + Reportes (2026-11-06, rama `frisa-niveles`, SQL SIN aplicar)
+- **Inventario inicial:** el que se cargó el 2026-11-06 es el **stock actual del Sheet** "Consumos Frisa Niveles" (3,386 pzas),
+  no el Excel de Microsip "frisa noviembre 2026" (3,717; difiere en 15 claves). Alfredo lo preguntó; pendiente si se cambia.
+- **Playera lisa** (sin procesos) por color + manga + talla: `frisa_producto_lisa` (qué lisa usa cada playera: AM-MC marino MC,
+  AM-ML y AM-SR-ML comparten marino ML, OM-MC oro mango MC, VE-MC verde MC, RO-MC roja MC; proveedor del producto),
+  `frisa_lisas` (30: 5 color/manga × S–3XL), `frisa_lisa_movimientos` (inicial / ajuste / compra / consumo / devolucion,
+  disparador mantiene `stock`, inmutables), `frisa_compra_lineas_lisa`. **Las lisas se descuentan al crear/ligar la orden
+  de taller** (salen al taller) y regresan si se quita del restock → stock = anaquel (cuadra con un conteo físico; se cambió
+  de "al subir a bodega" porque restaba dos veces las que ya estaban en el taller). A comprar = lo que piden las órdenes
+  propuestas − stock. Stock negativo = se usaron lisas sin registrar. Funciones: `frisa_lisa_capturar` (fr.bodega; el
+  primero queda como inicial), `frisa_compra_crear_lisas` (fr.compras); reemplazadas (misma firma) `frisa_restock_ligar`,
+  `frisa_restock_desligar`, `frisa_compra_recibir` (acepta `lisa_id`). Pantalla: sección "Playera lisa" en Restock (stock
+  editable, en proceso, piden, a comprar, qué productos la usan) y pedido sugerido por proveedor.
+- **Reportes** (pestaña nueva, sin SQL): inventario, movimientos por fechas (claves + lisas), órdenes de surtido por fechas y
+  estado (un renglón por clave), restock, playera lisa y pedidos de compra; CSV o PDF con vista previa
+  (`utils/frisaReportes.js`, `components/pdf/FrisaReportePdf.jsx`, playeras en su color).
+- Se corrigió el signo "−" (no existe en Helvetica) en el PDF de A PEDIR, que ya estaba en producción.
+- **Probado:** 159 pruebas, build, SQL en PGlite sobre todo lo anterior (16 comprobaciones: 6 playeras/30 lisas, lisa compartida,
+  conteo inicial/ajuste, ligar descuenta una vez, quitar regresa, compra de lisas y de claves, inmutables, anon) y en el
+  ejemplo local: conteo roja M 50 → crear FR-041 ×17 → 33 en anaquel y 17 en proceso; los 6 reportes en CSV y el PDF.

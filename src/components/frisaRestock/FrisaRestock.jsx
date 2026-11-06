@@ -10,6 +10,8 @@ import { createOrderFrisa } from '../../services/frisaService'
 import { conInventario } from '../../utils/frisaSurtido'
 import { CONFIG_INICIAL } from '../../utils/frisaNiveles'
 import { calcularRestock, itemsOrdenRestock, propuestaIngreso } from '../../utils/frisaRestock'
+import { calcularLisas, nombreLisa } from '../../utils/frisaLisas'
+import FrisaLisas from './FrisaLisas'
 import { EstadoBadge, NombreFrisa, fechaCorta } from '../frisaNiveles/comunes'
 
 const num = (n) => Number(n || 0).toLocaleString('es-MX')
@@ -43,7 +45,8 @@ export default function FrisaRestock() {
   const r = useMemo(() => {
     if (!datos) return null
     const productosInv = conInventario(datos.productos, datos.surtidos, datos.lineas)
-    return calcularRestock({ ...datos, productosInv, cfg: datos.config || CONFIG_INICIAL })
+    const res = calcularRestock({ ...datos, productosInv, cfg: datos.config || CONFIG_INICIAL })
+    return { ...res, lisas: calcularLisas({ ...datos, talleresPropuestos: res.talleresPropuestos }) }
   }, [datos])
 
   if (cargando) return <Loading />
@@ -91,13 +94,14 @@ export default function FrisaRestock() {
           <label className="frisa-niveles__toggle"><input type="checkbox" checked={todas} onChange={(e) => setTodas(e.target.checked)} /> Ver todas las claves</label>
         </div>
         <TablaRestock filas={visibles} />
-        <p className="frisa__sub">Playera lisa (sin procesos) a comprar: llega en la fase 4.</p>
       </section>
 
       {r.talleresPropuestos.map((g) => (
         <PropuestaTaller key={g.producto_frisa_id} grupo={g} productoFrisa={pfPorId.get(g.producto_frisa_id)} puede={puede.ordenes} onListo={listo} />
       ))}
       {r.compraPropuesta.length > 0 && <PropuestaCompra lineas={r.compraPropuesta} productos={datos.productos} puede={puede.compras} onListo={listo} />}
+
+      <FrisaLisas calculo={r.lisas} puede={puede} onListo={listo} />
 
       <section className="frisa-restock__seccion">
         <h2 className="section-title section-title--small">Órdenes de taller en proceso</h2>
@@ -111,7 +115,11 @@ export default function FrisaRestock() {
         {!datos.compras.length && <p className="frisa__sub">Ninguno todavía.</p>}
         <div className="frisa-oc-lista">
           {datos.compras.slice(0, 20).map((c) => {
-            const ls = datos.compraLineas.filter((l) => l.compra_id === c.id)
+            const lisaPorId = new Map(datos.lisas.map((x) => [x.id, x]))
+            const ls = [
+              ...datos.compraLineas.filter((l) => l.compra_id === c.id),
+              ...datos.compraLineasLisa.filter((l) => l.compra_id === c.id).map((l) => ({ ...l, clave: `Lisa ${lisaPorId.get(l.lisa_id)?.color} ${lisaPorId.get(l.lisa_id)?.manga} ${lisaPorId.get(l.lisa_id)?.talla}` })),
+            ]
             return (
               <div key={c.id} className="card frisa-surtido__tarjeta frisa-restock__compra">
                 <span className="frisa-surtido__fila1">
@@ -140,7 +148,15 @@ export default function FrisaRestock() {
           onListo={(m) => { setIngresar(null); listo(m) }} />
       )}
       {recibir && (
-        <ModalRecibir compra={recibir} lineas={datos.compraLineas.filter((l) => l.compra_id === recibir.id)} onClose={() => setRecibir(null)}
+        <ModalRecibir compra={recibir}
+          lineas={[
+            ...datos.compraLineas.filter((l) => l.compra_id === recibir.id).map((l) => ({ ...l, key: l.producto_id })),
+            ...datos.compraLineasLisa.filter((l) => l.compra_id === recibir.id).map((l) => {
+              const li = datos.lisas.find((x) => x.id === l.lisa_id)
+              return { ...l, key: l.lisa_id, clave: li ? nombreLisa(li) : 'Playera lisa' }
+            }),
+          ]}
+          onClose={() => setRecibir(null)}
           onListo={(m) => { setRecibir(null); listo(m) }} />
       )}
     </div>
@@ -376,16 +392,18 @@ function ModalIngreso({ fila, datos, pfPorId, onClose, onListo }) {
 }
 
 function ModalRecibir({ compra, lineas, onClose, onListo }) {
-  const [cant, setCant] = useState(() => Object.fromEntries(lineas.map((l) => [l.producto_id, String(l.cantidad)])))
+  const [cant, setCant] = useState(() => Object.fromEntries(lineas.map((l) => [l.key, String(l.cantidad)])))
   const [notas, setNotas] = useState('')
   const [trabajando, setTrabajando] = useState(false)
   const [error, setError] = useState(null)
-  const total = lineas.reduce((t, l) => t + (Number(cant[l.producto_id]) || 0), 0)
+  const total = lineas.reduce((t, l) => t + (Number(cant[l.key]) || 0), 0)
   async function guardar(e) {
     e.preventDefault()
     setTrabajando(true)
     setError(null)
-    const { error: err } = await recibirCompra(compra.id, lineas.map((l) => ({ producto_id: l.producto_id, cantidad: Number(cant[l.producto_id]) || 0 })), notas)
+    const { error: err } = await recibirCompra(compra.id, lineas.map((l) => ({
+      ...(l.lisa_id ? { lisa_id: l.lisa_id } : { producto_id: l.producto_id }), cantidad: Number(cant[l.key]) || 0,
+    })), notas)
     setTrabajando(false)
     if (err) return setError(err.message)
     onListo(`Compra #${compra.folio} recibida: ${num(total)} piezas a la bodega.`)
@@ -395,9 +413,9 @@ function ModalRecibir({ compra, lineas, onClose, onListo }) {
       <form className="frisa-niveles__supuestos" onSubmit={guardar}>
         <p className="frisa__nota">Escribe lo que llegó de verdad.</p>
         {lineas.map((l) => (
-          <label key={l.producto_id} className="frisa-niveles__supuesto">
+          <label key={l.key} className="frisa-niveles__supuesto">
             <span className="field-label">{l.clave} (pedidas {num(l.cantidad)})</span>
-            <input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" value={cant[l.producto_id]} onChange={(e) => setCant({ ...cant, [l.producto_id]: e.target.value })} />
+            <input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" value={cant[l.key]} onChange={(e) => setCant({ ...cant, [l.key]: e.target.value })} />
           </label>
         ))}
         <label><span className="field-label">Notas (opcional)</span><input className="input" value={notas} onChange={(e) => setNotas(e.target.value)} /></label>

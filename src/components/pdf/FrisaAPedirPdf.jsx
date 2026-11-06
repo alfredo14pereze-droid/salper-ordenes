@@ -46,7 +46,7 @@ export default function FrisaAPedirPdf({ lista, cfg, generado }) {
           <View>
             <Text style={s.title}>Frisa · lista A PEDIR</Text>
             <Text style={s.sub}>
-              Disponible = real en el almacén de la fábrica − apartado. Demanda = consumo 2026 ÷ {cfg.dias_periodo} días · mínimo {cfg.dias_minimo} d · reorden {cfg.dias_reorden} d · máximo {cfg.dias_maximo} d.
+              Disponible = real en el almacén de la fábrica - apartado. Demanda = consumo 2026 ÷ {cfg.dias_periodo} días · mínimo {cfg.dias_minimo} d · reorden {cfg.dias_reorden} d · máximo {cfg.dias_maximo} d.
             </Text>
             <Text style={s.sub}>Generado el {generado}</Text>
           </View>

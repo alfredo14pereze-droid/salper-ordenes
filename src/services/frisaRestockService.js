@@ -16,7 +16,7 @@ async function tabla(nombre, orden) {
 
 export async function fetchRestockTodo() {
   if (!supabase) return sinCliente()
-  const [niv, sl, cp, li, co, cl, pf] = await Promise.all([
+  const [niv, sl, cp, li, co, cl, pf, ls, pl, cll] = await Promise.all([
     fetchFrisaNiveles(),
     fetchSurtidosYLineas(),
     tabla('frisa_clave_producto'),
@@ -24,8 +24,12 @@ export async function fetchRestockTodo() {
     tabla('frisa_compras', ['creado_en', false]),
     tabla('frisa_compra_lineas'),
     supabase.from('productos_frisa').select('id, codigo, nombre, color, tallas_rango, activo').order('codigo', { ascending: true }),
+    // V187 — playera lisa
+    tabla('frisa_lisas'),
+    tabla('frisa_producto_lisa'),
+    tabla('frisa_compra_lineas_lisa'),
   ])
-  const error = [niv, sl, cp, li, co, cl, pf].find((x) => x.error)?.error
+  const error = [niv, sl, cp, li, co, cl, pf, ls, pl, cll].find((x) => x.error)?.error
   if (error) return { data: null, error }
   const ids = li.data.map((l) => l.order_id)
   let orders = []
@@ -43,6 +47,7 @@ export async function fetchRestockTodo() {
     data: {
       config: niv.data.config, productos: niv.data.productos, surtidos: sl.data.surtidos, lineas: sl.data.lineas,
       clavesProducto: cp.data, ligas: li.data, compras: co.data, compraLineas: cl.data, productosFrisa: pf.data, orders, etapas,
+      lisas: ls.data, productoLisa: pl.data, compraLineasLisa: cll.data,
     },
     error: null,
   }
@@ -62,3 +67,22 @@ export const crearCompra = ({ proveedor, fechaEsperada, lineas, notas }) =>
   rpc('frisa_compra_crear', { p_proveedor: proveedor, p_fecha_esperada: fechaEsperada || null, p_lineas: lineas, p_notas: notas || null })
 export const recibirCompra = (id, lineas, notas) => rpc('frisa_compra_recibir', { p_id: id, p_lineas: lineas, p_notas: notas || null })
 export const cancelarCompra = (id, motivo) => rpc('frisa_compra_cancelar', { p_id: id, p_motivo: motivo })
+export const capturarLisa = (lisaId, stock, comentario) => rpc('frisa_lisa_capturar', { p_lisa_id: lisaId, p_stock: stock, p_comentario: comentario || null })
+export const crearCompraLisas = ({ proveedor, fechaEsperada, lineas, notas }) =>
+  rpc('frisa_compra_crear_lisas', { p_proveedor: proveedor, p_fecha_esperada: fechaEsperada || null, p_lineas: lineas, p_notas: notas || null })
+
+// Movimientos (claves y playera lisa) entre dos fechas (yyyy-mm-dd, incluidas).
+export async function fetchMovimientos(desde, hasta) {
+  if (!supabase) return sinCliente()
+  const filtro = (q) => {
+    if (desde) q = q.gte('creado_en', `${desde}T00:00:00`)
+    if (hasta) q = q.lt('creado_en', `${hasta}T23:59:59.999`)
+    return q.order('creado_en', { ascending: true }).range(0, 9999)
+  }
+  const [m, l] = await Promise.all([
+    filtro(supabase.from('frisa_inv_movimientos').select('*')),
+    filtro(supabase.from('frisa_lisa_movimientos').select('*')),
+  ])
+  const error = m.error || l.error
+  return error ? { data: null, error } : { data: { movs: m.data, lisaMovs: l.data }, error: null }
+}
