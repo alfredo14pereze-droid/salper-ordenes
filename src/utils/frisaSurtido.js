@@ -171,20 +171,41 @@ export function normalizarTalla(t) {
   return s.replace(/^(\d)X/, '$1X').replace(/^XXL$/, '2XL').replace(/^XXXL$/, '3XL')
 }
 
+// Rasgos que deciden el producto (si el texto trae uno y la clave otro, no es esa clave):
+// tipo de prenda, color, manga y reflejante. Así "NUEVO INGRESO" u otras palabras de más no confunden.
+const TIPOS = ['PLAYERA', 'CAMISA', 'PANTALON', 'BATA', 'BOLSA']
+function rasgos(w) {
+  const r = {}
+  r.tipo = TIPOS.find((t) => w.has(t)) || null
+  if ([...w].some((x) => x.startsWith('ROJ'))) r.color = 'ROJO'
+  else if (w.has('VERDE')) r.color = 'VERDE'
+  else if (w.has('ORO') || w.has('MANGO')) r.color = 'ORO'
+  else if (w.has('MARINO') || w.has('AZUL')) r.color = 'MARINO'
+  else r.color = null
+  r.manga = w.has('MANGACORTA') ? 'C' : w.has('MANGALARGA') ? 'L' : null
+  r.reflejante = w.has('CONREFLEJANTE') ? 'CON' : w.has('SINREFLEJANTE') ? 'SIN' : null
+  return r
+}
+const choca = (a, b) => ['tipo', 'color', 'manga', 'reflejante'].some((k) => a[k] && b[k] && a[k] !== b[k])
+
 // productos: claves (frisa_productos_niveles); alias: [{texto, producto_id}]
 export function sugerirClave(texto, talla, productos, alias = []) {
   const a = alias.find((x) => x.texto === textoAlias(texto, talla))
   if (a && productos.some((p) => p.id === a.producto_id)) return { producto_id: a.producto_id, como: 'aprendido' }
   const t = normalizarTalla(talla)
   const w = palabras(texto)
+  const rw = rasgos(w)
   let mejor = null
   for (const p of productos) {
     if (p.activo === false) continue
     if (t && normalizarTalla(tallaDeProducto(p)) !== t) continue
     const pw = palabras(String(p.nombre).replace(/\bT-\S+\s*$/, ''))
+    if (choca(rw, rasgos(pw))) continue
     let n = 0
     for (const x of w) if (pw.has(x)) n++
-    if (n > 0 && (!mejor || n > mejor.n)) mejor = { producto_id: p.id, n }
+    // Desempate: la clave con menos palabras que el texto no trae.
+    const sobran = [...pw].filter((x) => !w.has(x)).length
+    if (n > 0 && (!mejor || n > mejor.n || (n === mejor.n && sobran < mejor.sobran))) mejor = { producto_id: p.id, n, sobran }
   }
   return mejor ? { producto_id: mejor.producto_id, como: 'parecido' } : { producto_id: null, como: null }
 }
