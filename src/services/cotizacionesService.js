@@ -43,3 +43,21 @@ export async function borrarCotizacion(id) {
   if (cfgError) return { data: null, error: cfgError }
   return supabase.rpc('borrar_cotizacion_destajo', { p_id: id })
 }
+
+// V191 — cotización hecha desde una hoja de operaciones subida (folios de
+// cualquier prenda). Ver supabase/schema_v191_cotizar_desde_hoja.sql.
+export async function guardarCotizacionHoja({ nombre, nota, folios, piezas, operadoras, costoPorSegundo, minutosDia }) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase
+    .rpc('guardar_cotizacion_hoja', {
+      p_nombre: nombre,
+      p_nota: nota || null,
+      p_folios: folios,
+      p_piezas: Number(piezas),
+      p_operadoras: Number(operadoras),
+      p_costo_por_segundo: costoPorSegundo,
+      p_minutos_dia: minutosDia,
+    })
+    .single()
+}

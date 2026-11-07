@@ -29,3 +29,16 @@
 .cotizador__guardada-head { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; font: inherit; color: inherit; }
 .cotizador__guardada-resumen { display: flex; flex-wrap: wrap; gap: 6px 16px; font-weight: 600; }
 .cotizador__guardada-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* V191 — cotizar desde hoja subida */
+.cotizador__modo { display: flex; flex-wrap: wrap; gap: 8px; }
+.cotizador__folio-input { width: 84px; padding: 4px 6px; font-weight: 700; }
+.cotizador__estado { white-space: nowrap; font-weight: 600; font-size: 13px; }
+.cotizador__estado--ok { color: #15803d; }
+.cotizador__estado--aviso { color: #b45309; }
+.cotizador__estado--mal { color: #b91c1c; }
+.cotizador__agregar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.cotizador__agregar .input { width: 120px; }
+.cotizador__hoja td { vertical-align: middle; }
+.cotizador__subir { display: flex; margin: 10px 0; }
+.cotizador__subir .btn { display: inline-flex; align-items: center; }

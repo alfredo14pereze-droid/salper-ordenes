@@ -7827,3 +7827,23 @@ en la pestaña **Revisión Microsip**.
 - Chofer tiene fn.ver/fs.ver/fs.surtir (dado 2026-11-06 para que Alfredo pruebe la vista de Leo).
 - Pendientes: subir remisiones/facturas posteriores al 15/10; pedido de lisas del lunes; SQL de limpieza de OCs PRUEBA cuando
   Alfredo termine de probar (NO crear OTs de restock en pruebas: gastan folios FR); probar con un PDF real de OC.
+
+### V191 — Cotizar desde una hoja de operaciones subida (2026-11-07)
+
+Pedido de Alfredo: en el Cotizador, subir la foto o el PDF de una hoja de operaciones impresa (la que imprime la
+página: título, parte, folio, operación, segundos) y ver el costo. Por ahora **solo mano de obra** (después: tela, avíos).
+- **Pantalla**: Cotizador → Cotizar → botón "Subir hoja de operaciones" (al lado de "Por prenda").
+  `src/components/cotizador/CotizarDesdeHoja.jsx`. Fotos de más de 1.5 MB se achican en el navegador (2000 px, JPG).
+- **Lectura**: modo `hoja_operaciones` en `api/document-ocr.js` (tool `registrar_hoja_operaciones`: título y
+  folio/parte/operación/segundos por renglón; -1 = no se leyó → `null`).
+- **Ligado por folio** (el folio es la llave de `prod_operaciones`, único en todo el catálogo; la hoja puede mezclar
+  prendas, V182): `src/utils/cotizarHoja.js` (+ pruebas). Estados: coincide, otros segundos (**se usa el catálogo**),
+  ya no activa (sí cuenta), folio no existe / falta folio / repetido (no cuentan). Se corrige el folio en la tabla,
+  se quita un renglón o se agrega un folio a mano. El cálculo es el mismo `cotizar()` de V172.
+- Lote/Resultado/Guardar se separaron en `src/components/cotizador/partes.jsx` (los usan los dos modos).
+- **SQL** `supabase/schema_v191_cotizar_desde_hoja.sql` (aditivo, solo función nueva):
+  `guardar_cotizacion_hoja(nombre, nota, folios[], piezas, operadoras, costo_por_segundo, minutos_dia)` en la misma
+  tabla `cotizaciones_destajo`; la copia de cada operación trae `prenda`; `prenda` de la cotización = la de más
+  operaciones (empate: folio más chico). Mismos roles que V172. Probado en PGlite (permisos, validaciones, dos corridas).
+- Una guardada cuyas operaciones traen `prenda` (`esCotizacionDeHoja`) se vuelve a abrir en el modo de hoja.
+- Ofrecido y NO hecho: botón "Escoger de Hojas impresas" (cotizar sin subir nada).

@@ -138,7 +138,39 @@ const FRISA_OC_TOOL = {
   },
 }
 
+// V191 — hoja de operaciones impresa desde la página (Cotizador). Cada
+// renglón trae folio, operación y tiempo en segundos, agrupados por parte.
+// El folio es lo que importa: con él se liga al catálogo.
+const HOJA_OPERACIONES_TOOL = {
+  name: 'registrar_hoja_operaciones',
+  description:
+    'Registra el título de la hoja de operaciones y cada renglón de la tabla con su folio, parte, operación y tiempo en segundos, tal como se leen.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      titulo: { type: 'string', description: 'Título grande de la hoja (p. ej. "BULSA DICKIES"). Cadena vacía si no se lee.' },
+      operaciones: {
+        type: 'array',
+        description: 'Un elemento por renglón de operación, de TODAS las páginas, en el orden en que aparecen. No incluyas los renglones de encabezado de parte. Nunca inventes renglones.',
+        items: {
+          type: 'object',
+          properties: {
+            folio: { type: 'integer', description: 'Número de folio de la operación (columna "Folio"). Si no se lee con certeza, usa -1.' },
+            parte: { type: 'string', description: 'Parte a la que pertenece (el encabezado gris de arriba, p. ej. "PUÑO", "ENSAMBLE"). Cadena vacía si no hay.' },
+            operacion: { type: 'string', description: 'Descripción de la operación tal como aparece.' },
+            segundos: { type: 'number', description: 'Tiempo en segundos (columna "Tiempo (seg)"). Usa -1 si no se lee.' },
+          },
+          required: ['folio', 'operacion'],
+        },
+      },
+    },
+    required: ['operaciones'],
+  },
+}
+
 const PROMPTS = {
+  hoja_operaciones:
+    'Esta es una hoja de operaciones de costura de una fábrica de uniformes (foto o PDF, puede tener varias páginas). Tiene un título, y una tabla con columnas Folio, Operación y Tiempo (seg), agrupada por partes (renglones grises como "PUÑO" o "ENSAMBLE"). Usa la herramienta para registrar el título y CADA renglón de operación de todas las páginas con su folio, parte, operación y segundos. Copia los números exactamente; si uno no se lee con certeza, pon -1 en vez de adivinar.',
   pedido_proveedor:
     'Este es un pedido a un proveedor (foto o PDF de la nota/remisión). Usa la herramienta disponible para registrar los artículos, cantidades y tallas que se alcancen a leer con certeza. No inventes ni adivines datos que no se vean con claridad — omite ese artículo en vez de inventarlo.',
   frisa_oc:
@@ -166,7 +198,7 @@ export default async function handler(req, res) {
   }
 
   const { fileBase64, mediaType, context } = req.body || {}
-  const mode = context === 'orden' ? 'orden' : context === 'frisa_oc' ? 'frisa_oc' : 'pedido_proveedor'
+  const mode = ['orden', 'frisa_oc', 'hoja_operaciones'].includes(context) ? context : 'pedido_proveedor'
 
   if (typeof fileBase64 !== 'string' || !fileBase64) {
     res.status(400).json({ error: 'Falta el archivo.' })
@@ -189,7 +221,7 @@ export default async function handler(req, res) {
       ? { type: 'document', source: { type: 'base64', media_type: mediaType, data: fileBase64 } }
       : { type: 'image', source: { type: 'base64', media_type: mediaType, data: fileBase64 } }
 
-  const tool = mode === 'orden' ? ORDEN_TOOL : mode === 'frisa_oc' ? FRISA_OC_TOOL : PEDIDO_TOOL
+  const tool = { orden: ORDEN_TOOL, frisa_oc: FRISA_OC_TOOL, hoja_operaciones: HOJA_OPERACIONES_TOOL }[mode] || PEDIDO_TOOL
 
   // La extracción de una nota manuscrita, un PDF escaneado o de mala
   // calidad nunca va a ser perfecta — cualquier tropiezo aquí (API
@@ -199,7 +231,7 @@ export default async function handler(req, res) {
   try {
     const response = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: mode === 'frisa_oc' ? 8192 : MAX_TOKENS, // una OC puede traer muchos renglones
+      max_tokens: mode === 'frisa_oc' || mode === 'hoja_operaciones' ? 8192 : MAX_TOKENS, // muchos renglones
       tools: [tool],
       tool_choice: { type: 'tool', name: tool.name },
       messages: [
@@ -212,6 +244,26 @@ export default async function handler(req, res) {
 
     const toolUse = response.content.find((b) => b.type === 'tool_use' && b.name === tool.name)
     const raw = toolUse?.input || {}
+
+    if (mode === 'hoja_operaciones') {
+      const texto = (v) => (typeof v === 'string' && v.trim() ? v.trim() : null)
+      const ops = (Array.isArray(raw.operaciones) ? raw.operaciones : [])
+        .filter((o) => o && (texto(o.operacion) || Number.isInteger(Number(o.folio))))
+        .map((o) => {
+          const folio = Number(o.folio)
+          const seg = Number(o.segundos)
+          return {
+            folio: Number.isInteger(folio) && folio >= 0 ? folio : null,
+            parte: texto(o.parte),
+            operacion: texto(o.operacion) || '',
+            segundos: Number.isFinite(seg) && seg > 0 ? seg : null,
+          }
+        })
+      const out = { titulo: texto(raw.titulo), operaciones: ops }
+      if (!ops.length) out.warning = 'No se reconocieron operaciones en la hoja — agrégalas a mano por folio.'
+      res.status(200).json(out)
+      return
+    }
     const articulosRaw = Array.isArray(raw.articulos) ? raw.articulos : []
 
     const articulos = articulosRaw
@@ -270,6 +322,7 @@ export default async function handler(req, res) {
     console.error('[api/document-ocr] error:', err)
     const fallback = { articulos: [], warning: 'No se pudo leer el archivo automáticamente — llena los campos a mano.' }
     if (mode === 'frisa_oc') Object.assign(fallback, { numero: null, planta: null, fechaOc: null, fechaLimite: null })
+    if (mode === 'hoja_operaciones') Object.assign(fallback, { titulo: null, operaciones: [] })
     if (mode === 'orden') {
       fallback.cliente = null
       fallback.fechaEntrega = null
