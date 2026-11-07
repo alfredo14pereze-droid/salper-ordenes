@@ -99,3 +99,12 @@ test('urgente: orden que alcanza sola pero compite con otra que vence antes', as
   assert.equal(y.alcanzaSola, true)
   assert.deepEqual(y.compiteCon, ['4004'])
 })
+
+test('plantas: agrupa "Frisa Acería" con "FRISA ACERIA" y junta lo que piden', async () => {
+  const { clavePlanta, plantasDe, juntarPorClave, lineasPorSurtido } = await import('./frisaSurtido.js')
+  assert.equal(clavePlanta('Frisa Acería'), clavePlanta('FRISA ACERIA'))
+  const s = [{ id: 'a', planta: 'Frisa Acería' }, { id: 'b', planta: 'FRISA ACERIA' }, { id: 'c', planta: 'FRISA VILLA DE GARCIA' }]
+  assert.deepEqual(plantasDe(s).map((p) => [p.nombre, p.ordenes]), [['Aceria', 2], ['Villa de Garcia', 1]])
+  const j = juntarPorClave(s.slice(0, 2), lineasPorSurtido([{ surtido_id: 'a', producto_id: 'x', clave: 'X', cantidad: 5 }, { surtido_id: 'b', producto_id: 'x', clave: 'X', cantidad: 7 }]), [{ id: 'x', clave: 'X', disponible: 10 }])
+  assert.deepEqual(j.map((x) => [x.producto.clave, x.cantidad, x.ordenes, x.falta]), [['X', 12, 2, 2]])
+})

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { ESTADOS_SURTIDO, lineasPorSurtido, ordenarPendientes, piezasDe, textoLimite } from '../../utils/frisaSurtido'
-import { fechaCorta } from '../frisaNiveles/comunes'
+import { ESTADOS_SURTIDO, lineasPorSurtido, ordenarPendientes, piezasDe, textoLimite, clavePlanta, plantasDe, juntarPorClave } from '../../utils/frisaSurtido'
+import { fechaCorta, NombreFrisa } from '../frisaNiveles/comunes'
 import { EstadoSurtido } from './comunes'
 import FrisaSurtidoDetalle from './FrisaSurtidoDetalle'
 import FrisaSurtidoForm from './FrisaSurtidoForm'
@@ -14,6 +14,7 @@ const FILTROS = ['pendiente', 'surtida', 'entregada', 'cancelada']
 export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar }) {
   const [filtro, setFiltro] = useState('pendiente')
   const [texto, setTexto] = useState('')
+  const [planta, setPlanta] = useState('') // '' = todas
   const [abierta, setAbierta] = useState(null) // id
   const [nueva, setNueva] = useState(false)
   const [aviso, setAviso] = useState(null)
@@ -25,10 +26,13 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
   const lista = useMemo(() => {
     const t = texto.trim().toLowerCase()
     let l = datos.surtidos.filter((s) => s.estado === filtro)
+    if (planta) l = l.filter((s) => clavePlanta(s.planta) === planta)
     if (t) l = l.filter((s) => s.numero_oc.toLowerCase().includes(t) || s.planta.toLowerCase().includes(t) || (s.remision || '').toLowerCase().includes(t))
     if (filtro === 'pendiente' || filtro === 'surtida') return ordenarPendientes(l)
     return l // las demás: la más reciente primero (así vienen)
-  }, [datos, filtro, texto])
+  }, [datos, filtro, texto, planta])
+  const plantas = useMemo(() => plantasDe(datos.surtidos.filter((s) => s.estado === filtro)), [datos, filtro])
+  const juntas = useMemo(() => (planta && filtro === 'pendiente' ? juntarPorClave(lista, porSurtido, inv) : null), [planta, filtro, lista, porSurtido, inv])
 
   const abiertaS = abierta ? datos.surtidos.find((s) => s.id === abierta) : null
 
@@ -85,10 +89,44 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
             </button>
           ))}
         </div>
+        {plantas.length > 1 && (
+          <div className="order-filters__chips frisa__chips" aria-label="Planta">
+            <button type="button" className={'chip' + (!planta ? ' chip--active' : '')} onClick={() => setPlanta('')}>Todas las plantas</button>
+            {plantas.map((pl) => (
+              <button key={pl.clave} type="button" className={'chip' + (planta === pl.clave ? ' chip--active' : '')} onClick={() => setPlanta(pl.clave)}>
+                {pl.nombre} ({pl.ordenes})
+              </button>
+            ))}
+          </div>
+        )}
         <div className="frisa-niveles__campos">
           <input className="input" type="search" placeholder="Buscar OC, planta o remisión" value={texto} onChange={(e) => setTexto(e.target.value)} />
         </div>
       </div>
+
+      {juntas && juntas.length > 0 && (
+        <div className="card frisa-restock__propuesta">
+          <h3 className="section-title section-title--small">
+            Para surtir juntas: {lista.length} órdenes de {plantas.find((x) => x.clave === planta)?.nombre} · {num(juntas.reduce((t, x) => t + x.cantidad, 0))} pzas
+          </h3>
+          <p className="frisa__sub">Lo que piden todas sus órdenes pendientes, sumado por clave. Embolsa todo y luego marca cada orden.</p>
+          <div className="revision__tabla-wrap">
+            <table className="simple-table frisa-tabla frisa-niveles__tabla">
+              <thead><tr><th>Clave</th><th className="num">Órdenes</th><th className="num">Piden</th><th className="num">Hay</th></tr></thead>
+              <tbody>
+                {juntas.map((x) => (
+                  <tr key={x.producto.id} className={x.falta ? 'frisa-niveles__fila--critico' : 'frisa-niveles__fila--ok'}>
+                    <td data-label="Clave"><strong>{x.producto.clave}</strong><NombreFrisa producto={x.producto} /></td>
+                    <td data-label="Órdenes" className="num">{x.ordenes}</td>
+                    <td data-label="Piden" className="num"><strong>{num(x.cantidad)}</strong></td>
+                    <td data-label="Hay" className="num">{x.falta ? <span className="frisa__falta">{num(x.disponible)} · faltan {num(x.falta)}</span> : <span className="frisa__ok">{num(x.disponible)} ✓</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {!lista.length && <div className="card frisa__vacio"><p>No hay órdenes {ESTADOS_SURTIDO[filtro].label.toLowerCase()}s.</p></div>}
 

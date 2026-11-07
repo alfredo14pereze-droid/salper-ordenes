@@ -215,3 +215,35 @@ export function sugerirClave(texto, talla, productos, alias = [], codigo = '') {
   }
   return mejor ? { producto_id: mejor.producto_id, como: 'parecido' } : { producto_id: null, como: null }
 }
+
+// Planta de una OC para agrupar: sin acentos, sin "FRISA" ni "PLANTA" ("Frisa Acería" = "FRISA ACERIA").
+export function clavePlanta(planta) {
+  return String(planta ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
+    .replace(/\bFRISA\b|\bPLANTA\b/g, ' ').replace(/\s+/g, ' ').trim()
+}
+const titulo = (t) => t.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase()).replace(/ (De|Del|La|Las|Los|Y) /g, (m) => m.toLowerCase())
+
+// Plantas de una lista de órdenes: [{ clave, nombre, ordenes }] ordenadas por nombre.
+export function plantasDe(surtidos) {
+  const m = new Map()
+  for (const s of surtidos || []) {
+    const k = clavePlanta(s.planta)
+    if (!m.has(k)) m.set(k, { clave: k, nombre: titulo(k || 'Sin planta'), ordenes: 0 })
+    m.get(k).ordenes++
+  }
+  return [...m.values()].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+}
+
+// Todo lo que piden varias órdenes juntas, por clave, contra el disponible.
+export function juntarPorClave(ordenes, lineasPor, productosInv) {
+  const prod = new Map((productosInv || []).map((p) => [p.id, p]))
+  const m = new Map()
+  for (const s of ordenes) for (const l of lineasPor.get(s.id) || []) {
+    if (!m.has(l.producto_id)) m.set(l.producto_id, { producto: prod.get(l.producto_id) || { id: l.producto_id, clave: l.clave, nombre: '' }, cantidad: 0, ordenes: 0 })
+    const x = m.get(l.producto_id)
+    x.cantidad += l.cantidad
+    x.ordenes++
+  }
+  return [...m.values()].map((x) => ({ ...x, disponible: x.producto.disponible ?? 0, falta: Math.max(0, x.cantidad - Math.max(0, x.producto.disponible ?? 0)) }))
+    .sort((a, b) => String(a.producto.clave).localeCompare(String(b.producto.clave)))
+}
