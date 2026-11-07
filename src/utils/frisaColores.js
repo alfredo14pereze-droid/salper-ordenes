@@ -9,6 +9,20 @@ export const COLORES_PLAYERA = {
   marino: { nombre: 'Azul marino', texto: '#1a2a52', fondo: '#dfe6f4' },
 }
 
+// Nombre para mostrar (pedido de Alfredo, 2026-11-07): M/C → MANGA CORTA, M/L → MANGA LARGA,
+// sin C/R, C/REFLEJANTE → CON REFLEJANTE y S/REFLEJANTE → LISA. Solo en pantalla y PDF:
+// el nombre guardado sigue igual al de Microsip (con él se ligan los Excel y las OC).
+export function nombreFrisa(nombre) {
+  return String(nombre ?? '')
+    .replace(/\bC\s*\/\s*R\b\s*/gi, '')
+    .replace(/\bM\s*\/\s*C\b/gi, 'MANGA CORTA')
+    .replace(/\bM\s*\/\s*L\b/gi, 'MANGA LARGA')
+    .replace(/\bC\s*\/\s*REFLEJANTE\b/gi, 'CON REFLEJANTE')
+    .replace(/\bS\s*\/\s*REFLEJANTE\b/gi, 'LISA')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 const sinAcentos = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
 
 // producto: { tipo, color, nombre } → 'roja' | 'amarilla' | 'verde' | 'marino' | null

@@ -1,5 +1,5 @@
 import { ESTADOS } from '../../utils/frisaNiveles'
-import { colorPlayera } from '../../utils/frisaColores'
+import { colorPlayera, nombreFrisa } from '../../utils/frisaColores'
 
 export function fechaCorta(d) {
   if (!d) return '—'
@@ -15,8 +15,8 @@ export function EstadoBadge({ estado }) {
 // Nombre de la clave; las playeras van en su color (texto oscuro en negritas, fondo claro).
 export function NombreFrisa({ producto, className = 'frisa__sub' }) {
   const c = colorPlayera(producto)
-  if (!c) return <div className={className}>{producto?.nombre}</div>
-  return <div className={className}><span className={'frisa-color frisa-color--' + c}>{producto.nombre}</span></div>
+  if (!c) return <div className={className}>{nombreFrisa(producto?.nombre)}</div>
+  return <div className={className}><span className={'frisa-color frisa-color--' + c}>{nombreFrisa(producto.nombre)}</span></div>
 }
 
 export function ColorFrisa({ producto }) {

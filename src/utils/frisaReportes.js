@@ -1,6 +1,7 @@
 // Reportes de Frisa: cada reporte = { titulo, nota, columnas: [{titulo, num?}], filas: [[...]], colores?: [prodOrNull] }.
 // Sirve igual para CSV y para el PDF (components/pdf/FrisaReportePdf.jsx).
 import { ESTADOS } from './frisaNiveles.js'
+import { nombreFrisa } from './frisaColores.js'
 import { nombreLisa } from './frisaLisas.js'
 
 const fecha = (d) => (d ? String(d).slice(0, 10) : '')
@@ -16,7 +17,7 @@ export function reporteInventario(filasNiveles) {
     nota: 'Real = en bodega · Apartado = surtido sin entregar · Disponible = real - apartado. Niveles con el disponible.',
     columnas: [{ titulo: 'Clave' }, { titulo: 'Nombre' }, { titulo: 'Real', num: true }, { titulo: 'Apartado', num: true }, { titulo: 'Disponible', num: true },
       { titulo: 'Mínimo', num: true }, { titulo: 'Reorden', num: true }, { titulo: 'Máximo', num: true }, { titulo: 'Estado' }, { titulo: 'A PEDIR', num: true }],
-    filas: ordenadas.map((f) => [f.clave, f.nombre, f.real ?? f.stock_actual, f.apartado ?? 0, f.disponible ?? f.stock_actual,
+    filas: ordenadas.map((f) => [f.clave, nombreFrisa(f.nombre), f.real ?? f.stock_actual, f.apartado ?? 0, f.disponible ?? f.stock_actual,
       f.niveles.minimo, f.niveles.reorden, f.niveles.maximo, ESTADOS[f.niveles.estado].label, f.niveles.aPedir ?? '']),
     colores: ordenadas,
     totales: { Claves: ordenadas.length, 'Piezas reales': ordenadas.reduce((t, f) => t + (f.real ?? 0), 0), 'Piezas disponibles': ordenadas.reduce((t, f) => t + (f.disponible ?? 0), 0) },
@@ -27,7 +28,7 @@ export function reporteMovimientos(movs, lisaMovs, { productos = [], lisas = [],
   const prod = new Map(productos.map((p) => [p.id, p]))
   const lisa = new Map(lisas.map((l) => [l.id, l]))
   const todas = [
-    ...movs.map((m) => ({ en: m.creado_en, que: m.clave, nombre: prod.get(m.producto_id)?.nombre || '', tipo: TIPO_MOV[m.tipo] || m.tipo, cantidad: m.cantidad, ref: m.referencia || '', notas: m.notas || '', quien: m.creado_por_nombre || '', color: prod.get(m.producto_id) })),
+    ...movs.map((m) => ({ en: m.creado_en, que: m.clave, nombre: nombreFrisa(prod.get(m.producto_id)?.nombre), tipo: TIPO_MOV[m.tipo] || m.tipo, cantidad: m.cantidad, ref: m.referencia || '', notas: m.notas || '', quien: m.creado_por_nombre || '', color: prod.get(m.producto_id) })),
     ...lisaMovs.map((m) => {
       const l = lisa.get(m.lisa_id)
       return { en: m.creado_en, que: 'Playera lisa', nombre: l ? nombreLisa(l) : '', tipo: TIPO_MOV[m.tipo] || m.tipo, cantidad: m.cantidad, ref: m.referencia || '', notas: m.notas || '', quien: m.creado_por_nombre || '', color: null }
@@ -51,7 +52,7 @@ export function reporteSurtidos(surtidos, lineas, { productos = [], desde, hasta
   const colores = []
   for (const s of sel) {
     for (const l of lineas.filter((x) => x.surtido_id === s.id).sort((a, b) => a.clave.localeCompare(b.clave))) {
-      filas.push([s.numero_oc, s.planta, ESTADO_SURT[s.estado], fecha(s.fecha_oc), fecha(s.fecha_limite), s.surtido_por_nombre || '', s.remision || '', fecha(s.fecha_entrega), l.clave, prod.get(l.producto_id)?.nombre || '', l.cantidad])
+      filas.push([s.numero_oc, s.planta, ESTADO_SURT[s.estado], fecha(s.fecha_oc), fecha(s.fecha_limite), s.surtido_por_nombre || '', s.remision || '', fecha(s.fecha_entrega), l.clave, nombreFrisa(prod.get(l.producto_id)?.nombre), l.cantidad])
       colores.push(prod.get(l.producto_id) || null)
     }
   }
@@ -71,7 +72,7 @@ export function reporteRestock(filasRestock) {
     titulo: 'Restock',
     nota: 'Proyectado = disponible + en proceso + por entrar. A PEDIR = máximo - proyectado cuando el proyectado llega al reorden.',
     columnas: [{ titulo: 'Clave' }, { titulo: 'Nombre' }, { titulo: 'Disponible', num: true }, { titulo: 'En proceso', num: true }, { titulo: 'Por entrar', num: true }, { titulo: 'Proyectado', num: true }, { titulo: 'Reorden', num: true }, { titulo: 'Máximo', num: true }, { titulo: 'A PEDIR', num: true }, { titulo: 'Se' }],
-    filas: sel.map((f) => [f.producto.clave, f.producto.nombre, f.disponible, f.enProceso, f.porEntrar, f.proyectado, f.reorden, f.maximo, f.aPedir, f.se === 'fabrica' ? 'Taller' : 'Compra']),
+    filas: sel.map((f) => [f.producto.clave, nombreFrisa(f.producto.nombre), f.disponible, f.enProceso, f.porEntrar, f.proyectado, f.reorden, f.maximo, f.aPedir, f.se === 'fabrica' ? 'Taller' : 'Compra']),
     colores: sel.map((f) => f.producto),
     totales: { 'A pedir (taller)': sel.filter((f) => f.se === 'fabrica').reduce((t, f) => t + f.aPedir, 0), 'A pedir (compra)': sel.filter((f) => f.se === 'compra').reduce((t, f) => t + f.aPedir, 0) },
   }
@@ -96,7 +97,7 @@ export function reporteCompras(compras, lineas, lineasLisa, { productos = [], li
   const colores = []
   for (const c of [...compras].sort((a, b) => a.folio - b.folio)) {
     for (const l of lineas.filter((x) => x.compra_id === c.id)) {
-      filas.push([c.folio, c.proveedor, EST[c.estado], fecha(c.creado_en), fecha(c.fecha_esperada), fecha(c.recibido_en), l.clave, prod.get(l.producto_id)?.nombre || '', l.cantidad, l.recibida ?? ''])
+      filas.push([c.folio, c.proveedor, EST[c.estado], fecha(c.creado_en), fecha(c.fecha_esperada), fecha(c.recibido_en), l.clave, nombreFrisa(prod.get(l.producto_id)?.nombre), l.cantidad, l.recibida ?? ''])
       colores.push(prod.get(l.producto_id) || null)
     }
     for (const l of lineasLisa.filter((x) => x.compra_id === c.id)) {
@@ -148,7 +149,7 @@ export function reportePorSurtir(urgente) {
       + 'Hay = disponible en bodega (real - apartado de órdenes ya surtidas). Falta producir = por surtir - hay.',
     columnas: [{ titulo: 'Clave' }, { titulo: 'Artículo' }, { titulo: 'Nombre' }, { titulo: 'Órdenes', num: true },
       { titulo: 'Por surtir', num: true }, { titulo: 'Hay', num: true }, { titulo: 'Falta producir', num: true }],
-    filas: [...filas.map((c) => [c.producto.clave, c.producto.articulo || '', c.producto.nombre, ordenesPorClave.get(c.producto.id) || 0,
+    filas: [...filas.map((c) => [c.producto.clave, c.producto.articulo || '', nombreFrisa(c.producto.nombre), ordenesPorClave.get(c.producto.id) || 0,
       c.pendiente, Math.max(0, c.disponible), c.falta]),
     ['TOTAL', '', `${filas.length} claves`, urgente.ordenes.length, piezasPend, filas.reduce((t, c) => t + Math.max(0, c.disponible), 0), urgente.piezasFaltantes]],
     colores: [...filas.map((c) => c.producto), null],

@@ -1,3 +1,4 @@
+import { nombreFrisa } from '../../utils/frisaColores'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { Loading, ErrorState } from '../common/States'
@@ -170,7 +171,7 @@ export default function FrisaMicrosip() {
                   <span><strong>{a.codigo}</strong> · {a.nombre} · {num(a.existencia)} pzas</span>
                   <select className="input" value={manual[a.codigo] || ''} onChange={(e) => setManual({ ...manual, [a.codigo]: e.target.value })}>
                     <option value="">Dejar fuera</option>
-                    {opciones.map((p) => <option key={p.id} value={p.id}>{p.nombre} · {p.clave}</option>)}
+                    {opciones.map((p) => <option key={p.id} value={p.id}>{nombreFrisa(p.nombre)} · {p.clave}</option>)}
                   </select>
                 </label>
               ))}

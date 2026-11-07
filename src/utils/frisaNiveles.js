@@ -1,3 +1,4 @@
+import { nombreFrisa } from './frisaColores.js'
 // V184 — Niveles de inventario Frisa (reemplaza el Sheet "Consumos Frisa
 // Niveles"). Aquí viven TODOS los cálculos; la base solo guarda consumos,
 // stock y supuestos (ver supabase/schema_v184_frisa_niveles.sql).
@@ -92,7 +93,7 @@ export function filtrarNiveles(filas, f = {}) {
     if (f.estado && !['todos', 'alerta'].includes(f.estado) && p.niveles.estado !== f.estado) return false
     if (f.tipo && (p.tipo || '') !== f.tipo) return false
     if (f.color && (p.color || '') !== f.color) return false
-    if (texto && !sinAcentos(p.clave).includes(texto) && !sinAcentos(p.nombre).includes(texto) && !(p.codigos || []).some((c) => sinAcentos(c).includes(texto))) return false
+    if (texto && !sinAcentos(p.clave).includes(texto) && !sinAcentos(p.nombre).includes(texto) && !sinAcentos(nombreFrisa(p.nombre)).includes(texto) && !(p.codigos || []).some((c) => sinAcentos(c).includes(texto))) return false
     return true
   })
 }

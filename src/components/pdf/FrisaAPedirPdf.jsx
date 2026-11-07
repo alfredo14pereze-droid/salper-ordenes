@@ -1,7 +1,7 @@
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
 import logo from '../../assets/salper-logo.png'
 import { ESTADOS } from '../../utils/frisaNiveles'
-import { colorPlayera, COLORES_PLAYERA } from '../../utils/frisaColores'
+import { colorPlayera, COLORES_PLAYERA, nombreFrisa } from '../../utils/frisaColores'
 
 // V184 — Frisa: lista A PEDIR (claves en CRÍTICO o PEDIR), para producción.
 const INK = '#1a1a1a'
@@ -72,7 +72,7 @@ export default function FrisaAPedirPdf({ lista, cfg, generado }) {
         {lista.map((f) => (
           <View key={f.id || f.clave} style={s.tr} wrap={false}>
             <Text style={s.cClave}>{f.clave}</Text>
-            <View style={s.cNombre}><Text style={colorPlayera(f) ? [s.pill, { color: COLORES_PLAYERA[colorPlayera(f)].texto, backgroundColor: COLORES_PLAYERA[colorPlayera(f)].fondo }] : null}>{f.nombre}</Text></View>
+            <View style={s.cNombre}><Text style={colorPlayera(f) ? [s.pill, { color: COLORES_PLAYERA[colorPlayera(f)].texto, backgroundColor: COLORES_PLAYERA[colorPlayera(f)].fondo }] : null}>{nombreFrisa(f.nombre)}</Text></View>
             <Text style={s.cColor}>{f.color || ''}</Text>
             <Text style={s.cNum}>{n(f.disponible ?? f.stock_actual)}</Text>
             <Text style={s.cNum}>{n(f.niveles.minimo)}</Text>

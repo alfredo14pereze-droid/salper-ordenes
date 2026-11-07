@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { nombreFrisa } from '../../utils/frisaColores'
 import Modal from '../talleros/Modal'
 import { recognizeDocument } from '../../services/documentOcrService'
 import { crearSurtido, editarSurtido, subirPdfOC } from '../../services/frisaSurtidoService'
@@ -120,7 +121,7 @@ export default function FrisaSurtidoForm({ productos, alias, surtido, lineas, ex
               <div className="frisa-surtido__renglon-campos">
                 <select className="input" value={r.producto_id} onChange={(e) => setR(r.key, 'producto_id', e.target.value)} aria-label="Clave">
                   <option value="">Elige la clave…</option>
-                  {opciones.map((p) => <option key={p.id} value={p.id}>{p.nombre} · {p.clave}</option>)}
+                  {opciones.map((p) => <option key={p.id} value={p.id}>{nombreFrisa(p.nombre)} · {p.clave}</option>)}
                 </select>
                 <input className="input frisa-input" type="number" min="1" step="1" inputMode="numeric" value={r.cantidad}
                   onChange={(e) => setR(r.key, 'cantidad', e.target.value)} aria-label="Cantidad" placeholder="Pzas" />

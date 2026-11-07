@@ -4,6 +4,8 @@
 // documento (fecha, folio, planta, orden, total) y debajo sus artículos
 // (descripción, unidades); se saltan encabezados y direcciones.
 
+import { nombreFrisa } from './frisaColores.js'
+
 const colapsar = (s) => String(s ?? '').replace(/\s+/g, ' ').trim()
 const norm = (s) => colapsar(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
 const RE_DIRECCION = /C\.?\s*P\.?\s*\d{5}/
@@ -115,7 +117,7 @@ export function prendaYTalla(nombre) {
   let talla = 'Única'
   const mn = resto.match(/\bTALLA\s+(\d+)\b/) || resto.match(/\bT-([0-9A-Z]+)\b/)
   if (mn) { talla = mn[1]; resto = resto.replace(mn[0], '') }
-  return { prenda: colapsar(resto), talla: talla + largo }
+  return { prenda: nombreFrisa(colapsar(resto)), talla: talla + largo }
 }
 const ordenTalla = (t) => {
   const base = t.replace(/\s*\(.*\)$/, '')

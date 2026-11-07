@@ -15,3 +15,11 @@ test('lo que no es playera no lleva color', () => {
   assert.equal(colorPlayera({ tipo: 'Pantalón', color: 'Mezclilla', nombre: 'PANTALON DE MEZCLILLA TALLA 32' }), null)
   assert.equal(colorPlayera(null), null)
 })
+
+test('nombre para mostrar: manga corta/larga, sin C/R, con reflejante / lisa', async () => {
+  const { nombreFrisa } = await import('./frisaColores.js')
+  assert.equal(nombreFrisa('PLAYERA C/R M/C C/REFLEJANTE 1 IMP. A.MARINO FRISA T-L'), 'PLAYERA MANGA CORTA CON REFLEJANTE 1 IMP. A.MARINO FRISA T-L')
+  assert.equal(nombreFrisa('PLAYERA C/R M/L S/REFLEJANTE 1 IMP. AZUL M. FRISA T-M'), 'PLAYERA MANGA LARGA LISA 1 IMP. AZUL M. FRISA T-M')
+  assert.equal(nombreFrisa('CAMISA DE MEZCLILLA 7 OZ M/L C/REFLEJANTE 1B FRISA T-S'), 'CAMISA DE MEZCLILLA 7 OZ MANGA LARGA CON REFLEJANTE 1B FRISA T-S')
+  assert.equal(nombreFrisa('PANTALON DE MEZCLILLA TALLA 32 14OZ FRISA'), 'PANTALON DE MEZCLILLA TALLA 32 14OZ FRISA')
+})
