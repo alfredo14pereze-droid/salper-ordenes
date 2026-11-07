@@ -48,10 +48,11 @@ insert into public.rol_permisos (rol, clave)
 select rol, clave from frisa_v192
 on conflict do nothing;
 
--- Quitar a esos roles las pestañas de Frisa que ya no les tocan (las acciones de otros no las tienen).
+-- Quitar a esos roles las pestañas y acciones de Frisa que no les tocan.
 delete from public.rol_permisos rp
 where rp.rol in ('ventas', 'chofer', 'admin_fabrica', 'admin_tienda')
-  and rp.clave like 'fx.%'
+  and (rp.clave like 'fx.%' or rp.clave in ('fs.oc', 'fs.surtir', 'fs.entregar', 'fr.ordenes', 'fr.bodega', 'fr.compras',
+                                            'fn.capturar', 'fn.supuestos', 'fm.revisar', 'fp.importar'))
   and not exists (select 1 from frisa_v192 v where v.rol = rp.rol and v.clave = rp.clave);
 
 -- Comprobación: qué tiene cada rol en Frisa.
