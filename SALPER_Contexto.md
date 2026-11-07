@@ -7845,5 +7845,6 @@ página: título, parte, folio, operación, segundos) y ver el costo. Por ahora 
   `guardar_cotizacion_hoja(nombre, nota, folios[], piezas, operadoras, costo_por_segundo, minutos_dia)` en la misma
   tabla `cotizaciones_destajo`; la copia de cada operación trae `prenda`; `prenda` de la cotización = la de más
   operaciones (empate: folio más chico). Mismos roles que V172. Probado en PGlite (permisos, validaciones, dos corridas).
+  **APLICADO** por Alfredo el 2026-11-07 (verificado: anon 401). Falta probar la lectura con un PDF real en producción.
 - Una guardada cuyas operaciones traen `prenda` (`esCotizacionDeHoja`) se vuelve a abrir en el modo de hoja.
 - Ofrecido y NO hecho: botón "Escoger de Hojas impresas" (cotizar sin subir nada).
