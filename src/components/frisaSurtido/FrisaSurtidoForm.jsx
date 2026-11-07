@@ -9,7 +9,10 @@ let siguiente = 1
 const renglon = (x = {}) => ({ key: siguiente++, producto_id: '', cantidad: '', texto_pdf: '', talla_pdf: '', como: null, ...x })
 
 // Subir el PDF de una OC de Frisa → orden de surtido (o corregir una pendiente).
-export default function FrisaSurtidoForm({ productos, alias, surtido, lineas, onClose, onGuardada }) {
+const ESTADO_TXT = { pendiente: 'pendiente', surtida: 'surtida', entregada: 'entregada' }
+const normOC = (x) => String(x || '').replace(/\s+/g, '').toUpperCase()
+
+export default function FrisaSurtidoForm({ productos, alias, surtido, lineas, existentes = [], onClose, onGuardada }) {
   const editando = Boolean(surtido)
   const [f, setF] = useState({
     numero_oc: surtido?.numero_oc || '', planta: surtido?.planta || '', fecha_oc: surtido?.fecha_oc || '',
@@ -56,6 +59,10 @@ export default function FrisaSurtidoForm({ productos, alias, surtido, lineas, on
   const setR = (key, campo, valor) => setRenglones((rs) => rs.map((r) => (r.key === key ? { ...r, [campo]: valor, ...(campo === 'producto_id' ? { como: null } : {}) } : r)))
   const quitar = (key) => setRenglones((rs) => rs.filter((r) => r.key !== key))
 
+  // La misma OC no se puede subir dos veces (la base también lo impide).
+  const yaSubida = f.numero_oc
+    ? existentes.find((x) => x.id !== surtido?.id && x.estado !== 'cancelada' && normOC(x.numero_oc) === normOC(f.numero_oc))
+    : null
   const repetidas = (() => {
     const c = {}
     for (const r of renglones) if (r.producto_id) c[r.producto_id] = (c[r.producto_id] || 0) + 1
@@ -96,7 +103,8 @@ export default function FrisaSurtidoForm({ productos, alias, surtido, lineas, on
 
         <div className="frisa-form__fila">
           <label><span className="field-label">Número de OC</span>
-            <input className="input" value={f.numero_oc} onChange={(e) => setF({ ...f, numero_oc: e.target.value })} required /></label>
+            <input className="input" value={f.numero_oc} onChange={(e) => setF({ ...f, numero_oc: e.target.value })} required />
+            {yaSubida && <span className="form-error">Esta OC ya está subida ({ESTADO_TXT[yaSubida.estado] || yaSubida.estado}, {yaSubida.planta}). No se puede subir otra vez.</span>}</label>
           <label><span className="field-label">Planta</span>
             <input className="input" value={f.planta} onChange={(e) => setF({ ...f, planta: e.target.value })} required /></label>
           <label><span className="field-label">Fecha de la OC</span>
@@ -132,7 +140,7 @@ export default function FrisaSurtidoForm({ productos, alias, surtido, lineas, on
         <p className="frisa__nota">{renglones.length} renglones · <strong>{num(totalPzas)} piezas</strong></p>
         {error && <p className="form-error">{error}</p>}
         <div className="frisa__botones">
-          <button type="submit" className="btn btn--primary" disabled={guardando || leyendo}>
+          <button type="submit" className="btn btn--primary" disabled={guardando || leyendo || !!yaSubida}>
             {guardando ? 'Guardando…' : editando ? 'Guardar corrección' : 'Crear orden de surtido'}
           </button>
           <button type="button" className="btn btn--ghost" onClick={onClose}>Cancelar</button>

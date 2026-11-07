@@ -57,6 +57,26 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
 
       {aviso && <p className="frisa__ok">{aviso}</p>}
 
+      {filtro === 'pendiente' && urgente.ordenes.length > 0 && (() => {
+        // Repartiendo el inventario disponible de la que vence primero a la última.
+        const os = urgente.ordenes
+        const si = os.filter((o) => o.completa)
+        const compiten = os.filter((o) => !o.completa && o.alcanzaSola)
+        const no = os.filter((o) => !o.completa && !o.alcanzaSola)
+        const pz = (l) => num(l.reduce((t, o) => t + piezasDe(o.lineas), 0))
+        return (
+          <>
+            <div className="stats-grid frisa-niveles__resumen">
+              <div className="stat-card"><span className="stat-card__label">Pendientes</span><span className="stat-card__value">{os.length}</span><span className="stat-card__hint">{pz(os)} pzas</span></div>
+              <div className="stat-card frisa-niveles__tarjeta--ok"><span className="stat-card__label">Sí se pueden surtir</span><span className="stat-card__value">{si.length}</span><span className="stat-card__hint">{pz(si)} pzas, todas juntas</span></div>
+              {compiten.length > 0 && <div className="stat-card frisa-niveles__tarjeta--pedir"><span className="stat-card__label">Alcanzan solas</span><span className="stat-card__value">{compiten.length}</span><span className="stat-card__hint">{pz(compiten)} pzas · otra que vence antes ocupa las piezas</span></div>}
+              <div className="stat-card frisa-niveles__tarjeta--critico"><span className="stat-card__label">No se pueden surtir</span><span className="stat-card__value">{compiten.length + no.length}</span><span className="stat-card__hint">faltan {num(urgente.piezasFaltantes)} pzas en total</span></div>
+            </div>
+            <p className="frisa__sub">El inventario se reparte de la orden que vence primero a la última: las {si.length} en verde se pueden surtir todas al mismo tiempo con lo que hay.</p>
+          </>
+        )
+      })()}
+
       <div className="frisa-niveles__filtros">
         <div className="order-filters__chips frisa__chips">
           {FILTROS.map((f) => (
@@ -111,7 +131,7 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
           onClose={() => setAbierta(null)} onCambio={(msg) => despuesDeGuardar(msg, abiertaS.id)} />
       )}
       {nueva && (
-        <FrisaSurtidoForm productos={datos.productos} alias={datos.alias} onClose={() => setNueva(false)}
+        <FrisaSurtidoForm productos={datos.productos} alias={datos.alias} existentes={datos.surtidos} onClose={() => setNueva(false)}
           onGuardada={(s) => { setNueva(false); setFiltro('pendiente'); despuesDeGuardar(`Se creó la orden de surtido de la OC ${s.numero_oc}.`, s.id) }} />
       )}
     </div>
