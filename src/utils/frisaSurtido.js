@@ -189,7 +189,13 @@ function rasgos(w) {
 const choca = (a, b) => ['tipo', 'color', 'manga', 'reflejante'].some((k) => a[k] && b[k] && a[k] !== b[k])
 
 // productos: claves (frisa_productos_niveles); alias: [{texto, producto_id}]
-export function sugerirClave(texto, talla, productos, alias = []) {
+export function sugerirClave(texto, talla, productos, alias = [], codigo = '') {
+  // 1) Por el número de material de la OC (= número de artículo de Microsip).
+  const cod = String(codigo || '').replace(/\s+/g, '').toUpperCase()
+  if (cod) {
+    const pc = productos.find((p) => p.activo !== false && (p.codigos || []).some((c) => String(c).toUpperCase() === cod))
+    if (pc) return { producto_id: pc.id, como: 'codigo' }
+  }
   const a = alias.find((x) => x.texto === textoAlias(texto, talla))
   if (a && productos.some((p) => p.id === a.producto_id)) return { producto_id: a.producto_id, como: 'aprendido' }
   const t = normalizarTalla(talla)

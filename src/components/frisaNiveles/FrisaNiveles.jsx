@@ -136,7 +136,7 @@ export default function FrisaNiveles() {
               ))}
             </div>
             <div className="frisa-niveles__campos">
-              <input className="input" type="search" placeholder="Buscar clave o nombre" value={filtros.texto} onChange={(e) => set('texto', e.target.value)} />
+              <input className="input" type="search" placeholder="Buscar clave, artículo o nombre" value={filtros.texto} onChange={(e) => set('texto', e.target.value)} />
               <select className="input" value={filtros.tipo} onChange={(e) => set('tipo', e.target.value)} aria-label="Tipo">
                 <option value="">Todos los tipos</option>
                 {tipos.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -234,6 +234,7 @@ function FilaNivel({ fila, cfg, puedeCapturar, onGuardado, onDetalle }) {
     <tr className={'frisa-niveles__fila--' + n.estado + (fila.niveles.sinMovimiento ? ' frisa-niveles__fila--quieta' : '')}>
       <td data-label="Clave">
         <button type="button" className="frisa-niveles__clave" onClick={onDetalle}>{fila.clave}</button>
+        {fila.articulo && <div className="frisa__sub">Art. {fila.articulo}</div>}
         <NombreFrisa producto={fila} />
       </td>
       <td data-label="Color"><ColorFrisa producto={fila} /></td>

@@ -131,3 +131,33 @@ export function nombreArchivo(rep, ext) {
   const base = rep.titulo.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '')
   return `SALPER-Frisa-${base}-${hoy}.${ext}`
 }
+
+// Órdenes pendientes contra el inventario: por clave, lo que piden, lo que hay y lo que falta producir.
+// urgente: calcularUrgente(...) (reparte el disponible de la OC que vence primero a la última).
+export function reportePorSurtir(urgente) {
+  const ordenesPorClave = new Map()
+  for (const o of urgente.ordenes) for (const l of o.lineas) ordenesPorClave.set(l.producto_id, (ordenesPorClave.get(l.producto_id) || 0) + 1)
+  const filas = [...urgente.porClave].sort((a, b) => b.falta - a.falta || String(a.producto.clave).localeCompare(String(b.producto.clave)))
+  const piezasPend = filas.reduce((t, c) => t + c.pendiente, 0)
+  const cubiertas = filas.reduce((t, c) => t + Math.min(c.pendiente, Math.max(0, c.disponible)), 0)
+  const completas = urgente.ordenes.filter((o) => o.completa)
+  return {
+    titulo: 'Por surtir contra inventario',
+    nota: `${urgente.ordenes.length} órdenes pendientes. Con el inventario de hoy se pueden surtir completas ${completas.length} `
+      + `(${completas.reduce((t, o) => t + o.lineas.reduce((x, l) => x + l.cantidad, 0), 0).toLocaleString('es-MX')} pzas), repartiendo de la que vence primero a la última. `
+      + 'Hay = disponible en bodega (real - apartado de órdenes ya surtidas). Falta producir = por surtir - hay.',
+    columnas: [{ titulo: 'Clave' }, { titulo: 'Artículo' }, { titulo: 'Nombre' }, { titulo: 'Órdenes', num: true },
+      { titulo: 'Por surtir', num: true }, { titulo: 'Hay', num: true }, { titulo: 'Falta producir', num: true }],
+    filas: [...filas.map((c) => [c.producto.clave, c.producto.articulo || '', c.producto.nombre, ordenesPorClave.get(c.producto.id) || 0,
+      c.pendiente, Math.max(0, c.disponible), c.falta]),
+    ['TOTAL', '', `${filas.length} claves`, urgente.ordenes.length, piezasPend, filas.reduce((t, c) => t + Math.max(0, c.disponible), 0), urgente.piezasFaltantes]],
+    colores: [...filas.map((c) => c.producto), null],
+    totales: {
+      'Órdenes pendientes': urgente.ordenes.length,
+      'Se pueden surtir': completas.length,
+      'Piezas por surtir': piezasPend,
+      'Cubiertas con lo que hay': cubiertas,
+      'Falta producir': urgente.piezasFaltantes,
+    },
+  }
+}

@@ -46,3 +46,10 @@ test('si el texto no es de Frisa no inventa clave', () => {
   assert.equal(clave('BOTA INDUSTRIAL', 'M'), null)
   assert.equal(clave('PLAYERA ROJA', '5XL'), null)
 })
+
+test('el número de material de la OC manda sobre el nombre', () => {
+  const ps = CATALOGO_FRISA.map((p) => (p.clave === 'PANFR-0028-01MEZ' ? { ...p, codigos: ['1020311'] } : p))
+  assert.deepEqual(sugerirClave('PANTALON MEZCLILLA TALLA 28', '', ps, [], '1020311'), { producto_id: 'PANFR-0028-01MEZ', como: 'codigo' })
+  // número desconocido: se va por el nombre
+  assert.equal(sugerirClave('PANTALON MEZCLILLA TALLA 28', '28', ps, [], '9999999').producto_id, 'PANFR-0028-01MEZ')
+})

@@ -38,7 +38,7 @@ export default function FrisaReportePdf({ rep, generado }) {
     <Document title={`SALPER - Frisa - ${rep.titulo}`}>
       <Page size="LETTER" orientation={horizontal ? 'landscape' : 'portrait'} style={s.page}>
         <View style={s.header} fixed>
-          <View>
+          <View style={{ flex: 1, paddingRight: 12 }}>
             <Text style={s.title}>Frisa · {rep.titulo}</Text>
             <Text style={s.sub}>{rep.nota}</Text>
             <Text style={s.sub}>Generado el {generado}</Text>
@@ -57,11 +57,11 @@ export default function FrisaReportePdf({ rep, generado }) {
         {rep.filas.map((f, i) => {
           const cp = colorPlayera(rep.colores?.[i])
           return (
-            <View key={i} style={s.tr} wrap={false}>
+            <View key={i} style={f[0] === 'TOTAL' ? [s.tr, { borderTop: `1pt solid ${INK}` }] : s.tr} wrap={false}>
               {rep.columnas.map((c, j) => {
                 const esNombre = /nombre|color/i.test(c.titulo) && cp
                 return (
-                  <Text key={j} style={[s.td, { width: ancho(c) }, c.num ? s.num : null,
+                  <Text key={j} style={[s.td, { width: ancho(c) }, c.num ? s.num : null, f[0] === 'TOTAL' ? s.pill : null,
                     esNombre ? [s.pill, { color: COLORES_PLAYERA[cp].texto, backgroundColor: COLORES_PLAYERA[cp].fondo }] : null]}>
                     {n(f[j])}
                   </Text>

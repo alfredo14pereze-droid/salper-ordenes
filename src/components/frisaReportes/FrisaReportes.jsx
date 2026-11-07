@@ -4,12 +4,12 @@ import { Loading, ErrorState } from '../common/States'
 import PdfPreviewModal from '../pdf/PdfPreviewModal'
 import FrisaReportePdf from '../pdf/FrisaReportePdf'
 import { fetchRestockTodo, fetchMovimientos } from '../../services/frisaRestockService'
-import { conInventario, hoyISO } from '../../utils/frisaSurtido'
+import { conInventario, calcularUrgente, hoyISO } from '../../utils/frisaSurtido'
 import { CONFIG_INICIAL, conNiveles } from '../../utils/frisaNiveles'
 import { calcularRestock } from '../../utils/frisaRestock'
 import { calcularLisas } from '../../utils/frisaLisas'
 import {
-  reporteInventario, reporteMovimientos, reporteSurtidos, reporteRestock, reporteLisas, reporteCompras, reporteCSV, nombreArchivo,
+  reporteInventario, reportePorSurtir, reporteMovimientos, reporteSurtidos, reporteRestock, reporteLisas, reporteCompras, reporteCSV, nombreArchivo,
 } from '../../utils/frisaReportes'
 
 const primeroDeMes = () => `${hoyISO().slice(0, 8)}01`
@@ -38,7 +38,7 @@ export default function FrisaReportes() {
     const cfg = datos.config || CONFIG_INICIAL
     const inv = conInventario(datos.productos, datos.surtidos, datos.lineas)
     const restock = calcularRestock({ ...datos, productosInv: inv, cfg })
-    return { niveles: conNiveles(inv, cfg), restock, lisas: calcularLisas({ ...datos, talleresPropuestos: restock.talleresPropuestos }) }
+    return { niveles: conNiveles(inv, cfg), urgente: calcularUrgente(inv, datos.surtidos, datos.lineas), restock, lisas: calcularLisas({ ...datos, talleresPropuestos: restock.talleresPropuestos }) }
   }, [datos])
 
   if (cargando) return <Loading />
@@ -46,6 +46,7 @@ export default function FrisaReportes() {
 
   async function armar(tipo) {
     if (tipo === 'inventario') return reporteInventario(calc.niveles)
+    if (tipo === 'porsurtir') return reportePorSurtir(calc.urgente)
     if (tipo === 'restock') return reporteRestock(calc.restock.filas)
     if (tipo === 'lisas') return reporteLisas(calc.lisas.filas)
     if (tipo === 'compras') return reporteCompras(datos.compras, datos.compraLineas, datos.compraLineasLisa, datos)
@@ -86,6 +87,7 @@ export default function FrisaReportes() {
   }
 
   const REPORTES = [
+    ['porsurtir', 'Por surtir contra inventario', 'Todas las órdenes pendientes: por clave, cuánto piden, cuánto hay y cuánto falta producir, con los totales.'],
     ['inventario', 'Inventario de la fábrica', 'Cada clave con real, apartado, disponible, niveles y A PEDIR, en este momento.'],
     ['movimientos', 'Movimientos del inventario', 'Entradas y salidas (entregas, ingresos a bodega, compras, ajustes y playera lisa) en las fechas de abajo.', true],
     ['surtidos', 'Órdenes de surtido', 'OC, planta, estado, quién surtió, remisión y piezas por clave, creadas en las fechas de abajo.', true],

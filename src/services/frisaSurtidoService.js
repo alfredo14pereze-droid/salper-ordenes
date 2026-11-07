@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient'
+import { conCodigos } from './frisaNivelesService'
 
 // V185 — Frisa: órdenes de surtido e inventario por movimientos. Lectura
 // directa (RLS: fs.ver); escritura SIEMPRE por las funciones de
@@ -31,7 +32,7 @@ export async function fetchSurtidoTodo() {
   ])
   const error = [pr, su, li, al].find((x) => x.error)?.error
   if (error) return { data: null, error }
-  return { data: { productos: pr.data, surtidos: su.data, lineas: li.data, alias: al.data }, error: null }
+  return { data: { productos: await conCodigos(pr.data), surtidos: su.data, lineas: li.data, alias: al.data }, error: null }
 }
 
 export async function fetchEventosSurtido(surtidoId) {

@@ -117,7 +117,7 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
                         <input type="checkbox" checked={Boolean(embolsada[l.id])} onChange={() => tocarRenglon(l)} aria-label={`Embolsado ${l.clave}`} />
                       </td>
                     )}
-                    <td><strong>{l.clave}</strong><NombreFrisa producto={p} />
+                    <td><strong>{l.clave}</strong>{p?.articulo && <span className="frisa__sub"> · Art. {p.articulo}</span>}<NombreFrisa producto={p} />
                       {!palomear && s.estado === 'pendiente' && embolsada[l.id] && <div className="frisa__ok frisa__sub">Embolsado</div>}</td>
                     <td className="num">
                       <strong>{num(l.cantidad)}</strong>

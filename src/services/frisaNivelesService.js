@@ -5,6 +5,21 @@ import { supabase } from '../lib/supabaseClient'
 
 const sinCliente = () => ({ data: null, error: new Error('Supabase no está configurado (revisa tu archivo .env).') })
 
+// Número de artículo (Microsip = "MATERIAL" de la OC de Frisa) de cada clave, de frisa_clave_microsip.
+export async function conCodigos(productos) {
+  const { data, error } = await supabase.from('frisa_clave_microsip').select('codigo,producto_id').range(0, 4999)
+  if (error) return productos // sin permiso o sin tabla: siguen sin número
+  const m = new Map()
+  for (const c of data) {
+    if (!m.has(c.producto_id)) m.set(c.producto_id, [])
+    m.get(c.producto_id).push(c.codigo)
+  }
+  return productos.map((p) => {
+    const codigos = (m.get(p.id) || []).sort((a, b) => /^\d+$/.test(b) - /^\d+$/.test(a))
+    return { ...p, codigos, articulo: codigos.find((x) => /^\d+$/.test(x)) || '' }
+  })
+}
+
 export async function fetchFrisaNiveles() {
   if (!supabase) return sinCliente()
   const [cfg, prods] = await Promise.all([
@@ -13,7 +28,7 @@ export async function fetchFrisaNiveles() {
   ])
   const error = cfg.error || prods.error
   if (error) return { data: null, error }
-  return { data: { config: cfg.data, productos: prods.data || [] }, error: null }
+  return { data: { config: cfg.data, productos: await conCodigos(prods.data || []) }, error: null }
 }
 
 export async function fetchConteosStock(productoId) {

@@ -48,7 +48,7 @@ export default function FrisaSurtidoForm({ productos, alias, surtido, lineas, ex
       fecha_oc: d.fechaOc || x.fecha_oc, fecha_limite: d.fechaLimite || x.fecha_limite,
     }))
     const nuevos = (d.articulos || []).map((a) => {
-      const s = sugerirClave(a.nombre, a.talla, productos, alias)
+      const s = sugerirClave(a.nombre, a.talla, productos, alias, a.codigo)
       return renglon({ producto_id: s.producto_id || '', cantidad: String(a.cantidad), texto_pdf: a.nombre, talla_pdf: a.talla || '', como: s.como })
     })
     setRenglones(nuevos)
@@ -126,6 +126,7 @@ export default function FrisaSurtidoForm({ productos, alias, surtido, lineas, ex
                   onChange={(e) => setR(r.key, 'cantidad', e.target.value)} aria-label="Cantidad" placeholder="Pzas" />
                 <button type="button" className="item-block__remove" onClick={() => quitar(r.key)} aria-label="Quitar renglón">×</button>
               </div>
+              {r.como === 'codigo' && <span className="frisa__ok frisa__sub">✓ por el número de artículo</span>}
               {r.como === 'aprendido' && <span className="frisa__ok frisa__sub">✓ como la vez pasada</span>}
               {r.como === 'parecido' && <span className="frisa__sub">Sugerida por parecido: revísala</span>}
               {repetidas.has(r.producto_id) && <span className="frisa__falta">Clave repetida</span>}
