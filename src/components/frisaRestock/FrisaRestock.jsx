@@ -57,6 +57,9 @@ export default function FrisaRestock() {
   const ORDEN = { critico: 0, pedir: 1, ok: 2 }
   const visibles = r.filas.filter((f) => todas || f.aPedir > 0 || f.enProceso > 0 || f.porEntrar > 0)
     .sort((a, b) => ORDEN[a.estado] - ORDEN[b.estado] || b.aPedir - a.aPedir || a.producto.clave.localeCompare(b.producto.clave))
+  // 2026-11-07: cada quien ve lo suyo. Planea = crea órdenes de taller o pedidos (Gis);
+  // bodega = confirma subidas a bodega y recibe compras.
+  const planea = puede.ordenes || puede.compras
   const porEntrar = r.ordenes.filter((o) => o.estado === 'por_entrar')
   const enProceso = r.ordenes.filter((o) => o.estado === 'en_proceso')
   const comprasPedidas = datos.compras.filter((c) => c.estado === 'pedida')
@@ -74,47 +77,47 @@ export default function FrisaRestock() {
       </div>
       {aviso && <p className="frisa__ok">{aviso}</p>}
 
-      <div className="stats-grid frisa-niveles__resumen">
+      {planea && <div className="stats-grid frisa-niveles__resumen">
         <div className="stat-card"><span className="stat-card__label">Por pedir (taller)</span><span className="stat-card__value">{num(r.talleresPropuestos.reduce((t, g) => t + g.lineas.reduce((a, l) => a + l.cantidad, 0), 0))}</span><span className="stat-card__hint">{r.talleresPropuestos.length} órdenes FR</span></div>
         <div className="stat-card"><span className="stat-card__label">Por comprar</span><span className="stat-card__value">{num(r.compraPropuesta.reduce((t, l) => t + l.cantidad, 0))}</span><span className="stat-card__hint">{r.compraPropuesta.length} claves</span></div>
         <div className="stat-card"><span className="stat-card__label">En proceso</span><span className="stat-card__value">{enProceso.length + comprasPedidas.length}</span><span className="stat-card__hint">órdenes y compras</span></div>
         <div className="stat-card frisa-niveles__tarjeta--pedir"><span className="stat-card__label">Por entrar</span><span className="stat-card__value">{porEntrar.length}</span><span className="stat-card__hint">terminadas, sin subir a bodega</span></div>
-      </div>
+      </div>}
 
-      {porEntrar.length > 0 && (
+      {puede.bodega && porEntrar.length > 0 && (
         <section className="frisa-restock__seccion">
           <h2 className="section-title section-title--small">Por entrar: terminadas, falta subirlas a bodega</h2>
           <ListaOrdenes filas={porEntrar} pfPorId={pfPorId} puede={puede} onSubir={setIngresar} onListo={listo} />
         </section>
       )}
 
-      <section className="frisa-restock__seccion">
+      {planea && <section className="frisa-restock__seccion">
         <div className="frisa__barra">
           <h2 className="section-title section-title--small">Por pedir</h2>
           <label className="frisa-niveles__toggle"><input type="checkbox" checked={todas} onChange={(e) => setTodas(e.target.checked)} /> Ver todas las claves</label>
         </div>
         <TablaRestock filas={visibles} />
-      </section>
+      </section>}
 
-      {r.talleresPropuestos.map((g) => (
+      {puede.ordenes && r.talleresPropuestos.map((g) => (
         <PropuestaTaller key={g.producto_frisa_id} grupo={g} productoFrisa={pfPorId.get(g.producto_frisa_id)} puede={puede.ordenes} onListo={listo} />
       ))}
-      {r.compraPropuesta.length > 0 && <PropuestaCompra lineas={r.compraPropuesta} productos={datos.productos} puede={puede.compras} onListo={listo} />}
+      {puede.compras && r.compraPropuesta.length > 0 && <PropuestaCompra lineas={r.compraPropuesta} productos={datos.productos} puede={puede.compras} onListo={listo} />}
 
       <FrisaLisas calculo={r.lisas} puede={puede} onListo={listo} />
 
-      <section className="frisa-restock__seccion">
+      {planea && <section className="frisa-restock__seccion">
         <h2 className="section-title section-title--small">Órdenes de taller en proceso</h2>
         {!enProceso.length && <p className="frisa__sub">Ninguna.</p>}
         <ListaOrdenes filas={enProceso} pfPorId={pfPorId} puede={puede} onListo={listo} />
         {puede.ordenes && <LigarExistente onListo={listo} />}
-      </section>
+      </section>}
 
       <section className="frisa-restock__seccion">
         <h2 className="section-title section-title--small">Pedidos de compra</h2>
         {!datos.compras.length && <p className="frisa__sub">Ninguno todavía.</p>}
         <div className="frisa-oc-lista">
-          {datos.compras.slice(0, 20).map((c) => {
+          {datos.compras.filter((c) => planea || c.estado === 'pedida').slice(0, 20).map((c) => {
             const lisaPorId = new Map(datos.lisas.map((x) => [x.id, x]))
             const ls = [
               ...datos.compraLineas.filter((l) => l.compra_id === c.id),

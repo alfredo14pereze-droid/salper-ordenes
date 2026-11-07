@@ -516,9 +516,25 @@ export function canImportarPlantasFrisa(role) {
   return tiene(role, 'fp.importar', () => role === 'admin_general')
 }
 
+// V192 — qué pestañas de Frisa ve cada quien (cada persona solo lo suyo). Los datos los
+// sigue protegiendo fn.ver / fs.ver / fp.ver; esto solo decide qué pestañas aparecen.
+// Fallback (si todavía no corre schema_v192) = como antes.
+export const PESTANAS_FRISA = [
+  ['niveles', 'Niveles de inventario', 'fx.niveles', (r) => canViewFrisaNiveles(r)],
+  ['surtido', 'Órdenes de surtido', 'fx.surtido', (r) => canViewFrisaSurtido(r)],
+  ['urgente', 'Urgente', 'fx.urgente', (r) => canViewFrisaSurtido(r)],
+  ['restock', 'Restock', 'fx.restock', (r) => canViewFrisaNiveles(r)],
+  ['microsip', 'Revisión Microsip', 'fx.microsip', (r) => canViewFrisaNiveles(r)],
+  ['plantas', 'Plantas Frisa', 'fx.plantas', (r) => canViewFrisaPlantas(r)],
+  ['reportes', 'Reportes', 'fx.reportes', (r) => canViewFrisaNiveles(r)],
+]
+export function pestanasFrisa(role) {
+  return PESTANAS_FRISA.filter(([, , clave, fallback]) => tiene(role, clave, () => fallback(role))).map(([k, label]) => [k, label])
+}
+
 // La sección "Frisa" se ve si se puede ver cualquiera de sus partes.
 export function canViewSeccionFrisa(role) {
-  return canViewFrisaNiveles(role) || canViewFrisaSurtido(role) || canViewFrisaPlantas(role)
+  return pestanasFrisa(role).length > 0
 }
 
 // V116 — consulta_tienda ve Pedidos Colegio (folios, anticipos/abonos, PDFs)

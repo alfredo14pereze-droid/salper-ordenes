@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import RequireRole from '../components/common/RequireRole'
 import { useAuth } from '../contexts/AuthContext'
-import { canViewSeccionFrisa, canViewFrisaNiveles, canViewFrisaSurtido, canSurtirFrisa, canSubirOCFrisa, canViewFrisaPlantas } from '../utils/permissions'
+import { canViewSeccionFrisa, pestanasFrisa } from '../utils/permissions'
 import FrisaNiveles from '../components/frisaNiveles/FrisaNiveles'
 import FrisaSurtidoSeccion from '../components/frisaSurtido/FrisaSurtidoSeccion'
 import FrisaRestock from '../components/frisaRestock/FrisaRestock'
@@ -21,17 +21,9 @@ export default function FrisaPage() {
 
 function FrisaSeccion() {
   const { role } = useAuth()
-  const partes = [
-    canViewFrisaNiveles(role) && ['niveles', 'Niveles de inventario'],
-    canViewFrisaSurtido(role) && ['surtido', 'Órdenes de surtido'],
-    canViewFrisaSurtido(role) && ['urgente', 'Urgente'],
-    canViewFrisaNiveles(role) && ['restock', 'Restock'],
-    canViewFrisaNiveles(role) && ['microsip', 'Revisión Microsip'],
-    canViewFrisaPlantas(role) && ['plantas', 'Plantas Frisa'],
-    canViewFrisaNiveles(role) && ['reportes', 'Reportes'],
-  ].filter(Boolean)
-  // Quien surte pero no administra (Leo) entra directo a las órdenes de surtido.
-  const inicial = canSurtirFrisa(role) && !canSubirOCFrisa(role) && partes.some(([k]) => k === 'surtido') ? 'surtido' : partes[0][0]
+  // Cada quien ve solo sus pestañas (V192); entra a la primera.
+  const partes = pestanasFrisa(role)
+  const inicial = partes[0]?.[0]
   const [parte, setParte] = useState(inicial)
 
   return (
