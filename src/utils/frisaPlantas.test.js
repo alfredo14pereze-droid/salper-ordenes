@@ -56,7 +56,7 @@ test('ligar, separar folios repetidos y armar el envío', () => {
 })
 
 test('prendaYTalla', () => {
-  assert.deepEqual(prendaYTalla('PANTALON MEZCLILLA TALLA 34 FRISA LARGO 32'), { prenda: 'PANTALON MEZCLILLA FRISA', talla: '34 (L32)' })
+  assert.deepEqual(prendaYTalla('PANTALON MEZCLILLA TALLA 34 FRISA LARGO 32'), { prenda: 'PANTALON MEZCLILLA', talla: '34 (L32)' })
   assert.deepEqual(prendaYTalla('PLAYERA AZUL T-2XL'), { prenda: 'PLAYERA AZUL', talla: '2XL' })
   assert.deepEqual(prendaYTalla('CHALECO'), { prenda: 'CHALECO', talla: 'Única' })
 })

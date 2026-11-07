@@ -10,7 +10,7 @@ export const COLORES_PLAYERA = {
 }
 
 // Nombre para mostrar (pedido de Alfredo, 2026-11-07): M/C → MANGA CORTA, M/L → MANGA LARGA,
-// sin C/R, C/REFLEJANTE → CON REFLEJANTE y S/REFLEJANTE → LISA. Solo en pantalla y PDF:
+// sin C/R, sin "FRISA" ni "1 IMP."/"2 IMP.", C/REFLEJANTE → CON REFLEJANTE y S/REFLEJANTE → LISA. Solo en pantalla y PDF:
 // el nombre guardado sigue igual al de Microsip (con él se ligan los Excel y las OC).
 export function nombreFrisa(nombre) {
   return String(nombre ?? '')
@@ -19,6 +19,8 @@ export function nombreFrisa(nombre) {
     .replace(/\bM\s*\/\s*L\b/gi, 'MANGA LARGA')
     .replace(/\bC\s*\/\s*REFLEJANTE\b/gi, 'CON REFLEJANTE')
     .replace(/\bS\s*\/\s*REFLEJANTE\b/gi, 'LISA')
+    .replace(/\b\d+\s*IMP\b\.?/gi, '')
+    .replace(/\bFRISA\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim()
 }
