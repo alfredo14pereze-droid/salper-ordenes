@@ -7848,3 +7848,19 @@ página: título, parte, folio, operación, segundos) y ver el costo. Por ahora 
   **APLICADO** por Alfredo el 2026-11-07 (verificado: anon 401). Falta probar la lectura con un PDF real en producción.
 - Una guardada cuyas operaciones traen `prenda` (`esCotizacionDeHoja`) se vuelve a abrir en el modo de hoja.
 - Ofrecido y NO hecho: botón "Escoger de Hojas impresas" (cotizar sin subir nada).
+
+## 2026-11-07 — Frisa: verificación, número de artículo, nombres, V192 pestañas por persona, manuales
+- Número de artículo Microsip = columna MATERIAL de la OC de Frisa. `frisa_clave_microsip` tiene los 54 de Microsip
+  + 1029687-1029690 (camisa 1B S-XL, números de Frisa). Al subir OC se liga primero por número (`sugerirClave(..., codigo)`).
+  Prueba con catálogo real: `src/utils/frisaReconocer.test.js` (agregar ahí textos de OC que fallen).
+- Verificación hecha: 34 órdenes pendientes = sus OC (artículo, cantidad, planta, fechas); pendientes = Microsip (620);
+  14 órdenes con M/L A.MARINO C/REFLEJANTE cargada como S/REFLEJANTE corregidas
+  (`datos_2026-11-07_frisa_corregir_ordenes_por_articulo.sql`). Consultas en `supabase/consulta_2026-11-07_*.sql`.
+- Inventario: el ajuste a Microsip del 06/11 NO se había aplicado (seguía 3,386 del Sheet); se corrió el 07/11 → 3,717.
+- Nombres para mostrar (`nombreFrisa` en utils/frisaColores.js): MANGA CORTA/LARGA, sin C/R, CON REFLEJANTE, S/REFLEJANTE→LISA,
+  sin FRISA, IMP., onzas; camisa sin manga/1B/1I; nuevo ingreso solo "NUEVO INGRESO". El nombre guardado no cambia.
+- V192 (APLICADO): permisos `fx.*` por pestaña. ventas (Gis): surtido, urgente, restock, reportes + fs.oc/fr.ordenes/fr.compras;
+  chofer: surtido + fs.surtir; admin_fabrica/admin_tienda: surtido, restock + fs.entregar/fr.bodega; admin_general todo.
+  Restock muestra secciones por permiso (planear vs bodega). Pedido de playera lisa: todas las tallas con Hay/Necesitan/OK-PEDIR.
+- Manuales PDF en ~/Desktop/Manuales Frisa (General, Gis, Quien surte, Quien confirma); generador en el scratchpad (`manual/hacer.py`,
+  capturas con Playwright sobre el ejemplo local).
