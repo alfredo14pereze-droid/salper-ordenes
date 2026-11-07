@@ -7864,3 +7864,6 @@ página: título, parte, folio, operación, segundos) y ver el costo. Por ahora 
   Restock muestra secciones por permiso (planear vs bodega). Pedido de playera lisa: todas las tallas con Hay/Necesitan/OK-PEDIR.
 - Manuales PDF en ~/Desktop/Manuales Frisa (General, Gis, Quien surte, Quien confirma); generador en el scratchpad (`manual/hacer.py`,
   capturas con Playwright sobre el ejemplo local).
+- V193 (APLICADO 2026-11-07): admin_fabrica y admin_tienda ven las 7 pestañas (solo vista) y conservan solo fs.entregar y fr.bodega.
+- 2026-11-07: Órdenes de surtido con filtro por planta (`clavePlanta`, "Para surtir juntas" = `juntarPorClave`); Restock en 3 pestañas
+  (Órdenes de taller / Pantalón / Playera lisa). Manuales actualizados.
