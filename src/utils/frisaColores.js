@@ -13,7 +13,13 @@ export const COLORES_PLAYERA = {
 // sin C/R, sin "FRISA" ni "1 IMP."/"2 IMP." ni las onzas (7 OZ, 14OZ), C/REFLEJANTE → CON REFLEJANTE y S/REFLEJANTE → LISA. Solo en pantalla y PDF:
 // el nombre guardado sigue igual al de Microsip (con él se ligan los Excel y las OC).
 export function nombreFrisa(nombre) {
-  return String(nombre ?? '')
+  let n = String(nombre ?? '')
+  // Camisa de mezclilla: sin manga ni 1B/1I. La de nuevo ingreso solo dice "nuevo ingreso".
+  if (/^\s*CAMISA\b/i.test(n)) {
+    n = n.replace(/\bM\s*\/\s*L\b|\bMANGA\s+LARGA\b/gi, '').replace(/\b1[BI]\b/gi, '')
+    if (/NUEVO\s+INGRESO/i.test(n)) n = n.replace(/\b[CS]\s*\/\s*REFLEJANTE\b|\bCON\s+REFLEJANTE\b/gi, '')
+  }
+  return n
     .replace(/\bC\s*\/\s*R\b\s*/gi, '')
     .replace(/\bM\s*\/\s*C\b/gi, 'MANGA CORTA')
     .replace(/\bM\s*\/\s*L\b/gi, 'MANGA LARGA')
