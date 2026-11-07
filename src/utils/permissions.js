@@ -528,6 +528,11 @@ export const PESTANAS_FRISA = [
   ['plantas', 'Plantas Frisa', 'fx.plantas', (r) => canViewFrisaPlantas(r)],
   ['reportes', 'Reportes', 'fx.reportes', (r) => canViewFrisaNiveles(r)],
 ]
+// Quien ve la pestaña Niveles ve Frisa completa (aunque sea solo de vista).
+export function canVerTodoFrisa(role) {
+  return tiene(role, 'fx.niveles', () => canViewFrisaNiveles(role))
+}
+
 export function pestanasFrisa(role) {
   return PESTANAS_FRISA.filter(([, , clave, fallback]) => tiene(role, clave, () => fallback(role))).map(([k, label]) => [k, label])
 }

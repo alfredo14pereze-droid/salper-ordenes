@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { Loading, ErrorState } from '../common/States'
 import Modal from '../talleros/Modal'
-import { canCrearOrdenesRestock, canSubirBodegaFrisa, canComprasFrisa } from '../../utils/permissions'
+import { canCrearOrdenesRestock, canSubirBodegaFrisa, canComprasFrisa, canVerTodoFrisa } from '../../utils/permissions'
 import {
   fetchRestockTodo, buscarOrdenPorFolio, ligarOrden, desligarOrden, subirABodega, crearCompra, recibirCompra, cancelarCompra,
 } from '../../services/frisaRestockService'
@@ -59,7 +59,8 @@ export default function FrisaRestock() {
     .sort((a, b) => ORDEN[a.estado] - ORDEN[b.estado] || b.aPedir - a.aPedir || a.producto.clave.localeCompare(b.producto.clave))
   // 2026-11-07: cada quien ve lo suyo. Planea = crea órdenes de taller o pedidos (Gis);
   // bodega = confirma subidas a bodega y recibe compras.
-  const planea = puede.ordenes || puede.compras
+  const verTodo = canVerTodoFrisa(role)
+  const planea = puede.ordenes || puede.compras || verTodo
   const porEntrar = r.ordenes.filter((o) => o.estado === 'por_entrar')
   const enProceso = r.ordenes.filter((o) => o.estado === 'en_proceso')
   const comprasPedidas = datos.compras.filter((c) => c.estado === 'pedida')
@@ -84,7 +85,7 @@ export default function FrisaRestock() {
         <div className="stat-card frisa-niveles__tarjeta--pedir"><span className="stat-card__label">Por entrar</span><span className="stat-card__value">{porEntrar.length}</span><span className="stat-card__hint">terminadas, sin subir a bodega</span></div>
       </div>}
 
-      {puede.bodega && porEntrar.length > 0 && (
+      {(puede.bodega || verTodo) && porEntrar.length > 0 && (
         <section className="frisa-restock__seccion">
           <h2 className="section-title section-title--small">Por entrar: terminadas, falta subirlas a bodega</h2>
           <ListaOrdenes filas={porEntrar} pfPorId={pfPorId} puede={puede} onSubir={setIngresar} onListo={listo} />
@@ -99,10 +100,10 @@ export default function FrisaRestock() {
         <TablaRestock filas={visibles} />
       </section>}
 
-      {puede.ordenes && r.talleresPropuestos.map((g) => (
+      {planea && r.talleresPropuestos.map((g) => (
         <PropuestaTaller key={g.producto_frisa_id} grupo={g} productoFrisa={pfPorId.get(g.producto_frisa_id)} puede={puede.ordenes} onListo={listo} />
       ))}
-      {puede.compras && r.compraPropuesta.length > 0 && <PropuestaCompra lineas={r.compraPropuesta} productos={datos.productos} puede={puede.compras} onListo={listo} />}
+      {planea && r.compraPropuesta.length > 0 && <PropuestaCompra lineas={r.compraPropuesta} productos={datos.productos} puede={puede.compras} onListo={listo} />}
 
       <FrisaLisas calculo={r.lisas} puede={puede} onListo={listo} />
 
