@@ -8,7 +8,7 @@ import EstacionPendientesPage from './EstacionPendientesPage'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { cambiarEstado, cambiarEstadoLote, SIGUIENTE, sinRecibirAlerta } from '../services/pendientesService'
 import { useAuth } from '../contexts/AuthContext'
-import { pfEsTienda, pfEsFabrica, canManageTiposPendiente, canMarcarEntregado, canViewPendientes, esFabricaSoloLectura } from '../utils/permissions'
+import { pfEsTienda, pfEsFabrica, canCrearPendienteFabrica, canManageTiposPendiente, canMarcarEntregado, canViewPendientes, esFabricaSoloLectura } from '../utils/permissions'
 import { estacionDeRol } from '../config/vistasPorRol'
 import RequireRole from '../components/common/RequireRole'
 
@@ -157,7 +157,7 @@ function PendientesContent() {
               Tipos de trabajo
             </button>
           )}
-          {pfEsTienda(role) && (
+          {canCrearPendienteFabrica(role) && (
             <button type="button" className="btn btn--primary" onClick={() => setShowForm(true)}>
               + Nuevo pendiente
             </button>

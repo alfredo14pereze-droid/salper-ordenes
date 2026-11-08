@@ -641,6 +641,11 @@ export function pfEsTienda(role) {
   return tiene(role, 'pf.tienda', () => PF_TIENDA.includes(role))
 }
 
+// V194 — crear pendientes: tienda siempre; además quien tenga pf.crear (admin_fabrica).
+export function canCrearPendienteFabrica(role) {
+  return pfEsTienda(role) || tiene(role, 'pf.crear', () => false)
+}
+
 export function pfEsFabrica(role) {
   return tiene(role, 'pf.fabrica', () => PF_FABRICA.includes(role))
 }
