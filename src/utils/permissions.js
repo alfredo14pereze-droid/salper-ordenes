@@ -522,7 +522,7 @@ export function canImportarPlantasFrisa(role) {
 export const PESTANAS_FRISA = [
   ['niveles', 'Niveles de inventario', 'fx.niveles', (r) => canViewFrisaNiveles(r)],
   ['surtido', 'Órdenes de surtido', 'fx.surtido', (r) => canViewFrisaSurtido(r)],
-  ['urgente', 'Urgente', 'fx.urgente', (r) => canViewFrisaSurtido(r)],
+  // 2026-11-08: Urgente se quitó; su contenido ahora está en Órdenes de surtido.
   ['restock', 'Restock', 'fx.restock', (r) => canViewFrisaNiveles(r)],
   ['microsip', 'Revisión Microsip', 'fx.microsip', (r) => canViewFrisaNiveles(r)],
   ['plantas', 'Plantas Frisa', 'fx.plantas', (r) => canViewFrisaPlantas(r)],

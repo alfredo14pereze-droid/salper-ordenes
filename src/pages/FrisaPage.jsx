@@ -39,7 +39,7 @@ function FrisaSeccion() {
         </div>
       )}
       {parte === 'niveles' && <FrisaNiveles />}
-      {(parte === 'surtido' || parte === 'urgente') && <FrisaSurtidoSeccion key={parte} vista={parte} />}
+      {parte === 'surtido' && <FrisaSurtidoSeccion key={parte} vista={parte} />}
       {parte === 'restock' && <FrisaRestock />}
       {parte === 'reportes' && <FrisaReportes />}
       {parte === 'microsip' && <FrisaMicrosip />}

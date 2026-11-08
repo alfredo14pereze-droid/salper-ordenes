@@ -34,6 +34,8 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
   const plantas = useMemo(() => plantasDe(datos.surtidos.filter((s) => s.estado === filtro)), [datos, filtro])
   const juntas = useMemo(() => (planta && filtro === 'pendiente' ? juntarPorClave(lista, porSurtido, inv) : null), [planta, filtro, lista, porSurtido, inv])
 
+  // Lo que falta por clave para surtir todas las pendientes (antes en la pestaña Urgente).
+  const faltan = urgente.porClave.filter((c) => c.falta > 0)
   const abiertaS = abierta ? datos.surtidos.find((s) => s.id === abierta) : null
 
   async function despuesDeGuardar(msg, id) {
@@ -77,6 +79,26 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
               <div className="stat-card frisa-niveles__tarjeta--critico"><span className="stat-card__label">No se pueden surtir</span><span className="stat-card__value">{compiten.length + no.length}</span><span className="stat-card__hint">faltan {num(urgente.piezasFaltantes)} pzas en total</span></div>
             </div>
             <p className="frisa__sub">El inventario se reparte de la orden que vence primero a la última: las {si.length} en verde se pueden surtir todas al mismo tiempo con lo que hay.</p>
+            {!planta && faltan.length > 0 && (
+              <section className="frisa-restock__seccion">
+                <h2 className="section-title section-title--small">Lo que falta por clave (todas las órdenes pendientes)</h2>
+                <div className="revision__tabla-wrap">
+                  <table className="simple-table frisa-tabla frisa-niveles__tabla">
+                    <thead><tr><th>Clave</th><th className="num">Piden</th><th className="num">Disponible</th><th className="num">Falta</th></tr></thead>
+                    <tbody>
+                      {faltan.map((c) => (
+                        <tr key={c.producto.id} className="frisa-niveles__fila--critico">
+                          <td data-label="Clave"><strong>{c.producto.clave}</strong><NombreFrisa producto={c.producto} /></td>
+                          <td data-label="Piden" className="num">{num(c.pendiente)}</td>
+                          <td data-label="Disponible" className="num">{num(c.disponible)}</td>
+                          <td data-label="Falta" className="num"><strong className="frisa__falta">{num(c.falta)}</strong></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
           </>
         )
       })()}
@@ -155,6 +177,9 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
                   ? <> · <span className={lim.urgente ? 'frisa__falta' : ''}>{lim.texto}</span></>
                   : s.fecha_limite ? ` · Límite ${fechaCorta(s.fecha_limite)}` : ''}
               </span>
+              {s.estado === 'pendiente' && u && !u.completa && u.faltantes.length > 0 && (
+                <span className="frisa__falta">Falta: {u.faltantes.map((f) => `${f.clave} (${num(f.falta)})`).join(', ')}</span>
+              )}
               {s.estado === 'surtida' && <span className="frisa__sub">Surtió {s.surtido_por_nombre}</span>}
               {s.estado === 'entregada' && <span className="frisa__sub">Rem. {s.remision} · {fechaCorta(s.fecha_entrega)} · surtió {s.surtido_por_nombre}</span>}
               {s.estado === 'cancelada' && <span className="frisa__sub">{s.cancelado_motivo}</span>}
