@@ -132,7 +132,7 @@ export default function FrisaRestock() {
             </div>
             <TablaRestock filas={visibles.filter((f) => f.se !== 'fabrica')} />
           </section>}
-          {planea && r.compraPropuesta.length > 0 && <PropuestaCompra lineas={r.compraPropuesta} productos={datos.productos} puede={puede.compras} onListo={listo} />}
+          {planea && <PropuestaCompra key={r.compraPropuesta.map((l) => l.producto_id + ':' + l.cantidad).join(',')} filas={r.filas.filter((f) => f.se !== 'fabrica')} puede={puede.compras} onListo={listo} />}
           <ListaCompras titulo="Pedidos de compra de pantalón" compras={comprasNormales.filter((c) => planea || c.estado === 'pedida')} datos={datos} puede={puede} onRecibir={setRecibir} onListo={listo} />
         </>
       )}
@@ -237,38 +237,65 @@ function PropuestaTaller({ grupo, productoFrisa, puede, onListo }) {
   )
 }
 
-function PropuestaCompra({ lineas, productos, puede, onListo }) {
-  const [cant, setCant] = useState(() => Object.fromEntries(lineas.map((l) => [l.producto_id, String(l.cantidad)])))
+// Pedido de compra (pantalón, bata, bolsa): como el de playera lisa. Arriba lo que hay que
+// pedir (CRÍTICO / PEDIR, ya con cantidad) y abajo TODOS los demás que se compran, en 0, por si
+// se quiere agregar algo.
+const ESTADO_COMPRA = { critico: ['CRÍTICO', 'rojo'], pedir: ['PEDIR', 'naranja'], ok: ['OK', 'verde'] }
+function PropuestaCompra({ filas, puede, onListo }) {
+  const ORD = { critico: 0, pedir: 1, ok: 2 }
+  const lista = [...filas].sort((a, b) => (b.aPedir > 0) - (a.aPedir > 0) || ORD[a.estado] - ORD[b.estado] || a.producto.clave.localeCompare(b.producto.clave))
+  const [cant, setCant] = useState(() => Object.fromEntries(filas.map((f) => [f.producto.id, f.aPedir > 0 ? String(f.aPedir) : ''])))
   const [proveedor, setProveedor] = useState('')
   const [fecha, setFecha] = useState('')
   const [trabajando, setTrabajando] = useState(false)
   const [error, setError] = useState(null)
-  const nombre = (id) => productos.find((p) => p.id === id)
-  const total = lineas.reduce((t, l) => t + (Number(cant[l.producto_id]) || 0), 0)
+  const total = filas.reduce((t, f) => t + (Number(cant[f.producto.id]) || 0), 0)
+  const aPedir = lista.filter((f) => f.aPedir > 0).length
 
   async function crear() {
     setTrabajando(true)
     setError(null)
-    const ls = lineas.map((l) => ({ producto_id: l.producto_id, cantidad: Number(cant[l.producto_id]) || 0 })).filter((l) => l.cantidad > 0)
+    const ls = filas.map((f) => ({ producto_id: f.producto.id, cantidad: Number(cant[f.producto.id]) || 0 })).filter((l) => l.cantidad > 0)
     const { data, error: e } = await crearCompra({ proveedor, fechaEsperada: fecha, lineas: ls })
     setTrabajando(false)
     if (e) return setError(e.message)
     onListo(`Se creó el pedido de compra #${data.folio} a ${data.proveedor} (${num(total)} pzas).`)
   }
 
+  const fila = (f) => {
+    const [et, color] = ESTADO_COMPRA[f.estado] || ESTADO_COMPRA.ok
+    return (
+      <tr key={f.producto.id} className={f.aPedir > 0 ? 'frisa-niveles__fila--' + f.estado : 'frisa-niveles__fila--ok'}>
+        <td data-label="Clave"><strong>{f.producto.clave}</strong><NombreFrisa producto={f.producto} /></td>
+        <td data-label="Hay" className="num">{num(f.disponible)}</td>
+        <td data-label="En camino" className="num">{f.enProceso + f.porEntrar ? num(f.enProceso + f.porEntrar) : ''}</td>
+        <td data-label="Reorden" className="num">{num(f.reorden)}</td>
+        <td data-label="Máximo" className="num">{num(f.maximo)}</td>
+        <td data-label="Estado"><span className={'frisa-nivel frisa-nivel--' + color}>{et}</span></td>
+        <td data-label="A pedir" className="num">
+          <input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" value={cant[f.producto.id]} placeholder="0"
+            disabled={!puede} onChange={(e) => setCant({ ...cant, [f.producto.id]: e.target.value })} aria-label={`A pedir ${f.producto.clave}`} />
+        </td>
+      </tr>
+    )
+  }
+
   return (
     <div className="card frisa-restock__propuesta">
       <h3 className="section-title section-title--small">Pedido de compra (lo que se compra hecho)</h3>
+      <p className="frisa__sub">
+        <strong>Hay</strong> = disponible en bodega · <strong>En camino</strong> = pedidos que no han llegado.
+        {aPedir ? ` Arriba las ${aPedir} que hay que pedir (ya traen la cantidad para llegar al máximo);` : ' Ahorita nada está en reorden;'} abajo todas las demás, en 0, por si quieres agregar alguna. Puedes cambiar cualquier cantidad.
+      </p>
       <div className="revision__tabla-wrap">
-        <table className="simple-table frisa-tabla">
+        <table className="simple-table frisa-tabla frisa-niveles__tabla">
+          <thead><tr><th>Clave</th><th className="num">Hay</th><th className="num">En camino</th><th className="num">Reorden</th><th className="num">Máximo</th><th>Estado</th><th className="num">A pedir</th></tr></thead>
           <tbody>
-            {lineas.map((l) => (
-              <tr key={l.producto_id}>
-                <td><strong>{l.clave}</strong><NombreFrisa producto={nombre(l.producto_id)} /></td>
-                <td className="num"><input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" value={cant[l.producto_id]}
-                  disabled={!puede} onChange={(e) => setCant({ ...cant, [l.producto_id]: e.target.value })} aria-label={`Cantidad de ${l.clave}`} /></td>
-              </tr>
-            ))}
+            {lista.filter((f) => f.aPedir > 0).map(fila)}
+            {aPedir > 0 && aPedir < lista.length && (
+              <tr><td colSpan={7} className="frisa__sub"><strong>Los demás que se compran</strong> (alcanzan; agrega si quieres)</td></tr>
+            )}
+            {lista.filter((f) => !(f.aPedir > 0)).map(fila)}
           </tbody>
         </table>
       </div>
