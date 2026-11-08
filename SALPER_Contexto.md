@@ -7867,3 +7867,5 @@ página: título, parte, folio, operación, segundos) y ver el costo. Por ahora 
 - V193 (APLICADO 2026-11-07): admin_fabrica y admin_tienda ven las 7 pestañas (solo vista) y conservan solo fs.entregar y fr.bodega.
 - 2026-11-07: Órdenes de surtido con filtro por planta (`clavePlanta`, "Para surtir juntas" = `juntarPorClave`); Restock en 3 pestañas
   (Órdenes de taller / Pantalón / Playera lisa). Manuales actualizados.
+- V194 (APLICADO 2026-11-08): permiso `pf.crear` (solo crear pendientes) para admin_fabrica; pf_crear acepta pf.tienda O pf.crear
+  (se parchó solo el chequeo sobre la definición viva de V129). Botón "+ Nuevo pendiente" con `canCrearPendienteFabrica`.
