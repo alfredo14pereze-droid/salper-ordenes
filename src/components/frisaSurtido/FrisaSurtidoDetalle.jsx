@@ -142,7 +142,7 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
             {s.surtido_registrado_por && s.surtido_registrado_por !== s.surtido_por_nombre ? ` (lo registró ${s.surtido_registrado_por})` : ''}</p>
         )}
         {s.estado === 'entregada' && (
-          <p className="frisa__sub">Salió el chofer · Rem. <strong>{s.remision}</strong> · {fechaCorta(s.fecha_entrega)} · lo marcó {s.entregado_por_nombre}</p>
+          <p className="frisa__sub">Entregada por el chofer · Rem. <strong>{s.remision}</strong> · {fechaCorta(s.fecha_entrega)} · lo marcó {s.entregado_por_nombre}</p>
         )}
         {s.estado === 'cancelada' && <p className="frisa__falta">Cancelada: {s.cancelado_motivo}</p>}
 
@@ -156,7 +156,7 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
               </button>
             )}
             {s.estado === 'surtida' && permisos.entregar && (
-              <button type="button" className="btn btn--primary" onClick={() => { setError(null); setAccion('entregar') }}>Salió el chofer</button>
+              <button type="button" className="btn btn--primary" onClick={() => { setError(null); setAccion('entregar') }}>Ya entregó el chofer</button>
             )}
             {s.estado === 'pendiente' && permisos.oc && (
               <button type="button" className="btn btn--secondary" onClick={() => setAccion('corregir')}>Corregir</button>
@@ -207,12 +207,12 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
               <input className="input" value={form.remision} onChange={(e) => set('remision', e.target.value)} autoFocus required />
             </label>
             <label>
-              <span className="field-label">Fecha</span>
+              <span className="field-label">Fecha de entrega</span>
               <input className="input" type="date" value={form.fecha} onChange={(e) => set('fecha', e.target.value)} required />
             </label>
-            <button type="submit" className="btn btn--primary" disabled={trabajando}>{trabajando ? 'Guardando…' : 'Confirmar salida'}</button>
+            <button type="submit" className="btn btn--primary" disabled={trabajando}>{trabajando ? 'Guardando…' : 'Confirmar entrega'}</button>
             <button type="button" className="btn btn--ghost" onClick={() => setAccion(null)}>Cancelar</button>
-            <p className="frisa__sub">Al confirmar se descuentan {num(piezasDe(lineas))} piezas del inventario de la fábrica.</p>
+            <p className="frisa__sub">Márcala cuando el chofer ya entregó en la planta (no cuando sale). Al confirmar se descuentan {num(piezasDe(lineas))} piezas del inventario de la fábrica.</p>
           </form>
         )}
 

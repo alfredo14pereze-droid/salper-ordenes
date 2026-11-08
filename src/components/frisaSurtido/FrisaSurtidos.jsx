@@ -50,8 +50,8 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
         <div>
           <h1 className="page-title">Frisa · órdenes de surtido</h1>
           <p className="page-subtitle">
-            Cada orden de compra de Frisa se surte completa: al marcarla surtida las piezas se apartan, y cuando sale el chofer se
-            descuentan del inventario.
+            Cada orden de compra de Frisa se surte completa: al marcarla surtida las piezas se apartan, y cuando el chofer ya la
+            entregó se descuentan del inventario.
           </p>
         </div>
         {permisos.oc && (
