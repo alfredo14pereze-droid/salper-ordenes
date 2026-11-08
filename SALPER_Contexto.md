@@ -7869,3 +7869,6 @@ página: título, parte, folio, operación, segundos) y ver el costo. Por ahora 
   (Órdenes de taller / Pantalón / Playera lisa). Manuales actualizados.
 - V194 (APLICADO 2026-11-08): permiso `pf.crear` (solo crear pendientes) para admin_fabrica; pf_crear acepta pf.tienda O pf.crear
   (se parchó solo el chequeo sobre la definición viva de V129). Botón "+ Nuevo pendiente" con `canCrearPendienteFabrica`.
+- 2026-11-08: se quitó la pestaña Urgente (su contenido está arriba en Órdenes de surtido: "Lo que falta por clave" y "Falta: …"
+  en cada orden). Frisa subió en el menú. La entrega se confirma cuando el chofer YA ENTREGÓ ("Ya entregó el chofer" →
+  "Confirmar entrega"); V195 (APLICADO) cambió el texto del historial a "Entregada por el chofer". Manuales sin admin general.
