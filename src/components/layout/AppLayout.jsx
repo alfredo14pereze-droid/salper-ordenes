@@ -127,6 +127,8 @@ export default function AppLayout({ children }) {
   const navItems = [
     { to: '/', label: 'Dashboard', end: true, show: true },
     { to: '/nueva', label: 'Nueva orden', show: canCreateOrder(role) },
+    // 2026-11-08: Frisa arriba (pedido de Alfredo).
+    { to: '/frisa', label: 'Frisa', show: canViewSeccionFrisa(role) },
     { to: '/estadisticas', label: 'Estadísticas', show: canViewEstadisticas(role) },
     // V72 — estadísticas de producción (admin_general / admin_fabrica).
     { to: '/estadisticas-produccion', label: 'Estadísticas de producción', show: canViewProduccionMontos(role) },
@@ -185,10 +187,6 @@ export default function AppLayout({ children }) {
     // V57 — beta oculta: solo admin_general. V116 — también consulta_tienda,
     // de solo lectura (ver canViewPedidosColegio).
     { to: '/pedidos-colegio', label: 'Pedidos Colegio', show: canViewPedidosColegio(role) },
-    // V180 — Frisa a consignación (prueba de concepto), solo admin_general.
-    // V184 — la sección es "Frisa": Niveles de inventario para todos (fn.ver);
-    // la consignación (prueba) sigue solo para admin_general dentro.
-    { to: '/frisa', label: 'Frisa', show: canViewSeccionFrisa(role) },
     { to: '/usuarios', label: 'Usuarios', show: canManageUsers(role) },
     // V125 — qué puede hacer cada rol (editable), solo admin_general.
     { to: '/roles-permisos', label: 'Roles y permisos', show: canManageUsers(role) },
