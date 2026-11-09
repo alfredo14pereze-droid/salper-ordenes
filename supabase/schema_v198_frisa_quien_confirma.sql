@@ -41,9 +41,9 @@ begin
   delete from public.rol_permisos where clave = 'fr.recibir_pantalon' and rol not in ('ventas', 'admin_general');
 end $$;
 
--- Comprobación: a quién encontró y quién tiene cada permiso.
-select (select string_agg(full_name || ' = ' || role, ', ' order by full_name) from public.profiles
-         where suspended_at is null and (full_name ilike '%jack%' or full_name ilike '%jaq%' or full_name ilike '%adriana%')) as jackie_y_adriana,
+-- Comprobación: TODAS las personas que podrán subir a bodega y recibir lisa (todo su rol), y quién tiene cada permiso.
+select (select string_agg(full_name || ' (' || role || ')', ', ' order by full_name) from public.profiles
+         where suspended_at is null and role in (select rol from public.rol_permisos where clave = 'fr.bodega' and rol <> 'admin_general')) as podran_subir_a_bodega,
        (select string_agg(rol, ', ' order by rol) from public.rol_permisos where clave = 'fr.bodega') as suben_a_bodega,
        (select string_agg(rol, ', ' order by rol) from public.rol_permisos where clave = 'fr.recibir_lisa') as reciben_lisa,
        (select string_agg(rol, ', ' order by rol) from public.rol_permisos where clave = 'fr.recibir_pantalon') as reciben_pantalon,

@@ -229,6 +229,8 @@ export default function AppLayout({ children }) {
       : [
           { to: '/', label: 'Órdenes', end: true },
           ...(canViewPendientes(role) ? [{ to: '/pendientes', label: 'Pendientes' }] : []),
+          // 2026-11-09 — Jackie y Adriana (terminado) suben a bodega y reciben la playera lisa de Frisa.
+          ...(canViewSeccionFrisa(role) ? [{ to: '/frisa', label: 'Frisa' }] : []),
           { to: '/manuales', label: 'Manuales' },
         ]
     const rutaPermitida = !chofer || RUTAS_CHOFER.some((r) => location.pathname === r || (r !== '/' && location.pathname.startsWith(r + '/')))
