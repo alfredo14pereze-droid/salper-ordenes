@@ -7889,6 +7889,7 @@ Sección (ej. "Frisa") → Manual (ej. "Cómo surtir una orden"). Contenido en m
 - **Carga inicial** `supabase/datos_2026-11-09_manuales_frisa.sql`: sección "Frisa" 📦 con 14 manuales por proceso,
   tomados de los 5 PDF de ~/Desktop/Manuales Frisa (General, Gis, Quien surte, Quien confirma, Inventario), sin capturas.
   Se puede correr dos veces (no duplica por título); falla con mensaje si V196 no está aplicada.
+- **APLICADOS** V196 y la carga de Frisa por Alfredo el 2026-11-09 (verificado: tablas y RPC man_* responden 401 sin sesión).
 - **Pantallas** (`src/pages/ManualesPage.jsx`, rutas `/manuales`, `/manuales/seccion/:id`, `/manuales/ver/:id`,
   `/manuales/editar/:id`, `/manuales/nuevo/:seccionId`): tarjetas por sección con conteo, lista numerada, manual con
   "Última actualización" y regresar, buscador arriba (título + contenido, sin acentos, título primero; el texto se queda
