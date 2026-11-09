@@ -5465,3 +5465,143 @@ h4 {
 .frisa-compra__tabla { border-collapse: collapse; font-size: 14px; }
 .frisa-compra__tabla th { text-align: left; font-weight: 600; color: var(--color-muted, #6b6558); padding: 3px 10px 3px 0; white-space: nowrap; }
 .frisa-compra__tabla td { text-align: center; padding: 3px 10px; border-left: 1px solid var(--color-border, #e4dfd3); min-width: 34px; }
+
+/* ===================================================================
+   V196 — Manuales
+   =================================================================== */
+.manuales-intro { color: var(--ds-text-muted, #6b7480); margin: -4px 0 14px; }
+.manuales-regresar { display: inline-block; margin-bottom: 10px; color: var(--ds-text-muted, #6b7480); text-decoration: none; font-size: 0.95rem; padding: 6px 0; }
+.manuales-regresar:hover { color: var(--ds-text, #1c2127); }
+.manuales-regresar--btn { background: none; border: 0; cursor: pointer; font: inherit; }
+.manuales-regresar-abajo { margin-top: 24px; align-self: flex-start; }
+
+.manuales-buscador { margin-bottom: 18px; }
+.manuales-buscador__input { width: 100%; font-size: 1rem; padding: 12px 14px; }
+.manuales-resultados { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.manuales-resultados__cuenta { font-size: 0.85rem; color: var(--ds-text-muted, #6b7480); }
+.manuales-resultado {
+  display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 10px;
+  background: var(--ds-surface, #fff); border: 1px solid var(--ds-divider, #e3e6ea); text-decoration: none; color: inherit;
+}
+.manuales-resultado:hover { border-color: var(--ds-border, #c9ced4); }
+.manuales-resultado__seccion { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ds-text-muted, #6b7480); }
+.manuales-resultado__titulo { font-weight: 600; }
+.manuales-resultado__frag { font-size: 0.88rem; color: var(--ds-text-muted, #6b7480); line-height: 1.4; }
+
+.manuales-secciones { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.manuales-seccion-card {
+  background: var(--ds-surface, #fff); border: 1px solid var(--ds-divider, #e3e6ea); border-radius: 12px; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.manuales-seccion-card__link { display: flex; gap: 14px; align-items: flex-start; padding: 16px; text-decoration: none; color: inherit; flex: 1; }
+.manuales-seccion-card__link:hover { background: var(--ds-bg, #f3f4f6); }
+.manuales-seccion-card__icono { font-size: 1.8rem; line-height: 1; }
+.manuales-seccion-card__texto { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.manuales-seccion-card__nombre { font-weight: 700; font-size: 1.1rem; }
+.manuales-seccion-card__desc { font-size: 0.88rem; color: var(--ds-text-muted, #6b7480); }
+.manuales-seccion-card__conteo { font-size: 0.85rem; color: var(--ds-accent, #e8762c); font-weight: 600; margin-top: 4px; }
+
+.manuales-admin-barra {
+  display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 6px 10px;
+  border-top: 1px dashed var(--ds-divider, #e3e6ea); background: var(--ds-bg, #f3f4f6);
+}
+.manuales-admin-barra--manual { border: 0; background: none; padding: 0; margin: 4px 0 12px; }
+.manuales-flechas { display: inline-flex; gap: 2px; margin-right: auto; }
+.manuales-btn-peligro { color: var(--ds-red-text, #b91c1c) !important; }
+
+.manuales-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.manuales-lista__item { background: var(--ds-surface, #fff); border: 1px solid var(--ds-divider, #e3e6ea); border-radius: 10px; overflow: hidden; }
+.manuales-lista__link { display: flex; align-items: center; gap: 12px; padding: 14px; text-decoration: none; color: inherit; min-height: 52px; }
+.manuales-lista__link:hover { background: var(--ds-bg, #f3f4f6); }
+.manuales-lista__num {
+  flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--ds-neutral-bg, #eceef1); color: var(--ds-neutral-text, #4b535d); font-weight: 700; font-size: 0.85rem;
+}
+.manuales-lista__titulo { flex: 1; font-weight: 600; }
+.manuales-lista__flecha { font-size: 1.4rem; color: var(--ds-text-muted, #6b7480); }
+
+.manuales-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; padding: 16px; }
+.manuales-form__titulo { margin: 0; font-size: 1rem; }
+.manuales-form__fila { display: flex; gap: 10px; }
+.manuales-form__icono { width: 80px; flex: none; }
+.manuales-form__nombre { flex: 1; }
+.manuales-form label { display: flex; flex-direction: column; gap: 4px; }
+.manuales-form__acciones { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* --- Un manual --- */
+.manual-articulo { background: var(--ds-surface, #fff); border: 1px solid var(--ds-divider, #e3e6ea); border-radius: 12px; padding: 22px 22px 26px; }
+.manual-articulo__titulo { font-size: 1.5rem; line-height: 1.25; margin: 0 0 6px; }
+.manual-articulo__fecha { font-size: 0.85rem; color: var(--ds-text-muted, #6b7480); margin-bottom: 14px; }
+
+.manual-md { font-size: 1.02rem; line-height: 1.6; color: var(--ds-text, #1c2127); }
+.manual-md h2 { font-size: 1.2rem; margin: 26px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--ds-divider, #e3e6ea); }
+.manual-md h3 { font-size: 1.05rem; margin: 20px 0 8px; }
+.manual-md h4, .manual-md h5 { font-size: 1rem; margin: 16px 0 6px; }
+.manual-md > :first-child { margin-top: 0; }
+.manual-md p { margin: 0 0 12px; }
+.manual-md code { font-family: var(--ds-font-mono, ui-monospace, monospace); font-size: 0.88em; background: var(--ds-neutral-bg, #eceef1); padding: 1px 5px; border-radius: 4px; word-break: break-word; }
+.manual-md a { color: var(--ds-blue-text, #1d4ed8); }
+.manual-md hr { border: 0; border-top: 1px solid var(--ds-divider, #e3e6ea); margin: 20px 0; }
+.manual-md__cont { display: block; margin-top: 4px; color: var(--ds-text-muted, #4b535d); }
+.manual-md__vacio { color: var(--ds-text-muted, #6b7480); }
+
+/* Pasos numerados: círculo con el número y buen espacio entre pasos. */
+.manual-md__pasos { list-style: none; margin: 4px 0 16px; padding: 0; counter-reset: paso; }
+.manual-md__pasos > li { counter-increment: paso; position: relative; padding: 2px 0 0 44px; margin-bottom: 16px; min-height: 30px; }
+.manual-md__pasos > li::before {
+  content: counter(paso); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%;
+  background: var(--ds-header-bg, #1c2127); color: #fff; font-weight: 700; font-size: 0.9rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.manual-md__vinetas { margin: 0 0 14px; padding-left: 22px; }
+.manual-md__vinetas > li { margin-bottom: 6px; }
+
+.manual-md__nota {
+  background: var(--ds-yellow-bg, #fef3c7); border-left: 4px solid var(--ds-yellow-text, #a16207);
+  border-radius: 6px; padding: 10px 14px; margin: 0 0 14px;
+}
+.manual-md__nota > :last-child { margin-bottom: 0; }
+
+.manual-md__tabla-wrap { overflow-x: auto; margin: 0 0 16px; -webkit-overflow-scrolling: touch; }
+.manual-md__tabla { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+.manual-md__tabla th, .manual-md__tabla td { border: 1px solid var(--ds-divider, #e3e6ea); padding: 8px 10px; text-align: left; vertical-align: top; }
+.manual-md__tabla th { background: var(--ds-bg, #f3f4f6); font-weight: 600; }
+
+/* En celular las tablas se vuelven tarjetas: cada renglón con su encabezado. */
+@media (max-width: 640px) {
+  .manual-articulo { padding: 16px 14px 20px; border-radius: 10px; }
+  .manual-articulo__titulo { font-size: 1.3rem; }
+  .manual-md__tabla thead { display: none; }
+  .manual-md__tabla, .manual-md__tabla tbody, .manual-md__tabla tr, .manual-md__tabla td { display: block; width: 100%; }
+  .manual-md__tabla tr { border: 1px solid var(--ds-divider, #e3e6ea); border-radius: 8px; margin-bottom: 8px; padding: 6px 10px; }
+  .manual-md__tabla td { border: 0; padding: 4px 0; }
+  .manual-md__tabla td[data-col]::before { content: attr(data-col); display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ds-text-muted, #6b7480); }
+  .manuales-secciones { grid-template-columns: 1fr; }
+}
+
+/* --- Editor --- */
+.manuales-editor { max-width: 1280px; }
+.manuales-editor__datos { display: grid; grid-template-columns: 1fr 240px; gap: 10px; margin: 10px 0 12px; }
+.manuales-editor__datos label { display: flex; flex-direction: column; gap: 4px; }
+.manuales-editor__pestanas { display: none; gap: 6px; margin-bottom: 10px; }
+.manuales-editor__lados { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+.manuales-editor__texto { width: 100%; min-height: 60vh; font-family: var(--ds-font-mono, ui-monospace, monospace); font-size: 0.9rem; line-height: 1.5; resize: vertical; }
+.manuales-editor__ayuda { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.8rem; color: var(--ds-text-muted, #6b7480); margin-top: 6px; }
+.manuales-editor__vista { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }
+.manuales-editor__vista-etiqueta { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ds-text-muted, #6b7480); margin-bottom: 6px; }
+.manuales-editor__acciones { margin-top: 14px; position: sticky; bottom: 0; background: var(--ds-bg, #f3f4f6); padding: 10px 0; }
+
+@media (max-width: 900px) {
+  .manuales-editor__datos { grid-template-columns: 1fr; }
+  .manuales-editor__pestanas { display: flex; }
+  .manuales-editor__lados { grid-template-columns: 1fr; }
+  .manuales-editor__lados--escribir .manuales-editor__vista { display: none; }
+  .manuales-editor__lados--vista .manuales-editor__escribir { display: none; }
+  .manuales-editor__vista { position: static; max-height: none; }
+  .manuales-editor__vista-etiqueta { display: none; }
+}
+.page.manuales { gap: 0; }
+.page.manuales > .section-header { margin-bottom: 10px; }
+.manuales a.btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+.manuales-regresar--btn { align-self: flex-start; text-align: left; padding-left: 0; }
+.manuales-flechas .btn { min-width: 36px; min-height: 32px; font-size: 1rem; text-decoration: none; }

@@ -804,7 +804,7 @@ export function esChofer(role) {
   return role === 'chofer'
 }
 // V185 — + /frisa (surtido de órdenes de Frisa).
-export const RUTAS_CHOFER = ['/', '/tareas', '/pendientes', '/frisa']
+export const RUTAS_CHOFER = ['/', '/tareas', '/pendientes', '/frisa', '/manuales']
 
 // V158 — Notas de tienda. Permisos editables en "Roles y permisos"
 // (nt.ver / nt.escribir / nt.resolver); el fallback reproduce la siembra
@@ -876,4 +876,11 @@ export function canImprimirLote(role) {
 export function canAnotarTareasPropias(role) {
   // V171 — todos los que completan tareas.
   return tiene(role, 'ta.propias', () => ['ventas', 'contabilidad', 'tienda', 'admin_tienda', 'admin_general', 'chofer'].includes(role))
+}
+
+// V196 — Manuales. Leer: cualquiera con sesión (sin permiso). Editar
+// (crear/cambiar/eliminar/reordenar): man.editar; fallback = siembra de
+// schema_v196_manuales.sql (solo admin_general, el "super_admin" del pedido).
+export function canEditarManuales(role) {
+  return tiene(role, 'man.editar', () => role === 'admin_general')
 }

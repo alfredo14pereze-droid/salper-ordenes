@@ -7875,3 +7875,30 @@ página: título, parte, folio, operación, segundos) y ver el costo. Por ahora 
 - 2026-11-09: FR-008 (creada por error) borrada; luego las 13 órdenes Frisa existentes (FR-001…FR-007, IND-025/026/030-033)
   dadas de baja (papelera, eliminada_en) para empezar con Restock. Manual nuevo "Manual Frisa - Inventario".
   PGlite reinstalado en el scratchpad de esta sesión (el anterior se borró); harness y pgtest apuntan ahí.
+
+### V196 — Manuales (2026-11-09)
+
+Pedido de Alfredo: módulo "Manuales" en el menú para documentar cómo se hace cada proceso. Dos niveles:
+Sección (ej. "Frisa") → Manual (ej. "Cómo surtir una orden"). Contenido en markdown.
+- **SQL** `supabase/schema_v196_manuales.sql` (aditivo): tablas `manual_secciones` (nombre único entre activas, descripción,
+  icono emoji, orden, `eliminado_en`) y `manuales` (seccion_id, titulo, contenido markdown, orden, actualizado_por/_nombre,
+  `eliminado_en`). RLS de lectura: cualquiera con sesión. Escritura solo por RPC con el permiso nuevo **`man.editar`**
+  (solo admin_general = el "super_admin" del pedido; editable en Roles y permisos): `man_guardar_seccion`,
+  `man_eliminar_seccion` (solo si ya no tiene manuales), `man_guardar_manual` (si cambia de sección queda al final),
+  `man_eliminar_manual` (soft), `man_mover('seccion'|'manual', id, -1|1)` (reescribe el orden 1..n). Probado en PGlite.
+- **Carga inicial** `supabase/datos_2026-11-09_manuales_frisa.sql`: sección "Frisa" 📦 con 14 manuales por proceso,
+  tomados de los 5 PDF de ~/Desktop/Manuales Frisa (General, Gis, Quien surte, Quien confirma, Inventario), sin capturas.
+  Se puede correr dos veces (no duplica por título); falla con mensaje si V196 no está aplicada.
+- **Pantallas** (`src/pages/ManualesPage.jsx`, rutas `/manuales`, `/manuales/seccion/:id`, `/manuales/ver/:id`,
+  `/manuales/editar/:id`, `/manuales/nuevo/:seccionId`): tarjetas por sección con conteo, lista numerada, manual con
+  "Última actualización" y regresar, buscador arriba (título + contenido, sin acentos, título primero; el texto se queda
+  en sessionStorage al ir y volver). Editor con vista previa lado a lado (en celular, pestañas Escribir / Vista previa),
+  flechas ↑↓ para reordenar. "Manuales" aparece en el menú de TODOS los roles, también en el shell de estaciones y de
+  chofer (`RUTAS_CHOFER` y `RUTAS_CAPTURA` incluyen `/manuales`).
+- **Markdown**: lector propio sin dependencias (`src/utils/markdownManual.js`, se pinta como elementos de React, nunca
+  HTML crudo): `#` títulos, `1.` pasos (círculo con número), `-` viñetas, `>` nota en recuadro amarillo, tablas (en
+  celular se vuelven tarjetas), `**negritas**`, `*cursivas*`, `` `código` ``, ligas solo http(s) o `#/`. Un renglón con
+  sangría debajo de un paso se pega a ese paso. Pruebas: `node --test src/utils/manuales.test.js`.
+- Ejemplo local sin base: `.claude/harness-manuales` del worktree (servidor `salper-manuales-harness`, `?rol=chofer`).
+- Fuera de alcance (pedido): fotos/videos, permisos de lectura por rol, versiones/historial.
+- Pendientes: los PDF de Frisa siguen siendo la versión "por persona"; si se cambia un manual aquí, el PDF queda viejo.

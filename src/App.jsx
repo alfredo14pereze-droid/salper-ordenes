@@ -29,6 +29,7 @@ import FrisaPage from './pages/FrisaPage'
 import TallerosPage from './pages/TallerosPage'
 import NotasTiendaPage from './pages/NotasTiendaPage'
 import TareasPage from './pages/TareasPage'
+import ManualesPage from './pages/ManualesPage'
 import EntregaMasivaPage from './pages/EntregaMasivaPage'
 import PedidosPage from './pages/PedidosPage'
 import PedidoPage from './pages/PedidoPage'
@@ -113,6 +114,12 @@ function AuthGate() {
           <Route path="/pendientes" element={<PendientesPage />} />
           <Route path="/notas-tienda" element={<NotasTiendaPage />} />
           <Route path="/tareas" element={<TareasPage />} />
+          {/* V196 — Manuales (todos leen; man.editar edita). */}
+          <Route path="/manuales" element={<ManualesPage />} />
+          <Route path="/manuales/seccion/:seccionId" element={<ManualesPage vista="seccion" />} />
+          <Route path="/manuales/ver/:manualId" element={<ManualesPage vista="ver" />} />
+          <Route path="/manuales/editar/:manualId" element={<ManualesPage vista="editar" />} />
+          <Route path="/manuales/nuevo/:seccionId" element={<ManualesPage vista="nuevo" />} />
           <Route path="/entregas" element={<EntregaMasivaPage />} />
           {/* V176 — pedidos: varias órdenes con un anticipo, abonos y factura. */}
           <Route path="/pedidos" element={<PedidosPage />} />

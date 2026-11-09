@@ -110,7 +110,7 @@ export default function AppLayout({ children }) {
   // Anuncios (solo lectura), Control rápido, e Inventario de tela (solo
   // entradas). Nada más en el menú.
   const soloCaptura = isCapturaProduccion(role)
-  const RUTAS_CAPTURA = ['/', '/anuncios', '/control-rapido', '/inventario-tela']
+  const RUTAS_CAPTURA = ['/', '/anuncios', '/control-rapido', '/inventario-tela', '/manuales']
   // V96 — los 5 roles de etapa de fábrica (o admin_fabrica "viendo como"
   // uno de ellos) no llevan sidebar ni chat — vista de estación, mínima
   // de verdad. Usa `role` (el efectivo), no `trueRole`, a propósito: así
@@ -140,6 +140,8 @@ export default function AppLayout({ children }) {
     { to: '/notas-tienda', label: 'Notas de tienda', show: canViewSeccionNotas(role) },
     // V164 — tareas que los administrativos le asignan al personal.
     { to: '/tareas', label: 'Tareas', show: canViewTareas(role) },
+    // V196 — manuales de cada proceso: todos los roles los leen.
+    { to: '/manuales', label: 'Manuales', show: true },
     // Entrega masiva: marcar varias órdenes como entregadas a la vez (permiso orden.entregar).
     { to: '/entregas', label: 'Entrega masiva', show: canDeliverOrder(role) },
     // V176 — pedidos de clientes (varias órdenes, un anticipo, abonos y factura).
@@ -222,8 +224,13 @@ export default function AppLayout({ children }) {
           { to: '/pendientes', label: 'Pendientes' },
           // V185 — Leo surte las órdenes de Frisa (solo si su rol puede ver Frisa).
           ...(canViewSeccionFrisa(role) ? [{ to: '/frisa', label: 'Surtido Frisa' }] : []),
+          { to: '/manuales', label: 'Manuales' },
         ]
-      : [{ to: '/', label: 'Órdenes', end: true }, ...(canViewPendientes(role) ? [{ to: '/pendientes', label: 'Pendientes' }] : [])]
+      : [
+          { to: '/', label: 'Órdenes', end: true },
+          ...(canViewPendientes(role) ? [{ to: '/pendientes', label: 'Pendientes' }] : []),
+          { to: '/manuales', label: 'Manuales' },
+        ]
     const rutaPermitida = !chofer || RUTAS_CHOFER.some((r) => location.pathname === r || (r !== '/' && location.pathname.startsWith(r + '/')))
     return (
       <div className={'app-shell app-shell--estacion' + (useRediseno ? ' design-root' : '')}>
