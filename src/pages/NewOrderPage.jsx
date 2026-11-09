@@ -976,8 +976,9 @@ function NewOrderForm() {
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
             Tipo de orden *
           </span>
+          {/* 2026-11-09: las órdenes de Frisa ya no se crean aquí, solo desde Frisa → Restock. */}
           <OrderTypeSelect
-            orderTypes={orderTypes}
+            orderTypes={orderTypes.filter((t) => !esOrdenFrisa(t.key))}
             value={form.orderTypeKey}
             onChange={handleTypeChange}
             onTypeCreated={refresh}
