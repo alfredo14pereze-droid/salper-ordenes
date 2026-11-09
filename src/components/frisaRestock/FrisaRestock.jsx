@@ -125,6 +125,9 @@ export default function FrisaRestock() {
 
       {sub === 'pantalon' && (
         <>
+          {comprasNormales.some((c) => c.estado === 'pedida') && (
+            <ListaCompras titulo="Por recibir: pedidos de pantalón que no han llegado" destacada compras={comprasNormales.filter((c) => c.estado === 'pedida')} datos={datos} puede={puede} onRecibir={setRecibir} onListo={listo} />
+          )}
           {planea && <section className="frisa-restock__seccion">
             <div className="frisa__barra">
               <h2 className="section-title section-title--small">Por comprar (pantalón, bata, bolsa)</h2>
@@ -133,14 +136,17 @@ export default function FrisaRestock() {
             <TablaRestock filas={visibles.filter((f) => f.se !== 'fabrica')} />
           </section>}
           {planea && <PropuestaCompra key={r.compraPropuesta.map((l) => l.producto_id + ':' + l.cantidad).join(',')} filas={r.filas.filter((f) => f.se !== 'fabrica')} puede={puede.compras} onListo={listo} />}
-          <ListaCompras titulo="Pedidos de compra de pantalón" compras={comprasNormales.filter((c) => planea || c.estado === 'pedida')} datos={datos} puede={puede} onRecibir={setRecibir} onListo={listo} />
+          {planea && <ListaCompras titulo="Pedidos de pantalón anteriores (recibidos o cancelados)" compras={comprasNormales.filter((c) => c.estado !== 'pedida')} datos={datos} puede={puede} onRecibir={setRecibir} onListo={listo} />}
         </>
       )}
 
       {sub === 'lisa' && (
         <>
+          {comprasLisa.some((c) => c.estado === 'pedida') && (
+            <ListaCompras titulo="Por recibir: pedidos de playera lisa que no han llegado" destacada compras={comprasLisa.filter((c) => c.estado === 'pedida')} datos={datos} puede={puede} onRecibir={setRecibir} onListo={listo} />
+          )}
           <FrisaLisas calculo={r.lisas} puede={puede} onListo={listo} />
-          <ListaCompras titulo="Pedidos de playera lisa" compras={comprasLisa.filter((c) => planea || c.estado === 'pedida')} datos={datos} puede={puede} onRecibir={setRecibir} onListo={listo} />
+          {planea && <ListaCompras titulo="Pedidos de playera lisa anteriores (recibidos o cancelados)" compras={comprasLisa.filter((c) => c.estado !== 'pedida')} datos={datos} puede={puede} onRecibir={setRecibir} onListo={listo} />}
         </>
       )}
 
@@ -471,11 +477,12 @@ function BotonCancelarCompra({ compra, onListo }) {
 
 
 
-function ListaCompras({ titulo, compras, datos, puede, onRecibir, onListo }) {
+function ListaCompras({ titulo, compras, datos, puede, onRecibir, onListo, destacada = false }) {
   const lisaPorId = new Map(datos.lisas.map((x) => [x.id, x]))
   return (
-    <section className="frisa-restock__seccion">
+    <section className={'frisa-restock__seccion' + (destacada ? ' card frisa-restock__propuesta' : '')}>
       <h2 className="section-title section-title--small">{titulo}</h2>
+      {destacada && <p className="frisa__sub">Cuando llegue, toca <strong>Recibir</strong> y escribe lo que llegó de verdad: ahí se suma al inventario.</p>}
       {!compras.length && <p className="frisa__sub">Ninguno todavía.</p>}
       <div className="frisa-oc-lista">
         {compras.slice(0, 20).map((c) => {
