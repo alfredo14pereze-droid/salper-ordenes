@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { Loading, ErrorState } from '../common/States'
 import Modal from '../talleros/Modal'
-import { canCrearOrdenesRestock, canSubirBodegaFrisa, canComprasFrisa, canVerTodoFrisa } from '../../utils/permissions'
+import { canCrearOrdenesRestock, canSubirBodegaFrisa, canComprasFrisa, canVerTodoFrisa, canRecibirPantalonFrisa, canRecibirLisaFrisa } from '../../utils/permissions'
 import {
   fetchRestockTodo, buscarOrdenPorFolio, ligarOrden, desligarOrden, subirABodega, crearCompra, recibirCompra, cancelarCompra,
 } from '../../services/frisaRestockService'
@@ -26,7 +26,8 @@ const ESTADO_OT = {
 // que está en proceso / por entrar, subir a bodega y recibir compras.
 export default function FrisaRestock() {
   const { role } = useAuth()
-  const puede = { ordenes: canCrearOrdenesRestock(role), bodega: canSubirBodegaFrisa(role), compras: canComprasFrisa(role) }
+  const puede = { ordenes: canCrearOrdenesRestock(role), bodega: canSubirBodegaFrisa(role), compras: canComprasFrisa(role),
+    recibirPantalon: canRecibirPantalonFrisa(role), recibirLisa: canRecibirLisaFrisa(role) }
   const [datos, setDatos] = useState(null)
   const [error, setError] = useState(null)
   const [cargando, setCargando] = useState(true)
@@ -127,7 +128,7 @@ export default function FrisaRestock() {
       {sub === 'pantalon' && (
         <>
           {comprasNormales.some((c) => c.estado === 'pedida') && (
-            <ListaCompras titulo="Por recibir: pedidos de pantalón que no han llegado" destacada compras={comprasNormales.filter((c) => c.estado === 'pedida')} datos={datos} puede={puede} onRecibir={setRecibir} onListo={listo} />
+            <ListaCompras titulo="Por recibir: pedidos de pantalón que no han llegado" destacada compras={comprasNormales.filter((c) => c.estado === 'pedida')} datos={datos} puede={puede} puedeRecibir={puede.recibirPantalon} onRecibir={setRecibir} onListo={listo} />
           )}
           {planea && <section className="frisa-restock__seccion">
             <div className="frisa__barra">
@@ -144,7 +145,7 @@ export default function FrisaRestock() {
       {sub === 'lisa' && (
         <>
           {comprasLisa.some((c) => c.estado === 'pedida') && (
-            <ListaCompras titulo="Por recibir: pedidos de playera lisa que no han llegado" destacada compras={comprasLisa.filter((c) => c.estado === 'pedida')} datos={datos} puede={puede} onRecibir={setRecibir} onListo={listo} />
+            <ListaCompras titulo="Por recibir: pedidos de playera lisa que no han llegado" destacada compras={comprasLisa.filter((c) => c.estado === 'pedida')} datos={datos} puede={puede} puedeRecibir={puede.recibirLisa} onRecibir={setRecibir} onListo={listo} />
           )}
           <FrisaLisas calculo={r.lisas} puede={puede} onListo={listo} />
           {planea && <ListaCompras titulo="Pedidos de playera lisa anteriores (recibidos o cancelados)" compras={comprasLisa.filter((c) => c.estado !== 'pedida')} datos={datos} puede={puede} onRecibir={setRecibir} onListo={listo} />}
@@ -481,7 +482,7 @@ function BotonCancelarCompra({ compra, onListo }) {
 
 
 
-function ListaCompras({ titulo, compras, datos, puede, onRecibir, onListo, destacada = false }) {
+function ListaCompras({ titulo, compras, datos, puede, onRecibir, onListo, destacada = false, puedeRecibir = false }) {
   const lisaPorId = new Map(datos.lisas.map((x) => [x.id, x]))
   return (
     <section className={'frisa-restock__seccion' + (destacada ? ' card frisa-restock__propuesta' : '')}>
@@ -529,7 +530,7 @@ function ListaCompras({ titulo, compras, datos, puede, onRecibir, onListo, desta
               <span className="frisa__sub">{c.estado === 'pedida' ? (c.fecha_esperada ? `Se espera ${fechaCorta(c.fecha_esperada)}` : 'Sin fecha') : c.estado === 'recibida' ? `Recibió ${c.recibido_por_nombre} · ${fechaCorta(c.recibido_en)}` : c.cancelado_motivo}</span>
               {c.estado === 'pedida' && (
                 <span className="frisa__botones">
-                  {puede.bodega && <button type="button" className="btn btn--primary btn--small" onClick={() => onRecibir(c)}>Recibir</button>}
+                  {puedeRecibir && <button type="button" className="btn btn--primary btn--small" onClick={() => onRecibir(c)}>Recibir</button>}
                   {puede.compras && <BotonCancelarCompra compra={c} onListo={onListo} />}
                 </span>
               )}

@@ -502,6 +502,15 @@ export function canComprasFrisa(role) {
   return tiene(role, 'fr.compras', () => role === 'admin_general')
 }
 
+// V196 — quién recibe los pedidos de compra: pantalón (y bata, bolsa) Gis; playera lisa, fábrica.
+export function canRecibirPantalonFrisa(role) {
+  return tiene(role, 'fr.recibir_pantalon', () => role === 'admin_general')
+}
+
+export function canRecibirLisaFrisa(role) {
+  return tiene(role, 'fr.recibir_lisa', () => role === 'admin_general')
+}
+
 // V188 — revisión contra Microsip (fm.revisar); fallback = siembra de schema_v188.
 export function canRevisarMicrosip(role) {
   return tiene(role, 'fm.revisar', () => role === 'admin_general')
