@@ -502,7 +502,7 @@ export function canComprasFrisa(role) {
   return tiene(role, 'fr.compras', () => role === 'admin_general')
 }
 
-// V196 — quién recibe los pedidos de compra: pantalón (y bata, bolsa) Gis; playera lisa, fábrica.
+// V197 — quién recibe los pedidos de compra: pantalón (y bata, bolsa) Gis; playera lisa, fábrica.
 export function canRecibirPantalonFrisa(role) {
   return tiene(role, 'fr.recibir_pantalon', () => role === 'admin_general')
 }

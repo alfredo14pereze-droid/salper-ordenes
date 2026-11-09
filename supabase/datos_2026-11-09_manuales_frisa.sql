@@ -37,16 +37,16 @@ Para entrar: en la página de SALPER, en el menú de la izquierda toca **Frisa**
 4. El chofer entrega y el admin confirma "Ya entregó el chofer".
 5. Baja el inventario.
 6. Gis pide restock (órdenes de taller y compras).
-7. Admin sube a bodega / recibe.
+7. Admin sube a bodega · Gis recibe el pantalón · fábrica recibe la playera lisa.
 8. Sube el inventario.
 
 ## Quién hace qué
 
 | Persona | Qué hace | Qué pestañas ve |
 |---|---|---|
-| **Gis** (ventas) | Sube las órdenes de compra de Frisa. Crea las órdenes de taller y los pedidos de playera lisa y pantalón. | Órdenes de surtido, Restock, Reportes |
+| **Gis** (ventas) | Sube las órdenes de compra de Frisa. Crea las órdenes de taller y los pedidos de playera lisa y pantalón. **Recibe el pantalón** cuando llega. | Órdenes de surtido, Restock, Reportes |
 | **Quien surte** (Leo) | Embolsa y marca las órdenes como surtidas. | Órdenes de surtido |
-| **Quien confirma** (admin de fábrica / tienda) | Confirma "Ya entregó el chofer" cuando el chofer regresa de entregar. Sube a bodega lo que termina el taller y recibe las compras. Lo demás lo puede **ver**, pero no cambiar. | Todas (solo de vista, salvo sus confirmaciones) |
+| **Quien confirma** (admin de fábrica / tienda) | Confirma "Ya entregó el chofer" cuando el chofer regresa de entregar. Sube a bodega lo que termina el taller. **Fábrica recibe la playera lisa**. Lo demás lo puede **ver**, pero no cambiar. | Todas (solo de vista, salvo sus confirmaciones) |
 
 Cada persona solo ve las pestañas que le tocan, para que no se confunda.
 
@@ -167,7 +167,7 @@ Si la orden es de un solo renglón, puedes tocar directo **Surtida toda** sin pa
 3. Luego abre **cada orden** y márcala como siempre (palomea y Surtida toda).
 4. Para ver todas otra vez toca **Todas las plantas**.
 $man$),
-      (5, $t$Cómo confirmar "Ya entregó el chofer"$t$, $man$**Lo hace:** quien confirma (admin de fábrica / tienda).
+      (5, $t$Cómo confirmar "Ya entregó el chofer"$t$, $man$**Lo hace:** el **pantalón** (y bata, bolsa) lo recibe **Gis**; la **playera lisa**, **fábrica**.
 
 Se confirma cuando el chofer **ya entregó** la orden en la planta y regresó, **no cuando sale**. Así el inventario solo baja con lo que de verdad se entregó.
 
@@ -225,7 +225,7 @@ El pantalón (y la bata y la bolsa) no se fabrica: se compra hecho. Todo está e
 2. Escribe el **Proveedor** y, si sabes, la fecha en que se espera.
 3. Toca **Crear pedido de compra**.
 
-El pedido queda **hasta arriba** de la pestaña, en **"Por recibir"**, como **Pedida**. Mientras llega, cuenta para que no se pida dos veces. Cuando llega, el administrador le da **Recibir**. Si el proveedor no lo va a surtir, puedes cancelarlo.
+El pedido queda **hasta arriba** de la pestaña, en **"Por recibir"**, como **Pedida**. Mientras llega, cuenta para que no se pida dos veces. Cuando llega, **Gis** le da **Recibir** (ver "Cómo recibir un pedido de compra"). Si el proveedor no lo va a surtir, puedes cancelarlo.
 $man$),
       (8, $t$Cómo hacer un pedido de playera lisa$t$, $man$**Lo hace:** Gis (ventas).
 
@@ -242,9 +242,9 @@ La playera lisa es la playera sin procesos con la que el taller hace las de Fris
 2. Escribe el **Proveedor** y la fecha esperada (opcional).
 3. Toca **Crear pedido de playera lisa**.
 
-El pedido queda hasta arriba de la pestaña, en **"Por recibir"**. Cuando llega, el administrador le da **Recibir** y se suma al anaquel. Al crear una orden de taller, las lisas que usa se descuentan solas.
+El pedido queda hasta arriba de la pestaña, en **"Por recibir"**. Cuando llega, **fábrica** le da **Recibir** y se suma al anaquel. Al crear una orden de taller, las lisas que usa se descuentan solas.
 $man$),
-      (9, $t$Cómo subir a bodega lo que terminó el taller$t$, $man$**Lo hace:** quien confirma (admin de fábrica / tienda).
+      (9, $t$Cómo subir a bodega lo que terminó el taller$t$, $man$**Lo hace:** el **pantalón** (y bata, bolsa) lo recibe **Gis**; la **playera lisa**, **fábrica**.
 
 Cuando en Producción se termina una orden de taller FR, aparece sola en **Restock → pestaña Órdenes de taller → "Por entrar: terminadas, falta subirlas a bodega"**. **No entra sola al inventario**: tú confirmas cuántas piezas llegaron.
 
@@ -257,7 +257,7 @@ Cuando en Producción se termina una orden de taller FR, aparece sola en **Resto
 
 > Todo lo que confirmas cambia el inventario. Escribe siempre lo que **llegó de verdad**.
 $man$),
-      (10, $t$Cómo recibir un pedido de compra$t$, $man$**Lo hace:** quien confirma (admin de fábrica / tienda).
+      (10, $t$Cómo recibir un pedido de compra$t$, $man$**Lo hace:** el **pantalón** (y bata, bolsa) lo recibe **Gis**; la **playera lisa**, **fábrica**.
 
 Los pedidos que hace Gis aparecen como **Pedida**: los de pantalón en **Restock → Pantalón** y los de playera lisa en **Restock → Playera lisa**. Salen **hasta arriba** de cada pestaña, en **"Por recibir"**. El inventario **solo sube cuando le das Recibir**.
 
@@ -296,7 +296,7 @@ Para cada clave la página lleva tres números:
 | Leo embolsa una orden completa | Órdenes de surtido → la orden → **Surtida toda** | Se **aparta** (el real no cambia) | Quien surte |
 | El chofer **ya entregó** en la planta | Surtidas → la orden → **Ya entregó el chofer** → remisión | **Baja** el real | Admin fábrica / tienda |
 | Llega a bodega lo que terminó el taller | Restock → Órdenes de taller → Por entrar → **Subir a bodega** | **Sube** el real | Admin fábrica / tienda |
-| Llega un pedido de pantalón (o bata, bolsa) | Restock → Pantalón → **Recibir** | **Sube** el real | Admin fábrica / tienda |
+| Llega un pedido de pantalón (o bata, bolsa) | Restock → Pantalón → **Recibir** | **Sube** el real | Gis |
 | Se cuenta la bodega o se revisa contra Microsip | Niveles (conteo) o Revisión Microsip | **Ajusta** el real | El encargado del inventario |
 
 ### El historial de cada clave
@@ -316,7 +316,7 @@ En Niveles toca la **clave** para ver su detalle: real, apartado, disponible, ni
 
 | Pasa esto | Efecto en el anaquel |
 |---|---|
-| Llega un pedido de playera lisa → **Recibir** (Restock → Playera lisa) | **Sube** |
+| Llega un pedido de playera lisa → **Recibir** (Restock → Playera lisa, lo hace fábrica) | **Sube** |
 | Se crea una orden de taller FR de playera | **Baja** sola lo que lleva esa orden |
 | Se quita una orden del restock o se borra | **Regresa** lo que había apartado |
 | Se cuenta el anaquel → tocar el número de **Stock (anaquel)** | **Ajusta** al conteo |
@@ -375,7 +375,7 @@ $man$),
 | Quieres ver las de una planta | Órdenes de surtido → botón de la planta |
 | El chofer ya entregó una orden | Órdenes de surtido → Surtidas → la orden → Ya entregó el chofer → remisión → Confirmar entrega |
 | Llega lo que terminó el taller | Restock → Órdenes de taller → Por entrar → Subir a bodega → corrige piezas → Confirmar |
-| Llega un pedido del proveedor | Restock → Pantalón (o Playera lisa) → Recibir → lo que llegó → Recibir |
+| Llega un pedido de playera lisa (fábrica) | Restock → Playera lisa → Por recibir → Recibir → lo que llegó → Recibir |
 $man$)
     ) as x(orden, titulo, contenido)
    where not exists (select 1 from public.manuales m

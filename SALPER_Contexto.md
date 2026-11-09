@@ -7903,3 +7903,7 @@ Sección (ej. "Frisa") → Manual (ej. "Cómo surtir una orden"). Contenido en m
 - Ejemplo local sin base: `.claude/harness-manuales` del worktree (servidor `salper-manuales-harness`, `?rol=chofer`).
 - Fuera de alcance (pedido): fotos/videos, permisos de lectura por rol, versiones/historial.
 - Pendientes: los PDF de Frisa siguen siendo la versión "por persona"; si se cambia un manual aquí, el PDF queda viejo.
+- 2026-11-09: la migración "quién recibe" se renumeró a **V197** (`schema_v197_frisa_quien_recibe.sql`) porque V196 ya es
+  Manuales. Los manuales de Frisa viven en DOS lugares: los PDF (~/Desktop/Manuales Frisa, generador en el scratchpad) y el
+  módulo Manuales de la página (tabla `manuales`, sección Frisa). Cada cambio de texto va en los dos; para la página se da un
+  SQL de `replace` (ej. `datos_2026-11-09_manuales_frisa_quien_recibe.sql`) y se actualiza también `datos_2026-11-09_manuales_frisa.sql`.

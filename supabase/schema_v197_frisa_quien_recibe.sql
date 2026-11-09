@@ -1,5 +1,5 @@
 -- =====================================================================
--- V196 — Frisa: quién recibe cada pedido de compra (2026-11-09)
+-- V197 — Frisa: quién recibe cada pedido de compra (2026-11-09)
 -- =====================================================================
 -- Pedido de Alfredo: los pedidos de PANTALÓN (y bata, bolsa) los recibe Gis
 -- (ventas); los de PLAYERA LISA se reciben en fábrica (admin_fabrica).
@@ -23,13 +23,13 @@ declare v_def text;
 begin
   select pg_get_functiondef(p.oid) into v_def from pg_proc p
    where p.proname = 'frisa_compra_recibir' and p.pronamespace = 'public'::regnamespace;
-  if v_def is null then raise exception 'V196: no existe frisa_compra_recibir.'; end if;
+  if v_def is null then raise exception 'V197: no existe frisa_compra_recibir.'; end if;
   if position('fr.recibir_lisa' in v_def) > 0 then
-    raise notice 'V196: frisa_compra_recibir ya tiene el chequeo nuevo.';
+    raise notice 'V197: frisa_compra_recibir ya tiene el chequeo nuevo.';
     return;
   end if;
   if position('if not public.tiene_permiso(''fr.bodega'') then' in v_def) = 0 then
-    raise exception 'V196: frisa_compra_recibir no tiene el chequeo esperado; no se cambió nada.';
+    raise exception 'V197: frisa_compra_recibir no tiene el chequeo esperado; no se cambió nada.';
   end if;
   v_def := replace(v_def, 'if not public.tiene_permiso(''fr.bodega'') then',
     'if not (case when exists (select 1 from public.frisa_compra_lineas_lisa x where x.compra_id = p_id)
