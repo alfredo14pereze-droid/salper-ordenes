@@ -7872,3 +7872,6 @@ página: título, parte, folio, operación, segundos) y ver el costo. Por ahora 
 - 2026-11-08: se quitó la pestaña Urgente (su contenido está arriba en Órdenes de surtido: "Lo que falta por clave" y "Falta: …"
   en cada orden). Frisa subió en el menú. La entrega se confirma cuando el chofer YA ENTREGÓ ("Ya entregó el chofer" →
   "Confirmar entrega"); V195 (APLICADO) cambió el texto del historial a "Entregada por el chofer". Manuales sin admin general.
+- 2026-11-09: FR-008 (creada por error) borrada; luego las 13 órdenes Frisa existentes (FR-001…FR-007, IND-025/026/030-033)
+  dadas de baja (papelera, eliminada_en) para empezar con Restock. Manual nuevo "Manual Frisa - Inventario".
+  PGlite reinstalado en el scratchpad de esta sesión (el anterior se borró); harness y pgtest apuntan ahí.
