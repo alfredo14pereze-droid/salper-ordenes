@@ -7907,3 +7907,7 @@ Sección (ej. "Frisa") → Manual (ej. "Cómo surtir una orden"). Contenido en m
   Manuales. Los manuales de Frisa viven en DOS lugares: los PDF (~/Desktop/Manuales Frisa, generador en el scratchpad) y el
   módulo Manuales de la página (tabla `manuales`, sección Frisa). Cada cambio de texto va en los dos; para la página se da un
   SQL de `replace` (ej. `datos_2026-11-09_manuales_frisa_quien_recibe.sql`) y se actualiza también `datos_2026-11-09_manuales_frisa.sql`.
+- V198 (APLICADO 2026-11-09): Gis (ventas) confirma entregas (fs.entregar) y recibe pantalón; Jaqui y Adriana (rol
+  **terminado**, las únicas con ese rol) suben a bodega (fr.bodega) y reciben playera lisa (fr.recibir_lisa). admin_fabrica y
+  admin_tienda quedan solo de vista. El menú de estaciones muestra "Frisa" si el rol tiene permiso. Manuales PDF y de la
+  página actualizados (datos_2026-11-09_manuales_frisa_quien_confirma.sql, corrido: 0 viejos).
