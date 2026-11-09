@@ -5458,3 +5458,10 @@ h4 {
 .frisa-surtido__check { width: 44px; text-align: center; }
 .frisa-surtido__check input { width: 24px; height: 24px; cursor: pointer; }
 .frisa-surtido__embolsada td { background: var(--color-good-soft); }
+
+/* 2026-11-09 — pedidos de compra: por prenda, talla y piezas (sin claves) */
+.frisa-compra__tallas { margin: 6px 0; overflow-x: auto; }
+.frisa-compra__prenda { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.frisa-compra__tabla { border-collapse: collapse; font-size: 14px; }
+.frisa-compra__tabla th { text-align: left; font-weight: 600; color: var(--color-muted, #6b6558); padding: 3px 10px 3px 0; white-space: nowrap; }
+.frisa-compra__tabla td { text-align: center; padding: 3px 10px; border-left: 1px solid var(--color-border, #e4dfd3); min-width: 34px; }

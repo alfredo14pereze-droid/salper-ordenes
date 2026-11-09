@@ -13,6 +13,7 @@ import { calcularRestock, itemsOrdenRestock, propuestaIngreso } from '../../util
 import { calcularLisas, nombreLisa } from '../../utils/frisaLisas'
 import FrisaLisas from './FrisaLisas'
 import { EstadoBadge, NombreFrisa, fechaCorta } from '../frisaNiveles/comunes'
+import { prendaYTalla } from '../../utils/frisaPlantas'
 
 const num = (n) => Number(n || 0).toLocaleString('es-MX')
 const masDias = (d) => { const x = new Date(); x.setDate(x.getDate() + d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}` }
@@ -158,7 +159,10 @@ export default function FrisaRestock() {
       {recibir && (
         <ModalRecibir compra={recibir}
           lineas={[
-            ...datos.compraLineas.filter((l) => l.compra_id === recibir.id).map((l) => ({ ...l, key: l.producto_id })),
+            ...datos.compraLineas.filter((l) => l.compra_id === recibir.id).map((l) => {
+              const { prenda, talla } = prendaYTalla(datos.productos.find((x) => x.id === l.producto_id)?.nombre || l.clave)
+              return { ...l, key: l.producto_id, clave: `${prenda.charAt(0)}${prenda.slice(1).toLowerCase()} · talla ${talla}` }
+            }),
             ...datos.compraLineasLisa.filter((l) => l.compra_id === recibir.id).map((l) => {
               const li = datos.lisas.find((x) => x.id === l.lisa_id)
               return { ...l, key: l.lisa_id, clave: li ? nombreLisa(li) : 'Playera lisa' }
@@ -449,7 +453,7 @@ function ModalRecibir({ compra, lineas, onClose, onListo }) {
         <p className="frisa__nota">Escribe lo que llegó de verdad.</p>
         {lineas.map((l) => (
           <label key={l.key} className="frisa-niveles__supuesto">
-            <span className="field-label">{l.clave} (pedidas {num(l.cantidad)})</span>
+            <span className="field-label">{l.clave} · pedidas {num(l.cantidad)}</span>
             <input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" value={cant[l.key]} onChange={(e) => setCant({ ...cant, [l.key]: e.target.value })} />
           </label>
         ))}
@@ -486,10 +490,21 @@ function ListaCompras({ titulo, compras, datos, puede, onRecibir, onListo, desta
       {!compras.length && <p className="frisa__sub">Ninguno todavía.</p>}
       <div className="frisa-oc-lista">
         {compras.slice(0, 20).map((c) => {
+          // Por prenda, con su talla (sin claves): "Pantalón de mezclilla" → 30: 15, 31: 5…
+          const prodPorId = new Map(datos.productos.map((x) => [x.id, x]))
           const ls = [
-            ...datos.compraLineas.filter((l) => l.compra_id === c.id),
-            ...datos.compraLineasLisa.filter((l) => l.compra_id === c.id).map((l) => ({ ...l, clave: `Lisa ${lisaPorId.get(l.lisa_id)?.color} ${lisaPorId.get(l.lisa_id)?.manga} ${lisaPorId.get(l.lisa_id)?.talla}` })),
+            ...datos.compraLineas.filter((l) => l.compra_id === c.id).map((l) => ({ ...l, ...prendaYTalla(prodPorId.get(l.producto_id)?.nombre || l.clave) })),
+            ...datos.compraLineasLisa.filter((l) => l.compra_id === c.id).map((l) => {
+              const li = lisaPorId.get(l.lisa_id)
+              return { ...l, prenda: `Playera lisa ${li?.color || ''} manga ${li?.manga === 'ML' ? 'larga' : 'corta'}`, talla: li?.talla || '' }
+            }),
           ]
+          const grupos = []
+          for (const l of ls) {
+            let g = grupos.find((x) => x.prenda === l.prenda)
+            if (!g) { g = { prenda: l.prenda, lineas: [] }; grupos.push(g) }
+            g.lineas.push(l)
+          }
           return (
             <div key={c.id} className="card frisa-surtido__tarjeta frisa-restock__compra">
               <span className="frisa-surtido__fila1">
@@ -499,7 +514,18 @@ function ListaCompras({ titulo, compras, datos, puede, onRecibir, onListo, desta
                 </span>
               </span>
               <span className="frisa-oc__planta">{c.proveedor}</span>
-              <span className="frisa__sub">{ls.map((l) => `${l.clave} ×${num(l.cantidad)}${l.recibida != null ? ` (llegaron ${num(l.recibida)})` : ''}`).join(' · ')}</span>
+              {grupos.map((g) => (
+                <div key={g.prenda} className="frisa-compra__tallas">
+                  <div className="frisa-compra__prenda">{g.prenda.charAt(0) + g.prenda.slice(1).toLowerCase()} · {num(g.lineas.reduce((t, l) => t + l.cantidad, 0))} pzas</div>
+                  <table className="frisa-compra__tabla">
+                    <tbody>
+                      <tr><th>Talla</th>{g.lineas.map((l) => <td key={l.id}>{l.talla}</td>)}</tr>
+                      <tr><th>Piezas</th>{g.lineas.map((l) => <td key={l.id}><strong>{num(l.cantidad)}</strong></td>)}</tr>
+                      {g.lineas.some((l) => l.recibida != null) && <tr><th>Llegaron</th>{g.lineas.map((l) => <td key={l.id}>{l.recibida != null ? num(l.recibida) : '—'}</td>)}</tr>}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
               <span className="frisa__sub">{c.estado === 'pedida' ? (c.fecha_esperada ? `Se espera ${fechaCorta(c.fecha_esperada)}` : 'Sin fecha') : c.estado === 'recibida' ? `Recibió ${c.recibido_por_nombre} · ${fechaCorta(c.recibido_en)}` : c.cancelado_motivo}</span>
               {c.estado === 'pedida' && (
                 <span className="frisa__botones">
