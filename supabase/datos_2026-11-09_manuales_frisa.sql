@@ -177,7 +177,7 @@ Se confirma cuando el chofer **ya entregó** la orden en la planta y regresó, *
 2. Toca la orden que el chofer ya entregó.
 3. Toca **Ya entregó el chofer**.
 4. Escribe el **Folio de remisión** de Microsip y la **Fecha de entrega**.
-5. Toca **Confirmar entrega**. La orden pasa a **Entregadas** y sus piezas se descuentan del inventario de la fábrica.
+5. Toca **Confirmar entrega**. La orden pasa a **Entregadas**, sus piezas se descuentan del inventario de la fábrica y **se suman a la planta** de esa orden. Escribe el folio **igual que en Microsip**.
 
 Antes de confirmar dice cuántas piezas se van a descontar.
 
@@ -344,15 +344,18 @@ $man$),
 
 Arriba dice cuándo fue la última revisión. A los 10 días avisa **"Ya toca revisar"**.
 $man$),
-      (13, $t$Plantas Frisa: subir remisiones y facturas$t$, $man$Lo que hay en cada planta = **remitido − facturado**. No tiene que ver con la bodega: lo entregado por el chofer no se suma aquí, para no contarlo dos veces.
+      (13, $t$Plantas Frisa: subir remisiones y facturas$t$, $man$Lo que hay en cada planta = **remitido − facturado**.
 
-- Se alimenta subiendo los **"Diarios del inventario"** de Microsip (Concepto: Remisión y Venta).
+- **Remisiones:** cada entrega confirmada en la página ("Ya entregó el chofer") se suma **sola** a su planta, con su folio de remisión.
+- **Facturas:** se suben con los Diarios de Microsip y **restan**.
+- Si el Excel trae una remisión que ya se sumó con la entrega, se **salta sola** (no se cuenta doble).
+
 - Cada folio se cuenta una sola vez: si subes un archivo repetido, salta lo que ya estaba.
 - Arranca con lo acumulado al 15/10/2026.
 
 ## Pasos
 
-1. En Microsip saca **"Diarios del inventario"**, línea FRISA, del periodo que falte: **Concepto: Remisión** (lo entregado) y **Concepto: Venta** (lo facturado). Pueden ir en un mismo Excel en dos hojas o en dos archivos.
+1. En Microsip saca **"Diarios del inventario"**, línea FRISA, del periodo que falte: **Concepto: Venta** (lo facturado) y, si quieres revisar, también **Concepto: Remisión**. Pueden ir en un mismo Excel en dos hojas o en dos archivos.
 2. En **Plantas Frisa** súbelo tal cual. La página muestra cuántos documentos son **nuevos** y cuántos **ya estaban** (los salta solos).
 3. Revisa que no haya **plantas desconocidas** ni artículos **sin clave**, y toca **Subir**.
 
