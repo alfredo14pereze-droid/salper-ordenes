@@ -1,4 +1,4 @@
--- Manuales (página): confirmar entregas sin remisión y entrega parcial (V204).
+-- Manuales (página): confirmar entregas sin remisión y entrega parcial (V204). Correr una sola vez.
 update public.manuales m
    set contenido = replace(replace(replace(replace(replace(replace(replace(replace(contenido,
     $q$Se hace **una remisión por cada OC**, así que cuando Leo regresa se confirman todas juntas:
@@ -33,6 +33,7 @@ update public.manuales m
     $q$| Leo regresó de entregar (Gis) | Órdenes de surtido → Surtidas → marcar solo las que no se entregaron bien → Confirmar entregas |$q$),
        actualizado_en = now(), actualizado_por_nombre = 'Actualización (entregas sin remisión)'
  where m.eliminado_en is null
+   and contenido not like '%No hace falta escribir remisiones%'
    and m.seccion_id in (select id from public.manual_secciones where lower(btrim(nombre)) = 'frisa' and eliminado_en is null);
 
 select count(*) filter (where contenido like '%No hace falta escribir remisiones%') as ya_lo_explica,
