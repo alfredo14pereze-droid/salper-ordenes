@@ -7917,7 +7917,7 @@ Sección (ej. "Frisa") → Manual (ej. "Cómo surtir una orden"). Contenido en m
   los Diarios de Microsip la saltan; las facturas se suben y restan. Manuales PDF y página actualizados.
   Ojo: remisiones entregadas en partes con el mismo folio se saltan en la 2ª parte (sumar a mano).
 
-### V200 — Costura ve las hojas de operaciones impresas (2026-11-09)
+### V200 — Costura ve las hojas de operaciones impresas (2026-11-09, APLICADO)
 Pedido de Alfredo: "lo único que quiero es que la persona de costura pueda ver las hojas que se han impreso".
 (Primero llegó un prompt más grande —vista Operaciones con prendas activas, cotizador, etc.— y Alfredo lo
 recortó a esto.)
@@ -7935,4 +7935,6 @@ recortó a esto.)
   «Volver a imprimir» usa la misma hoja (`HojaOperacionesPrenda` con `registrar={false}`): imprime sin guardar
   en «Hojas impresas» y regresa a `/hojas-impresas`. Costura no puede abrir `?prenda=` (catálogo).
 - Ejemplo local: `salper-costura-hojas-harness` (`.claude/harness-costura/`, `?rol=costura|corte|admin_fabrica`).
-- **Pendiente:** aplicar el SQL, subir a `main` y que Carmen lo pruebe con su cuenta.
+- **Estado:** SQL aplicado por Alfredo el 2026-11-09 (no se pudo verificar la política desde aquí: anon no la ve) y en
+  `main`/producción (commit f39f32b, bundle index-Dq-QNhN3.js confirmado). **Pendiente:** que Carmen lo pruebe con su
+  cuenta (si no ve el botón, que actualice la app).
