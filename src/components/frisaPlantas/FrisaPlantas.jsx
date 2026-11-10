@@ -106,7 +106,7 @@ export default function FrisaPlantas() {
         <div>
           <h1 className="page-title">Frisa · inventario en plantas</h1>
           <p className="page-subtitle">
-            Lo que hay en cada planta de Frisa = lo remitido − lo facturado. Va aparte del inventario de nuestra bodega.
+            Lo que hay en cada planta de Frisa = lo remitido − lo facturado. Cada entrega confirmada en la página se suma sola a su planta; las facturas (y lo que no haya pasado por la página) se suben con los Diarios de Microsip.
             {ultimaFecha && ` Movimientos hasta el ${fechaCorta(ultimaFecha)}.`}
           </p>
         </div>

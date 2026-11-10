@@ -212,7 +212,7 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
             </label>
             <button type="submit" className="btn btn--primary" disabled={trabajando}>{trabajando ? 'Guardando…' : 'Confirmar entrega'}</button>
             <button type="button" className="btn btn--ghost" onClick={() => setAccion(null)}>Cancelar</button>
-            <p className="frisa__sub">Márcala cuando el chofer ya entregó en la planta (no cuando sale). Al confirmar se descuentan {num(piezasDe(lineas))} piezas del inventario de la fábrica.</p>
+            <p className="frisa__sub">Márcala cuando el chofer ya entregó en la planta (no cuando sale). Al confirmar se descuentan {num(piezasDe(lineas))} piezas del inventario de la fábrica y se suman al inventario de la planta. Escribe el folio igual que en Microsip.</p>
           </form>
         )}
 
