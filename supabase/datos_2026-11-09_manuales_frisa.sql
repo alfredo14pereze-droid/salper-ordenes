@@ -171,7 +171,17 @@ $man$),
 
 Se confirma cuando el chofer **ya entregó** la orden en la planta y regresó, **no cuando sale**. Así el inventario solo baja con lo que de verdad se entregó.
 
-## Pasos
+## Varias a la vez (lo normal)
+
+Se hace **una remisión por cada OC**, así que cuando Leo regresa se confirman todas juntas:
+
+1. En **Órdenes de surtido** toca **Surtidas**. Arriba sale **"Confirmar entregas de Leo (varias a la vez)"** con todas las órdenes surtidas.
+2. Escribe el **folio de remisión de Microsip** de cada orden que **sí entregó**. Las que dejes en blanco se quedan en Surtidas.
+3. Revisa la **Fecha de entrega** y toca **Confirmar … entregas**. Cada una se descuenta de la bodega y se suma a su planta.
+
+> Escribe cada folio **igual que en Microsip**. Si pones el mismo folio en dos órdenes, la página no te deja confirmar.
+
+## Una sola orden
 
 1. En **Órdenes de surtido** toca el botón **Surtidas**. Ahí están las órdenes embolsadas que todavía no se confirman como entregadas.
 2. Toca la orden que el chofer ya entregó.
@@ -376,7 +386,7 @@ $man$),
 | Hay que comprar pantalón | Restock → Pantalón → Pedido de compra → Proveedor → Crear |
 | Hay que comprar playera lisa | Restock → Playera lisa → Pedido de playera lisa → revisa OK/PEDIR → Crear |
 | Quieres ver las de una planta | Órdenes de surtido → botón de la planta |
-| Leo ya entregó una orden (Gis) | Órdenes de surtido → Surtidas → la orden → Ya entregó el chofer → remisión → Confirmar entrega |
+| Leo regresó de entregar (Gis) | Órdenes de surtido → Surtidas → un folio de remisión por orden → Confirmar entregas |
 | Llega lo que terminó el taller (Jackie o Adriana) | Restock → Órdenes de taller → Por entrar → Subir a bodega → corrige piezas → Confirmar |
 | Llega un pedido de playera lisa (Jackie o Adriana) | Restock → Playera lisa → Por recibir → Recibir → lo que llegó → Recibir |
 $man$)
