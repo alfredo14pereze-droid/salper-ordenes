@@ -4,6 +4,7 @@ import { fechaCorta, NombreFrisa } from '../frisaNiveles/comunes'
 import { EstadoSurtido } from './comunes'
 import FrisaSurtidoDetalle from './FrisaSurtidoDetalle'
 import FrisaSurtidoForm from './FrisaSurtidoForm'
+import FrisaEntregasVarias from './FrisaEntregasVarias'
 
 const num = (n) => Number(n || 0).toLocaleString('es-MX')
 
@@ -151,6 +152,10 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
       )}
 
       {!lista.length && <div className="card frisa__vacio"><p>No hay órdenes {ESTADOS_SURTIDO[filtro].label.toLowerCase()}s.</p></div>}
+
+      {filtro === 'surtida' && permisos.entregar && lista.length > 0 && (
+        <FrisaEntregasVarias key={lista.map((x) => x.id).join(',')} ordenes={lista} porSurtido={porSurtido} onListo={(msg) => despuesDeGuardar(msg)} />
+      )}
 
       <div className="frisa-oc-lista">
         {lista.map((s) => {
