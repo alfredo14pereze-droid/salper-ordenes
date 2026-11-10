@@ -5606,3 +5606,4 @@ h4 {
 .manuales-regresar--btn { align-self: flex-start; text-align: left; padding-left: 0; }
 .manuales-flechas .btn { min-width: 36px; min-height: 32px; font-size: 1rem; text-decoration: none; }
 .frisa__prod { font-weight: 600; font-size: 13px; }
+.frisa-surtido__trae { font-size: 13px; font-weight: 600; color: var(--color-primary, #c2410c); }

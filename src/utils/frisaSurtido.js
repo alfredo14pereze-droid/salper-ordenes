@@ -1,3 +1,4 @@
+import { nombreFrisa } from './frisaColores.js'
 // V185 — Frisa fase 1: inventario SALPER por clave y órdenes de surtido.
 // Ver supabase/schema_v185_frisa_surtido.sql.
 //
@@ -246,4 +247,22 @@ export function juntarPorClave(ordenes, lineasPor, productosInv) {
   }
   return [...m.values()].map((x) => ({ ...x, disponible: x.producto.disponible ?? 0, falta: Math.max(0, x.cantidad - Math.max(0, x.producto.disponible ?? 0)) }))
     .sort((a, b) => String(a.producto.clave).localeCompare(String(b.producto.clave)))
+}
+
+// Buscar producto dentro de las órdenes (pedido de Alfredo, 2026-11-09): escribe una clave,
+// número de artículo o parte del nombre ("roja manga corta talla m") y regresa los renglones
+// que coinciden. Cada palabra debe aparecer; "talla X" tiene que ser esa talla exacta.
+const normalizar = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim()
+export function buscadorProducto(texto) {
+  let q = normalizar(texto)
+  if (q.length < 2) return null
+  const tallas = []
+  q = q.replace(/\bTALLA\s+([0-9A-Z]+)\b/g, (_, t) => { tallas.push(t); return ' ' })
+  const palabras = q.split(' ').filter(Boolean)
+  return (producto, clave = '') => {
+    const nombre = normalizar(nombreFrisa(producto?.nombre))
+    const todo = `${nombre} ${normalizar(producto?.nombre)} ${normalizar(producto?.clave ?? clave)} ${normalizar(producto?.articulo)} ${normalizar(clave)}`
+    if (tallas.some((t) => !new RegExp(`\\bTALLA ${t}\\b`).test(nombre))) return false
+    return palabras.every((p) => todo.includes(p))
+  }
 }

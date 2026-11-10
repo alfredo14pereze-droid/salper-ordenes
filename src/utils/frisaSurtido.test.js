@@ -108,3 +108,17 @@ test('plantas: agrupa "Frisa Acería" con "FRISA ACERIA" y junta lo que piden', 
   const j = juntarPorClave(s.slice(0, 2), lineasPorSurtido([{ surtido_id: 'a', producto_id: 'x', clave: 'X', cantidad: 5 }, { surtido_id: 'b', producto_id: 'x', clave: 'X', cantidad: 7 }]), [{ id: 'x', clave: 'X', disponible: 10 }])
   assert.deepEqual(j.map((x) => [x.producto.clave, x.cantidad, x.ordenes, x.falta]), [['X', 12, 2, 2]])
 })
+
+test('buscar producto en las órdenes: por nombre, talla exacta, clave o artículo', async () => {
+  const { buscadorProducto } = await import('./frisaSurtido.js')
+  const roja = { clave: 'PLAFR-000M-01MCRO1I', articulo: '1029001', nombre: 'PLAYERA C/R M/C S/REFLEJANTE 1 IMP. ROJA FRISA T-M' }
+  const rojaXL = { ...roja, clave: 'PLAFR-00XL-01MCRO1I', nombre: 'PLAYERA C/R M/C S/REFLEJANTE 1 IMP. ROJA FRISA T-XL' }
+  const b = buscadorProducto('roja manga corta talla M')
+  assert.equal(b(roja), true)
+  assert.equal(b(rojaXL), false)
+  assert.equal(buscadorProducto('lisa roja')(rojaXL), true)
+  assert.equal(buscadorProducto('plafr-000m')(roja), true)
+  assert.equal(buscadorProducto('1029001')(roja), true)
+  assert.equal(buscadorProducto('pantalon')(roja), false)
+  assert.equal(buscadorProducto('a'), null)
+})

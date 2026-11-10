@@ -1,6 +1,6 @@
 import { nombreFrisa } from '../../utils/frisaColores'
 import { useMemo, useState } from 'react'
-import { ESTADOS_SURTIDO, lineasPorSurtido, ordenarPendientes, piezasDe, textoLimite, clavePlanta, plantasDe, juntarPorClave } from '../../utils/frisaSurtido'
+import { ESTADOS_SURTIDO, lineasPorSurtido, ordenarPendientes, piezasDe, textoLimite, clavePlanta, plantasDe, juntarPorClave, buscadorProducto } from '../../utils/frisaSurtido'
 import { fechaCorta, NombreFrisa } from '../frisaNiveles/comunes'
 import { EstadoSurtido } from './comunes'
 import FrisaSurtidoDetalle from './FrisaSurtidoDetalle'
@@ -22,6 +22,10 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
   const [aviso, setAviso] = useState(null)
 
   const porSurtido = useMemo(() => lineasPorSurtido(datos.lineas), [datos])
+  const prodPorId = useMemo(() => new Map([...(datos.productos || []), ...(inv || [])].map((p) => [p.id, p])), [datos, inv])
+  // Si lo escrito es un producto: en cada orden, cuánto trae de eso.
+  const buscaProd = useMemo(() => buscadorProducto(texto), [texto])
+  const traeDe = (s) => (buscaProd ? (porSurtido.get(s.id) || []).filter((x) => buscaProd(prodPorId.get(x.producto_id), x.clave)) : [])
   const completaPorId = useMemo(() => new Map(urgente.ordenes.map((o) => [o.surtido.id, o])), [urgente])
   const conteo = Object.fromEntries(FILTROS.map((f) => [f, datos.surtidos.filter((s) => s.estado === f).length]))
 
@@ -29,10 +33,14 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
     const t = texto.trim().toLowerCase()
     let l = datos.surtidos.filter((s) => s.estado === filtro)
     if (planta) l = l.filter((s) => clavePlanta(s.planta) === planta)
-    if (t) l = l.filter((s) => s.numero_oc.toLowerCase().includes(t) || s.planta.toLowerCase().includes(t) || (s.remision || '').toLowerCase().includes(t))
+    if (t) {
+      const busca = buscadorProducto(t)
+      l = l.filter((s) => s.numero_oc.toLowerCase().includes(t) || s.planta.toLowerCase().includes(t) || (s.remision || '').toLowerCase().includes(t)
+        || (busca && (porSurtido.get(s.id) || []).some((x) => busca(prodPorId.get(x.producto_id), x.clave))))
+    }
     if (filtro === 'pendiente' || filtro === 'surtida') return ordenarPendientes(l)
     return l // las demás: la más reciente primero (así vienen)
-  }, [datos, filtro, texto, planta])
+  }, [datos, filtro, texto, planta, porSurtido, prodPorId])
   const plantas = useMemo(() => plantasDe(datos.surtidos.filter((s) => s.estado === filtro)), [datos, filtro])
   const juntas = useMemo(() => (planta && filtro === 'pendiente' ? juntarPorClave(lista, porSurtido, inv) : null), [planta, filtro, lista, porSurtido, inv])
 
@@ -124,7 +132,7 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
           </div>
         )}
         <div className="frisa-niveles__campos">
-          <input className="input" type="search" placeholder="Buscar OC, planta o remisión" value={texto} onChange={(e) => setTexto(e.target.value)} />
+          <input className="input" type="search" placeholder="Buscar OC, planta, remisión o producto (ej. roja manga corta talla M)" value={texto} onChange={(e) => setTexto(e.target.value)} />
         </div>
       </div>
 
@@ -152,11 +160,16 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
         </div>
       )}
 
-      {!lista.length && <div className="card frisa__vacio"><p>No hay órdenes {ESTADOS_SURTIDO[filtro].label.toLowerCase()}s.</p></div>}
+      {!lista.length && <div className="card frisa__vacio"><p>{texto.trim() ? `Ninguna orden ${ESTADOS_SURTIDO[filtro].label.toLowerCase()} tiene "${texto.trim()}".` : `No hay órdenes ${ESTADOS_SURTIDO[filtro].label.toLowerCase()}s.`}</p></div>}
 
       {filtro === 'surtida' && permisos.entregar && lista.length > 0 && (
         <FrisaEntregasVarias key={lista.map((x) => x.id).join(',')} ordenes={lista} porSurtido={porSurtido} onListo={(msg) => despuesDeGuardar(msg)} />
       )}
+
+      {buscaProd && lista.some((s) => traeDe(s).length) && (() => {
+        const con = lista.filter((s) => traeDe(s).length)
+        return <p className="frisa__nota"><strong>{con.length} orden{con.length === 1 ? '' : 'es'} {ESTADOS_SURTIDO[filtro].label.toLowerCase()}{con.length === 1 ? '' : 's'}</strong> con ese producto · <strong>{num(con.reduce((t, s) => t + piezasDe(traeDe(s)), 0))} pzas</strong> en total.</p>
+      })()}
 
       <div className="frisa-oc-lista">
         {lista.map((s) => {
@@ -185,6 +198,9 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
               </span>
               {s.estado === 'pendiente' && u && !u.completa && u.faltantes.length > 0 && (
                 <span className="frisa__falta">Falta: {u.faltantes.map((f) => `${nombreFrisa(f.nombre)} (${num(f.falta)})`).join(', ')}</span>
+              )}
+              {traeDe(s).length > 0 && (
+                <span className="frisa-surtido__trae">Trae: {traeDe(s).map((x) => `${nombreFrisa(prodPorId.get(x.producto_id)?.nombre) || x.clave} (${num(x.cantidad)})`).join(', ')}</span>
               )}
               {s.estado === 'surtida' && <span className="frisa__sub">Surtió {s.surtido_por_nombre}</span>}
               {s.estado === 'entregada' && <span className="frisa__sub">Rem. {s.remision} · {fechaCorta(s.fecha_entrega)} · surtió {s.surtido_por_nombre}</span>}
