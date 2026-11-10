@@ -1,6 +1,6 @@
 import { nombreFrisa } from '../../utils/frisaColores'
 import { useMemo, useState } from 'react'
-import { ESTADOS_SURTIDO, lineasPorSurtido, ordenarPendientes, piezasDe, textoLimite, clavePlanta, plantasDe, juntarPorClave, buscadorProducto } from '../../utils/frisaSurtido'
+import { ESTADOS_SURTIDO, lineasPorSurtido, ordenarPendientes, piezasDe, textoLimite, clavePlanta, plantasDe, juntarPorClave, buscadorProducto, porEntregar } from '../../utils/frisaSurtido'
 import { fechaCorta, NombreFrisa } from '../frisaNiveles/comunes'
 import { EstadoSurtido } from './comunes'
 import FrisaSurtidoDetalle from './FrisaSurtidoDetalle'
@@ -163,7 +163,7 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
       {!lista.length && <div className="card frisa__vacio"><p>{texto.trim() ? `Ninguna orden ${ESTADOS_SURTIDO[filtro].label.toLowerCase()} tiene "${texto.trim()}".` : `No hay órdenes ${ESTADOS_SURTIDO[filtro].label.toLowerCase()}s.`}</p></div>}
 
       {filtro === 'surtida' && permisos.entregar && lista.length > 0 && (
-        <FrisaEntregasVarias key={lista.map((x) => x.id).join(',')} ordenes={lista} porSurtido={porSurtido} onListo={(msg) => despuesDeGuardar(msg)} />
+        <FrisaEntregasVarias key={lista.map((x) => x.id).join(',')} ordenes={lista} porSurtido={porSurtido} productos={datos.productos} onListo={(msg) => despuesDeGuardar(msg)} />
       )}
 
       {buscaProd && lista.some((s) => traeDe(s).length) && (() => {
@@ -206,7 +206,10 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
                 <span className="frisa-surtido__trae">Trae: {traeDe(s).map((x) => `${nombreFrisa(prodPorId.get(x.producto_id)?.nombre) || x.clave} (${num(x.cantidad)})`).join(', ')}</span>
               )}
               {s.estado === 'surtida' && <span className="frisa__sub">Surtió {s.surtido_por_nombre}</span>}
-              {s.estado === 'entregada' && <span className="frisa__sub">Rem. {s.remision} · {fechaCorta(s.fecha_entrega)} · surtió {s.surtido_por_nombre}</span>}
+              {s.estado === 'surtida' && ls.some((l) => Number(l.entregada) > 0) && (
+                <span className="frisa-surtido__trae">Entrega parcial: faltan {num(ls.reduce((t, l) => t + porEntregar(l), 0))} de {num(piezasDe(ls))} pzas</span>
+              )}
+              {s.estado === 'entregada' && <span className="frisa__sub">{s.remision ? `Rem. ${s.remision} · ` : ''}{fechaCorta(s.fecha_entrega)} · surtió {s.surtido_por_nombre}</span>}
               {s.estado === 'cancelada' && <span className="frisa__sub">{s.cancelado_motivo}</span>}
             </button>
           )

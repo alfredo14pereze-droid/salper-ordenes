@@ -31,6 +31,9 @@ export function lineasPorSurtido(lineas) {
 // Piezas de un renglón que ya están apartadas / que faltan por apartar (V202).
 export const apartadaDe = (l) => Math.min(Number(l.cantidad) || 0, Math.max(0, Number(l.apartada) || 0))
 export const porApartar = (l) => (Number(l.cantidad) || 0) - apartadaDe(l)
+// V204 — en una surtida: lo ya entregado (viajes parciales) y lo que falta entregar.
+export const entregadaDe = (l) => Math.min(Number(l.cantidad) || 0, Math.max(0, Number(l.entregada) || 0))
+export const porEntregar = (l) => (Number(l.cantidad) || 0) - entregadaDe(l)
 
 // { producto_id → piezas apartadas } (surtidas: todo; pendientes: lo apartado)
 export function apartadoPorProducto(surtidos, lineas) {
@@ -38,7 +41,7 @@ export function apartadoPorProducto(surtidos, lineas) {
   const m = new Map()
   for (const l of lineas || []) {
     const e = estado.get(l.surtido_id)
-    const n = e === 'surtida' ? l.cantidad : e === 'pendiente' ? apartadaDe(l) : 0
+    const n = e === 'surtida' ? porEntregar(l) : e === 'pendiente' ? apartadaDe(l) : 0
     if (n) m.set(l.producto_id, (m.get(l.producto_id) || 0) + n)
   }
   return m

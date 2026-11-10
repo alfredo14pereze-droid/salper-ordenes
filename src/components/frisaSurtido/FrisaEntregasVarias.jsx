@@ -1,81 +1,127 @@
 import { useState } from 'react'
 import { entregarSurtido } from '../../services/frisaSurtidoService'
-import { hoyISO, piezasDe } from '../../utils/frisaSurtido'
+import { hoyISO, porEntregar } from '../../utils/frisaSurtido'
+import { nombreFrisa } from '../../utils/frisaColores'
 
 const num = (n) => Number(n || 0).toLocaleString('es-MX')
 
-// 2026-11-09 — Confirmar varias entregas de Leo de una vez: una remisión por OC.
-// Se escribe el folio de cada orden que se entregó (las que se dejan en blanco
-// no se tocan) y se confirman todas con la misma fecha. Cada una baja la bodega
-// y suma a su planta, igual que "Ya entregó el chofer" de una por una.
-export default function FrisaEntregasVarias({ ordenes, porSurtido, onListo }) {
-  const [folios, setFolios] = useState({})
+// V204 (2026-11-10) — Confirmar las entregas de Leo de una vez, sin remisión.
+// Todas vienen marcadas "Entregada"; solo se cambian las excepciones:
+//   · Parcial: se escribe cuánto se entregó de cada renglón (lo demás sigue en Surtidas).
+//   · No se entregó: no se toca (sigue en Surtidas).
+// Cada entrega baja la bodega y suma a su planta. Las remisiones se ligan después.
+const OPCIONES = [
+  { key: 'toda', label: 'Entregada' },
+  { key: 'parcial', label: 'Parcial' },
+  { key: 'no', label: 'No se entregó' },
+]
+
+export default function FrisaEntregasVarias({ ordenes, porSurtido, productos = [], onListo }) {
+  const [como, setComo] = useState({}) // id → 'toda' | 'parcial' | 'no'
+  const [parcial, setParcial] = useState({}) // linea_id → texto
   const [fecha, setFecha] = useState(hoyISO())
   const [trabajando, setTrabajando] = useState(false)
-  const [resultado, setResultado] = useState(null) // { ok: [], errores: [] }
-  const conFolio = ordenes.filter((s) => (folios[s.id] || '').trim())
-  const piezas = conFolio.reduce((t, s) => t + piezasDe(porSurtido.get(s.id) || []), 0)
-  const repetidos = (() => {
-    const c = {}
-    for (const s of conFolio) { const f = folios[s.id].trim().toUpperCase(); c[f] = (c[f] || 0) + 1 }
-    return new Set(Object.keys(c).filter((k) => c[k] > 1))
-  })()
+  const [errores, setErrores] = useState([])
+  const prod = new Map(productos.map((p) => [p.id, p]))
+
+  const lineasDe = (s) => (porSurtido.get(s.id) || []).filter((l) => porEntregar(l) > 0)
+  const opcion = (s) => como[s.id] || 'toda'
+  const cantParcial = (l) => {
+    const v = parcial[l.id]
+    return v === undefined ? porEntregar(l) : Number(v)
+  }
+  const piezasDe = (s) => {
+    const o = opcion(s)
+    if (o === 'no') return 0
+    return lineasDe(s).reduce((t, l) => t + (o === 'toda' ? porEntregar(l) : cantParcial(l) || 0), 0)
+  }
+  const malas = ordenes.filter((s) => opcion(s) === 'parcial' && lineasDe(s).some((l) => {
+    const n = cantParcial(l)
+    return !Number.isInteger(n) || n < 0 || n > porEntregar(l)
+  }))
+  const aEntregar = ordenes.filter((s) => opcion(s) !== 'no' && piezasDe(s) > 0)
+  const piezas = aEntregar.reduce((t, s) => t + piezasDe(s), 0)
+  const noSe = ordenes.filter((s) => opcion(s) === 'no').length
 
   async function confirmar() {
     setTrabajando(true)
     const ok = []
-    const errores = []
-    for (const s of conFolio) {
-      const { error } = await entregarSurtido(s.id, { remision: folios[s.id].trim(), fecha })
-      if (error) errores.push(`OC ${s.numero_oc}: ${error.message}`)
-      else ok.push(s.numero_oc)
+    const errs = []
+    for (const s of aEntregar) {
+      const lineas = opcion(s) === 'parcial' ? lineasDe(s).map((l) => ({ linea_id: l.id, cantidad: cantParcial(l) })) : null
+      const { error } = await entregarSurtido(s.id, { fecha, lineas })
+      if (error) errs.push(`OC ${s.numero_oc}: ${error.message}`)
+      else ok.push(s)
     }
     setTrabajando(false)
-    setResultado({ ok, errores })
-    setFolios((f) => Object.fromEntries(Object.entries(f).filter(([id]) => !ok.includes(ordenes.find((o) => o.id === id)?.numero_oc))))
-    if (ok.length) onListo(`Se confirmaron ${ok.length} entregas (${ok.map((x) => 'OC ' + x).join(', ')}).`)
+    setErrores(errs)
+    if (ok.length) {
+      const parciales = ok.filter((s) => opcion(s) === 'parcial').length
+      onListo(`Se confirmaron ${ok.length} entrega${ok.length === 1 ? '' : 's'}${parciales ? ` (${parciales} parcial${parciales === 1 ? '' : 'es'}: lo que faltó sigue en Surtidas)` : ''}.`)
+    }
   }
 
   return (
     <section className="card frisa-restock__propuesta">
-      <h2 className="section-title section-title--small">Confirmar entregas de Leo (varias a la vez)</h2>
+      <h2 className="section-title section-title--small">Confirmar entregas de Leo</h2>
       <p className="frisa__sub">
-        Cuando Leo regresa: escribe el <strong>folio de remisión de Microsip</strong> de cada orden que <strong>sí entregó</strong> (una remisión por
-        OC). Las que dejes en blanco se quedan en Surtidas. Al confirmar, cada una se descuenta de la bodega y se suma a su planta.
+        Cuando Leo regresa: todas vienen marcadas <strong>Entregada</strong>. Si alguna no se entregó completa, márcala <strong>Parcial</strong> y escribe
+        cuánto se entregó; si no se entregó, márcala <strong>No se entregó</strong> (se queda en Surtidas). Al confirmar, cada una se descuenta de la
+        bodega y se suma a su planta.
       </p>
-      <div className="revision__tabla-wrap">
-        <table className="simple-table frisa-tabla frisa-niveles__tabla">
-          <thead><tr><th>OC</th><th>Planta</th><th className="num">Piezas</th><th>Folio de remisión</th></tr></thead>
-          <tbody>
-            {ordenes.map((s) => {
-              const f = (folios[s.id] || '').trim().toUpperCase()
-              return (
-                <tr key={s.id} className={f ? 'frisa-niveles__fila--ok' : ''}>
-                  <td data-label="OC"><strong>{s.numero_oc}</strong></td>
-                  <td data-label="Planta">{s.planta}</td>
-                  <td data-label="Piezas" className="num">{num(piezasDe(porSurtido.get(s.id) || []))}</td>
-                  <td data-label="Folio de remisión">
-                    <input className="input" value={folios[s.id] || ''} placeholder="Ej. 863" disabled={trabajando}
-                      onChange={(e) => setFolios({ ...folios, [s.id]: e.target.value })} aria-label={`Folio de remisión de la OC ${s.numero_oc}`} />
-                    {f && repetidos.has(f) && <div className="form-error">Ese folio está en otra orden.</div>}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+      <div className="frisa-entregas">
+        {ordenes.map((s) => {
+          const o = opcion(s)
+          const ls = lineasDe(s)
+          const yaParcial = (porSurtido.get(s.id) || []).some((l) => Number(l.entregada) > 0)
+          return (
+            <div key={s.id} className={'frisa-entregas__orden frisa-entregas__orden--' + o}>
+              <div className="frisa-entregas__fila">
+                <span><strong>OC {s.numero_oc}</strong> · {s.planta} · {num(ls.reduce((t, l) => t + porEntregar(l), 0))} pzas{yaParcial ? ' (lo que faltó de un viaje anterior)' : ''}</span>
+                <span className="order-filters__chips frisa__chips" role="group" aria-label={`Entrega de la OC ${s.numero_oc}`}>
+                  {OPCIONES.map((x) => (
+                    <button key={x.key} type="button" disabled={trabajando} className={'chip' + (o === x.key ? ' chip--active' : '')}
+                      onClick={() => setComo({ ...como, [s.id]: x.key })}>{x.label}</button>
+                  ))}
+                </span>
+              </div>
+              {o === 'parcial' && (
+                <table className="simple-table frisa-tabla">
+                  <thead><tr><th>Producto</th><th className="num">Faltaba</th><th className="num">Se entregó</th></tr></thead>
+                  <tbody>
+                    {ls.map((l) => {
+                      const n = cantParcial(l)
+                      const mal = !Number.isInteger(n) || n < 0 || n > porEntregar(l)
+                      return (
+                        <tr key={l.id}>
+                          <td>{nombreFrisa(prod.get(l.producto_id)?.nombre) || l.clave}</td>
+                          <td className="num">{num(porEntregar(l))}</td>
+                          <td className="num">
+                            <input className="input frisa-input" type="number" min="0" max={porEntregar(l)} step="1" inputMode="numeric" disabled={trabajando}
+                              value={parcial[l.id] ?? String(porEntregar(l))} onFocus={(e) => e.target.select()}
+                              onChange={(e) => setParcial({ ...parcial, [l.id]: e.target.value })} aria-label={`Se entregó de ${nombreFrisa(prod.get(l.producto_id)?.nombre)}`} />
+                            {mal && <div className="form-error">De 0 a {num(porEntregar(l))}</div>}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )
+        })}
       </div>
       <div className="frisa-form__fila">
         <label><span className="field-label">Fecha de entrega</span>
           <input className="input" type="date" value={fecha} max={hoyISO()} onChange={(e) => setFecha(e.target.value)} disabled={trabajando} /></label>
       </div>
-      {resultado?.errores.length > 0 && (
-        <div className="form-error">No se pudieron confirmar: {resultado.errores.join(' · ')}</div>
-      )}
+      {errores.length > 0 && <div className="form-error">No se pudieron confirmar: {errores.join(' · ')}</div>}
       <div className="frisa__botones">
-        <button type="button" className="btn btn--primary" disabled={trabajando || !conFolio.length || repetidos.size > 0} onClick={confirmar}>
-          {trabajando ? 'Confirmando…' : conFolio.length ? `Confirmar ${conFolio.length} entrega${conFolio.length === 1 ? '' : 's'} (${num(piezas)} pzas)` : 'Escribe al menos un folio'}
+        <button type="button" className="btn btn--primary" disabled={trabajando || !aEntregar.length || malas.length > 0} onClick={confirmar}>
+          {trabajando ? 'Confirmando…' : aEntregar.length ? `Confirmar ${aEntregar.length} entrega${aEntregar.length === 1 ? '' : 's'} (${num(piezas)} pzas)` : 'No hay nada que confirmar'}
         </button>
+        {noSe > 0 && <span className="frisa__sub">{noSe} no se entregó{noSe === 1 ? '' : 'n'}: se queda{noSe === 1 ? '' : 'n'} en Surtidas.</span>}
       </div>
     </section>
   )

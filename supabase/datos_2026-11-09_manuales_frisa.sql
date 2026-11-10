@@ -179,27 +179,27 @@ Se confirma cuando el chofer **ya entregó** la orden en la planta y regresó, *
 
 ## Varias a la vez (lo normal)
 
-Se hace **una remisión por cada OC**, así que cuando Leo regresa se confirman todas juntas:
+Cuando Leo regresa se confirman todas juntas. **No hace falta escribir remisiones**: se ligan después con un resumen.
 
-1. En **Órdenes de surtido** toca **Surtidas**. Arriba sale **"Confirmar entregas de Leo (varias a la vez)"** con todas las órdenes surtidas.
-2. Escribe el **folio de remisión de Microsip** de cada orden que **sí entregó**. Las que dejes en blanco se quedan en Surtidas.
+1. En **Órdenes de surtido** toca **Surtidas**. Arriba sale **"Confirmar entregas de Leo"** con todas las órdenes surtidas, ya marcadas **Entregada**.
+2. Solo cambia las que **no** se entregaron bien: **Parcial** si se entregó una parte (escribe cuánto se entregó de cada producto) o **No se entregó** si no se entregó nada.
 3. Revisa la **Fecha de entrega** y toca **Confirmar … entregas**. Cada una se descuenta de la bodega y se suma a su planta.
 
-> Escribe cada folio **igual que en Microsip**. Si pones el mismo folio en dos órdenes, la página no te deja confirmar.
+> **Parcial:** lo que faltó se queda en **Surtidas** (sigue apartado) y se entrega en el siguiente viaje. Si ya no se va a entregar, abre la orden y toca **Cerrar con lo entregado**: lo que faltó regresa a disponible. Lo ideal es que no pase.
 
 ## Una sola orden
 
 1. En **Órdenes de surtido** toca el botón **Surtidas**. Ahí están las órdenes embolsadas que todavía no se confirman como entregadas.
 2. Toca la orden que el chofer ya entregó.
 3. Toca **Ya entregó el chofer**.
-4. Escribe el **Folio de remisión** de Microsip y la **Fecha de entrega**.
-5. Toca **Confirmar entrega**. La orden pasa a **Entregadas**, sus piezas se descuentan del inventario de la fábrica y **se suman a la planta** de esa orden. Escribe el folio **igual que en Microsip**.
+4. Deja **Se entregó todo**, o toca **Entrega parcial** y escribe cuánto se entregó de cada producto. Revisa la **Fecha de entrega** (la remisión es opcional).
+5. Toca **Confirmar entrega**. Lo entregado se descuenta del inventario de la fábrica y **se suma a la planta** de esa orden. Si fue completa, pasa a **Entregadas**.
 
 Antes de confirmar dice cuántas piezas se van a descontar.
 
 > **¿El chofer no pudo entregar algo?** No la confirmes: déjala en Surtidas hasta que se entregue.
 
-> **¿Se marcó surtida por error?** Ábrela en Surtidas y toca **Regresar a pendiente**.
+> **¿Se marcó surtida por error?** Ábrela en Surtidas y toca **Regresar a pendiente** (solo si no se ha entregado nada).
 $man$),
       (6, $t$Cómo hacer el restock: crear una orden de taller FR$t$, $man$**Lo hace:** Gis (ventas).
 
@@ -311,7 +311,7 @@ Para cada clave la página lleva tres números:
 |---|---|---|---|
 | Leo embolsa una orden completa | Órdenes de surtido → la orden → **Surtida toda** | Se **aparta** (el real no cambia) | Quien surte |
 | Leo aparta parte de una orden incompleta | Órdenes de surtido → la orden → **Apartar lo que hay** (o Apartadas) | Se **aparta** eso (el real no cambia) | Quien surte |
-| El chofer **ya entregó** en la planta | Surtidas → la orden → **Ya entregó el chofer** → remisión | **Baja** el real | Gis |
+| El chofer **ya entregó** en la planta | Surtidas → **Confirmar entregas de Leo** (o la orden → Ya entregó el chofer) | **Baja** el real | Gis |
 | Llega a bodega lo que terminó el taller | Restock → Órdenes de taller → Por entrar → **Subir a bodega** | **Sube** el real | Jackie o Adriana |
 | Llega un pedido de pantalón (o bata, bolsa) | Restock → Pantalón → **Recibir** | **Sube** el real | Gis |
 | Se cuenta la bodega o se revisa contra Microsip | Niveles (conteo) o Revisión Microsip | **Ajusta** el real | El encargado del inventario |
@@ -364,9 +364,9 @@ Arriba dice cuándo fue la última revisión. A los 10 días avisa **"Ya toca re
 $man$),
       (13, $t$Plantas Frisa: subir remisiones y facturas$t$, $man$Lo que hay en cada planta = **remitido − facturado**.
 
-- **Remisiones:** cada entrega confirmada en la página ("Ya entregó el chofer") se suma **sola** a su planta, con su folio de remisión.
+- **Entregas:** cada entrega confirmada en la página se suma **sola** a su planta (las parciales, con lo que sí se entregó).
 - **Facturas:** las sube **contabilidad** cada quincena con los Diarios de Microsip y **restan**.
-- Si el Excel trae una remisión que ya se sumó con la entrega, se **salta sola** (no se cuenta doble).
+- Del Excel de Microsip **solo cuentan las facturas**: si trae remisiones, no se suman (lo entregado ya entró al confirmar).
 
 - Cada folio se cuenta una sola vez: si subes un archivo repetido, salta lo que ya estaba.
 - Arranca con lo acumulado al 15/10/2026.
@@ -377,7 +377,7 @@ $man$),
 2. En **Plantas Frisa** súbelo tal cual. La página muestra cuántos documentos son **nuevos** y cuántos **ya estaban** (los salta solos).
 3. Revisa que no haya **plantas desconocidas** ni artículos **sin clave**, y toca **Subir**.
 
-Hazlo **cada quincena**, después de facturar. Si una planta sale con una clave en **negativo**, se facturó más de lo remitido: casi siempre es una entrega que no se confirmó en la página (revisa las remisiones de ese periodo).
+Hazlo **cada quincena**, después de facturar. Si una planta sale con una clave en **negativo**, se facturó más de lo remitido: casi siempre es una entrega que no se confirmó en la página (revisa las entregas de ese periodo).
 $man$),
       (14, $t$Reportes de Frisa$t$, $man$En **Reportes** puedes sacar en cualquier momento, en PDF (con vista previa) o CSV para Excel:
 
@@ -394,7 +394,7 @@ $man$),
 | Hay que comprar pantalón | Restock → Pantalón → Pedido de compra → Proveedor → Crear |
 | Hay que comprar playera lisa | Restock → Playera lisa → Pedido de playera lisa → revisa OK/PEDIR → Crear |
 | Quieres ver las de una planta | Órdenes de surtido → botón de la planta |
-| Leo regresó de entregar (Gis) | Órdenes de surtido → Surtidas → un folio de remisión por orden → Confirmar entregas |
+| Leo regresó de entregar (Gis) | Órdenes de surtido → Surtidas → marcar solo las que no se entregaron bien → Confirmar entregas |
 | Llega lo que terminó el taller (Jackie o Adriana) | Restock → Órdenes de taller → Por entrar → Subir a bodega → corrige piezas → Confirmar |
 | Llega un pedido de playera lisa (Jackie o Adriana) | Restock → Playera lisa → Por recibir → Recibir → lo que llegó → Recibir |
 $man$)

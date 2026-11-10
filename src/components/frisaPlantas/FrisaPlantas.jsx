@@ -64,7 +64,10 @@ export default function FrisaPlantas() {
       if (!leido.docs.length) throw new Error('El archivo no trae documentos.')
       const ligado = ligarDocs(leido.docs, datos.productos)
       const sep = separarNuevos(ligado.docs, datos.folios)
-      setArchivo({ nombre: file.name, leido, ligado, sep, res: resumenArchivo(sep.nuevos, datos.plantas) })
+      // V204: del Excel solo cuentan las facturas; las remisiones entran al confirmar la entrega.
+      const remisiones = sep.nuevos.filter((d) => d.tipo === 'remision').length
+      const facturas = sep.nuevos.filter((d) => d.tipo !== 'remision')
+      setArchivo({ nombre: file.name, leido, ligado, sep, remisiones, res: resumenArchivo(facturas, datos.plantas) })
     } catch (e) {
       setArchivo(null)
       setErrArchivo(e.message)
@@ -138,10 +141,10 @@ export default function FrisaPlantas() {
 
       {puede && (
         <section className="frisa-restock__seccion">
-          <h2 className="section-title section-title--small">Subir remisiones y facturas</h2>
+          <h2 className="section-title section-title--small">Subir facturas</h2>
           <p className="frisa__sub">
-            En Microsip saca "Diarios del inventario" (Concepto: Remisión para lo entregado, Concepto: Venta para lo facturado) y sube el Excel tal cual.
-            Puede traer las dos hojas. Los folios que ya se contaron se saltan solos, así que no pasa nada si un archivo se repite.
+            En Microsip saca "Diarios del inventario" (Concepto: Venta) de la quincena y sube el Excel tal cual. Cada factura resta de su planta.
+            Lo entregado ya se sumó solo al confirmar las entregas, así que si el Excel trae remisiones no se cuentan. Las facturas que ya se subieron se saltan solas.
           </p>
           <label className="frisa-niveles__archivo">
             <span className="field-label">Excel de Microsip (.xlsx)</span>
@@ -155,9 +158,10 @@ export default function FrisaPlantas() {
             <div className="card frisa-restock__propuesta">
               <p><strong>{archivo.nombre}</strong>: {archivo.leido.hojas.map((h) => `${h.nombre} (${h.tipo === 'remision' ? 'remisiones' : 'facturas'})`).join(', ')} · {archivo.leido.docs.length} documentos.</p>
               <ul className="frisa-niveles__historial">
-                <li><span><strong>Nuevos:</strong> {archivo.res.remisiones} remisiones ({num(archivo.res.piezasRemitidas)} pzas) y {archivo.res.facturas} facturas ({num(archivo.res.piezasFacturadas)} pzas)
+                <li><span><strong>Facturas nuevas:</strong> {archivo.res.facturas} ({num(archivo.res.piezasFacturadas)} pzas)
                   {archivo.res.desde && `, del ${fechaCorta(archivo.res.desde)} al ${fechaCorta(archivo.res.hasta)}`}.</span></li>
-                <li><span><strong>Ya contados (se saltan):</strong> {archivo.sep.repetidos.length}</span></li>
+                <li><span><strong>Ya contadas (se saltan):</strong> {archivo.sep.repetidos.filter((d) => d.tipo !== 'remision').length}</span></li>
+                {archivo.remisiones > 0 && <li><span className="frisa__sub">Remisiones en el archivo (no se cuentan: lo entregado ya se sumó al confirmar las entregas): {archivo.remisiones}</span></li>}
                 {archivo.res.plantasDesconocidas.length > 0 && <li><span className="frisa__falta">Plantas que no conozco (esos documentos no se suben): {archivo.res.plantasDesconocidas.join(', ')}</span></li>}
                 {archivo.ligado.sinClave.length > 0 && <li><span className="frisa__falta">Artículos sin clave (no se cuentan): {archivo.ligado.sinClave.map((s) => `${s.descripcion} (${num(s.piezas)})`).join(' · ')}</span></li>}
                 {archivo.leido.avisos.slice(0, 5).map((a) => <li key={a}><span className="frisa__sub">{a}</span></li>)}

@@ -147,3 +147,10 @@ test('apartado parcial (V202): lo apartado de una pendiente ya no está disponib
   assert.equal(f.necesita, 6)
   assert.equal(f.falta, 3)
 })
+
+test('entrega parcial (V204): en una surtida solo sigue apartado lo que falta entregar', async () => {
+  const { conInventario } = await import('./frisaSurtido.js')
+  const inv = conInventario([{ id: 'x', stock_actual: 10 }], [{ id: 's', estado: 'surtida' }], [{ id: 'l', surtido_id: 's', producto_id: 'x', cantidad: 6, entregada: 4 }])
+  assert.equal(inv[0].apartado, 2)
+  assert.equal(inv[0].disponible, 8)
+})

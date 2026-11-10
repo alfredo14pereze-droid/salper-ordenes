@@ -64,8 +64,11 @@ export const marcarSurtida = (id, { personaId, personaNombre }) =>
 
 export const regresarSurtida = (id, motivo) => rpc('frisa_surtido_regresar', { p_id: id, p_motivo: motivo || null })
 
-export const entregarSurtido = (id, { remision, fecha }) =>
-  rpc('frisa_surtido_entregar', { p_id: id, p_remision: remision, p_fecha: fecha || null })
+// V204 — la remisión es opcional; lineas = [{ linea_id, cantidad }] para entrega parcial (sin lineas = todo lo que falta).
+export const entregarSurtido = (id, { remision, fecha, lineas } = {}) =>
+  rpc('frisa_surtido_entregar', { p_id: id, p_remision: remision?.trim() || null, p_fecha: fecha || null, p_lineas: lineas || null })
+
+export const cerrarSurtidaParcial = (id, motivo) => rpc('frisa_surtido_cerrar_parcial', { p_id: id, p_motivo: motivo })
 
 export const cancelarSurtido = (id, motivo) => rpc('frisa_surtido_cancelar', { p_id: id, p_motivo: motivo })
 

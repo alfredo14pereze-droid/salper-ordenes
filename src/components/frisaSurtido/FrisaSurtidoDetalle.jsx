@@ -2,9 +2,9 @@ import { nombreFrisa } from '../../utils/frisaColores'
 import { useEffect, useState } from 'react'
 import Modal from '../talleros/Modal'
 import {
-  fetchEventosSurtido, personasSurtido, marcarSurtida, regresarSurtida, entregarSurtido, cancelarSurtido, urlPdfOC, apartarRenglon,
+  fetchEventosSurtido, personasSurtido, marcarSurtida, regresarSurtida, entregarSurtido, cancelarSurtido, urlPdfOC, apartarRenglon, cerrarSurtidaParcial,
 } from '../../services/frisaSurtidoService'
-import { faltantesDeOrden, piezasDe, textoLimite, hoyISO } from '../../utils/frisaSurtido'
+import { faltantesDeOrden, piezasDe, textoLimite, hoyISO, entregadaDe, porEntregar } from '../../utils/frisaSurtido'
 import { fechaCorta, NombreFrisa } from '../frisaNiveles/comunes'
 import { EstadoSurtido } from './comunes'
 import FrisaSurtidoForm from './FrisaSurtidoForm'
@@ -50,6 +50,22 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
   const pendiente = s.estado === 'pendiente'
   const totalApartadas = filas.reduce((t, l) => t + l.apartada, 0)
   const sePuedeApartar = filas.filter((l) => l.necesita > 0 && l.disponible > 0)
+  // V204 — entregas parciales de una surtida.
+  const entregadas = lineas.reduce((t, l) => t + entregadaDe(l), 0)
+  const faltaEntregar = lineas.reduce((t, l) => t + porEntregar(l), 0)
+  const yaParcial = s.estado === 'surtida' && entregadas > 0
+  const [entParcial, setEntParcial] = useState(false)
+  const [entCant, setEntCant] = useState({})
+  const cantEnt = (l) => (entCant[l.id] === undefined ? porEntregar(l) : Number(entCant[l.id]))
+  const entMal = entParcial && lineas.some((l) => porEntregar(l) > 0 && (!Number.isInteger(cantEnt(l)) || cantEnt(l) < 0 || cantEnt(l) > porEntregar(l)))
+  const entPiezas = entParcial ? lineas.reduce((t, l) => t + (porEntregar(l) > 0 ? cantEnt(l) || 0 : 0), 0) : faltaEntregar
+  function confirmarEntrega(e) {
+    e.preventDefault()
+    const lineasEnt = entParcial ? lineas.filter((l) => porEntregar(l) > 0).map((l) => ({ linea_id: l.id, cantidad: cantEnt(l) })) : null
+    const queda = faltaEntregar - entPiezas
+    ejecutar(() => entregarSurtido(s.id, { remision: form.remision, fecha: form.fecha, lineas: lineasEnt }),
+      queda > 0 ? `OC ${s.numero_oc}: se entregaron ${num(entPiezas)} pzas; faltan ${num(queda)} (siguen en Surtidas).` : `OC ${s.numero_oc} entregada: se descontó del inventario y se sumó a la planta.`)
+  }
 
   async function guardarApartado(l, cantidad, msg) {
     setTrabajando(true)
@@ -199,8 +215,12 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
           <p className="frisa__sub">Surtió <strong>{s.surtido_por_nombre}</strong>{s.surtido_en ? ` · ${fechaHora(s.surtido_en)}` : ''}
             {s.surtido_registrado_por && s.surtido_registrado_por !== s.surtido_por_nombre ? ` (lo registró ${s.surtido_registrado_por})` : ''}</p>
         )}
+        {yaParcial && (
+          <p className="frisa__nota"><strong>Entrega parcial:</strong> se entregaron {num(entregadas)} de {num(piezasDe(lineas))} pzas. Faltan {num(faltaEntregar)} (siguen apartadas para el siguiente viaje).</p>
+        )}
         {s.estado === 'entregada' && (
-          <p className="frisa__sub">Entregada por el chofer · Rem. <strong>{s.remision}</strong> · {fechaCorta(s.fecha_entrega)} · lo marcó {s.entregado_por_nombre}</p>
+          <p className="frisa__sub">Entregada por el chofer{s.remision ? <> · Rem. <strong>{s.remision}</strong></> : ''} · {fechaCorta(s.fecha_entrega)} · lo marcó {s.entregado_por_nombre}
+            {entregadas < piezasDe(lineas) ? ` · se entregaron ${num(entregadas)} de ${num(piezasDe(lineas))} pzas` : ''}</p>
         )}
         {s.estado === 'cancelada' && <p className="frisa__falta">Cancelada: {s.cancelado_motivo}</p>}
 
@@ -224,10 +244,13 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
             {s.estado === 'pendiente' && permisos.oc && (
               <button type="button" className="btn btn--secondary" onClick={() => setAccion('corregir')}>Corregir</button>
             )}
-            {s.estado === 'surtida' && permisos.entregar && (
+            {yaParcial && permisos.entregar && (
+              <button type="button" className="btn btn--ghost" onClick={() => { setError(null); setAccion('cerrar') }}>Cerrar con lo entregado</button>
+            )}
+            {s.estado === 'surtida' && !yaParcial && permisos.entregar && (
               <button type="button" className="btn btn--ghost" onClick={() => { setError(null); setAccion('regresar') }}>Regresar a pendiente</button>
             )}
-            {(s.estado === 'pendiente' || s.estado === 'surtida') && permisos.oc && (
+            {(s.estado === 'pendiente' || (s.estado === 'surtida' && !yaParcial)) && permisos.oc && (
               <button type="button" className="btn btn--ghost" onClick={() => { setError(null); setAccion('cancelar') }}>Cancelar OC</button>
             )}
           </div>
@@ -264,18 +287,54 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
         )}
 
         {accion === 'entregar' && (
-          <form className="frisa-niveles__captura" onSubmit={(e) => { e.preventDefault(); ejecutar(() => entregarSurtido(s.id, form), `OC ${s.numero_oc} entregada: se descontó del inventario.`) }}>
-            <label>
-              <span className="field-label">Folio de remisión (Microsip)</span>
-              <input className="input" value={form.remision} onChange={(e) => set('remision', e.target.value)} autoFocus required />
-            </label>
+          <form className="frisa-niveles__captura frisa-entrega-form" onSubmit={confirmarEntrega}>
+            <span className="order-filters__chips frisa__chips" role="group" aria-label="Cómo se entregó">
+              <button type="button" className={'chip' + (!entParcial ? ' chip--active' : '')} onClick={() => setEntParcial(false)}>Se entregó todo</button>
+              <button type="button" className={'chip' + (entParcial ? ' chip--active' : '')} onClick={() => setEntParcial(true)}>Entrega parcial</button>
+            </span>
+            {entParcial && (
+              <table className="simple-table frisa-tabla">
+                <thead><tr><th>Producto</th><th className="num">Faltaba</th><th className="num">Se entregó</th></tr></thead>
+                <tbody>
+                  {lineas.filter((l) => porEntregar(l) > 0).map((l) => {
+                    const pr = productos.find((x) => x.id === l.producto_id)
+                    const n = cantEnt(l)
+                    return (
+                      <tr key={l.id}>
+                        <td>{nombreFrisa(pr?.nombre) || l.clave}</td>
+                        <td className="num">{num(porEntregar(l))}</td>
+                        <td className="num"><input className="input frisa-input" type="number" min="0" max={porEntregar(l)} step="1" inputMode="numeric"
+                          value={entCant[l.id] ?? String(porEntregar(l))} onFocus={(e) => e.target.select()}
+                          onChange={(e) => setEntCant({ ...entCant, [l.id]: e.target.value })} aria-label={`Se entregó de ${nombreFrisa(pr?.nombre)}`} />
+                          {(!Number.isInteger(n) || n < 0 || n > porEntregar(l)) && <div className="form-error">De 0 a {num(porEntregar(l))}</div>}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
             <label>
               <span className="field-label">Fecha de entrega</span>
               <input className="input" type="date" value={form.fecha} onChange={(e) => set('fecha', e.target.value)} required />
             </label>
-            <button type="submit" className="btn btn--primary" disabled={trabajando}>{trabajando ? 'Guardando…' : 'Confirmar entrega'}</button>
+            <label>
+              <span className="field-label">Folio de remisión (opcional)</span>
+              <input className="input" value={form.remision} onChange={(e) => set('remision', e.target.value)} placeholder="Se puede ligar después" />
+            </label>
+            <button type="submit" className="btn btn--primary" disabled={trabajando || entMal || entPiezas <= 0}>{trabajando ? 'Guardando…' : `Confirmar entrega (${num(entPiezas)} pzas)`}</button>
             <button type="button" className="btn btn--ghost" onClick={() => setAccion(null)}>Cancelar</button>
-            <p className="frisa__sub">Márcala cuando el chofer ya entregó en la planta (no cuando sale). Al confirmar se descuentan {num(piezasDe(lineas))} piezas del inventario de la fábrica y se suman al inventario de la planta. Escribe el folio igual que en Microsip.</p>
+            <p className="frisa__sub">Márcala cuando el chofer ya entregó en la planta. Lo entregado se descuenta del inventario de la fábrica y se suma a la planta.{entParcial ? ' Lo que no se entregó sigue en Surtidas para el siguiente viaje.' : ''}</p>
+          </form>
+        )}
+        {accion === 'cerrar' && (
+          <form className="frisa-niveles__captura" onSubmit={(e) => { e.preventDefault(); ejecutar(() => cerrarSurtidaParcial(s.id, form.motivo), `OC ${s.numero_oc} cerrada con lo entregado: las ${num(faltaEntregar)} pzas que faltaron regresan a disponible.`) }}>
+            <p className="frisa__sub">Úsalo si lo que faltó <strong>ya no se va a entregar</strong>. La orden queda entregada con {num(entregadas)} pzas y las {num(faltaEntregar)} que faltaron regresan a disponible.</p>
+            <label className="frisa-niveles__captura-comentario">
+              <span className="field-label">¿Por qué no se entregó lo que faltó?</span>
+              <input className="input" value={form.motivo} onChange={(e) => set('motivo', e.target.value)} autoFocus required />
+            </label>
+            <button type="submit" className="btn btn--primary" disabled={trabajando}>{trabajando ? 'Guardando…' : 'Cerrar con lo entregado'}</button>
+            <button type="button" className="btn btn--ghost" onClick={() => setAccion(null)}>No</button>
           </form>
         )}
 
