@@ -1,3 +1,4 @@
+import { nombreFrisa } from '../../utils/frisaColores'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { pdf } from '@react-pdf/renderer'
 import { useAuth } from '../../contexts/AuthContext'
@@ -130,7 +131,7 @@ export default function FrisaPlantas() {
       {calc.negativos.length > 0 && (
         <p className="frisa__nota">
           <strong>Ojo, stock negativo</strong> (se facturó más de lo remitido):{' '}
-          {calc.negativos.map((n) => `${n.planta.nombre} ${n.producto.clave} ${num(n.stock)}`).join(' · ')}
+          {calc.negativos.map((n) => `${n.planta.nombre}: ${nombreFrisa(n.producto.nombre)} ${num(n.stock)}`).join(' · ')}
         </p>
       )}
       {aviso && <p className="frisa__ok">{aviso}</p>}
@@ -186,7 +187,7 @@ export default function FrisaPlantas() {
           <table className="simple-table frisa-tabla frisa-niveles__tabla">
             <thead>
               <tr>
-                <th>Clave</th><th>Talla</th>
+                <th>Producto</th><th>Talla</th>
                 {idxPlanta < 0
                   ? <>{calc.plantas.map((p) => <th key={p.id} className="num">{p.nombre}</th>)}<th className="num">Total</th></>
                   : <><th className="num">Remitido</th><th className="num">Facturado</th><th className="num">En planta</th></>}
@@ -195,7 +196,7 @@ export default function FrisaPlantas() {
             <tbody>
               {filas.map((c) => (
                 <tr key={c.producto.id} className={(idxPlanta < 0 ? c.stock : c.plantas[idxPlanta].stock) < 0 ? 'frisa-niveles__fila--critico' : ''}>
-                  <td data-label="Clave"><strong>{c.producto.clave}</strong><NombreFrisa producto={c.producto} /></td>
+                  <td data-label="Producto"><NombreFrisa producto={c.producto} className="frisa__prod" /></td>
                   <td data-label="Talla">{c.talla}</td>
                   {idxPlanta < 0
                     ? <>{calc.plantas.map((p, i) => <td key={p.id} data-label={p.nombre} className="num">{c.plantas[i].stock ? num(c.plantas[i].stock) : '—'}</td>)}

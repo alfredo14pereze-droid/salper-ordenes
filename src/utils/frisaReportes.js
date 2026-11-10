@@ -10,7 +10,7 @@ const TIPO_MOV = { inicial: 'Inicial', ajuste: 'Ajuste (conteo)', entrega: 'Entr
 const ESTADO_SURT = { pendiente: 'Pendiente', surtida: 'Surtida', entregada: 'Entregada', cancelada: 'Cancelada' }
 
 // filasNiveles: conNiveles(conInventario(...)) → filas con real/apartado/disponible/niveles
-export function reporteInventario(filasNiveles) {
+function _reporteInventario(filasNiveles) {
   const ordenadas = [...filasNiveles].sort((a, b) => String(a.clave).localeCompare(String(b.clave)))
   return {
     titulo: 'Inventario de la fábrica',
@@ -20,11 +20,11 @@ export function reporteInventario(filasNiveles) {
     filas: ordenadas.map((f) => [f.clave, nombreFrisa(f.nombre), f.real ?? f.stock_actual, f.apartado ?? 0, f.disponible ?? f.stock_actual,
       f.niveles.minimo, f.niveles.reorden, f.niveles.maximo, ESTADOS[f.niveles.estado].label, f.niveles.aPedir ?? '']),
     colores: ordenadas,
-    totales: { Claves: ordenadas.length, 'Piezas reales': ordenadas.reduce((t, f) => t + (f.real ?? 0), 0), 'Piezas disponibles': ordenadas.reduce((t, f) => t + (f.disponible ?? 0), 0) },
+    totales: { Productos: ordenadas.length, 'Piezas reales': ordenadas.reduce((t, f) => t + (f.real ?? 0), 0), 'Piezas disponibles': ordenadas.reduce((t, f) => t + (f.disponible ?? 0), 0) },
   }
 }
 
-export function reporteMovimientos(movs, lisaMovs, { productos = [], lisas = [], desde, hasta }) {
+function _reporteMovimientos(movs, lisaMovs, { productos = [], lisas = [], desde, hasta }) {
   const prod = new Map(productos.map((p) => [p.id, p]))
   const lisa = new Map(lisas.map((l) => [l.id, l]))
   const todas = [
@@ -44,7 +44,7 @@ export function reporteMovimientos(movs, lisaMovs, { productos = [], lisas = [],
   }
 }
 
-export function reporteSurtidos(surtidos, lineas, { productos = [], desde, hasta, estado }) {
+function _reporteSurtidos(surtidos, lineas, { productos = [], desde, hasta, estado }) {
   const prod = new Map(productos.map((p) => [p.id, p]))
   const enRango = (s) => (!desde || fecha(s.creado_en) >= desde) && (!hasta || fecha(s.creado_en) <= hasta) && (!estado || estado === 'todos' || s.estado === estado)
   const sel = surtidos.filter(enRango).sort((a, b) => String(a.creado_en).localeCompare(String(b.creado_en)))
@@ -66,7 +66,7 @@ export function reporteSurtidos(surtidos, lineas, { productos = [], desde, hasta
   }
 }
 
-export function reporteRestock(filasRestock) {
+function _reporteRestock(filasRestock) {
   const sel = filasRestock.filter((f) => f.aPedir > 0 || f.enProceso > 0 || f.porEntrar > 0)
   return {
     titulo: 'Restock',
@@ -89,7 +89,7 @@ export function reporteLisas(filasLisas) {
   }
 }
 
-export function reporteCompras(compras, lineas, lineasLisa, { productos = [], lisas = [] }) {
+function _reporteCompras(compras, lineas, lineasLisa, { productos = [], lisas = [] }) {
   const prod = new Map(productos.map((p) => [p.id, p]))
   const lisa = new Map(lisas.map((l) => [l.id, l]))
   const EST = { pedida: 'Pedida', recibida: 'Recibida', cancelada: 'Cancelada' }
@@ -135,7 +135,7 @@ export function nombreArchivo(rep, ext) {
 
 // Órdenes pendientes contra el inventario: por clave, lo que piden, lo que hay y lo que falta producir.
 // urgente: calcularUrgente(...) (reparte el disponible de la OC que vence primero a la última).
-export function reportePorSurtir(urgente) {
+function _reportePorSurtir(urgente) {
   const ordenesPorClave = new Map()
   for (const o of urgente.ordenes) for (const l of o.lineas) ordenesPorClave.set(l.producto_id, (ordenesPorClave.get(l.producto_id) || 0) + 1)
   const filas = [...urgente.porClave].sort((a, b) => b.falta - a.falta || String(a.producto.clave).localeCompare(String(b.producto.clave)))
@@ -151,7 +151,7 @@ export function reportePorSurtir(urgente) {
       { titulo: 'Por surtir', num: true }, { titulo: 'Hay', num: true }, { titulo: 'Falta producir', num: true }],
     filas: [...filas.map((c) => [c.producto.clave, c.producto.articulo || '', nombreFrisa(c.producto.nombre), ordenesPorClave.get(c.producto.id) || 0,
       c.pendiente, Math.max(0, c.disponible), c.falta]),
-    ['TOTAL', '', `${filas.length} claves`, urgente.ordenes.length, piezasPend, filas.reduce((t, c) => t + Math.max(0, c.disponible), 0), urgente.piezasFaltantes]],
+    ['TOTAL', '', `${filas.length} productos`, urgente.ordenes.length, piezasPend, filas.reduce((t, c) => t + Math.max(0, c.disponible), 0), urgente.piezasFaltantes]],
     colores: [...filas.map((c) => c.producto), null],
     totales: {
       'Órdenes pendientes': urgente.ordenes.length,
@@ -162,3 +162,22 @@ export function reportePorSurtir(urgente) {
     },
   }
 }
+
+// 2026-11-09 (Alfredo): en los reportes no van claves; el producto va con su nombre completo.
+function quitarClave(rep) {
+  const i = rep.columnas.findIndex((c) => c.titulo === 'Clave')
+  const columnas = rep.columnas.map((c) => (c.titulo === 'Nombre' ? { ...c, titulo: 'Producto' } : c))
+  if (i < 0) return { ...rep, columnas }
+  return { ...rep, columnas: columnas.filter((_, j) => j !== i), filas: rep.filas.map((f) => {
+    const r = f.filter((_, j) => j !== i)
+    const n = columnas.filter((_, j) => j !== i).findIndex((c) => c.titulo === 'Producto')
+    if (f[i] === 'TOTAL' && n >= 0) r[n] = r[n] ? `TOTAL · ${r[n]}` : 'TOTAL'
+    return r
+  }) }
+}
+export const reporteInventario = (...a) => quitarClave(_reporteInventario(...a))
+export const reporteMovimientos = (...a) => quitarClave(_reporteMovimientos(...a))
+export const reporteSurtidos = (...a) => quitarClave(_reporteSurtidos(...a))
+export const reporteRestock = (...a) => quitarClave(_reporteRestock(...a))
+export const reporteCompras = (...a) => quitarClave(_reporteCompras(...a))
+export const reportePorSurtir = (...a) => quitarClave(_reportePorSurtir(...a))

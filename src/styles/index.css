@@ -5605,3 +5605,4 @@ h4 {
 .manuales a.btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
 .manuales-regresar--btn { align-self: flex-start; text-align: left; padding-left: 0; }
 .manuales-flechas .btn { min-width: 36px; min-height: 32px; font-size: 1rem; text-decoration: none; }
+.frisa__prod { font-weight: 600; font-size: 13px; }

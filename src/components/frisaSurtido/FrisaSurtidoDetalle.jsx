@@ -1,3 +1,4 @@
+import { nombreFrisa } from '../../utils/frisaColores'
 import { useEffect, useState } from 'react'
 import Modal from '../talleros/Modal'
 import {
@@ -103,7 +104,7 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
             <thead>
               <tr>
                 {palomear && <th aria-label="Embolsado">✓</th>}
-                <th>Clave</th>
+                <th>Producto</th>
                 <th className="num">Pide</th>
               </tr>
             </thead>
@@ -114,10 +115,10 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
                   <tr key={l.id || l.producto_id} className={embolsada[l.id] ? 'frisa-surtido__embolsada' : ''}>
                     {palomear && (
                       <td className="frisa-surtido__check">
-                        <input type="checkbox" checked={Boolean(embolsada[l.id])} onChange={() => tocarRenglon(l)} aria-label={`Embolsado ${l.clave}`} />
+                        <input type="checkbox" checked={Boolean(embolsada[l.id])} onChange={() => tocarRenglon(l)} aria-label={`Embolsado ${nombreFrisa(p?.nombre)}`} />
                       </td>
                     )}
-                    <td><strong>{l.clave}</strong>{p?.articulo && <span className="frisa__sub"> · Art. {p.articulo}</span>}<NombreFrisa producto={p} />
+                    <td><NombreFrisa producto={p} className="frisa__prod" />
                       {!palomear && s.estado === 'pendiente' && embolsada[l.id] && <div className="frisa__ok frisa__sub">Embolsado</div>}</td>
                     <td className="num">
                       <strong>{num(l.cantidad)}</strong>

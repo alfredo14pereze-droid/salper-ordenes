@@ -9,6 +9,7 @@ import {
   CONFIG_INICIAL, ESTADOS, calcularNiveles, conNiveles, filtrarNiveles, opcionesDe, ordenarPorEstado, resumenNiveles,
 } from '../../utils/frisaNiveles'
 import { EstadoBadge, fechaCorta, NombreFrisa, ColorFrisa } from './comunes'
+import { nombreFrisa } from '../../utils/frisaColores'
 import FrisaNivelesDetalle from './FrisaNivelesDetalle'
 import FrisaNivelesSupuestos from './FrisaNivelesSupuestos'
 import FrisaNivelesImportar from './FrisaNivelesImportar'
@@ -153,14 +154,14 @@ export default function FrisaNiveles() {
           </div>
 
           <p className="frisa__nota">
-            {visibles.length} de {filas.length} claves.{puedeCapturar ? ' Toca el real para capturar un conteo; toca la clave para ver el detalle.' : ' Toca la clave para ver el detalle.'}
+            {visibles.length} de {filas.length} productos.{puedeCapturar ? ' Toca el real para capturar un conteo; toca el producto para ver el detalle.' : ' Toca el producto para ver el detalle.'}
           </p>
 
           <div className="revision__tabla-wrap">
             <table className="simple-table frisa-tabla frisa-niveles__tabla">
               <thead>
                 <tr>
-                  <th>Clave</th>
+                  <th>Producto</th>
                   <th>Color</th>
                   <th className="num">Real</th>
                   <th className="num">Apartado</th>
@@ -232,17 +233,15 @@ function FilaNivel({ fila, cfg, puedeCapturar, onGuardado, onDetalle }) {
 
   return (
     <tr className={'frisa-niveles__fila--' + n.estado + (fila.niveles.sinMovimiento ? ' frisa-niveles__fila--quieta' : '')}>
-      <td data-label="Clave">
-        <button type="button" className="frisa-niveles__clave" onClick={onDetalle}>{fila.clave}</button>
-        {fila.articulo && <div className="frisa__sub">Art. {fila.articulo}</div>}
-        <NombreFrisa producto={fila} />
+      <td data-label="Producto">
+        <button type="button" className="frisa-niveles__clave" onClick={onDetalle}><NombreFrisa producto={fila} className="frisa__prod" /></button>
       </td>
       <td data-label="Color"><ColorFrisa producto={fila} /></td>
       <td data-label="Real" className="num">
         {editando ? (
           <span className="frisa-niveles__editar">
             <input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" autoFocus value={valor}
-              disabled={guardando} aria-label={`Stock de ${fila.clave}`} onFocus={(e) => e.target.select()}
+              disabled={guardando} aria-label={`Stock de ${nombreFrisa(fila.nombre)}`} onFocus={(e) => e.target.select()}
               onChange={(e) => setValor(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') guardar(); if (e.key === 'Escape') setEditando(false) }} />
             <button type="button" className="btn btn--primary btn--small" disabled={guardando} onClick={guardar} aria-label="Guardar">✓</button>

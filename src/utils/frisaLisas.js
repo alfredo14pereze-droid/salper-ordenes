@@ -1,3 +1,4 @@
+import { nombreFrisa } from './frisaColores.js'
 // V187 — Frisa fase 4: playera lisa (sin procesos), por color + manga + talla.
 // Ver supabase/schema_v187_frisa_playera_lisa.sql.
 //   stock      = lo que hay en el anaquel (las lisas se descuentan al crear/ligar la orden de taller)
@@ -53,7 +54,7 @@ export function calcularLisas({ lisas = [], productoLisa = [], productosFrisa = 
   }
 
   // Qué productos usan cada combinación color + manga, y su proveedor.
-  const codigo = new Map(productosFrisa.map((p) => [p.id, p.codigo]))
+  const codigo = new Map(productosFrisa.map((p) => [p.id, nombreFrisa(p.nombre) || p.codigo]))
   const usos = new Map()
   for (const pl of productoLisa) {
     const k = `${C(pl.color)}|${pl.manga}`

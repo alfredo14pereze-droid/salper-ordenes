@@ -41,16 +41,16 @@ export default function FrisaNivelesExportar({ filas, cfg, onClose }) {
     <>
       <Modal title="Lista A PEDIR" onClose={onClose}>
         <p className="frisa__nota">
-          {lista.length} claves en CRÍTICO o PEDIR · <strong>{num(piezas)} piezas</strong> para llegar al máximo.
+          {lista.length} productos en CRÍTICO o PEDIR · <strong>{num(piezas)} piezas</strong> para llegar al máximo.
         </p>
         {lista.length > 0 && (
           <div className="revision__tabla-wrap frisa-niveles__dif">
             <table className="simple-table frisa-tabla">
-              <thead><tr><th>Clave</th><th className="num">Disponible</th><th>Estado</th><th className="num">A PEDIR</th></tr></thead>
+              <thead><tr><th>Producto</th><th className="num">Disponible</th><th>Estado</th><th className="num">A PEDIR</th></tr></thead>
               <tbody>
                 {lista.map((f) => (
                   <tr key={f.id}>
-                    <td><strong>{f.clave}</strong><NombreFrisa producto={f} /></td>
+                    <td><NombreFrisa producto={f} className="frisa__prod" /></td>
                     <td className="num">{num(f.disponible ?? f.stock_actual)}</td>
                     <td>{ESTADOS[f.niveles.estado].label}</td>
                     <td className="num"><strong>{num(f.niveles.aPedir)}</strong></td>

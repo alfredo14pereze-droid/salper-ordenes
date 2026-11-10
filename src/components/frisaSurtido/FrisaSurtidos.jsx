@@ -1,3 +1,4 @@
+import { nombreFrisa } from '../../utils/frisaColores'
 import { useMemo, useState } from 'react'
 import { ESTADOS_SURTIDO, lineasPorSurtido, ordenarPendientes, piezasDe, textoLimite, clavePlanta, plantasDe, juntarPorClave } from '../../utils/frisaSurtido'
 import { fechaCorta, NombreFrisa } from '../frisaNiveles/comunes'
@@ -85,11 +86,11 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
                 <h2 className="section-title section-title--small">Lo que falta por clave (todas las órdenes pendientes)</h2>
                 <div className="revision__tabla-wrap">
                   <table className="simple-table frisa-tabla frisa-niveles__tabla">
-                    <thead><tr><th>Clave</th><th className="num">Piden</th><th className="num">Disponible</th><th className="num">Falta</th></tr></thead>
+                    <thead><tr><th>Producto</th><th className="num">Piden</th><th className="num">Disponible</th><th className="num">Falta</th></tr></thead>
                     <tbody>
                       {faltan.map((c) => (
                         <tr key={c.producto.id} className="frisa-niveles__fila--critico">
-                          <td data-label="Clave"><strong>{c.producto.clave}</strong><NombreFrisa producto={c.producto} /></td>
+                          <td data-label="Producto"><NombreFrisa producto={c.producto} className="frisa__prod" /></td>
                           <td data-label="Piden" className="num">{num(c.pendiente)}</td>
                           <td data-label="Disponible" className="num">{num(c.disponible)}</td>
                           <td data-label="Falta" className="num"><strong className="frisa__falta">{num(c.falta)}</strong></td>
@@ -135,11 +136,11 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
           <p className="frisa__sub">Lo que piden todas sus órdenes pendientes, sumado por clave. Embolsa todo y luego marca cada orden.</p>
           <div className="revision__tabla-wrap">
             <table className="simple-table frisa-tabla frisa-niveles__tabla">
-              <thead><tr><th>Clave</th><th className="num">Órdenes</th><th className="num">Piden</th><th className="num">Hay</th></tr></thead>
+              <thead><tr><th>Producto</th><th className="num">Órdenes</th><th className="num">Piden</th><th className="num">Hay</th></tr></thead>
               <tbody>
                 {juntas.map((x) => (
                   <tr key={x.producto.id} className={x.falta ? 'frisa-niveles__fila--critico' : 'frisa-niveles__fila--ok'}>
-                    <td data-label="Clave"><strong>{x.producto.clave}</strong><NombreFrisa producto={x.producto} /></td>
+                    <td data-label="Producto"><NombreFrisa producto={x.producto} className="frisa__prod" /></td>
                     <td data-label="Órdenes" className="num">{x.ordenes}</td>
                     <td data-label="Piden" className="num"><strong>{num(x.cantidad)}</strong></td>
                     <td data-label="Hay" className="num">{x.falta ? <span className="frisa__falta">{num(x.disponible)} · faltan {num(x.falta)}</span> : <span className="frisa__ok">{num(x.disponible)} ✓</span>}</td>
@@ -177,13 +178,13 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
               </span>
               <span className="frisa-oc__planta">{s.planta}</span>
               <span className="frisa__sub">
-                {ls.length} clave{ls.length === 1 ? '' : 's'} · {num(piezasDe(ls))} pzas
+                {ls.length} producto{ls.length === 1 ? '' : 's'} · {num(piezasDe(ls))} pzas
                 {s.estado === 'pendiente' || s.estado === 'surtida'
                   ? <> · <span className={lim.urgente ? 'frisa__falta' : ''}>{lim.texto}</span></>
                   : s.fecha_limite ? ` · Límite ${fechaCorta(s.fecha_limite)}` : ''}
               </span>
               {s.estado === 'pendiente' && u && !u.completa && u.faltantes.length > 0 && (
-                <span className="frisa__falta">Falta: {u.faltantes.map((f) => `${f.clave} (${num(f.falta)})`).join(', ')}</span>
+                <span className="frisa__falta">Falta: {u.faltantes.map((f) => `${nombreFrisa(f.nombre)} (${num(f.falta)})`).join(', ')}</span>
               )}
               {s.estado === 'surtida' && <span className="frisa__sub">Surtió {s.surtido_por_nombre}</span>}
               {s.estado === 'entregada' && <span className="frisa__sub">Rem. {s.remision} · {fechaCorta(s.fecha_entrega)} · surtió {s.surtido_por_nombre}</span>}

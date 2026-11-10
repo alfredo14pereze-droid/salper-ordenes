@@ -11,6 +11,7 @@ export const COLORES_PLAYERA = {
 
 // Nombre para mostrar (pedido de Alfredo, 2026-11-07): M/C → MANGA CORTA, M/L → MANGA LARGA,
 // sin C/R, sin "FRISA" ni "1 IMP."/"2 IMP." ni las onzas (7 OZ, 14OZ), C/REFLEJANTE → CON REFLEJANTE y S/REFLEJANTE → LISA. Solo en pantalla y PDF:
+// 2026-11-09: también C/REF, S/REF, A. MARINO → AZUL MARINO y T-M → TALLA M; todo en mayúsculas.
 // el nombre guardado sigue igual al de Microsip (con él se ligan los Excel y las OC).
 export function nombreFrisa(nombre) {
   let n = String(nombre ?? '')
@@ -25,11 +26,17 @@ export function nombreFrisa(nombre) {
     .replace(/\bM\s*\/\s*L\b/gi, 'MANGA LARGA')
     .replace(/\bC\s*\/\s*REFLEJANTE\b/gi, 'CON REFLEJANTE')
     .replace(/\bS\s*\/\s*REFLEJANTE\b/gi, 'LISA')
+    .replace(/\bC\s*\/\s*REF\b\.?/gi, 'CON REFLEJANTE')
+    .replace(/\bS\s*\/\s*REF\b\.?/gi, 'LISA')
+    .replace(/\bA\.\s*MARINO\b/gi, 'AZUL MARINO')
+    .replace(/\bAZUL\s+M\.(?=\s|$)/gi, 'AZUL MARINO')
+    .replace(/\bT-([0-9A-Z]+)\b/gi, 'TALLA $1')
     .replace(/\b\d+\s*IMP\b\.?/gi, '')
     .replace(/\bFRISA\b/gi, '')
     .replace(/\b\d+\s*OZ\b\.?/gi, '')
     .replace(/\s+/g, ' ')
     .trim()
+    .toUpperCase()
 }
 
 const sinAcentos = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()

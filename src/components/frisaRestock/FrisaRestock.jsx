@@ -1,3 +1,4 @@
+import { nombreFrisa } from '../../utils/frisaColores'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { Loading, ErrorState } from '../common/States'
@@ -182,12 +183,12 @@ function TablaRestock({ filas }) {
     <div className="revision__tabla-wrap">
       <table className="simple-table frisa-tabla frisa-niveles__tabla">
         <thead>
-          <tr><th>Clave</th><th className="num">Disponible</th><th className="num">En proceso</th><th className="num">Por entrar</th><th className="num">Proyectado</th><th className="num">Reorden</th><th className="num">Máximo</th><th>Estado</th><th className="num">A PEDIR</th><th>Se</th></tr>
+          <tr><th>Producto</th><th className="num">Disponible</th><th className="num">En proceso</th><th className="num">Por entrar</th><th className="num">Proyectado</th><th className="num">Reorden</th><th className="num">Máximo</th><th>Estado</th><th className="num">A PEDIR</th><th>Se</th></tr>
         </thead>
         <tbody>
           {filas.map((f) => (
             <tr key={f.producto.id} className={'frisa-niveles__fila--' + f.estado}>
-              <td data-label="Clave"><strong>{f.producto.clave}</strong><NombreFrisa producto={f.producto} /></td>
+              <td data-label="Producto"><NombreFrisa producto={f.producto} className="frisa__prod" /></td>
               <td data-label="Disponible" className="num">{num(f.disponible)}</td>
               <td data-label="En proceso" className="num">{f.enProceso ? num(f.enProceso) : ''}</td>
               <td data-label="Por entrar" className="num">{f.porEntrar ? num(f.porEntrar) : ''}</td>
@@ -224,12 +225,12 @@ function PropuestaTaller({ grupo, productoFrisa, puede, onListo }) {
     const { error: e2 } = await ligarOrden(orden.id, 'restock')
     setTrabajando(false)
     if (e2) return setError(`Se creó la orden ${orden.order_number} pero no se pudo ligar: ${e2.message}. Lígala abajo con su folio.`)
-    onListo(`Se creó la orden de taller ${orden.order_number} (${productoFrisa?.codigo}, ${num(total)} pzas). Ya está en las estaciones.`)
+    onListo(`Se creó la orden de taller ${orden.order_number} (${nombreFrisa(productoFrisa?.nombre)}, ${num(total)} pzas). Ya está en las estaciones.`)
   }
 
   return (
     <div className="card frisa-restock__propuesta">
-      <h3 className="section-title section-title--small">Orden de taller: {productoFrisa?.codigo} · {productoFrisa?.nombre}</h3>
+      <h3 className="section-title section-title--small">Orden de taller: {nombreFrisa(productoFrisa?.nombre)}</h3>
       <div className="frisa-restock__tallas">
         {grupo.lineas.map((l) => (
           <label key={l.producto_id}>
@@ -242,7 +243,7 @@ function PropuestaTaller({ grupo, productoFrisa, puede, onListo }) {
       </div>
       {error && <p className="form-error">{error}</p>}
       {puede
-        ? <button type="button" className="btn btn--primary" disabled={trabajando || total <= 0} onClick={crear}>{trabajando ? 'Creando…' : `Crear orden de taller FR (${num(total)} pzas)`}</button>
+        ? <button type="button" className="btn btn--primary" disabled={trabajando || total <= 0} onClick={crear}>{trabajando ? 'Creando…' : `Crear orden de taller (${num(total)} pzas)`}</button>
         : <p className="frisa__sub">Las órdenes FR las crea ventas, admin de tienda o el administrador general.</p>}
     </div>
   )
@@ -277,7 +278,7 @@ function PropuestaCompra({ filas, puede, onListo }) {
     const [et, color] = ESTADO_COMPRA[f.estado] || ESTADO_COMPRA.ok
     return (
       <tr key={f.producto.id} className={f.aPedir > 0 ? 'frisa-niveles__fila--' + f.estado : 'frisa-niveles__fila--ok'}>
-        <td data-label="Clave"><strong>{f.producto.clave}</strong><NombreFrisa producto={f.producto} /></td>
+        <td data-label="Producto"><NombreFrisa producto={f.producto} className="frisa__prod" /></td>
         <td data-label="Hay" className="num">{num(f.disponible)}</td>
         <td data-label="En camino" className="num">{f.enProceso + f.porEntrar ? num(f.enProceso + f.porEntrar) : ''}</td>
         <td data-label="Reorden" className="num">{num(f.reorden)}</td>
@@ -285,7 +286,7 @@ function PropuestaCompra({ filas, puede, onListo }) {
         <td data-label="Estado"><span className={'frisa-nivel frisa-nivel--' + color}>{et}</span></td>
         <td data-label="A pedir" className="num">
           <input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" value={cant[f.producto.id]} placeholder="0"
-            disabled={!puede} onChange={(e) => setCant({ ...cant, [f.producto.id]: e.target.value })} aria-label={`A pedir ${f.producto.clave}`} />
+            disabled={!puede} onChange={(e) => setCant({ ...cant, [f.producto.id]: e.target.value })} aria-label={`A pedir ${nombreFrisa(f.producto.nombre)}`} />
         </td>
       </tr>
     )
@@ -300,7 +301,7 @@ function PropuestaCompra({ filas, puede, onListo }) {
       </p>
       <div className="revision__tabla-wrap">
         <table className="simple-table frisa-tabla frisa-niveles__tabla">
-          <thead><tr><th>Clave</th><th className="num">Hay</th><th className="num">En camino</th><th className="num">Reorden</th><th className="num">Máximo</th><th>Estado</th><th className="num">A pedir</th></tr></thead>
+          <thead><tr><th>Producto</th><th className="num">Hay</th><th className="num">En camino</th><th className="num">Reorden</th><th className="num">Máximo</th><th>Estado</th><th className="num">A pedir</th></tr></thead>
           <tbody>
             {lista.filter((f) => f.aPedir > 0).map(fila)}
             {aPedir > 0 && aPedir < lista.length && (
@@ -344,7 +345,7 @@ function ListaOrdenes({ filas, pfPorId, puede, onSubir, onListo }) {
               <span className="frisa-oc__num">{f.order?.order_number || 'Orden'}</span>
               <span className={'frisa-nivel frisa-nivel--' + clase}>{label}</span>
             </span>
-            <span className="frisa-oc__planta">{pf?.codigo} · {pf?.nombre}</span>
+            <span className="frisa-oc__planta">{nombreFrisa(pf?.nombre)}</span>
             <span className="frisa__sub">{num(f.piezas)} pzas{f.order?.requested_delivery_date ? ` · entrega ${fechaCorta(f.order.requested_delivery_date)}` : ''}</span>
             <span className="frisa__botones">
               {f.estado === 'por_entrar' && puede.bodega && <button type="button" className="btn btn--primary btn--small" onClick={() => onSubir(f)}>Subir a bodega</button>}
@@ -411,7 +412,7 @@ function ModalIngreso({ fila, datos, pfPorId, onClose, onListo }) {
             <tbody>
               {lineas.map((l) => (
                 <tr key={l.producto_id}>
-                  <td><strong>{prod(l.producto_id)?.clave}</strong> · talla {l.talla}<NombreFrisa producto={prod(l.producto_id)} /></td>
+                  <td><NombreFrisa producto={prod(l.producto_id)} className="frisa__prod" /></td>
                   <td className="num"><input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" value={cant[l.producto_id]}
                     onChange={(e) => setCant({ ...cant, [l.producto_id]: e.target.value })} aria-label={`Piezas talla ${l.talla}`} /></td>
                 </tr>

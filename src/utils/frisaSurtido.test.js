@@ -38,7 +38,7 @@ test('Urgente: por fecha límite, todo o nada', () => {
   ]
   const u = calcularUrgente(inv, surtidos, lineas)
   assert.deepEqual(u.ordenes.map((o) => [o.surtido.id, o.completa]), [['pronto', true], ['tarde', false], ['chica', true]])
-  assert.deepEqual(u.ordenes[1].faltantes, [{ producto_id: 'v', clave: 'V', falta: 6 }])
+  assert.deepEqual(u.ordenes[1].faltantes, [{ producto_id: 'v', clave: 'V', nombre: 'PLAYERA C/R M/C C/REFLEJANTE 2 IMP. VERDE FRISA T-M', falta: 6 }])
   assert.equal(u.completas, 2)
   const v = u.porClave.find((c) => c.producto.id === 'v')
   assert.deepEqual([v.pendiente, v.disponible, v.falta], [24, 14, 10])

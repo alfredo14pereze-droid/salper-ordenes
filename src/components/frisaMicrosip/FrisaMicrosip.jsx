@@ -144,12 +144,12 @@ export default function FrisaMicrosip() {
           {conDif.length > 0 && (
             <div className="revision__tabla-wrap">
               <table className="simple-table frisa-tabla frisa-niveles__tabla">
-                <thead><tr><th>Ajustar</th><th>Clave</th><th className="num">Página</th><th className="num">Microsip</th><th className="num">Diferencia</th><th>Ligada</th></tr></thead>
+                <thead><tr><th>Ajustar</th><th>Producto</th><th className="num">Página</th><th className="num">Microsip</th><th className="num">Diferencia</th><th>Ligada</th></tr></thead>
                 <tbody>
                   {conDif.map((l) => (
                     <tr key={l.producto.id} className={l.diferencia < 0 ? 'frisa-niveles__fila--critico' : 'frisa-niveles__fila--pedir'}>
-                      <td data-label="Ajustar"><input type="checkbox" checked={ajustar.has(l.producto.id)} onChange={(e) => marcar(l.producto.id, e.target.checked)} aria-label={`Ajustar ${l.producto.clave}`} /></td>
-                      <td data-label="Clave"><strong>{l.producto.clave}</strong><NombreFrisa producto={l.producto} /><div className="frisa__sub">Microsip {l.codigo}</div></td>
+                      <td data-label="Ajustar"><input type="checkbox" checked={ajustar.has(l.producto.id)} onChange={(e) => marcar(l.producto.id, e.target.checked)} aria-label={`Ajustar ${nombreFrisa(l.producto.nombre)}`} /></td>
+                      <td data-label="Producto"><NombreFrisa producto={l.producto} className="frisa__prod" /><div className="frisa__sub">Microsip {l.codigo}</div></td>
                       <td data-label="Página" className="num">{num(l.pagina)}</td>
                       <td data-label="Microsip" className="num"><strong>{num(l.microsip)}</strong></td>
                       <td data-label="Diferencia" className="num"><strong className={l.diferencia < 0 ? 'frisa__falta' : ''}>{signo(l.diferencia)}</strong></td>
@@ -168,10 +168,10 @@ export default function FrisaMicrosip() {
               <p className="frisa__sub">Elige su clave (se guarda para la próxima) o déjalos fuera.</p>
               {comparacion.sinLigar.map((a) => (
                 <label key={a.codigo} className="frisa-microsip__manual">
-                  <span><strong>{a.codigo}</strong> · {a.nombre} · {num(a.existencia)} pzas</span>
+                  <span><strong>{nombreFrisa(a.nombre)}</strong> · art. {a.codigo} · {num(a.existencia)} pzas</span>
                   <select className="input" value={manual[a.codigo] || ''} onChange={(e) => setManual({ ...manual, [a.codigo]: e.target.value })}>
                     <option value="">Dejar fuera</option>
-                    {opciones.map((p) => <option key={p.id} value={p.id}>{nombreFrisa(p.nombre)} · {p.clave}</option>)}
+                    {opciones.map((p) => <option key={p.id} value={p.id}>{nombreFrisa(p.nombre)}</option>)}
                   </select>
                 </label>
               ))}

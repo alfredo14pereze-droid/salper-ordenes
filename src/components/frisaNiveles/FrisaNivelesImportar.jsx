@@ -118,7 +118,7 @@ function Diferencias({ diferencias, titulo }) {
       <p className="frisa__falta">{titulo}: {diferencias.length} diferencias en {claves} claves.</p>
       <div className="revision__tabla-wrap frisa-niveles__dif">
         <table className="simple-table frisa-tabla">
-          <thead><tr><th>Clave</th><th>Campo</th><th className="num">Sheet</th><th className="num">App</th></tr></thead>
+          <thead><tr><th>Producto</th><th>Campo</th><th className="num">Sheet</th><th className="num">App</th></tr></thead>
           <tbody>
             {diferencias.map((d) => (
               <tr key={d.clave + d.campo}><td>{d.clave}</td><td>{d.campo}</td><td className="num">{String(d.sheet)}</td><td className="num"><strong>{String(d.app)}</strong></td></tr>

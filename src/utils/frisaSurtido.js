@@ -71,7 +71,7 @@ export function calcularUrgente(productosInv, surtidos, lineas) {
     for (const l of ls) {
       pendientePorClave.set(l.producto_id, (pendientePorClave.get(l.producto_id) || 0) + l.cantidad)
       const hay = restante.get(l.producto_id) ?? 0
-      if (hay < l.cantidad) faltantes.push({ producto_id: l.producto_id, clave: l.clave, falta: l.cantidad - Math.max(0, hay) })
+      if (hay < l.cantidad) faltantes.push({ producto_id: l.producto_id, clave: l.clave, nombre: prod.get(l.producto_id)?.nombre ?? l.clave, falta: l.cantidad - Math.max(0, hay) })
     }
     const completa = ls.length > 0 && faltantes.length === 0
     if (completa) for (const l of ls) {

@@ -120,8 +120,8 @@ export default function FrisaSurtidoForm({ productos, alias, surtido, lineas, ex
               {r.texto_pdf && <span className="frisa__sub">PDF: {r.texto_pdf}{r.talla_pdf ? ` · talla ${r.talla_pdf}` : ''}</span>}
               <div className="frisa-surtido__renglon-campos">
                 <select className="input" value={r.producto_id} onChange={(e) => setR(r.key, 'producto_id', e.target.value)} aria-label="Clave">
-                  <option value="">Elige la clave…</option>
-                  {opciones.map((p) => <option key={p.id} value={p.id}>{nombreFrisa(p.nombre)} · {p.clave}</option>)}
+                  <option value="">Elige el producto…</option>
+                  {opciones.map((p) => <option key={p.id} value={p.id}>{nombreFrisa(p.nombre)}</option>)}
                 </select>
                 <input className="input frisa-input" type="number" min="1" step="1" inputMode="numeric" value={r.cantidad}
                   onChange={(e) => setR(r.key, 'cantidad', e.target.value)} aria-label="Cantidad" placeholder="Pzas" />
