@@ -124,6 +124,8 @@ El inventario se reparte **de la orden que vence primero a la última**. Cada or
 
 Debajo de Pendientes / Surtidas hay un botón por cada planta (Aerospace, Santa Catarina…). Al tocar una, solo salen sus órdenes y arriba aparece **"Para surtir juntas"**: lo que piden todas sus órdenes sumado por clave, con lo que hay. Sirve para surtir todas las de una planta al mismo tiempo.
 
+**Buscar un producto:** en el buscador escribe el producto (por ejemplo **"pantalon talla 34"** o **"roja manga corta talla M"**), la clave o el número de artículo. Solo quedan las órdenes que lo traen; cada una dice **"Trae: …"** con sus piezas y arriba sale el total. Busca en la pestaña que tengas elegida (Pendientes, Surtidas o Entregadas).
+
 ## Lo que falta
 
 Arriba de la lista sale la tabla **"Lo que falta por clave"**: lo que piden todas las órdenes pendientes, lo que hay disponible y lo que **falta**. Úsala para saber qué hay que producir o comprar primero.
@@ -166,6 +168,8 @@ Si la orden es de un solo renglón, puedes tocar directo **Surtida toda** sin pa
 2. Arriba sale **"Para surtir juntas"**: cuánto piden **todas** esas órdenes de cada clave y cuánto hay. Junta todo de una vez.
 3. Luego abre **cada orden** y márcala como siempre (palomea y Surtida toda).
 4. Para ver todas otra vez toca **Todas las plantas**.
+
+**Buscar un producto:** en el buscador escribe el producto (por ejemplo **"pantalon talla 34"** o **"roja manga corta talla M"**), la clave o el número de artículo. Solo quedan las órdenes que lo traen; cada una dice **"Trae: …"** con sus piezas y arriba sale el total. Busca en la pestaña que tengas elegida (Pendientes, Surtidas o Entregadas).
 $man$),
       (5, $t$Cómo confirmar "Ya entregó el chofer"$t$, $man$**Lo hace:** Gis (ventas), cuando Leo regresa de entregar.
 
