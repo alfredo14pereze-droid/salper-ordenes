@@ -3,7 +3,8 @@ import { nombreFrisa } from './frisaColores.js'
 // Ver supabase/schema_v185_frisa_surtido.sql.
 //
 //   real       = stock_actual (lo mantienen los movimientos)
-//   apartado   = líneas de órdenes 'surtida' (aún no entregadas)
+//   apartado   = líneas de órdenes 'surtida' (aún no entregadas) + lo apartado
+//                de órdenes pendientes (V202, apartado parcial por renglón)
 //   disponible = real − apartado
 //
 // Urgente: las órdenes pendientes se revisan por fecha límite (la más
@@ -27,13 +28,18 @@ export function lineasPorSurtido(lineas) {
   return m
 }
 
-// { producto_id → piezas apartadas }
+// Piezas de un renglón que ya están apartadas / que faltan por apartar (V202).
+export const apartadaDe = (l) => Math.min(Number(l.cantidad) || 0, Math.max(0, Number(l.apartada) || 0))
+export const porApartar = (l) => (Number(l.cantidad) || 0) - apartadaDe(l)
+
+// { producto_id → piezas apartadas } (surtidas: todo; pendientes: lo apartado)
 export function apartadoPorProducto(surtidos, lineas) {
-  const surtidas = new Set((surtidos || []).filter((s) => s.estado === 'surtida').map((s) => s.id))
+  const estado = new Map((surtidos || []).map((s) => [s.id, s.estado]))
   const m = new Map()
   for (const l of lineas || []) {
-    if (!surtidas.has(l.surtido_id)) continue
-    m.set(l.producto_id, (m.get(l.producto_id) || 0) + l.cantidad)
+    const e = estado.get(l.surtido_id)
+    const n = e === 'surtida' ? l.cantidad : e === 'pendiente' ? apartadaDe(l) : 0
+    if (n) m.set(l.producto_id, (m.get(l.producto_id) || 0) + n)
   }
   return m
 }
@@ -70,20 +76,22 @@ export function calcularUrgente(productosInv, surtidos, lineas) {
     const ls = porSurtido.get(s.id) || []
     const faltantes = []
     for (const l of ls) {
-      pendientePorClave.set(l.producto_id, (pendientePorClave.get(l.producto_id) || 0) + l.cantidad)
+      const necesita = porApartar(l)
+      pendientePorClave.set(l.producto_id, (pendientePorClave.get(l.producto_id) || 0) + necesita)
       const hay = restante.get(l.producto_id) ?? 0
-      if (hay < l.cantidad) faltantes.push({ producto_id: l.producto_id, clave: l.clave, nombre: prod.get(l.producto_id)?.nombre ?? l.clave, falta: l.cantidad - Math.max(0, hay) })
+      if (hay < necesita) faltantes.push({ producto_id: l.producto_id, clave: l.clave, nombre: prod.get(l.producto_id)?.nombre ?? l.clave, falta: necesita - Math.max(0, hay) })
     }
     const completa = ls.length > 0 && faltantes.length === 0
     if (completa) for (const l of ls) {
-      restante.set(l.producto_id, restante.get(l.producto_id) - l.cantidad)
+      restante.set(l.producto_id, restante.get(l.producto_id) - porApartar(l))
       if (!usadoPor.has(l.producto_id)) usadoPor.set(l.producto_id, [])
       usadoPor.get(l.producto_id).push(s.numero_oc)
     }
     // Sola sí alcanza (sin contar las otras pendientes), pero otras que vencen antes ocupan esas piezas.
-    const alcanzaSola = ls.length > 0 && ls.every((l) => l.cantidad <= (prod.get(l.producto_id)?.disponible ?? 0))
+    const alcanzaSola = ls.length > 0 && ls.every((l) => porApartar(l) <= (prod.get(l.producto_id)?.disponible ?? 0))
     const compiteCon = completa ? [] : [...new Set(faltantes.flatMap((f) => usadoPor.get(f.producto_id) || []))]
-    ordenes.push({ surtido: s, lineas: ls, completa, faltantes, alcanzaSola, compiteCon })
+    const apartadas = ls.reduce((t, l) => t + apartadaDe(l), 0)
+    ordenes.push({ surtido: s, lineas: ls, completa, faltantes, alcanzaSola, compiteCon, apartadas })
   }
   const porClave = [...pendientePorClave.entries()].map(([id, pendiente]) => {
     const p = prod.get(id)
@@ -102,8 +110,8 @@ export function calcularUrgente(productosInv, surtidos, lineas) {
 export function faltantesDeOrden(lineasOrden, productosInv) {
   const prod = new Map(productosInv.map((p) => [p.id, p]))
   return lineasOrden
-    .map((l) => ({ ...l, disponible: prod.get(l.producto_id)?.disponible ?? 0 }))
-    .map((l) => ({ ...l, falta: Math.max(0, l.cantidad - Math.max(0, l.disponible)) }))
+    .map((l) => ({ ...l, disponible: prod.get(l.producto_id)?.disponible ?? 0, apartada: apartadaDe(l), necesita: porApartar(l) }))
+    .map((l) => ({ ...l, falta: Math.max(0, l.necesita - Math.max(0, l.disponible)) }))
 }
 
 export function piezasDe(lineas) {
@@ -242,7 +250,7 @@ export function juntarPorClave(ordenes, lineasPor, productosInv) {
   for (const s of ordenes) for (const l of lineasPor.get(s.id) || []) {
     if (!m.has(l.producto_id)) m.set(l.producto_id, { producto: prod.get(l.producto_id) || { id: l.producto_id, clave: l.clave, nombre: '' }, cantidad: 0, ordenes: 0 })
     const x = m.get(l.producto_id)
-    x.cantidad += l.cantidad
+    x.cantidad += porApartar(l)
     x.ordenes++
   }
   return [...m.values()].map((x) => ({ ...x, disponible: x.producto.disponible ?? 0, falta: Math.max(0, x.cantidad - Math.max(0, x.producto.disponible ?? 0)) }))

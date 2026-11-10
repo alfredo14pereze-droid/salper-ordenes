@@ -97,3 +97,6 @@ export async function fetchSurtidosYLineas() {
 
 // V190 — palomear un renglón como embolsado.
 export const marcarRenglon = (lineaId, embolsada) => rpc('frisa_surtido_marcar_renglon', { p_linea_id: lineaId, p_embolsada: embolsada })
+
+// V202 — apartar N piezas de un renglón de una orden pendiente (0 = liberar).
+export const apartarRenglon = (lineaId, cantidad) => rpc('frisa_surtido_apartar', { p_linea_id: lineaId, p_cantidad: cantidad })

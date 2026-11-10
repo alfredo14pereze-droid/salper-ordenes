@@ -144,7 +144,7 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
           <p className="frisa__sub">Lo que piden todas sus órdenes pendientes, sumado por clave. Embolsa todo y luego marca cada orden.</p>
           <div className="revision__tabla-wrap">
             <table className="simple-table frisa-tabla frisa-niveles__tabla">
-              <thead><tr><th>Producto</th><th className="num">Órdenes</th><th className="num">Piden</th><th className="num">Hay</th></tr></thead>
+              <thead><tr><th>Producto</th><th className="num">Órdenes</th><th className="num">Por apartar</th><th className="num">Hay</th></tr></thead>
               <tbody>
                 {juntas.map((x) => (
                   <tr key={x.producto.id} className={x.falta ? 'frisa-niveles__fila--critico' : 'frisa-niveles__fila--ok'}>
@@ -196,6 +196,9 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
                   ? <> · <span className={lim.urgente ? 'frisa__falta' : ''}>{lim.texto}</span></>
                   : s.fecha_limite ? ` · Límite ${fechaCorta(s.fecha_limite)}` : ''}
               </span>
+              {s.estado === 'pendiente' && u && u.apartadas > 0 && (
+                <span className="frisa-surtido__trae">Apartadas {num(u.apartadas)} de {num(piezasDe(ls))} pzas</span>
+              )}
               {s.estado === 'pendiente' && u && !u.completa && u.faltantes.length > 0 && (
                 <span className="frisa__falta">Falta: {u.faltantes.map((f) => `${nombreFrisa(f.nombre)} (${num(f.falta)})`).join(', ')}</span>
               )}

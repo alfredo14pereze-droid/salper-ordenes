@@ -52,7 +52,7 @@ Cada persona solo ve las pestañas que le tocan, para que no se confunda.
 
 ## Reglas importantes
 
-- **Frisa no acepta parciales**: una orden se surte solo si está completa.
+- **Frisa no acepta parciales**: una orden se entrega completa. Mientras llega lo que falta, se puede ir **apartando** lo que hay.
 - **Una OC no se sube dos veces**: la página no lo permite.
 - Las claves se encuentran por el **número de artículo** (el MATERIAL de la OC, que es el mismo de Microsip).
 - El inventario solo cambia con movimientos que quedan en el historial: **Ya entregó el chofer**, **Subir a bodega**, **Recibir** compras y ajustes.
@@ -74,7 +74,7 @@ Cada persona solo ve las pestañas que le tocan, para que no se confunda.
 
 El inventario de la **bodega de la fábrica** (no el de las plantas). Para cada clave:
 
-- **Real** = lo que hay · **Apartado** = surtido que todavía no sale · **Disponible** = real − apartado.
+- **Real** = lo que hay · **Apartado** = surtido o apartado que todavía no sale · **Disponible** = real − apartado.
 - **Mínimo / Reorden / Máximo** salen del consumo de 2026 (mínimo 20 días, reorden 28, máximo 42).
 - Estado: **CRÍTICO** disponible ≤ mínimo · **PEDIR** ≤ reorden · **OK**.
 
@@ -118,7 +118,7 @@ El inventario se reparte **de la orden que vence primero a la última**. Cada or
 | **Alcanza, pero la ocupa OC …** | Sola sí alcanza, pero otra OC que vence antes usa esas piezas. |
 | **Falta inventario** | No alcanza. |
 
-> Frisa **no acepta parciales**: una orden solo se surte si está completa.
+> Frisa **no acepta parciales**: una orden se entrega completa. Pero sí puedes ir **apartando** lo que haya de una orden incompleta, para que no se use en otras.
 
 ## Filtrar por planta
 
@@ -146,17 +146,19 @@ Entra a **Frisa** (en el celular del chofer dice **Surtido Frisa**). Vas a ver l
 | **Falta inventario** | Todavía no: falta mercancía. |
 | **Alcanza, pero la ocupa OC …** | Alcanza, pero otra orden que vence antes usa esas piezas: pregunta cuál va primero. |
 
-> Frisa **no acepta parciales**: solo se surte una orden si está completa. Empieza por las verdes, de arriba hacia abajo.
+> Frisa **no acepta parciales**: la orden se entrega completa. Empieza por las verdes, de arriba hacia abajo. A las rojas les puedes ir **apartando** lo que haya.
 
 ## Pasos
 
 1. Toca la orden en la lista. Se abre con sus renglones: **clave**, número de artículo, nombre (en el color de la playera) y cuántas piden.
-2. Conforme metes cada renglón a la bolsa, **palomea** su cuadrito ✓. Se guarda solo, así puedes seguir después o desde otro celular. Abajo dice cuántos llevas: **"Embolsados 1 de 3 renglones"**.
+2. Conforme metes cada renglón a la bolsa, **palomea** su cuadrito ✓ (aparta el renglón completo). Si solo metiste una parte, escribe cuántas en **Apartadas**. Se guarda solo, así puedes seguir después o desde otro celular. Abajo dice cuántas llevas: **"Apartadas 43 de 55 pzas"**.
 3. Cuando esté toda la orden embolsada, toca **Surtida toda**.
 4. En **¿Quién la surtió?** elige tu nombre (o "Otra persona" y escribe el nombre).
 5. Toca **Confirmar: surtida completa**. La orden pasa a **Surtidas** y las piezas quedan apartadas para Frisa.
 
 Si la orden es de un solo renglón, puedes tocar directo **Surtida toda** sin palomear.
+
+> **¿La orden no está completa?** Toca **Apartar lo que hay**: se aparta todo lo que haya de cada renglón, o escribe en **Apartadas** cuántas metiste de un renglón. Esas piezas ya no se usan para otras órdenes. En la lista la orden dice **"Apartadas 43 de 55 pzas"**. Cuando llegue lo que falta, complétala y toca **Surtida toda**.
 
 > **¿Te equivocaste?** Si marcaste surtida una orden que no era, avísale a Gis: ella la puede regresar a pendiente.
 
@@ -217,7 +219,7 @@ En **Restock → Órdenes de taller**, debajo de "Por pedir al taller" aparece u
 
 1. Revisa las cantidades por talla. Puedes cambiarlas (por ejemplo, redondear).
 2. Revisa la fecha de **Entrega**.
-3. Toca **Crear orden de taller FR**. Se crea la orden en Producción con su folio FR y se apartan las playeras lisas que lleva.
+3. Toca **Crear orden de taller**. Se crea la orden en Producción con su folio FR y se apartan las playeras lisas que lleva.
 
 > Cada orden de taller gasta un folio FR real. **No crees órdenes de prueba.**
 
@@ -300,7 +302,7 @@ $man$),
 Para cada clave la página lleva tres números:
 
 - **Real**: lo que hay físicamente en la bodega.
-- **Apartado**: lo que ya se surtió (está embolsado) pero el chofer todavía no entrega.
+- **Apartado**: lo que ya se surtió o se apartó de una orden incompleta (está embolsado) y el chofer todavía no entrega.
 - **Disponible** = real − apartado. Con este se calcula si se puede surtir y qué hay que pedir.
 
 ### Qué lo mueve
@@ -308,6 +310,7 @@ Para cada clave la página lleva tres números:
 | Pasa esto | En la página | Efecto | Quién |
 |---|---|---|---|
 | Leo embolsa una orden completa | Órdenes de surtido → la orden → **Surtida toda** | Se **aparta** (el real no cambia) | Quien surte |
+| Leo aparta parte de una orden incompleta | Órdenes de surtido → la orden → **Apartar lo que hay** (o Apartadas) | Se **aparta** eso (el real no cambia) | Quien surte |
 | El chofer **ya entregó** en la planta | Surtidas → la orden → **Ya entregó el chofer** → remisión | **Baja** el real | Gis |
 | Llega a bodega lo que terminó el taller | Restock → Órdenes de taller → Por entrar → **Subir a bodega** | **Sube** el real | Jackie o Adriana |
 | Llega un pedido de pantalón (o bata, bolsa) | Restock → Pantalón → **Recibir** | **Sube** el real | Gis |
@@ -315,7 +318,7 @@ Para cada clave la página lleva tres números:
 
 ### El historial de cada clave
 
-En Niveles toca la **clave** para ver su detalle: real, apartado, disponible, niveles y el historial de conteos. El reporte **Movimientos del inventario** (Reportes) trae cada entrada y salida con fecha, quién y por qué.
+En Niveles toca el **producto** para ver su detalle: real, apartado, disponible, niveles y el historial de conteos. El reporte **Movimientos del inventario** (Reportes) trae cada entrada y salida con fecha, quién y por qué.
 
 ## Las reglas para que cuadre
 
@@ -387,7 +390,7 @@ $man$),
 |---|---|
 | Llega una OC de Frisa | Órdenes de surtido → + Subir orden de compra → revisa → Crear orden de surtido |
 | Quieres saber qué falta | Órdenes de surtido (arriba, "Lo que falta por clave"), o Reportes → Por surtir contra inventario |
-| Hay que producir | Restock → Órdenes de taller → tarjeta del producto → Crear orden de taller FR |
+| Hay que producir | Restock → Órdenes de taller → tarjeta del producto → Crear orden de taller |
 | Hay que comprar pantalón | Restock → Pantalón → Pedido de compra → Proveedor → Crear |
 | Hay que comprar playera lisa | Restock → Playera lisa → Pedido de playera lisa → revisa OK/PEDIR → Crear |
 | Quieres ver las de una planta | Órdenes de surtido → botón de la planta |

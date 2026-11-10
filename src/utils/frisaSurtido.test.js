@@ -122,3 +122,28 @@ test('buscar producto en las órdenes: por nombre, talla exacta, clave o artícu
   assert.equal(buscadorProducto('pantalon')(roja), false)
   assert.equal(buscadorProducto('a'), null)
 })
+
+test('apartado parcial (V202): lo apartado de una pendiente ya no está disponible y la orden solo necesita el resto', async () => {
+  const { conInventario, calcularUrgente, faltantesDeOrden } = await import('./frisaSurtido.js')
+  const productos = [{ id: 'x', clave: 'X', nombre: 'X', stock_actual: 10 }]
+  const surtidos = [
+    { id: 'a', numero_oc: 'A', estado: 'pendiente', fecha_limite: '2026-11-10' },
+    { id: 'b', numero_oc: 'B', estado: 'pendiente', fecha_limite: '2026-11-11' },
+    { id: 'c', numero_oc: 'C', estado: 'surtida' },
+  ]
+  const lineas = [
+    { id: 'la', surtido_id: 'a', producto_id: 'x', clave: 'X', cantidad: 12, apartada: 6 },
+    { id: 'lb', surtido_id: 'b', producto_id: 'x', clave: 'X', cantidad: 2, apartada: 0 },
+    { id: 'lc', surtido_id: 'c', producto_id: 'x', clave: 'X', cantidad: 1, apartada: 1 },
+  ]
+  const inv = conInventario(productos, surtidos, lineas)
+  assert.equal(inv[0].apartado, 7)
+  assert.equal(inv[0].disponible, 3)
+  const u = calcularUrgente(inv, surtidos, lineas)
+  assert.equal(u.ordenes[0].apartadas, 6)
+  assert.deepEqual(u.ordenes[0].faltantes.map((f) => f.falta), [3]) // necesita 6, hay 3
+  assert.equal(u.ordenes[1].completa, true) // B toma 2 de los 3
+  const f = faltantesDeOrden([lineas[0]], inv)[0]
+  assert.equal(f.necesita, 6)
+  assert.equal(f.falta, 3)
+})

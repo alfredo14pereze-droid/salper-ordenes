@@ -2,7 +2,7 @@ import { nombreFrisa } from '../../utils/frisaColores'
 import { useEffect, useState } from 'react'
 import Modal from '../talleros/Modal'
 import {
-  fetchEventosSurtido, personasSurtido, marcarSurtida, regresarSurtida, entregarSurtido, cancelarSurtido, urlPdfOC, marcarRenglon,
+  fetchEventosSurtido, personasSurtido, marcarSurtida, regresarSurtida, entregarSurtido, cancelarSurtido, urlPdfOC, apartarRenglon,
 } from '../../services/frisaSurtidoService'
 import { faltantesDeOrden, piezasDe, textoLimite, hoyISO } from '../../utils/frisaSurtido'
 import { fechaCorta, NombreFrisa } from '../frisaNiveles/comunes'
@@ -21,14 +21,19 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
   const [form, setForm] = useState({ persona: '', otra: '', remision: '', fecha: hoyISO(), motivo: '' })
   const [trabajando, setTrabajando] = useState(false)
   const [error, setError] = useState(null)
-  // V190 — renglones palomeados (embolsados); se guardan al tocarlos.
-  const [embolsada, setEmbolsada] = useState(() => Object.fromEntries(lineas.map((l) => [l.id, Boolean(l.embolsada)])))
+  // V202 — piezas apartadas por renglón (se guardan al salir del campo o con Enter).
+  const [apartar, setApartar] = useState(() => Object.fromEntries(lineas.map((l) => [l.id, String(Number(l.apartada) || 0)])))
+
+  // Al recargar (después de apartar) se toma lo guardado.
+  useEffect(() => {
+    setApartar(Object.fromEntries(lineas.map((l) => [l.id, String(Number(l.apartada) || 0)])))
+  }, [lineas])
 
   useEffect(() => {
     let vivo = true
     fetchEventosSurtido(s.id).then(({ data }) => vivo && setEventos(data || []))
     return () => { vivo = false }
-  }, [s.id, s.estado])
+  }, [s.id, s.estado, lineas])
 
   useEffect(() => {
     if (accion !== 'surtir' || personas) return
@@ -39,17 +44,54 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
   }, [accion, personas])
 
   const filas = faltantesDeOrden(lineas, inv)
+  // En el historial las claves se cambian por el nombre del producto.
+  const sinClaves = (txt) => [...(productos || [])].sort((a, b) => String(b.clave).length - String(a.clave).length).reduce((s, p) => (p.clave && s.includes(p.clave) ? s.split(p.clave).join(nombreFrisa(p.nombre)) : s), String(txt))
   const palomear = s.estado === 'pendiente' && permisos.surtir
-  const hechas = lineas.filter((l) => embolsada[l.id]).length
+  const pendiente = s.estado === 'pendiente'
+  const totalApartadas = filas.reduce((t, l) => t + l.apartada, 0)
+  const sePuedeApartar = filas.filter((l) => l.necesita > 0 && l.disponible > 0)
 
-  async function tocarRenglon(l) {
-    const nuevo = !embolsada[l.id]
-    setEmbolsada((e) => ({ ...e, [l.id]: nuevo }))
-    const { error: e } = await marcarRenglon(l.id, nuevo)
+  async function guardarApartado(l, cantidad, msg) {
+    setTrabajando(true)
+    setError(null)
+    const { error: e } = await apartarRenglon(l.id, cantidad)
+    setTrabajando(false)
     if (e) {
-      setEmbolsada((x) => ({ ...x, [l.id]: !nuevo }))
-      setError(e.message)
+      setApartar((a) => ({ ...a, [l.id]: String(l.apartada) }))
+      return setError(e.message)
     }
+    onCambio(msg)
+  }
+  function tocarRenglon(l) {
+    const completo = l.apartada === l.cantidad
+    const n = completo ? 0 : l.cantidad
+    guardarApartado(l, n, completo ? `OC ${s.numero_oc}: se liberó un renglón.` : `OC ${s.numero_oc}: renglón apartado completo.`)
+  }
+  function salirDeApartadas(l) {
+    const v = apartar[l.id]
+    const n = Number(v)
+    if (v === '' || !Number.isInteger(n) || n < 0 || n > l.cantidad) {
+      setApartar((a) => ({ ...a, [l.id]: String(l.apartada) }))
+      return setError(`Escribe de 0 a ${l.cantidad} piezas.`)
+    }
+    if (n !== l.apartada) guardarApartado(l, n, `OC ${s.numero_oc}: ${num(n)} de ${num(l.cantidad)} apartadas.`)
+  }
+  async function apartarLoQueHay() {
+    setTrabajando(true)
+    setError(null)
+    let piezas = 0
+    for (const l of sePuedeApartar) {
+      const n = Math.min(l.cantidad, l.apartada + l.disponible)
+      const { error: e } = await apartarRenglon(l.id, n)
+      if (e) {
+        setTrabajando(false)
+        if (piezas) return onCambio(`OC ${s.numero_oc}: se apartaron ${num(piezas)} pzas; otra no se pudo: ${e.message}`)
+        return setError(e.message)
+      }
+      piezas += n - l.apartada
+    }
+    setTrabajando(false)
+    onCambio(`OC ${s.numero_oc}: se apartaron ${num(piezas)} pzas con lo que había.`)
   }
   const falta = filas.some((f) => f.falta > 0)
   const lim = textoLimite(s.fecha_limite)
@@ -103,40 +145,55 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
           <table className="simple-table frisa-tabla">
             <thead>
               <tr>
-                {palomear && <th aria-label="Embolsado">✓</th>}
+                {palomear && <th aria-label="Apartado completo">✓</th>}
                 <th>Producto</th>
                 <th className="num">Pide</th>
+                {pendiente && <th className="num">Apartadas</th>}
               </tr>
             </thead>
             <tbody>
               {filas.map((l) => {
                 const p = productos.find((x) => x.id === l.producto_id)
                 return (
-                  <tr key={l.id || l.producto_id} className={embolsada[l.id] ? 'frisa-surtido__embolsada' : ''}>
+                  <tr key={l.id || l.producto_id} className={pendiente && l.apartada === l.cantidad ? 'frisa-surtido__embolsada' : ''}>
                     {palomear && (
                       <td className="frisa-surtido__check">
-                        <input type="checkbox" checked={Boolean(embolsada[l.id])} onChange={() => tocarRenglon(l)} aria-label={`Embolsado ${nombreFrisa(p?.nombre)}`} />
+                        <input type="checkbox" checked={l.apartada === l.cantidad} disabled={trabajando} onChange={() => tocarRenglon(l)} aria-label={`Apartar completo ${nombreFrisa(p?.nombre)}`} />
                       </td>
                     )}
-                    <td><NombreFrisa producto={p} className="frisa__prod" />
-                      {!palomear && s.estado === 'pendiente' && embolsada[l.id] && <div className="frisa__ok frisa__sub">Embolsado</div>}</td>
-                    <td className="num">
-                      <strong>{num(l.cantidad)}</strong>
-                      {s.estado === 'pendiente' && (l.falta > 0
-                        ? <div className="frisa__falta">hay {num(l.disponible)} · faltan {num(l.falta)}</div>
-                        : <div className="frisa__ok frisa__sub">hay {num(l.disponible)} ✓</div>)}
-                    </td>
+                    <td><NombreFrisa producto={p} className="frisa__prod" /></td>
+                    <td className="num"><strong>{num(l.cantidad)}</strong></td>
+                    {pendiente && (
+                      <td className="num frisa-surtido__apartadas">
+                        {palomear
+                          ? <input className="input frisa-input" type="number" min="0" max={l.cantidad} step="1" inputMode="numeric" disabled={trabajando}
+                              value={apartar[l.id] ?? ''} onFocus={(e) => e.target.select()}
+                              onChange={(e) => setApartar((a) => ({ ...a, [l.id]: e.target.value }))}
+                              onBlur={() => salirDeApartadas(l)} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
+                              aria-label={`Apartadas ${nombreFrisa(p?.nombre)}`} />
+                          : <strong>{num(l.apartada)}</strong>}
+                        {l.necesita === 0
+                          ? <div className="frisa__ok frisa__sub">completo ✓</div>
+                          : l.falta > 0
+                            ? <div className="frisa__falta">hay {num(Math.max(0, l.disponible))} · faltan {num(l.falta)}</div>
+                            : <div className="frisa__ok frisa__sub">hay {num(l.disponible)} ✓</div>}
+                      </td>
+                    )}
                   </tr>
                 )
               })}
             </tbody>
-            <tfoot><tr>{palomear && <td />}<td>Total</td><td className="num"><strong>{num(piezasDe(lineas))}</strong></td></tr></tfoot>
+            <tfoot><tr>{palomear && <td />}<td>Total</td><td className="num"><strong>{num(piezasDe(lineas))}</strong></td>{pendiente && <td className="num"><strong>{num(totalApartadas)}</strong></td>}</tr></tfoot>
           </table>
         </div>
 
-        {s.estado === 'pendiente' && lineas.length > 1 && (
-          <p className="frisa__sub">{hechas === lineas.length ? <strong className="frisa__ok">Todo embolsado ✓</strong> : `Embolsados ${hechas} de ${lineas.length} renglones`}
-            {palomear ? ' · palomea cada renglón conforme lo embolsas, o marca la orden surtida toda de una vez.' : ''}</p>
+        {pendiente && (
+          <p className="frisa__sub">
+            {totalApartadas === 0 ? 'Nada apartado todavía.' : totalApartadas === piezasDe(lineas)
+              ? <strong className="frisa__ok">Todo apartado ✓ · ya se puede marcar Surtida toda.</strong>
+              : <><strong>Apartadas {num(totalApartadas)} de {num(piezasDe(lineas))} pzas.</strong> Esas piezas ya no se usan para otras órdenes.</>}
+            {palomear ? ' Escribe cuántas apartas de cada renglón (o palomea para apartarlo completo).' : ''}
+          </p>
         )}
         {s.surtido_por_nombre && (
           <p className="frisa__sub">Surtió <strong>{s.surtido_por_nombre}</strong>{s.surtido_en ? ` · ${fechaHora(s.surtido_en)}` : ''}
@@ -150,6 +207,11 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
         {/* Acciones */}
         {!accion && (
           <div className="frisa__botones">
+            {pendiente && permisos.surtir && sePuedeApartar.length > 0 && (falta || totalApartadas > 0) && (
+              <button type="button" className="btn btn--secondary" disabled={trabajando} onClick={apartarLoQueHay}>
+                Apartar lo que hay
+              </button>
+            )}
             {s.estado === 'pendiente' && permisos.surtir && (
               <button type="button" className="btn btn--primary" disabled={falta} onClick={() => { setError(null); setAccion('surtir') }}
                 title={falta ? 'No alcanza el inventario para surtirla completa' : ''}>
@@ -177,7 +239,7 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
           </p>
         )}
         {s.estado === 'pendiente' && falta && !accion && (
-          <p className="frisa__falta">No alcanza el inventario: Frisa no acepta parciales, hay que esperar a tenerla completa.</p>
+          <p className="frisa__falta">No alcanza para entregarla completa (Frisa no acepta parciales). Mientras, aparta lo que hay para que no se use en otras órdenes; cuando llegue lo que falta, márcala Surtida toda.</p>
         )}
 
         {accion === 'surtir' && (
@@ -242,7 +304,7 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
           <ul className="frisa-niveles__historial">
             {eventos.map((ev) => (
               <li key={ev.id}>
-                <span><strong>{ev.evento[0].toUpperCase() + ev.evento.slice(1)}</strong>{ev.detalle ? ` · ${ev.detalle}` : ''}</span>
+                <span><strong>{ev.evento[0].toUpperCase() + ev.evento.slice(1)}</strong>{ev.detalle ? ` · ${sinClaves(ev.detalle)}` : ''}</span>
                 <span className="frisa__sub">{fechaHora(ev.fecha)}{ev.usuario_nombre ? ` · ${ev.usuario_nombre}` : ''}</span>
               </li>
             ))}
