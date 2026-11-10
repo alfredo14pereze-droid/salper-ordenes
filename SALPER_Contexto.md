@@ -7972,4 +7972,4 @@ Alfredo confirmó un color ÚNICO por producto Frisa (el mismo de las etiquetas 
 - **2026-11-10 (después):** Alfredo pidió también el texto en color, como se veían las playeras antes. Ahora el nombre
   y la columna «Color» van en negritas del tono oscuro sobre el mismo color en claro (`texto`/`fondo` en `PALETA_FRISA`)
   para TODOS los productos, además de la muestra. Lisas marino del taller: texto marino sin muestra (`sinMuestra`).
-  En los PDF igual (`estiloTextoFrisa`) y sin cortar palabras con guion.
+  En los PDF igual (`estiloTextoFrisa`) y sin cortar palabras con guion. En producción (commit 4f60a1b, bundle index-SQCwiaay.js confirmado).
