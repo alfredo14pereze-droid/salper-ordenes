@@ -7950,4 +7950,4 @@ se vea en pantalla igual que impresa, con la parte de cada operación.
 - Sirve igual en `/hojas-impresas` (costura, V200), que usa el mismo componente.
 - Solo frontend; la copia guardada en `hojas_impresas.operaciones` ya traía `parte`.
 - Ejemplo local: `salper-hoja-por-parte-harness` (puerto 5197, `.claude/harness-hoja/` del worktree, copia del de
-  costura con una hoja "CHAMARRA BICOLOR CAPITONADA" de ejemplo). Rama `hoja-por-parte`; NO está en `main`.
+  costura con una hoja "CHAMARRA BICOLOR CAPITONADA" de ejemplo). Rama `hoja-por-parte`; en `main`/producción el 2026-11-10 (commit ef16713, bundle index-CwTTjbh1.js confirmado).
