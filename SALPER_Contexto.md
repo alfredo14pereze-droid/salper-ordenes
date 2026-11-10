@@ -7951,3 +7951,21 @@ se vea en pantalla igual que impresa, con la parte de cada operación.
 - Solo frontend; la copia guardada en `hojas_impresas.operaciones` ya traía `parte`.
 - Ejemplo local: `salper-hoja-por-parte-harness` (puerto 5197, `.claude/harness-hoja/` del worktree, copia del de
   costura con una hoja "CHAMARRA BICOLOR CAPITONADA" de ejemplo). Rama `hoja-por-parte`; en `main`/producción el 2026-11-10 (commit ef16713, bundle index-CwTTjbh1.js confirmado).
+
+### 2026-11-10 — Frisa: cada producto con su color de etiqueta en la app (sin SQL)
+Alfredo confirmó un color ÚNICO por producto Frisa (el mismo de las etiquetas de estantería y del cartel
+`docs/SALPER_Frisa_Guia_Cartel.pdf`) y pidió llevarlo a la app.
+- `utils/frisaColores.js`: `PALETA_FRISA` y `colorProductoFrisa(producto)` con la misma regla de las etiquetas:
+  playera marino MC c/ref Celeste #29B6F6 · marino ML c/ref Azul rey #1E40AF · marino ML lisa Marino #0B1A33 ·
+  oro mango Amarillo #FFD600 · verde #2E7D32 · roja #C62828 · camisa mezclilla Morado #7B1FA2 · camisa nuevo ingreso
+  Naranja #EF6C00 · pantalón Café #6D4C41 · pantalón largo 34 Rosa fucsia #EC407A · bolsa Gris #9E9E9E · bata Blanco.
+  No existe playera marino MC lisa (sin color). Reemplaza los tonos pastel de 4 playeras (`colorPlayera`, 2026-11-06).
+- Pantalla: `NombreFrisa` (comunes.jsx) pone una muestra de color sólido (`.frisa-muestra`, 20×24) antes del nombre,
+  con franja plateada si lleva reflejante (camisas siempre); al pasar el mouse dice el color. Sale en Niveles, Órdenes
+  de surtido, Restock, Revisión Microsip, Plantas y Exportar. La columna «Color» queda como texto (color de la prenda).
+- Playeras lisas del taller (`insumo: true` en `lisaComoProducto` y reportes): roja/verde/mango llevan su color; las
+  marino no, porque una misma lisa sirve para Celeste, Azul rey o Marino.
+- PDF «A PEDIR» y reportes de Frisa: el mismo cuadrito de color (`pdf/MuestraFrisaPdf.jsx`) junto al nombre.
+- Ejemplo local: `salper-frisa-colores-harness` (puerto 5185, copia del harness de niveles con PGlite hasta V204):
+  los 68 productos de la carga del 6-nov salen con el color de su etiqueta. Rama `frisa-colores-producto`.
+- Pendiente (no pedido aún): botón para imprimir las etiquetas desde la app con los datos del día.

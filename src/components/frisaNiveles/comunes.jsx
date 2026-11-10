@@ -1,5 +1,5 @@
 import { ESTADOS } from '../../utils/frisaNiveles'
-import { colorPlayera, nombreFrisa } from '../../utils/frisaColores'
+import { colorProductoFrisa, nombreFrisa } from '../../utils/frisaColores'
 
 export function fechaCorta(d) {
   if (!d) return '—'
@@ -12,15 +12,24 @@ export function EstadoBadge({ estado }) {
   return <span className={'frisa-nivel frisa-nivel--' + clase}>{ESTADOS[estado].label}</span>
 }
 
-// Nombre de la clave; las playeras van en su color (texto oscuro en negritas, fondo claro).
+// Muestra del color del producto, igual que en la etiqueta de estantería y el cartel
+// de bodega; la franja plateada quiere decir que la prenda lleva reflejante.
+export function MuestraFrisa({ producto }) {
+  const c = colorProductoFrisa(producto)
+  if (!c) return null
+  const titulo = `Color de etiqueta: ${c.nombre}${c.reflejante ? ' · lleva reflejante' : ''}`
+  return (
+    <span className={'frisa-muestra' + (c.hex === '#FFFFFF' ? ' frisa-muestra--blanco' : '')} style={{ background: c.hex }} title={titulo} role="img" aria-label={titulo}>
+      {c.reflejante && <span className="frisa-muestra__ref" />}
+    </span>
+  )
+}
+
+// Nombre de la clave con la muestra de su color al frente.
 export function NombreFrisa({ producto, className = 'frisa__sub' }) {
-  const c = colorPlayera(producto)
-  if (!c) return <div className={className}>{nombreFrisa(producto?.nombre)}</div>
-  return <div className={className}><span className={'frisa-color frisa-color--' + c}>{nombreFrisa(producto.nombre)}</span></div>
+  return <div className={className}><MuestraFrisa producto={producto} />{nombreFrisa(producto?.nombre)}</div>
 }
 
 export function ColorFrisa({ producto }) {
-  const c = colorPlayera(producto)
-  if (!c) return producto?.color || '—'
-  return <span className={'frisa-color frisa-color--' + c}>{producto.color}</span>
+  return producto?.color || '—'
 }

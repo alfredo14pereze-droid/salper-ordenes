@@ -1,6 +1,6 @@
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
 import logo from '../../assets/salper-logo.png'
-import { colorPlayera, COLORES_PLAYERA } from '../../utils/frisaColores'
+import MuestraPdf from './MuestraFrisaPdf'
 
 // Reporte genérico de Frisa (utils/frisaReportes.js): título, nota, totales y una tabla.
 const INK = '#1a1a1a'
@@ -55,17 +55,16 @@ export default function FrisaReportePdf({ rep, generado }) {
         </View>
         {!rep.filas.length && <Text style={s.vacio}>Sin datos para este reporte.</Text>}
         {rep.filas.map((f, i) => {
-          const cp = colorPlayera(rep.colores?.[i])
+          const prod = rep.colores?.[i]
+          const iNombre = rep.columnas.findIndex((c) => /^(nombre|producto|color)$/i.test(c.titulo))
           return (
             <View key={i} style={f[0] === 'TOTAL' ? [s.tr, { borderTop: `1pt solid ${INK}` }] : s.tr} wrap={false}>
               {rep.columnas.map((c, j) => {
-                const esNombre = /nombre|color/i.test(c.titulo) && cp
-                return (
-                  <Text key={j} style={[s.td, { width: ancho(c) }, c.num ? s.num : null, f[0] === 'TOTAL' ? s.pill : null,
-                    esNombre ? [s.pill, { color: COLORES_PLAYERA[cp].texto, backgroundColor: COLORES_PLAYERA[cp].fondo }] : null]}>
-                    {n(f[j])}
-                  </Text>
-                )
+                const estilo = [s.td, { width: ancho(c) }, c.num ? s.num : null, f[0] === 'TOTAL' ? s.pill : null]
+                if (j === iNombre && prod) {
+                  return <View key={j} style={[...estilo, { flexDirection: 'row' }]}><MuestraPdf producto={prod} /><Text style={{ flex: 1 }}>{n(f[j])}</Text></View>
+                }
+                return <Text key={j} style={estilo}>{n(f[j])}</Text>
               })}
             </View>
           )

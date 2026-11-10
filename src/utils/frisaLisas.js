@@ -18,7 +18,7 @@ export function nombreLisa(l) {
 }
 
 // Para pintarla con su color (utils/frisaColores): tipo + color + nombre.
-export const lisaComoProducto = (l) => ({ tipo: 'Playera', color: l.color, nombre: nombreLisa(l).toUpperCase() })
+export const lisaComoProducto = (l) => ({ tipo: 'Playera', color: l.color, nombre: nombreLisa(l).toUpperCase(), insumo: true })
 
 // productoLisa: [{producto_frisa_id, color, manga, proveedor}] ; lisas: [{id, color, manga, talla, stock}]
 export function buscadorLisa(productoLisa, lisas) {

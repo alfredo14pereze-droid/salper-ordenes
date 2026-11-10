@@ -1,19 +1,35 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { colorPlayera } from './frisaColores.js'
+import { colorProductoFrisa } from './frisaColores.js'
 
-test('color de cada playera', () => {
-  assert.equal(colorPlayera({ tipo: 'Playera', color: 'Roja', nombre: 'PLAYERA C/R M/C S/REFLEJANTE 2 IMP. ROJA FRISA T-M' }), 'roja')
-  assert.equal(colorPlayera({ tipo: 'Playera', color: 'Mango', nombre: 'PLAYERA C/R M/C C/REFLEJANTE 1 IMP. ORO MANGO FRISA T-S' }), 'amarilla')
-  assert.equal(colorPlayera({ tipo: 'Playera', color: 'Verde', nombre: 'PLAYERA C/R M/C C/REFLEJANTE 2 IMP. VERDE FRISA T-L' }), 'verde')
-  assert.equal(colorPlayera({ tipo: 'Playera', color: 'Azul marino', nombre: 'PLAYERA C/R M/L S/REFLEJANTE 1 IMP. AZUL M. FRISA T-XL' }), 'marino')
-  assert.equal(colorPlayera({ nombre: 'PLAYERA C/R M/C C/REFLEJANTE 1 IMP. A.MARINO FRISA T-M' }), 'marino')
+const color = (p) => colorProductoFrisa(p)?.nombre ?? null
+
+test('color de cada producto, igual que las etiquetas', () => {
+  assert.equal(color({ nombre: 'PLAYERA C/R M/C C/REFLEJANTE 1 IMP. A.MARINO FRISA T-M' }), 'Celeste')
+  assert.equal(color({ nombre: 'PLAYERA C/R M/L C/REFLEJANTE 1 IMP. A.MARINO FRISA T-M' }), 'Azul rey')
+  assert.equal(color({ tipo: 'Playera', color: 'Azul marino', nombre: 'PLAYERA C/R M/L S/REFLEJANTE 1 IMP. AZUL M. FRISA T-XL' }), 'Marino')
+  assert.equal(color({ nombre: 'PLAYERA C/R M/C C/REFLEJANTE 1 IMP. ORO MANGO FRISA T-S' }), 'Amarillo')
+  assert.equal(color({ nombre: 'PLAYERA C/R M/C C/REFLEJANTE 2 IMP. VERDE FRISA T-L' }), 'Verde')
+  assert.equal(color({ nombre: 'PLAYERA C/R M/C S/REFLEJANTE 2 IMP. ROJA FRISA T-M' }), 'Rojo')
+  assert.equal(color({ nombre: 'CAMISA DE MEZCLILLA 7 OZ M/L C/REFLEJANTE 1B FRISA T-M' }), 'Morado')
+  assert.equal(color({ nombre: 'CAMISA DE MEZCLILLA 7 OZ M/L C/REFLEJANTE 1B 1I FRISA NUEVO INGRESO T-XL' }), 'Naranja')
+  assert.equal(color({ nombre: 'PANTALON DE MEZCLILLA TALLA 32 14OZ FRISA' }), 'Café')
+  assert.equal(color({ nombre: 'PANTALON DE MEZCLILLA TALLA 32 14OZ FRISA LARGO 34' }), 'Rosa fucsia')
+  assert.equal(color({ nombre: 'BOLSA DE MEZCLILLA CON CIERRE FRISA' }), 'Gris')
+  assert.equal(color({ nombre: 'BATA LABORATORIO FRISA T-L' }), 'Blanco')
 })
 
-test('lo que no es playera no lleva color', () => {
-  assert.equal(colorPlayera({ tipo: 'Camisa', color: 'Mezclilla', nombre: 'CAMISA DE MEZCLILLA FRISA T-M' }), null)
-  assert.equal(colorPlayera({ tipo: 'Pantalón', color: 'Mezclilla', nombre: 'PANTALON DE MEZCLILLA TALLA 32' }), null)
-  assert.equal(colorPlayera(null), null)
+test('reflejante, nombres del taller y lo que no tiene color', () => {
+  assert.equal(colorProductoFrisa({ nombre: 'PLAYERA C/R M/C C/REFLEJANTE 2 IMP. VERDE FRISA T-L' }).reflejante, true)
+  assert.equal(colorProductoFrisa({ nombre: 'PLAYERA C/R M/C S/REFLEJANTE 2 IMP. ROJA FRISA T-M' }).reflejante, false)
+  assert.equal(colorProductoFrisa({ nombre: 'CAMISA DE MEZCLILLA FRISA T-M' }).reflejante, true)
+  assert.equal(color({ nombre: 'Playera C/REF A. Marino M/C' }), 'Celeste')
+  assert.equal(color({ nombre: 'Playera S/REF Roja M/C' }), 'Rojo')
+  assert.equal(color({ nombre: 'PLAYERA M/C S/REFLEJANTE A.MARINO FRISA T-M' }), null)
+  assert.equal(color({ tipo: 'Playera', color: 'Azul marino', nombre: 'AZUL MARINO MANGA LARGA', insumo: true }), null)
+  assert.equal(color({ tipo: 'Playera', color: 'Roja', nombre: 'ROJA MANGA CORTA', insumo: true }), 'Rojo')
+  assert.equal(color({ nombre: 'GORRA FRISA' }), null)
+  assert.equal(colorProductoFrisa(null), null)
 })
 
 test('nombre para mostrar: manga corta/larga, sin C/R, con reflejante / lisa', async () => {

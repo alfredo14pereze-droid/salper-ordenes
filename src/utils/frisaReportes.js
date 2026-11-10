@@ -84,7 +84,7 @@ export function reporteLisas(filasLisas) {
     nota: 'Stock = en el anaquel (se descuentan al crear la orden de taller). A comprar = lo que piden las órdenes de taller propuestas - stock.',
     columnas: [{ titulo: 'Color' }, { titulo: 'Manga' }, { titulo: 'Talla' }, { titulo: 'Stock', num: true }, { titulo: 'En proceso', num: true }, { titulo: 'Piden', num: true }, { titulo: 'A comprar', num: true }, { titulo: 'La usan' }],
     filas: filasLisas.map((f) => [f.lisa.color, f.lisa.manga, f.lisa.talla, f.stock, f.enProceso, f.piden, f.aComprar, f.productos.join(', ')]),
-    colores: filasLisas.map((f) => ({ tipo: 'Playera', color: f.lisa.color, nombre: 'PLAYERA' })),
+    colores: filasLisas.map((f) => ({ tipo: 'Playera', color: f.lisa.color, nombre: 'PLAYERA', insumo: true })),
     totales: { Stock: filasLisas.reduce((t, f) => t + f.stock, 0), 'A comprar': filasLisas.reduce((t, f) => t + f.aComprar, 0) },
   }
 }
@@ -103,7 +103,7 @@ function _reporteCompras(compras, lineas, lineasLisa, { productos = [], lisas = 
     for (const l of lineasLisa.filter((x) => x.compra_id === c.id)) {
       const li = lisa.get(l.lisa_id)
       filas.push([c.folio, c.proveedor, EST[c.estado], fecha(c.creado_en), fecha(c.fecha_esperada), fecha(c.recibido_en), 'Playera lisa', li ? nombreLisa(li) : '', l.cantidad, l.recibida ?? ''])
-      colores.push(li ? { tipo: 'Playera', color: li.color, nombre: 'PLAYERA' } : null)
+      colores.push(li ? { tipo: 'Playera', color: li.color, nombre: 'PLAYERA', insumo: true } : null)
     }
   }
   return {
