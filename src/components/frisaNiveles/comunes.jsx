@@ -16,7 +16,7 @@ export function EstadoBadge({ estado }) {
 // de bodega; la franja plateada quiere decir que la prenda lleva reflejante.
 export function MuestraFrisa({ producto }) {
   const c = colorProductoFrisa(producto)
-  if (!c) return null
+  if (!c || c.sinMuestra) return null
   const titulo = `Color de etiqueta: ${c.nombre}${c.reflejante ? ' · lleva reflejante' : ''}`
   return (
     <span className={'frisa-muestra' + (c.hex === '#FFFFFF' ? ' frisa-muestra--blanco' : '')} style={{ background: c.hex }} title={titulo} role="img" aria-label={titulo}>
@@ -25,11 +25,20 @@ export function MuestraFrisa({ producto }) {
   )
 }
 
-// Nombre de la clave con la muestra de su color al frente.
+// Texto en el color del producto: negritas en el tono oscuro sobre el mismo color en claro.
+function TextoColor({ c, children }) {
+  if (!c) return children
+  return <span className={'frisa-color' + (c.fondo === '#FFFFFF' ? ' frisa-color--blanco' : '')} style={{ color: c.texto, background: c.fondo }}>{children}</span>
+}
+
+// Nombre de la clave con la muestra de su color al frente y el texto en su color.
 export function NombreFrisa({ producto, className = 'frisa__sub' }) {
-  return <div className={className}><MuestraFrisa producto={producto} />{nombreFrisa(producto?.nombre)}</div>
+  const c = colorProductoFrisa(producto)
+  return <div className={className}><MuestraFrisa producto={producto} /><TextoColor c={c}>{nombreFrisa(producto?.nombre)}</TextoColor></div>
 }
 
 export function ColorFrisa({ producto }) {
-  return producto?.color || '—'
+  const c = colorProductoFrisa(producto)
+  if (!producto?.color) return '—'
+  return <TextoColor c={c}>{producto.color}</TextoColor>
 }

@@ -5435,6 +5435,9 @@ h4 {
 
 /* Playeras de Frisa en su color: texto oscuro en negritas sobre el mismo color en claro. */
 /* Color de cada producto Frisa (etiquetas y cartel de bodega, 2026-11-10) */
+/* el nombre en su color (texto oscuro en negritas sobre el mismo color en claro) */
+.frisa-color { display: inline; font-weight: 700; padding: 1px 6px; border-radius: 5px; -webkit-box-decoration-break: clone; box-decoration-break: clone; line-height: 1.6; }
+.frisa-color--blanco { box-shadow: inset 0 0 0 1px #c9ced6; }
 .frisa-muestra { display: inline-block; position: relative; width: 20px; height: 24px; border-radius: 4px; margin-right: 8px; vertical-align: -7px; flex: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
 .frisa-muestra--blanco { box-shadow: inset 0 0 0 1px #9aa3ae; }
 .frisa-muestra__ref { position: absolute; left: 0; right: 0; top: 8px; height: 7px; background: #d7dce3; border-top: 1px solid #8c96a3; border-bottom: 1px solid #8c96a3; box-sizing: border-box; }

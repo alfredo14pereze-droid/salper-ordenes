@@ -2,19 +2,21 @@
 // ÚNICO por producto, el mismo de las etiquetas de estantería y del cartel de
 // bodega (docs/SALPER_Frisa_Guia_Cartel.pdf). La franja plateada = lleva reflejante.
 // No existe playera marino manga corta lisa, así que no tiene color.
+// texto/fondo: el nombre va en negritas del color oscuro sobre el mismo color en claro
+// (pedido de Alfredo, 2026-11-10, como los tonos de las playeras del 6-nov).
 export const PALETA_FRISA = {
-  pmc_ref: { nombre: 'Celeste', hex: '#29B6F6' },
-  pml_ref: { nombre: 'Azul rey', hex: '#1E40AF' },
-  pml_lisa: { nombre: 'Marino', hex: '#0B1A33' },
-  mango: { nombre: 'Amarillo', hex: '#FFD600' },
-  verde: { nombre: 'Verde', hex: '#2E7D32' },
-  roja: { nombre: 'Rojo', hex: '#C62828' },
-  camisa: { nombre: 'Morado', hex: '#7B1FA2' },
-  camisa_ni: { nombre: 'Naranja', hex: '#EF6C00' },
-  pant: { nombre: 'Café', hex: '#6D4C41' },
-  pant34: { nombre: 'Rosa fucsia', hex: '#EC407A' },
-  bolsa: { nombre: 'Gris', hex: '#9E9E9E' },
-  bata: { nombre: 'Blanco', hex: '#FFFFFF' },
+  pmc_ref: { nombre: 'Celeste', hex: '#29B6F6', texto: '#0B5E86', fondo: '#E1F4FD' },
+  pml_ref: { nombre: 'Azul rey', hex: '#1E40AF', texto: '#1E3A8A', fondo: '#E0E7FA' },
+  pml_lisa: { nombre: 'Marino', hex: '#0B1A33', texto: '#0B1A33', fondo: '#DFE6F4' },
+  mango: { nombre: 'Amarillo', hex: '#FFD600', texto: '#7A5600', fondo: '#FFF4BF' },
+  verde: { nombre: 'Verde', hex: '#2E7D32', texto: '#1D5C30', fondo: '#DCF2E2' },
+  roja: { nombre: 'Rojo', hex: '#C62828', texto: '#9B1C1C', fondo: '#FDE4E1' },
+  camisa: { nombre: 'Morado', hex: '#7B1FA2', texto: '#5B1577', fondo: '#F1E1F6' },
+  camisa_ni: { nombre: 'Naranja', hex: '#EF6C00', texto: '#8A3D00', fondo: '#FDE9D6' },
+  pant: { nombre: 'Café', hex: '#6D4C41', texto: '#4E342E', fondo: '#EFE7E3' },
+  pant34: { nombre: 'Rosa fucsia', hex: '#EC407A', texto: '#A3164A', fondo: '#FCE4EE' },
+  bolsa: { nombre: 'Gris', hex: '#9E9E9E', texto: '#424242', fondo: '#EEEEEE' },
+  bata: { nombre: 'Blanco', hex: '#FFFFFF', texto: '#333333', fondo: '#FFFFFF' },
 }
 
 // Nombre para mostrar (pedido de Alfredo, 2026-11-07): M/C → MANGA CORTA, M/L → MANGA LARGA,
@@ -62,7 +64,10 @@ export function colorProductoFrisa(p) {
     if (/MANGO|AMARILL|\bORO\b/.test(t)) clave = 'mango'
     else if (/\bVERDE/.test(t)) clave = 'verde'
     else if (/\bROJ/.test(t)) clave = 'roja'
-    else if (/MARINO|\bAZUL/.test(t) && !p.insumo) {
+    else if (/MARINO|\bAZUL/.test(t) && p.insumo) {
+      // Lisa marino del taller: sirve para Celeste, Azul rey o Marino; texto en marino, sin muestra.
+      return { clave: 'marino_insumo', ...PALETA_FRISA.pml_lisa, nombre: 'Azul marino', reflejante: false, sinMuestra: true }
+    } else if (/MARINO|\bAZUL/.test(t)) {
       const corta = /\bM\s*\/\s*C\b|MANGA\s+CORTA/.test(nombre)
       clave = reflejante ? (corta ? 'pmc_ref' : 'pml_ref') : corta ? null : 'pml_lisa'
     }

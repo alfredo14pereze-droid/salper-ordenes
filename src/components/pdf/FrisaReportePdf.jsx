@@ -1,6 +1,6 @@
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
 import logo from '../../assets/salper-logo.png'
-import MuestraPdf from './MuestraFrisaPdf'
+import MuestraPdf, { estiloTextoFrisa } from './MuestraFrisaPdf'
 
 // Reporte genérico de Frisa (utils/frisaReportes.js): título, nota, totales y una tabla.
 const INK = '#1a1a1a'
@@ -62,7 +62,7 @@ export default function FrisaReportePdf({ rep, generado }) {
               {rep.columnas.map((c, j) => {
                 const estilo = [s.td, { width: ancho(c) }, c.num ? s.num : null, f[0] === 'TOTAL' ? s.pill : null]
                 if (j === iNombre && prod) {
-                  return <View key={j} style={[...estilo, { flexDirection: 'row' }]}><MuestraPdf producto={prod} /><Text style={{ flex: 1 }}>{n(f[j])}</Text></View>
+                  return <View key={j} style={[...estilo, { flexDirection: 'row' }]}><MuestraPdf producto={prod} /><View style={{ flex: 1 }}><Text style={estiloTextoFrisa(prod)}>{n(f[j])}</Text></View></View>
                 }
                 return <Text key={j} style={estilo}>{n(f[j])}</Text>
               })}
