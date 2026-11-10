@@ -7967,5 +7967,5 @@ Alfredo confirmó un color ÚNICO por producto Frisa (el mismo de las etiquetas 
   marino no, porque una misma lisa sirve para Celeste, Azul rey o Marino.
 - PDF «A PEDIR» y reportes de Frisa: el mismo cuadrito de color (`pdf/MuestraFrisaPdf.jsx`) junto al nombre.
 - Ejemplo local: `salper-frisa-colores-harness` (puerto 5185, copia del harness de niveles con PGlite hasta V204):
-  los 68 productos de la carga del 6-nov salen con el color de su etiqueta. Rama `frisa-colores-producto`.
+  los 68 productos de la carga del 6-nov salen con el color de su etiqueta. Rama `frisa-colores-producto`; en `main`/producción el 2026-11-10 (commit aef0673, bundle index-CccKmMAf.js confirmado).
 - Pendiente (no pedido aún): botón para imprimir las etiquetas desde la app con los datos del día.
