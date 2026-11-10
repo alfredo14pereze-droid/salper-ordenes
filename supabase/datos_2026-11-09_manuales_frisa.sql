@@ -67,7 +67,7 @@ Cada persona solo ve las pestañas que le tocan, para que no se confunda.
 | Órdenes de surtido | Subir OC, surtir, confirmar entregas. | Gis, Leo, admins |
 | Restock | Órdenes de taller, pedidos de compra, playera lisa, subir a bodega. | Gis, admins |
 | Revisión Microsip | Comparar el inventario con Microsip y ajustar. | Admins (vista) |
-| Plantas Frisa | Lo que hay en cada planta (remitido − facturado). | Admins (vista) |
+| Plantas Frisa | Lo que hay en cada planta (remitido − facturado). Contabilidad sube las facturas. | Contabilidad, admins (vista) |
 | Reportes | PDF o CSV en cualquier momento. | Gis, admins |
 
 ## Niveles de inventario
@@ -338,7 +338,8 @@ Cuenta el anaquel **al empezar** y después cada semana o cada que se haga un pe
 | Cuándo | Qué |
 |---|---|
 | Cada día | Confirmar entregas del chofer · subir a bodega lo que llega del taller · recibir pedidos que lleguen |
-| Cada semana | Contar la playera lisa · subir remisiones y facturas a Plantas Frisa |
+| Cada semana | Contar la playera lisa |
+| Cada quincena | Contabilidad sube las facturas a Plantas Frisa |
 | Cada 10 días | Revisión contra Microsip |
 | Cuando no cuadre algo | Historial de la clave y reporte de Movimientos → conteo real → ajuste |
 $man$),
@@ -357,7 +358,7 @@ $man$),
       (13, $t$Plantas Frisa: subir remisiones y facturas$t$, $man$Lo que hay en cada planta = **remitido − facturado**.
 
 - **Remisiones:** cada entrega confirmada en la página ("Ya entregó el chofer") se suma **sola** a su planta, con su folio de remisión.
-- **Facturas:** se suben con los Diarios de Microsip y **restan**.
+- **Facturas:** las sube **contabilidad** cada quincena con los Diarios de Microsip y **restan**.
 - Si el Excel trae una remisión que ya se sumó con la entrega, se **salta sola** (no se cuenta doble).
 
 - Cada folio se cuenta una sola vez: si subes un archivo repetido, salta lo que ya estaba.
@@ -365,11 +366,11 @@ $man$),
 
 ## Pasos
 
-1. En Microsip saca **"Diarios del inventario"**, línea FRISA, del periodo que falte: **Concepto: Venta** (lo facturado) y, si quieres revisar, también **Concepto: Remisión**. Pueden ir en un mismo Excel en dos hojas o en dos archivos.
+1. Cuando se factura la quincena (normalmente una factura por planta), en Microsip saca **"Diarios del inventario"**, línea FRISA, **Concepto: Venta**, de esa quincena. Pueden venir todas las plantas en el mismo Excel: la página manda cada factura a su planta.
 2. En **Plantas Frisa** súbelo tal cual. La página muestra cuántos documentos son **nuevos** y cuántos **ya estaban** (los salta solos).
 3. Revisa que no haya **plantas desconocidas** ni artículos **sin clave**, y toca **Subir**.
 
-Hazlo cada semana (o cada 10 días junto con la revisión de Microsip). Si una planta sale con una clave en **negativo**, se facturó más de lo remitido: revisa las remisiones de ese periodo.
+Hazlo **cada quincena**, después de facturar. Si una planta sale con una clave en **negativo**, se facturó más de lo remitido: casi siempre es una entrega que no se confirmó en la página (revisa las remisiones de ese periodo).
 $man$),
       (14, $t$Reportes de Frisa$t$, $man$En **Reportes** puedes sacar en cualquier momento, en PDF (con vista previa) o CSV para Excel:
 
