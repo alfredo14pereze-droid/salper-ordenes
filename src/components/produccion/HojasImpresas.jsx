@@ -83,15 +83,23 @@ export default function HojasImpresas({ puedeQuitar, puedeEditar = false, catalo
                         <th className="hojas-impresas__num">Tiempo (seg)</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {marcarOtraPrenda(ops, h.prenda).map((o) => (
-                        <tr key={o.folio}>
-                          <td>{o.folio}</td>
-                          <td>{o.operacion}</td>
-                          <td className="hojas-impresas__num">{Number(o.segundos).toLocaleString('es-MX', { maximumFractionDigits: 2 })}</td>
+                    {/* Igual que la hoja impresa: agrupada por parte, cada parte en orden de folio. */}
+                    {agruparPorParte(marcarOtraPrenda(ops, h.prenda)).map((g) => (
+                      <tbody key={g.parte}>
+                        <tr>
+                          <th colSpan={3} className="hojas-impresas__parte hojas-impresas__parte--hoja">
+                            {g.parte}
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
+                        {g.operaciones.map((o) => (
+                          <tr key={o.folio}>
+                            <td>{o.folio}</td>
+                            <td>{o.operacion}</td>
+                            <td className="hojas-impresas__num">{Number(o.segundos).toLocaleString('es-MX', { maximumFractionDigits: 2 })}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    ))}
                   </table>
                 </div>
                 <div className="hojas-impresas__acciones">

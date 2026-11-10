@@ -7938,3 +7938,16 @@ recortó a esto.)
 - **Estado:** SQL aplicado por Alfredo el 2026-11-09 (no se pudo verificar la política desde aquí: anon no la ve) y en
   `main`/producción (commit f39f32b, bundle index-Dq-QNhN3.js confirmado). **Pendiente:** que Carmen lo pruebe con su
   cuenta (si no ve el botón, que actualice la app).
+
+### 2026-11-10 — «Hojas impresas» en pantalla agrupada por parte, como la hoja impresa (sin SQL)
+Pedido de Alfredo (captura de CHAMARRA BICOLOR CAPITONADA en Admin producción): que la lista de una hoja impresa
+se vea en pantalla igual que impresa, con la parte de cada operación.
+- `HojasImpresas.jsx`: la tabla de cada hoja usa `agruparPorParte(marcarOtraPrenda(...))`, lo mismo que
+  `HojaOperacionesPrenda` (la hoja que se imprime): un encabezado gris por parte y debajo sus operaciones; las partes
+  van en el orden de su folio más bajo, igual que el PDF. Las operaciones de otra prenda siguen diciendo "(PLAYERA)".
+- Estilo nuevo `.hojas-impresas__parte--hoja` en `impresion.css` (gris #e2e2e2, negritas, como `.hoja-impresion__parte`).
+  El modal «Editar operaciones» ya agrupaba por parte y no cambió.
+- Sirve igual en `/hojas-impresas` (costura, V200), que usa el mismo componente.
+- Solo frontend; la copia guardada en `hojas_impresas.operaciones` ya traía `parte`.
+- Ejemplo local: `salper-hoja-por-parte-harness` (puerto 5197, `.claude/harness-hoja/` del worktree, copia del de
+  costura con una hoja "CHAMARRA BICOLOR CAPITONADA" de ejemplo). Rama `hoja-por-parte`; NO está en `main`.

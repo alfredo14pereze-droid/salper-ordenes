@@ -116,3 +116,5 @@
 /* V177 — editar hoja impresa */
 .hojas-impresas__editar { max-height: 55vh; overflow-y: auto; }
 .hojas-impresas__parte { text-align: left; background: var(--color-surface, #f4f4f4); text-transform: uppercase; font-size: 12px; letter-spacing: 0.04em; }
+/* Lista de «Hojas impresas»: el encabezado de cada parte se ve como en la hoja impresa. */
+.simple-table th.hojas-impresas__parte--hoja { background: #e2e2e2; color: #111; font-size: 14px; font-weight: 700; padding-top: 8px; padding-bottom: 8px; }
