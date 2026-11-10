@@ -7911,3 +7911,8 @@ Sección (ej. "Frisa") → Manual (ej. "Cómo surtir una orden"). Contenido en m
   **terminado**, las únicas con ese rol) suben a bodega (fr.bodega) y reciben playera lisa (fr.recibir_lisa). admin_fabrica y
   admin_tienda quedan solo de vista. El menú de estaciones muestra "Frisa" si el rol tiene permiso. Manuales PDF y de la
   página actualizados (datos_2026-11-09_manuales_frisa_quien_confirma.sql, corrido: 0 viejos).
+- 2026-11-09: Plantas cargadas con "frisa 16 OCT AL 8 NOV 2026.xlsx" (54 remisiones + 797, parte pendiente de la 808 = 18,
+  5 facturas; total en plantas 2,802). Remisiones de la entrega siguiente NO venían a propósito. V199 (APLICADO): al confirmar
+  "Ya entregó el chofer" se suma a la planta de la OC (`frisa_planta_de` normaliza el nombre) y el folio queda contado, así
+  los Diarios de Microsip la saltan; las facturas se suben y restan. Manuales PDF y página actualizados.
+  Ojo: remisiones entregadas en partes con el mismo folio se saltan en la 2ª parte (sumar a mano).
