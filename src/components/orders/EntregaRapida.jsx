@@ -1,10 +1,13 @@
 import { useAuth } from '../../contexts/AuthContext'
 import { useEntregarOrden } from '../../hooks/useEntregarOrden'
 import { canDeliverOrder } from '../../utils/permissions'
+import { esOrdenFrisa } from '../../utils/frisa'
 
 // ¿Se muestra el atajo de entrega? Solo órdenes "Lista para entregar"
 // (terminado), vivas, y para quien tenga el permiso orden.entregar.
+// V203 — las órdenes de Frisa no se entregan al cliente: terminan al subirlas a bodega.
 export function puedeEntregaRapida(role, user, order) {
+  if (esOrdenFrisa(order.order_type_key)) return false
   return !!user && order.status === 'terminado' && !order.cancelled_at && !order.eliminada_en && canDeliverOrder(role)
 }
 
@@ -14,6 +17,13 @@ export function puedeEntregaRapida(role, user, order) {
 export default function EntregaRapida({ order, onEntregada, variante = 'banner' }) {
   const { role, user } = useAuth()
   const e = useEntregarOrden(order, onEntregada)
+  if (esOrdenFrisa(order.order_type_key) && order.status === 'terminado' && !order.cancelled_at && variante === 'banner') {
+    return (
+      <div className="entrega-rapida entrega-rapida--banner">
+        <p className="entrega-rapida__texto">✓ Terminada. Esta orden de Frisa se cierra sola cuando se sube a bodega (Frisa → Restock → Por entrar).</p>
+      </div>
+    )
+  }
   if (!puedeEntregaRapida(role, user, order)) return null
 
   const enTarjeta = variante === 'tarjeta'

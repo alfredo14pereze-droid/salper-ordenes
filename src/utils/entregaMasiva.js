@@ -8,6 +8,7 @@ export function ordenesEntregables(orders, { soloListas = true, busqueda = '' } 
   const q = String(busqueda || '').trim().toLowerCase()
   return (orders || []).filter((o) => {
     if (o.cancelled_at || o.eliminada_en || o.status === 'completado') return false
+    if (o.order_type_key === 'frisa') return false // V203: Frisa termina al subir a bodega
     if (soloListas && o.status !== 'terminado') return false
     if (!q) return true
     return [o.order_number, o.client_name, o.equipo, o.numero_corte]

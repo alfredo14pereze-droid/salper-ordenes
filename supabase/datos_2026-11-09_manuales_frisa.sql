@@ -269,7 +269,7 @@ Cuando en Producción se termina una orden de taller FR, aparece sola en **Resto
 1. En **Restock → Órdenes de taller**, en "Por entrar", toca **Subir a bodega** en la orden.
 2. Revisa las piezas por talla. Si llegaron menos (merma, defectos), **corrige el número**.
 3. Si quieres, escribe una nota (por ejemplo "2 con defecto").
-4. Toca **Confirmar: subir … pzas**. Se suman al inventario y la orden sale de "Por entrar".
+4. Toca **Confirmar: subir … pzas**. Se suman al inventario y **la orden queda terminada**: pasa a Órdenes pasadas. No hay que confirmar entrega al cliente.
 
 > Todo lo que confirmas cambia el inventario. Escribe siempre lo que **llegó de verdad**.
 $man$),

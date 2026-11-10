@@ -4,6 +4,7 @@ import { updateOrderStatus } from '../../services/ordersService'
 import { useEntregarOrden } from '../../hooks/useEntregarOrden'
 import { useAuth } from '../../contexts/AuthContext'
 import { canChangeStatus, canCompleteOrder, canConfirmOrder, canDeliverOrder } from '../../utils/permissions'
+import { esOrdenFrisa } from '../../utils/frisa'
 
 // Desde V23 (etapas paralelas) esta tarjeta se angostó a los dos
 // "bookends" de todo el pedido — confirmar un pedido nuevo y marcar la
@@ -17,7 +18,8 @@ function accionesDeEstado(role, order) {
   // lo valida; esto solo evita mostrar un botón que va a fallar).
   if (order.cancelled_at && role !== 'admin_general') return null
   const canConfirm = canConfirmOrder(role) && order.status === 'en_confirmacion'
-  const canComplete = canDeliverOrder(role) && order.status !== 'completado' && order.status !== 'terminado'
+  // V203 — Frisa no se entrega al cliente: la orden termina al subirla a bodega.
+  const canComplete = canDeliverOrder(role) && !esOrdenFrisa(order.order_type_key) && order.status !== 'completado' && order.status !== 'terminado'
   const canOverride = canCompleteOrder(role) // admin_fabrica/admin_general: corrección manual
   if (!canConfirm && !canComplete && !canOverride) return null
   return { canConfirm, canComplete, canOverride }
