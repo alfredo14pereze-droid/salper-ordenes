@@ -15,7 +15,7 @@ import {
   canViewTalleros,
   isCapturaProduccion,
   canCapturarProduccion,
-  canViewProduccionMontos, canVerOperacionesProduccion, canUsarCotizador,
+  canViewProduccionMontos, canVerOperacionesProduccion, canUsarCotizador, esCosturaConsultaHojas,
   canVerRankingProduccion,
   canViewPedidosTienda,
   canViewEstadisticas,
@@ -231,6 +231,8 @@ export default function AppLayout({ children }) {
           ...(canViewPendientes(role) ? [{ to: '/pendientes', label: 'Pendientes' }] : []),
           // 2026-11-09 — Jackie y Adriana (terminado) suben a bodega y reciben la playera lisa de Frisa.
           ...(canViewSeccionFrisa(role) ? [{ to: '/frisa', label: 'Frisa' }] : []),
+          // V200 — costura consulta las hojas de operaciones impresas.
+          ...(esCosturaConsultaHojas(role) ? [{ to: '/hojas-impresas', label: 'Hojas impresas' }] : []),
           { to: '/manuales', label: 'Manuales' },
         ]
     const rutaPermitida = !chofer || RUTAS_CHOFER.some((r) => location.pathname === r || (r !== '/' && location.pathname.startsWith(r + '/')))

@@ -13,7 +13,8 @@ import './impresion.css'
 // Agrupada por parte (cuello, manga…), cada parte en orden de folio.
 // V172 — con `operaciones` (las de una cotización guardada) imprime esas y no
 // las del catálogo; `tituloInicial` cambia el título con el que arranca.
-export default function HojaOperacionesPrenda({ prenda, volverA, operaciones = null, tituloInicial = null }) {
+// V200 — `registrar={false}` (costura): solo imprime, no la guarda en «Hojas impresas».
+export default function HojaOperacionesPrenda({ prenda, volverA, operaciones = null, tituloInicial = null, registrar = true }) {
   const [ops, setOps] = useState(operaciones)
   const [error, setError] = useState(null)
   const [titulo, setTitulo] = useState(tituloInicial || prenda)
@@ -23,6 +24,7 @@ export default function HojaOperacionesPrenda({ prenda, volverA, operaciones = n
   // V173 — al imprimir, la hoja se guarda en "Hojas impresas" (misma prenda y
   // título = la misma hoja). Si no se puede guardar, igual se imprime.
   async function imprimir() {
+    if (!registrar) return window.print()
     setRegistrando(true)
     setAviso(null)
     const { error: err } = await registrarHojaImpresa({ prenda, titulo: titulo.trim() || prenda, folios: ops.map((o) => o.folio) })

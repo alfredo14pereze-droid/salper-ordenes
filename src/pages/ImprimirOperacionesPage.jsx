@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import RequireRole from '../components/common/RequireRole'
-import { canVerOperacionesProduccion, canViewProduccionMontos } from '../utils/permissions'
+import { canConsultarHojasImpresas, canVerOperacionesProduccion, canViewProduccionMontos, esCosturaConsultaHojas } from '../utils/permissions'
 import { useAuth } from '../contexts/AuthContext'
 import HojaOperacionesPrenda from '../components/impresion/HojaOperacionesPrenda'
 import { fetchCotizacionGuardada } from '../services/cotizacionesService'
@@ -17,11 +17,14 @@ export default function ImprimirOperacionesPage() {
   const prenda = params.get('prenda') || ''
   const cotizacionId = params.get('cotizacion') || ''
   const hojaId = params.get('hoja') || ''
-  const volverA = canViewProduccionMontos(role) ? '/produccion/admin' : '/produccion/operaciones'
+  // V200 — costura solo llega aquí con ?hoja= (volver a imprimir una hoja
+  // impresa); no registra la impresión ni ve el catálogo.
+  const costura = esCosturaConsultaHojas(role)
+  const volverA = costura ? '/hojas-impresas' : canViewProduccionMontos(role) ? '/produccion/admin' : '/produccion/operaciones'
   return (
-    <RequireRole allow={canVerOperacionesProduccion}>
+    <RequireRole allow={hojaId ? canConsultarHojasImpresas : canVerOperacionesProduccion}>
       {hojaId ? (
-        <HojaGuardada id={hojaId} volverA={volverA} />
+        <HojaGuardada id={hojaId} volverA={volverA} registrar={!costura} />
       ) : cotizacionId ? (
         <HojaDeCotizacion id={cotizacionId} />
       ) : prenda ? (
@@ -48,7 +51,7 @@ function HojaDeCotizacion({ id }) {
   return <HojaOperacionesPrenda prenda={c.prenda} volverA="/cotizador" operaciones={c.operaciones} tituloInicial={c.nombre} />
 }
 
-function HojaGuardada({ id, volverA }) {
+function HojaGuardada({ id, volverA, registrar }) {
   const [h, setH] = useState(null)
   const [error, setError] = useState(null)
   useEffect(() => {
@@ -60,5 +63,5 @@ function HojaGuardada({ id, volverA }) {
   }, [id])
   if (error) return <p className="page form-error">{error}</p>
   if (!h) return <p className="page template-hint">Cargando hoja…</p>
-  return <HojaOperacionesPrenda prenda={h.prenda} volverA={volverA} operaciones={h.operaciones} tituloInicial={h.titulo} />
+  return <HojaOperacionesPrenda prenda={h.prenda} volverA={volverA} operaciones={h.operaciones} tituloInicial={h.titulo} registrar={registrar} />
 }

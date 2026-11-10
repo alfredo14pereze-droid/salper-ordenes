@@ -30,6 +30,7 @@ import TallerosPage from './pages/TallerosPage'
 import NotasTiendaPage from './pages/NotasTiendaPage'
 import TareasPage from './pages/TareasPage'
 import ManualesPage from './pages/ManualesPage'
+import HojasImpresasPage from './pages/HojasImpresasPage'
 import EntregaMasivaPage from './pages/EntregaMasivaPage'
 import PedidosPage from './pages/PedidosPage'
 import PedidoPage from './pages/PedidoPage'
@@ -116,6 +117,7 @@ function AuthGate() {
           <Route path="/tareas" element={<TareasPage />} />
           {/* V196 — Manuales (todos leen; man.editar edita). */}
           <Route path="/manuales" element={<ManualesPage />} />
+          <Route path="/hojas-impresas" element={<HojasImpresasPage />} />
           <Route path="/manuales/seccion/:seccionId" element={<ManualesPage vista="seccion" />} />
           <Route path="/manuales/ver/:manualId" element={<ManualesPage vista="ver" />} />
           <Route path="/manuales/editar/:manualId" element={<ManualesPage vista="editar" />} />

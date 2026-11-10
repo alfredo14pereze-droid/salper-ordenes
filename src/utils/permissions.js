@@ -704,6 +704,16 @@ export function canVerHojasImpresas(role) {
   return canCapturarProduccion(role) || canViewProduccionMontos(role) || ['admin_general', 'admin_fabrica', 'admin_fabrica_lectura'].includes(role)
 }
 
+// V200 — costura (Carmen; 'produccion' es su rol viejo) solo CONSULTA las hojas
+// impresas: verlas y volver a imprimirlas, sin registrar, editar ni quitar.
+export function esCosturaConsultaHojas(role) {
+  return role === 'costura' || role === 'produccion'
+}
+
+export function canConsultarHojasImpresas(role) {
+  return canVerHojasImpresas(role) || esCosturaConsultaHojas(role)
+}
+
 export function canEditarHojasImpresas(role) {
   return canCapturarProduccion(role) || role === 'admin_general' || role === 'admin_fabrica'
 }

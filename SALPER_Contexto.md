@@ -7916,3 +7916,23 @@ Sección (ej. "Frisa") → Manual (ej. "Cómo surtir una orden"). Contenido en m
   "Ya entregó el chofer" se suma a la planta de la OC (`frisa_planta_de` normaliza el nombre) y el folio queda contado, así
   los Diarios de Microsip la saltan; las facturas se suben y restan. Manuales PDF y página actualizados.
   Ojo: remisiones entregadas en partes con el mismo folio se saltan en la 2ª parte (sumar a mano).
+
+### V200 — Costura ve las hojas de operaciones impresas (2026-11-09)
+Pedido de Alfredo: "lo único que quiero es que la persona de costura pueda ver las hojas que se han impreso".
+(Primero llegó un prompt más grande —vista Operaciones con prendas activas, cotizador, etc.— y Alfredo lo
+recortó a esto.)
+- **Rol:** `costura` y también `produccion` (el rol viejo de costura; al 2-oct Carmen seguía con él y no se pudo
+  confirmar desde aquí cuál tiene hoy).
+- **SQL** `supabase/schema_v200_hojas_impresas_costura.sql`: solo cambia la política de lectura de
+  `hojas_impresas` (`puede_ver_hojas_impresas() or current_user_role() in ('costura','produccion')`). No toca
+  `puede_ver_hojas_impresas()`, así que costura NO registra impresiones, ni edita ni quita hojas; tampoco lee
+  `prod_operaciones` ni `prod_config`. La copia de operaciones de la hoja no trae precios (folio, prenda,
+  parte, operación, segundos). Probado en PGlite con V173+V177+V182+V200 y RLS activa: costura/produccion ven
+  la hoja; corte y ventas no; registrar/editar/quitar e INSERT/UPDATE/DELETE directos fallan; admin_fabrica
+  sigue registrando y editando igual; se puede correr dos veces.
+- **Pantalla:** `/hojas-impresas` (`HojasImpresasPage`, reusa `HojasImpresas` sin editar/quitar) y link
+  «Hojas impresas» en el menú de estación de costura (`esCosturaConsultaHojas`, `canConsultarHojasImpresas`).
+  «Volver a imprimir» usa la misma hoja (`HojaOperacionesPrenda` con `registrar={false}`): imprime sin guardar
+  en «Hojas impresas» y regresa a `/hojas-impresas`. Costura no puede abrir `?prenda=` (catálogo).
+- Ejemplo local: `salper-costura-hojas-harness` (`.claude/harness-costura/`, `?rol=costura|corte|admin_fabrica`).
+- **Pendiente:** aplicar el SQL, subir a `main` y que Carmen lo pruebe con su cuenta.
