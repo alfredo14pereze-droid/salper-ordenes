@@ -217,9 +217,11 @@ En la pestaña **Órdenes de taller**: cada clave que se fabrica, con su estado 
 
 En **Restock → Órdenes de taller**, debajo de "Por pedir al taller" aparece una tarjeta por cada producto que hay que fabricar, ya con las cantidades por talla.
 
-1. Revisa las cantidades por talla. Puedes cambiarlas (por ejemplo, redondear).
+1. Revisa las cantidades por talla. Salen **todas las tallas** de la prenda: las que hay que pedir ya traen cantidad (dice **"sugerido"**) y las demás están en blanco. Puedes cambiar cualquiera o **agregar** tallas (por ejemplo, redondear o pedir XL).
 2. Revisa la fecha de **Entrega**.
 3. Toca **Crear orden de taller**. Se crea la orden en Producción con su folio FR y se apartan las playeras lisas que lleva.
+
+> ¿Quieres una orden de taller de una prenda que no salió? Abajo de las tarjetas, en **"Orden de taller de otro producto"**, elige la prenda: sale su tarjeta con todas las tallas en blanco.
 
 > Cada orden de taller gasta un folio FR real. **No crees órdenes de prueba.**
 

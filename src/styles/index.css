@@ -5615,3 +5615,5 @@ h4 {
 .frisa-entregas__orden--parcial { background: #fff6e6; }
 .frisa-entregas__orden--no { background: #f6f4f1; opacity: .8; }
 .frisa-entregas__fila { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px; }
+.frisa-restock__talla--extra .field-label { color: var(--color-text-muted); }
+.frisa-restock__otro { display: flex; flex-direction: column; gap: 4px; max-width: 420px; margin: 4px 0 12px; }

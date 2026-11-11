@@ -34,6 +34,7 @@ export default function FrisaRestock() {
   const [cargando, setCargando] = useState(true)
   const [aviso, setAviso] = useState(null)
   const [todas, setTodas] = useState(false)
+  const [otroTaller, setOtroTaller] = useState('') // producto Frisa para una orden de taller que no se propuso
   const [sub, setSub] = useState('taller') // 'taller' | 'pantalon' | 'lisa'
   const [ingresar, setIngresar] = useState(null) // fila de orden
   const [recibir, setRecibir] = useState(null) // compra
@@ -117,6 +118,23 @@ export default function FrisaRestock() {
           {planea && r.talleresPropuestos.map((g) => (
             <PropuestaTaller key={g.producto_frisa_id} grupo={g} productoFrisa={pfPorId.get(g.producto_frisa_id)} puede={puede.ordenes} onListo={listo} />
           ))}
+          {planea && puede.ordenes && (() => {
+            const otros = r.talleresTodos.filter((g) => !r.talleresPropuestos.some((x) => x.producto_frisa_id === g.producto_frisa_id))
+            const g = otros.find((x) => x.producto_frisa_id === otroTaller)
+            return otros.length > 0 && (
+              <>
+                {g && <PropuestaTaller key={'otro-' + g.producto_frisa_id} grupo={{ ...g, lineas: g.lineas.map((l) => ({ ...l, cantidad: 0 })) }}
+                  productoFrisa={pfPorId.get(g.producto_frisa_id)} puede={puede.ordenes} onListo={(m) => { setOtroTaller(''); listo(m) }} onCerrar={() => setOtroTaller('')} />}
+                <label className="frisa-restock__otro">
+                  <span className="field-label">Orden de taller de otro producto</span>
+                  <select className="input" value={otroTaller} onChange={(e) => setOtroTaller(e.target.value)}>
+                    <option value="">Elige el producto…</option>
+                    {otros.map((x) => <option key={x.producto_frisa_id} value={x.producto_frisa_id}>{nombreFrisa(pfPorId.get(x.producto_frisa_id)?.nombre) || 'Producto'}</option>)}
+                  </select>
+                </label>
+              </>
+            )
+          })()}
           {planea && <section className="frisa-restock__seccion">
             <h2 className="section-title section-title--small">Órdenes de taller en proceso</h2>
             {!enProceso.length && <p className="frisa__sub">Ninguna.</p>}
@@ -206,8 +224,9 @@ function TablaRestock({ filas }) {
   )
 }
 
-function PropuestaTaller({ grupo, productoFrisa, puede, onListo }) {
-  const [cant, setCant] = useState(() => Object.fromEntries(grupo.lineas.map((l) => [l.producto_id, String(l.cantidad)])))
+// Todas las tallas del producto: las sugeridas ya traen cantidad; las demás en blanco para agregarlas.
+function PropuestaTaller({ grupo, productoFrisa, puede, onListo, onCerrar }) {
+  const [cant, setCant] = useState(() => Object.fromEntries(grupo.lineas.map((l) => [l.producto_id, l.cantidad > 0 ? String(l.cantidad) : ''])))
   const [fecha, setFecha] = useState(masDias(10))
   const [trabajando, setTrabajando] = useState(false)
   const [error, setError] = useState(null)
@@ -233,17 +252,21 @@ function PropuestaTaller({ grupo, productoFrisa, puede, onListo }) {
       <h3 className="section-title section-title--small">Orden de taller: {nombreFrisa(productoFrisa?.nombre)}</h3>
       <div className="frisa-restock__tallas">
         {grupo.lineas.map((l) => (
-          <label key={l.producto_id}>
+          <label key={l.producto_id} className={l.sugerido > 0 ? '' : 'frisa-restock__talla--extra'}>
             <span className="field-label">{l.talla}</span>
-            <input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" value={cant[l.producto_id]}
-              disabled={!puede} onChange={(e) => setCant({ ...cant, [l.producto_id]: e.target.value })} />
+            <input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" value={cant[l.producto_id]} placeholder="0"
+              disabled={!puede} onChange={(e) => setCant({ ...cant, [l.producto_id]: e.target.value })} aria-label={`Talla ${l.talla}`} />
+            {l.sugerido > 0 && <span className="frisa__sub">sugerido {num(l.sugerido)}</span>}
           </label>
         ))}
         <label><span className="field-label">Entrega</span><input className="input" type="date" value={fecha} disabled={!puede} onChange={(e) => setFecha(e.target.value)} /></label>
       </div>
       {error && <p className="form-error">{error}</p>}
       {puede
-        ? <button type="button" className="btn btn--primary" disabled={trabajando || total <= 0} onClick={crear}>{trabajando ? 'Creando…' : `Crear orden de taller (${num(total)} pzas)`}</button>
+        ? <div className="frisa__botones">
+            <button type="button" className="btn btn--primary" disabled={trabajando || total <= 0} onClick={crear}>{trabajando ? 'Creando…' : `Crear orden de taller (${num(total)} pzas)`}</button>
+            {onCerrar && <button type="button" className="btn btn--ghost" onClick={onCerrar}>Quitar</button>}
+          </div>
         : <p className="frisa__sub">Las órdenes FR las crea ventas, admin de tienda o el administrador general.</p>}
     </div>
   )

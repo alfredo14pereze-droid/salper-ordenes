@@ -24,10 +24,13 @@ test('sin órdenes: A PEDIR = máximo − disponible en lo que está en PEDIR/CR
   assert.deepEqual([f.l.estado, f.l.aPedir], ['pedir', 17])
   assert.deepEqual([f.xl.estado, f.xl.aPedir], ['ok', 0])
   assert.equal(f.pan.se, 'compra')
-  assert.deepEqual(r.talleresPropuestos, [{ producto_frisa_id: 'AM', lineas: [
-    { producto_id: 'm', clave: 'PLAFR-000M-01MCMA1I', talla: 'M', cantidad: 32 },
-    { producto_id: 'l', clave: 'PLAFR-000L-01MCMA1I', talla: 'L', cantidad: 17 },
+  // Todas las tallas del producto (2026-11-11): las que hay que pedir con cantidad, la XL en 0.
+  assert.deepEqual(r.talleresPropuestos, [{ producto_frisa_id: 'AM', aPedir: 49, lineas: [
+    { producto_id: 'm', clave: 'PLAFR-000M-01MCMA1I', talla: 'M', cantidad: 32, sugerido: 32 },
+    { producto_id: 'l', clave: 'PLAFR-000L-01MCMA1I', talla: 'L', cantidad: 17, sugerido: 17 },
+    { producto_id: 'xl', clave: 'PLAFR-00XL-01MCMA1I', talla: 'XL', cantidad: 0, sugerido: 0 },
   ] }])
+  assert.equal(r.talleresTodos.length, 1)
   assert.deepEqual(r.compraPropuesta, [{ producto_id: 'pan', clave: 'PANFR-0032-01MEZ', cantidad: 37 }])
 })
 

@@ -98,23 +98,36 @@ export function calcularRestock({ productosInv, cfg, clavesProducto = [], ligas 
     }
   })
 
-  // Órdenes de taller propuestas: una por producto Frisa con sus tallas.
+  // Órdenes de taller: una por producto Frisa con TODAS sus tallas (2026-11-11: Alfredo quiere
+  // poder agregar tallas). Las que hay que pedir traen su cantidad; las demás en 0.
+  // talleresPropuestos = los que tienen algo que pedir; talleresTodos = todos (para "otro producto").
   const porProducto = new Map()
   for (const f of filas) {
-    if (f.se !== 'fabrica' || f.aPedir <= 0) continue
+    if (f.se !== 'fabrica' || !f.liga) continue
     const k = f.liga.producto_frisa_id
-    if (!porProducto.has(k)) porProducto.set(k, { producto_frisa_id: k, lineas: [] })
-    porProducto.get(k).lineas.push({ producto_id: f.producto.id, clave: f.producto.clave, talla: T(f.liga.talla), cantidad: f.aPedir })
+    if (!porProducto.has(k)) porProducto.set(k, { producto_frisa_id: k, lineas: [], aPedir: 0 })
+    const g = porProducto.get(k)
+    g.lineas.push({ producto_id: f.producto.id, clave: f.producto.clave, talla: T(f.liga.talla), cantidad: Math.max(0, f.aPedir || 0), sugerido: Math.max(0, f.aPedir || 0) })
+    g.aPedir += Math.max(0, f.aPedir || 0)
   }
+  for (const g of porProducto.values()) g.lineas.sort((a, b) => ordenTalla(a.talla) - ordenTalla(b.talla) || a.talla.localeCompare(b.talla))
   const compraPropuesta = filas.filter((f) => f.se === 'compra' && f.aPedir > 0)
     .map((f) => ({ producto_id: f.producto.id, clave: f.producto.clave, cantidad: f.aPedir }))
 
   return {
     filas,
     ordenes,
-    talleresPropuestos: [...porProducto.values()],
+    talleresPropuestos: [...porProducto.values()].filter((g) => g.aPedir > 0),
+    talleresTodos: [...porProducto.values()],
     compraPropuesta,
   }
+}
+
+function ordenTalla(t) {
+  const i = ['XS', 'S', 'M', 'L', 'XL', '2XL', 'XXL', '3XL', 'XXXL', '4XL'].indexOf(String(t).toUpperCase())
+  if (i >= 0) return i
+  const n = Number(String(t).match(/\d+/)?.[0])
+  return Number.isFinite(n) ? 100 + n : 999
 }
 
 // Items para create_order_frisa: [{garment, color, producto_frisa_id, sizes:[{talla, cantidad}]}]
