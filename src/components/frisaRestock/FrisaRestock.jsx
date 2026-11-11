@@ -9,8 +9,8 @@ import {
 } from '../../services/frisaRestockService'
 import { createOrderFrisa } from '../../services/frisaService'
 import { conInventario } from '../../utils/frisaSurtido'
-import { CONFIG_INICIAL, calcularNiveles } from '../../utils/frisaNiveles'
-import { calcularRestock, itemsOrdenRestock, propuestaIngreso } from '../../utils/frisaRestock'
+import { CONFIG_INICIAL } from '../../utils/frisaNiveles'
+import { calcularRestock, itemsOrdenRestock, propuestaIngreso, CICLO } from '../../utils/frisaRestock'
 import { calcularLisas, nombreLisa } from '../../utils/frisaLisas'
 import FrisaLisas from './FrisaLisas'
 import { EstadoBadge, NombreFrisa, fechaCorta } from '../frisaNiveles/comunes'
@@ -59,9 +59,6 @@ export default function FrisaRestock() {
 
   const pfPorId = new Map(datos.productosFrisa.map((p) => [p.id, p]))
   const listo = async (msg) => { setAviso(msg); await recargar() }
-  const ORDEN = { critico: 0, pedir: 1, ok: 2 }
-  const visibles = r.filas.filter((f) => todas || f.aPedir > 0 || f.enProceso > 0 || f.porEntrar > 0)
-    .sort((a, b) => ORDEN[a.estado] - ORDEN[b.estado] || b.aPedir - a.aPedir || a.producto.clave.localeCompare(b.producto.clave))
   // 2026-11-07: cada quien ve lo suyo. Planea = crea órdenes de taller o pedidos (Gis);
   // bodega = confirma subidas a bodega y recibe compras.
   const verTodo = canVerTodoFrisa(role)
@@ -108,13 +105,7 @@ export default function FrisaRestock() {
               <ListaOrdenes filas={porEntrar} pfPorId={pfPorId} puede={puede} onSubir={setIngresar} onListo={listo} />
             </section>
           )}
-          {planea && <section className="frisa-restock__seccion">
-            <div className="frisa__barra">
-              <h2 className="section-title section-title--small">Por pedir al taller</h2>
-              <label className="frisa-niveles__toggle"><input type="checkbox" checked={todas} onChange={(e) => setTodas(e.target.checked)} /> Ver todas las claves</label>
-            </div>
-            <TablaRestock filas={visibles.filter((f) => f.se === 'fabrica')} />
-          </section>}
+          {planea && <ListaCiclo titulo="Lo que no alcanza hasta la siguiente tanda" filas={r.filas.filter((f) => f.se === 'fabrica')} ciclo={CICLO.fabrica} queEs="en el taller" todas={todas} setTodas={setTodas} />}
           {planea && r.talleresPropuestos.map((g) => (
             <PropuestaTaller key={g.producto_frisa_id} grupo={g} productoFrisa={pfPorId.get(g.producto_frisa_id)} puede={puede.ordenes} onListo={listo} />
           ))}
@@ -149,14 +140,7 @@ export default function FrisaRestock() {
           {comprasNormales.some((c) => c.estado === 'pedida') && (
             <ListaCompras titulo="Por recibir: pedidos de pantalón que no han llegado" destacada compras={comprasNormales.filter((c) => c.estado === 'pedida')} datos={datos} puede={puede} puedeRecibir={puede.recibirPantalon} onRecibir={setRecibir} onListo={listo} />
           )}
-          <AvisoReorden titulo="Aviso de reorden: pantalón, bata y bolsa" filas={r.filas.filter((f) => f.se !== 'fabrica')} cfg={datos.config || CONFIG_INICIAL} />
-          {planea && <section className="frisa-restock__seccion">
-            <div className="frisa__barra">
-              <h2 className="section-title section-title--small">Por comprar (pantalón, bata, bolsa)</h2>
-              <label className="frisa-niveles__toggle"><input type="checkbox" checked={todas} onChange={(e) => setTodas(e.target.checked)} /> Ver todas las claves</label>
-            </div>
-            <TablaRestock filas={visibles.filter((f) => f.se !== 'fabrica')} />
-          </section>}
+          <ListaCiclo titulo="Lo que no alcanza hasta el siguiente pedido (pantalón, bata, bolsa)" filas={r.filas.filter((f) => f.se !== 'fabrica')} ciclo={CICLO.compra} queEs="en llegar del proveedor" todas={todas} setTodas={setTodas} />
           {planea && <PropuestaCompra key={r.compraPropuesta.map((l) => l.producto_id + ':' + l.cantidad).join(',')} filas={r.filas.filter((f) => f.se !== 'fabrica')} puede={puede.compras} onListo={listo} />}
           {planea && <ListaCompras titulo="Pedidos de pantalón anteriores (recibidos o cancelados)" compras={comprasNormales.filter((c) => c.estado !== 'pedida')} datos={datos} puede={puede} onRecibir={setRecibir} onListo={listo} />}
         </>
@@ -167,7 +151,7 @@ export default function FrisaRestock() {
           {comprasLisa.some((c) => c.estado === 'pedida') && (
             <ListaCompras titulo="Por recibir: pedidos de playera lisa que no han llegado" destacada compras={comprasLisa.filter((c) => c.estado === 'pedida')} datos={datos} puede={puede} puedeRecibir={puede.recibirLisa} onRecibir={setRecibir} onListo={listo} />
           )}
-          <AvisoReorden titulo="Aviso de reorden: playeras terminadas" filas={r.filas.filter((f) => f.se === 'fabrica' && /^PLAYERA/i.test(String(f.producto.nombre || '').trim()))} cfg={datos.config || CONFIG_INICIAL} />
+          <ListaCiclo titulo="Playeras que no alcanzan hasta la siguiente tanda" filas={r.filas.filter((f) => f.se === 'fabrica' && /^PLAYERA/i.test(String(f.producto.nombre || '').trim()))} ciclo={CICLO.fabrica} queEs="en el taller" todas={todas} setTodas={setTodas} />
           <FrisaLisas calculo={r.lisas} puede={puede} onListo={listo} />
           {planea && <ListaCompras titulo="Pedidos de playera lisa anteriores (recibidos o cancelados)" compras={comprasLisa.filter((c) => c.estado !== 'pedida')} datos={datos} puede={puede} onRecibir={setRecibir} onListo={listo} />}
         </>
@@ -197,93 +181,55 @@ export default function FrisaRestock() {
   )
 }
 
-// 2026-11-11 — Aviso de reorden (como en Niveles de inventario), con dos estados:
-//   Hoy              = con el disponible de hoy (igual que Niveles).
-//   Con lo que viene = disponible + en camino (órdenes de taller y pedidos sin llegar).
-// CERCA = hasta 20% arriba del punto de reorden: para el siguiente pedido ya va a hacer falta.
-// Sale si cualquiera de los dos no está OK.
-const ORDEN_AVISO = { critico: 0, pedir: 1, cerca: 2, ok: 3 }
-const estadoAviso = (stock, n) => (stock <= n.minimo ? 'critico' : stock <= n.reorden ? 'pedir' : stock <= Math.ceil(n.reorden * 1.2) ? 'cerca' : 'ok')
-function BadgeAviso({ estado }) {
+// 2026-11-11 — Restock por ciclo, lo más simple posible: solo lo que NO alcanza hasta que
+// llegue el siguiente pedido (CRÍTICO, PEDIR, CERCA). Ver utils/frisaRestock.js (CICLO).
+const ORDEN_CICLO = { critico: 0, pedir: 1, cerca: 2, ok: 3 }
+function EstadoCiclo({ estado }) {
   if (estado === 'cerca') return <span className="frisa-nivel frisa-nivel--amarillo">CERCA</span>
   return <EstadoBadge estado={estado} />
 }
-function AvisoReorden({ titulo, filas, cfg }) {
-  const lista = filas.map((f) => {
-    const n = calcularNiveles(f.producto, cfg)
-    const disp = Number(f.producto.disponible) || 0
-    const viene = (f.enProceso || 0) + (f.porEntrar || 0)
-    return { f, n, disp, viene, conViene: disp + viene, hoy: estadoAviso(disp, n), despues: estadoAviso(disp + viene, n) }
-  }).filter((x) => !x.n.sinMovimiento && (x.hoy !== 'ok' || x.despues !== 'ok'))
-    .sort((a, b) => ORDEN_AVISO[a.despues] - ORDEN_AVISO[b.despues] || ORDEN_AVISO[a.hoy] - ORDEN_AVISO[b.hoy] || (a.conViene - a.n.reorden) - (b.conViene - b.n.reorden))
-  const conteo = (k) => lista.filter((x) => x.despues === k).length
+function ListaCiclo({ titulo, filas, ciclo, queEs, todas, setTodas }) {
+  const lista = filas.filter((f) => todas || f.estado !== 'ok')
+    .sort((a, b) => ORDEN_CICLO[a.estado] - ORDEN_CICLO[b.estado] || a.alSiguiente - a.reorden - (b.alSiguiente - b.reorden))
+  const cuenta = (k) => filas.filter((f) => f.estado === k).length
+  const horizonte = ciclo.cada + ciclo.tarda
   return (
     <section className="frisa-restock__seccion frisa-aviso">
-      <h2 className="section-title section-title--small">{titulo}</h2>
-      {!lista.length
-        ? <p className="frisa__ok">Todo arriba del punto de reorden ✓</p>
-        : <>
-          <p className="frisa__sub">
-            Con lo que viene: {conteo('critico') ? <><strong className="frisa__falta">{conteo('critico')} en CRÍTICO</strong> · </> : ''}
-            {conteo('pedir') ? <><strong>{conteo('pedir')} en PEDIR</strong> · </> : ''}
-            {conteo('cerca') ? <><strong>{conteo('cerca')} CERCA</strong> (para el siguiente pedido ya van a hacer falta) · </> : ''}
-            {conteo('ok') ? <>{conteo('ok')} ya cubiertas · </> : ''}
-            <strong>Hoy</strong> es con lo que hay (igual que Niveles); <strong>Con lo que viene</strong> suma lo que está en órdenes de taller o pedidos que no han llegado. CERCA = a menos de 20% arriba del punto de reorden.
-          </p>
-          <div className="revision__tabla-wrap">
-            <table className="simple-table frisa-tabla frisa-niveles__tabla">
-              <thead><tr><th className="frisa-aviso__prod">Producto</th><th className="num">Inventario actual</th><th className="num">Punto de reorden</th><th className="num">Máximo</th><th>Hoy</th><th className="num">En camino</th><th className="num">Con lo que viene</th><th>Después</th></tr></thead>
-              <tbody>
-                {lista.map(({ f, n, disp, viene, conViene, hoy, despues }) => (
-                  <tr key={f.producto.id} className={'frisa-niveles__fila--' + (despues === 'cerca' || despues === 'ok' ? 'ok' : despues)}>
-                    <td data-label="Producto"><NombreFrisa producto={f.producto} className="frisa__prod" /></td>
-                    <td data-label="Inventario actual" className="num"><strong>{num(disp)}</strong></td>
-                    <td data-label="Punto de reorden" className="num">{num(n.reorden)}</td>
-                    <td data-label="Máximo" className="num">{num(n.maximo)}</td>
-                    <td data-label="Hoy"><BadgeAviso estado={hoy} /></td>
-                    <td data-label="En camino" className="num">{viene ? num(viene) : ''}</td>
-                    <td data-label="Con lo que viene" className="num"><strong>{num(conViene)}</strong></td>
-                    <td data-label="Después">{despues === 'ok' ? <span className="frisa-nivel frisa-nivel--verde">CUBIERTA</span> : <BadgeAviso estado={despues} />}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>}
+      <div className="frisa__barra">
+        <h2 className="section-title section-title--small">{titulo}</h2>
+        <label className="frisa-niveles__toggle"><input type="checkbox" checked={todas} onChange={(e) => setTodas(e.target.checked)} /> Ver todas</label>
+      </div>
+      <p className="frisa__sub">
+        Se pide cada <strong>{ciclo.cada} días</strong> y tarda <strong>{ciclo.tarda} días</strong> {queEs}: lo que pidas hoy tiene que alcanzar
+        <strong> {horizonte} días</strong>, hasta que llegue el siguiente pedido.{' '}
+        {cuenta('critico') ? <><strong className="frisa__falta">{cuenta('critico')} CRÍTICO</strong> · </> : ''}
+        {cuenta('pedir') ? <><strong>{cuenta('pedir')} PEDIR</strong> · </> : ''}
+        {cuenta('cerca') ? <><strong>{cuenta('cerca')} CERCA</strong> · </> : ''}
+        {!cuenta('critico') && !cuenta('pedir') && !cuenta('cerca') ? <strong className="frisa__ok">Todo alcanza ✓</strong> : 'ya van en el pedido de abajo.'}
+      </p>
+      {lista.length > 0 && (
+        <div className="revision__tabla-wrap">
+          <table className="simple-table frisa-tabla frisa-niveles__tabla">
+            <thead><tr><th className="frisa-aviso__prod">Producto</th><th className="num">Hay</th><th className="num">Viene</th><th className="num">Alcanza para</th><th>Estado</th><th className="num">Pedir</th></tr></thead>
+            <tbody>
+              {lista.map((f) => (
+                <tr key={f.producto.id} className={'frisa-niveles__fila--' + (f.estado === 'cerca' ? 'ok' : f.estado)}>
+                  <td data-label="Producto"><NombreFrisa producto={f.producto} className="frisa__prod" /></td>
+                  <td data-label="Hay" className="num"><strong>{num(f.disponible)}</strong></td>
+                  <td data-label="Viene" className="num">{f.enProceso + f.porEntrar ? num(f.enProceso + f.porEntrar) : ''}</td>
+                  <td data-label="Alcanza para" className="num">{f.diasAlcanza == null ? '' : `${num(f.diasAlcanza)} días`}</td>
+                  <td data-label="Estado" title={`Punto de reorden ${num(f.reorden)} · máximo ${num(f.maximo)} · al llegar el siguiente pedido quedarían ${num(Math.max(0, f.alSiguiente))}`}><EstadoCiclo estado={f.estado} /></td>
+                  <td data-label="Pedir" className="num"><strong>{f.aPedir ? num(f.aPedir) : ''}</strong></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   )
 }
 
-function TablaRestock({ filas }) {
-  if (!filas.length) return <p className="frisa__ok">Nada por pedir: todas las claves están arriba del reorden (contando lo que ya viene).</p>
-  return (
-    <div className="revision__tabla-wrap">
-      <table className="simple-table frisa-tabla frisa-niveles__tabla">
-        <thead>
-          <tr><th>Producto</th><th className="num">Disponible</th><th className="num">En proceso</th><th className="num">Por entrar</th><th className="num">Proyectado</th><th className="num">Reorden</th><th className="num">Máximo</th><th>Estado</th><th className="num">A PEDIR</th><th>Se</th></tr>
-        </thead>
-        <tbody>
-          {filas.map((f) => (
-            <tr key={f.producto.id} className={'frisa-niveles__fila--' + f.estado}>
-              <td data-label="Producto"><NombreFrisa producto={f.producto} className="frisa__prod" /></td>
-              <td data-label="Disponible" className="num">{num(f.disponible)}</td>
-              <td data-label="En proceso" className="num">{f.enProceso ? num(f.enProceso) : ''}</td>
-              <td data-label="Por entrar" className="num">{f.porEntrar ? num(f.porEntrar) : ''}</td>
-              <td data-label="Proyectado" className="num"><strong>{num(f.proyectado)}</strong></td>
-              <td data-label="Reorden" className="num">{num(f.reorden)}</td>
-              <td data-label="Máximo" className="num">{num(f.maximo)}</td>
-              <td data-label="Estado"><EstadoBadge estado={f.estado} /></td>
-              <td data-label="A PEDIR" className="num"><strong>{f.aPedir ? num(f.aPedir) : ''}</strong></td>
-              <td data-label="Se">{f.se === 'fabrica' ? 'Taller' : 'Compra'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-// Todas las tallas del producto: las sugeridas ya traen cantidad; las demás en blanco para agregarlas.
 function PropuestaTaller({ grupo, productoFrisa, puede, onListo, onCerrar }) {
   const [cant, setCant] = useState(() => Object.fromEntries(grupo.lineas.map((l) => [l.producto_id, l.cantidad > 0 ? String(l.cantidad) : ''])))
   const [fecha, setFecha] = useState(masDias(10))
@@ -334,9 +280,9 @@ function PropuestaTaller({ grupo, productoFrisa, puede, onListo, onCerrar }) {
 // Pedido de compra (pantalón, bata, bolsa): como el de playera lisa. Arriba lo que hay que
 // pedir (CRÍTICO / PEDIR, ya con cantidad) y abajo TODOS los demás que se compran, en 0, por si
 // se quiere agregar algo.
-const ESTADO_COMPRA = { critico: ['CRÍTICO', 'rojo'], pedir: ['PEDIR', 'naranja'], ok: ['OK', 'verde'] }
+const ESTADO_COMPRA = { critico: ['CRÍTICO', 'rojo'], pedir: ['PEDIR', 'naranja'], cerca: ['CERCA', 'amarillo'], ok: ['OK', 'verde'] }
 function PropuestaCompra({ filas, puede, onListo }) {
-  const ORD = { critico: 0, pedir: 1, ok: 2 }
+  const ORD = { critico: 0, pedir: 1, cerca: 2, ok: 3 }
   const lista = [...filas].sort((a, b) => (b.aPedir > 0) - (a.aPedir > 0) || ORD[a.estado] - ORD[b.estado] || a.producto.clave.localeCompare(b.producto.clave))
   const [cant, setCant] = useState(() => Object.fromEntries(filas.map((f) => [f.producto.id, f.aPedir > 0 ? String(f.aPedir) : ''])))
   const [proveedor, setProveedor] = useState('')

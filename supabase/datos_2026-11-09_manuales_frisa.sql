@@ -205,17 +205,24 @@ $man$),
 
 ## Qué es el restock
 
-Restock calcula qué hay que reponer: **disponible + en proceso + por entrar = proyectado**. Si el proyectado llega al reorden, propone lo que falta para el máximo.
+Restock pide **por ciclo**: la **playera** se pide **cada 7 días** y tarda **10 días** en el taller (lo de hoy tiene que alcanzar **17 días**); el **pantalón** (y bata, bolsa) se pide **cada 10 días** y tarda **10 días** en llegar (tiene que alcanzar **20 días**). Para cada producto calcula cuánto va a quedar cuando llegue el siguiente pedido (hay + viene − lo que se vende en esos días):
+
+- **CRÍTICO**: va a quedar en el mínimo o abajo.
+- **PEDIR**: va a quedar en el punto de reorden o abajo.
+- **CERCA**: va a quedar apenas arriba del punto de reorden (menos de 20%).
+- **OK**: alcanza; no sale en la lista.
+
+A los tres primeros les propone pedir lo que falta para estar en el **máximo** cuando llegue lo que se pide hoy.
 
 Tiene **3 pestañas**: **Órdenes de taller** (lo que se produce en la fábrica), **Pantalón** (lo que se compra hecho: pantalón, bata y bolsa) y **Playera lisa**. El número junto a cada una dice cuántas cosas tiene pendientes.
 
-## La tabla "Por pedir al taller"
+## La lista "Lo que no alcanza"
 
-En la pestaña **Órdenes de taller**: cada clave que se fabrica, con su estado (**CRÍTICO**, **PEDIR** u **OK**) y cuánto pedir. En la pestaña **Pantalón** está la misma tabla con lo que se compra hecho.
+Arriba de cada pestaña sale solo lo que **no alcanza** hasta el siguiente pedido, con **Hay**, **Viene**, **Alcanza para** (días), **Estado** y **Pedir**. En **Órdenes de taller** y **Playera lisa** salen las prendas que se hacen en el taller; en **Pantalón**, lo que se compra hecho. Marca **Ver todas** para ver también las que están OK.
 
 ## Pasos para crear la orden de taller
 
-En **Restock → Órdenes de taller**, debajo de "Por pedir al taller" aparece una tarjeta por cada producto que hay que fabricar, ya con las cantidades por talla.
+En **Restock → Órdenes de taller**, debajo de la lista "Lo que no alcanza" aparece una tarjeta por cada producto que hay que fabricar, ya con las cantidades por talla.
 
 1. Revisa las cantidades por talla. Salen **todas las tallas** de la prenda: las que hay que pedir ya traen cantidad (dice **"sugerido"**) y las demás están en blanco. Puedes cambiar cualquiera o **agregar** tallas (por ejemplo, redondear o pedir XL).
 2. Revisa la fecha de **Entrega**.
@@ -230,8 +237,6 @@ La orden pasa a **"Órdenes de taller en proceso"**. Cuando el taller la termina
 Si una orden FR se creó por fuera de Restock, puedes ligarla en esa misma sección para que cuente.
 $man$),
       (7, $t$Cómo hacer un pedido de compra de pantalón$t$, $man$**Lo hace:** Gis (ventas).
-
-> **Aviso de reorden:** arriba de las pestañas **Pantalón** y **Playera lisa** sale una tabla con el inventario actual, el punto de reorden y el máximo, y dos estados: **Hoy** (con lo que hay, igual que en Niveles) y **Después** (sumando lo que viene en órdenes de taller o pedidos). **CERCA** = a menos de 20% arriba del punto de reorden: para el siguiente pedido ya va a hacer falta. **CUBIERTA** = con lo que viene ya alcanza. En Playera lisa muestra las playeras terminadas (con y sin reflejante), que son las que piden lisa.
 
 El pantalón (y la bata y la bolsa) no se fabrica: se compra hecho. Todo está en **Restock → Pantalón**. La tarjeta **"Pedido de compra (lo que se compra hecho)"** funciona igual que la de playera lisa:
 

@@ -59,6 +59,9 @@ export function propuestaIngreso(order, clavesProducto) {
   return { lineas, sinClave }
 }
 
+// Cada cuánto se pide y cuánto tarda en estar en bodega (días).
+export const CICLO = { fabrica: { cada: 7, tarda: 10 }, compra: { cada: 10, tarda: 10 } }
+
 // datos: { productosInv, cfg, clavesProducto, ligas, orders, etapas, compras, compraLineas }
 export function calcularRestock({ productosInv, cfg, clavesProducto = [], ligas = [], orders = [], etapas = [], compras = [], compraLineas = [] }) {
   const mapa = mapaTallas(clavesProducto)
@@ -84,17 +87,31 @@ export function calcularRestock({ productosInv, cfg, clavesProducto = [], ligas 
   const pedidas = new Set(compras.filter((c) => c.estado === 'pedida').map((c) => c.id))
   for (const l of compraLineas) if (pedidas.has(l.compra_id)) suma(enProceso, l.producto_id, l.cantidad)
 
+  // 2026-11-11 (Alfredo): se pide por ciclo. Playera: cada 7 días y tarda 10 en el taller.
+  // Pantalón (y lo que se compra hecho): cada 10 días y tarda 10 en llegar.
+  //   alLlegar    = lo que habrá cuando llegue lo que se pide hoy (hay + viene − venta de esos días)
+  //   alSiguiente = lo que habrá cuando llegue el SIGUIENTE pedido (sumando un ciclo más)
+  //   estado: alSiguiente ≤ mínimo → CRÍTICO · ≤ reorden → PEDIR · ≤ reorden +20% → CERCA · si no OK
+  //   aPedir (CRÍTICO / PEDIR / CERCA) = lo que falta para estar en el máximo cuando llegue lo de hoy.
   const filas = productosInv.map((p) => {
     const ep = enProceso.get(p.id) || 0
     const pe = porEntrar.get(p.id) || 0
     const proyectado = p.disponible + ep + pe
-    const n = calcularNiveles({ ...p, disponible: proyectado }, cfg)
+    const n = calcularNiveles(p, cfg)
     const liga = ligaPorClave.get(p.id) || null
+    const se = liga ? 'fabrica' : 'compra'
+    const ciclo = CICLO[se]
+    const d = n.demanda || 0
+    const alLlegar = Math.round(proyectado - d * ciclo.tarda)
+    const alSiguiente = Math.round(proyectado - d * (ciclo.cada + ciclo.tarda))
+    const estado = n.sinMovimiento ? 'ok' : alSiguiente <= n.minimo ? 'critico' : alSiguiente <= n.reorden ? 'pedir'
+      : alSiguiente <= Math.ceil(n.reorden * 1.2) ? 'cerca' : 'ok'
     return {
-      producto: p, liga, se: liga ? 'fabrica' : 'compra',
-      disponible: p.disponible, enProceso: ep, porEntrar: pe, proyectado,
-      minimo: n.minimo, reorden: n.reorden, maximo: n.maximo, estado: n.estado,
-      aPedir: n.aPedir || 0,
+      producto: p, liga, se, ciclo,
+      disponible: p.disponible, enProceso: ep, porEntrar: pe, proyectado, demanda: d, alLlegar, alSiguiente,
+      diasAlcanza: d > 0 ? Math.floor(proyectado / d) : null,
+      minimo: n.minimo, reorden: n.reorden, maximo: n.maximo, estado,
+      aPedir: estado === 'ok' ? 0 : Math.max(0, n.maximo - alLlegar),
     }
   })
 
