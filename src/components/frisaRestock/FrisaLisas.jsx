@@ -4,6 +4,7 @@ import { nombreLisa, lisaComoProducto, MANGA } from '../../utils/frisaLisas'
 import { NombreFrisa } from '../frisaNiveles/comunes'
 
 const num = (n) => Number(n || 0).toLocaleString('es-MX')
+const peso = (n) => Number(n || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })
 
 // V187 — Playera lisa (sin procesos): stock, comprometidas por las órdenes de
 // taller, libres, lo que piden las órdenes propuestas y cuánto comprar.
@@ -101,6 +102,8 @@ function PedidoLisas({ filas, proveedorSugerido, onListo }) {
   const [trabajando, setTrabajando] = useState(false)
   const [error, setError] = useState(null)
   const total = filas.reduce((t, f) => t + (Number(cant[f.lisa.id]) || 0), 0)
+  const costo = filas.reduce((t, f) => t + (Number(cant[f.lisa.id]) || 0) * (Number(f.lisa.precio) || 0), 0)
+  const sinPrecio = filas.filter((f) => Number(cant[f.lisa.id]) > 0 && f.lisa.precio == null).length
   const aPedir = filas.filter((f) => f.aComprar > 0).length
   async function crear() {
     setTrabajando(true)
@@ -109,7 +112,7 @@ function PedidoLisas({ filas, proveedorSugerido, onListo }) {
     const { data, error: e } = await crearCompraLisas({ proveedor, fechaEsperada: fecha, lineas })
     setTrabajando(false)
     if (e) return setError(e.message)
-    onListo(`Se creó el pedido de playera lisa #${data.folio} a ${data.proveedor} (${num(total)} pzas).`)
+    onListo(`Se creó el pedido de playera lisa #${data.folio} a ${data.proveedor} (${num(total)} pzas · ${peso(costo)}).`)
   }
   return (
     <div className="card frisa-restock__propuesta">
@@ -120,7 +123,7 @@ function PedidoLisas({ filas, proveedorSugerido, onListo }) {
       </p>
       <div className="revision__tabla-wrap">
         <table className="simple-table frisa-tabla frisa-niveles__tabla">
-          <thead><tr><th>Playera lisa</th><th className="num">Hay</th><th className="num">Necesitan</th><th>Estado</th><th className="num">A pedir</th></tr></thead>
+          <thead><tr><th>Playera lisa</th><th className="num">Hay</th><th className="num">Necesitan</th><th>Estado</th><th className="num">A pedir</th><th className="num">Precio</th><th className="num">Importe</th></tr></thead>
           <tbody>
             {filas.map((f) => (
               <tr key={f.lisa.id} className={f.aComprar > 0 ? 'frisa-niveles__fila--critico' : 'frisa-niveles__fila--ok'}>
@@ -140,9 +143,12 @@ function PedidoLisas({ filas, proveedorSugerido, onListo }) {
                   <input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" value={cant[f.lisa.id]} placeholder="0"
                     onChange={(e) => setCant({ ...cant, [f.lisa.id]: e.target.value })} aria-label={`A pedir ${f.lisa.color} ${f.lisa.talla}`} />
                 </td>
+                <td data-label="Precio" className="num">{f.lisa.precio != null ? peso(f.lisa.precio) : <span className="frisa__sub">sin precio</span>}</td>
+                <td data-label="Importe" className="num">{Number(cant[f.lisa.id]) > 0 && f.lisa.precio != null ? peso(Number(cant[f.lisa.id]) * f.lisa.precio) : ''}</td>
               </tr>
             ))}
           </tbody>
+          <tfoot><tr><td colSpan={4}><strong>Total del pedido</strong>{sinPrecio ? <span className="frisa__falta"> · {sinPrecio} talla{sinPrecio === 1 ? '' : 's'} sin precio (no se suman)</span> : ''}</td><td className="num"><strong>{num(total)}</strong></td><td /><td className="num"><strong>{peso(costo)}</strong></td></tr></tfoot>
         </table>
       </div>
       <div className="frisa-form__fila">
@@ -150,7 +156,7 @@ function PedidoLisas({ filas, proveedorSugerido, onListo }) {
         <label><span className="field-label">Se espera (opcional)</span><input className="input" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} /></label>
       </div>
       {error && <p className="form-error">{error}</p>}
-      <button type="button" className="btn btn--primary" disabled={trabajando || total <= 0 || !proveedor.trim()} onClick={crear}>{trabajando ? 'Guardando…' : `Crear pedido de playera lisa (${num(total)} pzas)`}</button>
+      <button type="button" className="btn btn--primary" disabled={trabajando || total <= 0 || !proveedor.trim()} onClick={crear}>{trabajando ? 'Guardando…' : `Crear pedido de playera lisa (${num(total)} pzas · ${peso(costo)})`}</button>
     </div>
   )
 }

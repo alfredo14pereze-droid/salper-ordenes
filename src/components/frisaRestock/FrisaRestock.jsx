@@ -17,6 +17,8 @@ import { EstadoBadge, NombreFrisa, fechaCorta } from '../frisaNiveles/comunes'
 import { prendaYTalla } from '../../utils/frisaPlantas'
 
 const num = (n) => Number(n || 0).toLocaleString('es-MX')
+// V206 — precios de compra (pantalón, playera lisa).
+const peso = (n) => Number(n || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })
 const masDias = (d) => { const x = new Date(); x.setDate(x.getDate() + d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}` }
 const ESTADO_OT = {
   en_proceso: ['En proceso', 'neutro'], por_entrar: ['Por entrar (terminada)', 'naranja'],
@@ -138,22 +140,22 @@ export default function FrisaRestock() {
       {sub === 'pantalon' && (
         <>
           {comprasNormales.some((c) => c.estado === 'pedida') && (
-            <ListaCompras titulo="Por recibir: pedidos de pantalón que no han llegado" destacada compras={comprasNormales.filter((c) => c.estado === 'pedida')} datos={datos} puede={puede} puedeRecibir={puede.recibirPantalon} onRecibir={setRecibir} onListo={listo} />
+            <ListaCompras verPrecios={puede.compras || verTodo} titulo="Por recibir: pedidos de pantalón que no han llegado" destacada compras={comprasNormales.filter((c) => c.estado === 'pedida')} datos={datos} puede={puede} puedeRecibir={puede.recibirPantalon} onRecibir={setRecibir} onListo={listo} />
           )}
           <ListaCiclo titulo="Lo que no alcanza hasta el siguiente pedido (pantalón, bata, bolsa)" filas={r.filas.filter((f) => f.se !== 'fabrica')} ciclo={CICLO.compra} queEs="en llegar del proveedor" todas={todas} setTodas={setTodas} />
           {planea && <PropuestaCompra key={r.compraPropuesta.map((l) => l.producto_id + ':' + l.cantidad).join(',')} filas={r.filas.filter((f) => f.se !== 'fabrica')} puede={puede.compras} onListo={listo} />}
-          {planea && <ListaCompras titulo="Pedidos de pantalón anteriores (recibidos o cancelados)" compras={comprasNormales.filter((c) => c.estado !== 'pedida')} datos={datos} puede={puede} onRecibir={setRecibir} onListo={listo} />}
+          {planea && <ListaCompras verPrecios={puede.compras || verTodo} titulo="Pedidos de pantalón anteriores (recibidos o cancelados)" compras={comprasNormales.filter((c) => c.estado !== 'pedida')} datos={datos} puede={puede} onRecibir={setRecibir} onListo={listo} />}
         </>
       )}
 
       {sub === 'lisa' && (
         <>
           {comprasLisa.some((c) => c.estado === 'pedida') && (
-            <ListaCompras titulo="Por recibir: pedidos de playera lisa que no han llegado" destacada compras={comprasLisa.filter((c) => c.estado === 'pedida')} datos={datos} puede={puede} puedeRecibir={puede.recibirLisa} onRecibir={setRecibir} onListo={listo} />
+            <ListaCompras verPrecios={puede.compras || verTodo} titulo="Por recibir: pedidos de playera lisa que no han llegado" destacada compras={comprasLisa.filter((c) => c.estado === 'pedida')} datos={datos} puede={puede} puedeRecibir={puede.recibirLisa} onRecibir={setRecibir} onListo={listo} />
           )}
           <ListaCiclo titulo="Playeras que no alcanzan hasta la siguiente tanda" filas={r.filas.filter((f) => f.se === 'fabrica' && /^PLAYERA/i.test(String(f.producto.nombre || '').trim()))} ciclo={CICLO.fabrica} queEs="en el taller" todas={todas} setTodas={setTodas} />
           <FrisaLisas calculo={r.lisas} puede={puede} onListo={listo} />
-          {planea && <ListaCompras titulo="Pedidos de playera lisa anteriores (recibidos o cancelados)" compras={comprasLisa.filter((c) => c.estado !== 'pedida')} datos={datos} puede={puede} onRecibir={setRecibir} onListo={listo} />}
+          {planea && <ListaCompras verPrecios={puede.compras || verTodo} titulo="Pedidos de playera lisa anteriores (recibidos o cancelados)" compras={comprasLisa.filter((c) => c.estado !== 'pedida')} datos={datos} puede={puede} onRecibir={setRecibir} onListo={listo} />}
         </>
       )}
 
@@ -290,6 +292,8 @@ function PropuestaCompra({ filas, puede, onListo }) {
   const [trabajando, setTrabajando] = useState(false)
   const [error, setError] = useState(null)
   const total = filas.reduce((t, f) => t + (Number(cant[f.producto.id]) || 0), 0)
+  const costo = filas.reduce((t, f) => t + (Number(cant[f.producto.id]) || 0) * (Number(f.producto.precio_compra) || 0), 0)
+  const sinPrecio = filas.filter((f) => Number(cant[f.producto.id]) > 0 && f.producto.precio_compra == null).length
   const aPedir = lista.filter((f) => f.aPedir > 0).length
 
   async function crear() {
@@ -299,7 +303,7 @@ function PropuestaCompra({ filas, puede, onListo }) {
     const { data, error: e } = await crearCompra({ proveedor, fechaEsperada: fecha, lineas: ls })
     setTrabajando(false)
     if (e) return setError(e.message)
-    onListo(`Se creó el pedido de compra #${data.folio} a ${data.proveedor} (${num(total)} pzas).`)
+    onListo(`Se creó el pedido de compra #${data.folio} a ${data.proveedor} (${num(total)} pzas · ${peso(costo)}).`)
   }
 
   const fila = (f) => {
@@ -316,6 +320,8 @@ function PropuestaCompra({ filas, puede, onListo }) {
           <input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" value={cant[f.producto.id]} placeholder="0"
             disabled={!puede} onChange={(e) => setCant({ ...cant, [f.producto.id]: e.target.value })} aria-label={`A pedir ${nombreFrisa(f.producto.nombre)}`} />
         </td>
+        <td data-label="Precio" className="num">{f.producto.precio_compra != null ? peso(f.producto.precio_compra) : <span className="frisa__sub">sin precio</span>}</td>
+        <td data-label="Importe" className="num">{Number(cant[f.producto.id]) > 0 && f.producto.precio_compra != null ? peso(Number(cant[f.producto.id]) * f.producto.precio_compra) : ''}</td>
       </tr>
     )
   }
@@ -329,14 +335,15 @@ function PropuestaCompra({ filas, puede, onListo }) {
       </p>
       <div className="revision__tabla-wrap">
         <table className="simple-table frisa-tabla frisa-niveles__tabla">
-          <thead><tr><th>Producto</th><th className="num">Hay</th><th className="num">En camino</th><th className="num">Reorden</th><th className="num">Máximo</th><th>Estado</th><th className="num">A pedir</th></tr></thead>
+          <thead><tr><th>Producto</th><th className="num">Hay</th><th className="num">En camino</th><th className="num">Reorden</th><th className="num">Máximo</th><th>Estado</th><th className="num">A pedir</th><th className="num">Precio</th><th className="num">Importe</th></tr></thead>
           <tbody>
             {lista.filter((f) => f.aPedir > 0).map(fila)}
             {aPedir > 0 && aPedir < lista.length && (
-              <tr><td colSpan={7} className="frisa__sub"><strong>Los demás que se compran</strong> (alcanzan; agrega si quieres)</td></tr>
+              <tr><td colSpan={9} className="frisa__sub"><strong>Los demás que se compran</strong> (alcanzan; agrega si quieres)</td></tr>
             )}
             {lista.filter((f) => !(f.aPedir > 0)).map(fila)}
           </tbody>
+          <tfoot><tr><td colSpan={6}><strong>Total del pedido</strong>{sinPrecio ? <span className="frisa__falta"> · {sinPrecio} sin precio (no se suman)</span> : ''}</td><td className="num"><strong>{num(total)}</strong></td><td /><td className="num"><strong>{peso(costo)}</strong></td></tr></tfoot>
         </table>
       </div>
       {puede ? (
@@ -346,7 +353,7 @@ function PropuestaCompra({ filas, puede, onListo }) {
             <label><span className="field-label">Se espera (opcional)</span><input className="input" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} /></label>
           </div>
           {error && <p className="form-error">{error}</p>}
-          <button type="button" className="btn btn--primary" disabled={trabajando || total <= 0 || !proveedor.trim()} onClick={crear}>{trabajando ? 'Guardando…' : `Crear pedido de compra (${num(total)} pzas)`}</button>
+          <button type="button" className="btn btn--primary" disabled={trabajando || total <= 0 || !proveedor.trim()} onClick={crear}>{trabajando ? 'Guardando…' : `Crear pedido de compra (${num(total)} pzas · ${peso(costo)})`}</button>
         </>
       ) : <p className="frisa__sub">Los pedidos de compra los hacen los administradores.</p>}
     </div>
@@ -511,7 +518,7 @@ function BotonCancelarCompra({ compra, onListo }) {
 
 
 
-function ListaCompras({ titulo, compras, datos, puede, onRecibir, onListo, destacada = false, puedeRecibir = false }) {
+function ListaCompras({ titulo, compras, datos, puede, onRecibir, onListo, destacada = false, puedeRecibir = false, verPrecios = false }) {
   const lisaPorId = new Map(datos.lisas.map((x) => [x.id, x]))
   return (
     <section className={'frisa-restock__seccion' + (destacada ? ' card frisa-restock__propuesta' : '')}>
@@ -544,6 +551,10 @@ function ListaCompras({ titulo, compras, datos, puede, onRecibir, onListo, desta
                 </span>
               </span>
               <span className="frisa-oc__planta">{c.proveedor}</span>
+              {verPrecios && ls.some((l) => l.precio != null) && (
+                <span className="frisa-compra__costo">Costo: <strong>{peso(ls.reduce((t, l) => t + l.cantidad * (Number(l.precio) || 0), 0))}</strong>
+                  {ls.some((l) => l.recibida != null) ? ` · llegó ${peso(ls.reduce((t, l) => t + (l.recibida ?? 0) * (Number(l.precio) || 0), 0))}` : ''}</span>
+              )}
               {grupos.map((g) => (
                 <div key={g.prenda} className="frisa-compra__tallas">
                   <div className="frisa-compra__prenda">{g.prenda.charAt(0) + g.prenda.slice(1).toLowerCase()} · {num(g.lineas.reduce((t, l) => t + l.cantidad, 0))} pzas</div>
