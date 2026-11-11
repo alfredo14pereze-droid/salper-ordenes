@@ -261,6 +261,7 @@ La playera lisa es la playera sin procesos con la que el taller hace las de Fris
 - **Estado**: **OK** alcanza · **PEDIR** hay que pedir.
 - **A pedir**: las de PEDIR ya traen la cantidad que falta. Las de OK vienen en 0. Puedes cambiar cualquiera.
 - **Precio / Importe**: lo que cuesta cada pieza y cada renglón. Los precios son **más IVA**: abajo sale el **subtotal, el IVA (16%) y el total del pedido en pesos**; el total con IVA también sale en el botón. En la lista de pedidos cada uno dice su costo.
+- **PDF para el proveedor**: cada pedido tiene ese botón. Arma un PDF con el número de pedido, proveedor, fecha, piezas por talla, precio, subtotal, IVA y total; tócalo, revisa la vista previa, **Descargar** y mándaselo por WhatsApp o correo.
 
 Arriba de la tabla de playera lisa salen los totales: **Hay en anaquel**, **En proceso** (ya en órdenes de taller), **Faltan por hacer** (lo que piden las órdenes sugeridas), **A comprar** y el **Total** (en proceso + faltan por hacer). Cada talla se separa por producto: **Con reflejante** y **Sin reflejante**, aunque sea la misma lisa, para ver a cuál va cada una. "Piden" ya descuenta lo que está en proceso.
 

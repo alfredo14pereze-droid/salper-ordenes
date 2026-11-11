@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { Loading, ErrorState } from '../common/States'
 import Modal from '../talleros/Modal'
+import PdfPreviewModal from '../pdf/PdfPreviewModal'
 import { canCrearOrdenesRestock, canSubirBodegaFrisa, canComprasFrisa, canVerTodoFrisa, canRecibirPantalonFrisa, canRecibirLisaFrisa } from '../../utils/permissions'
 import {
   fetchRestockTodo, buscarOrdenPorFolio, ligarOrden, desligarOrden, subirABodega, crearCompra, recibirCompra, cancelarCompra,
@@ -527,6 +528,21 @@ function BotonCancelarCompra({ compra, onListo }) {
 
 function ListaCompras({ titulo, compras, datos, puede, onRecibir, onListo, destacada = false, puedeRecibir = false, verPrecios = false }) {
   const lisaPorId = new Map(datos.lisas.map((x) => [x.id, x]))
+  const [pdfVista, setPdfVista] = useState(null) // { blob, nombre }
+  const [armando, setArmando] = useState(null)
+  // 2026-11-11 — PDF del pedido para mandarlo al proveedor.
+  async function pdfProveedor(c, grupos) {
+    setArmando(c.id)
+    try {
+      const [{ pdf }, { default: CompraProveedorPdf }] = await Promise.all([import('@react-pdf/renderer'), import('../pdf/CompraProveedorPdf')])
+      const generado = new Date().toLocaleString('es-MX', { dateStyle: 'long', timeStyle: 'short' })
+      const blob = await pdf(<CompraProveedorPdf compra={c} grupos={grupos} generado={generado} />).toBlob()
+      setPdfVista({ blob, nombre: `SALPER pedido de compra ${c.folio} - ${c.proveedor}.pdf`.replace(/[\\/:*?"<>|]/g, '') })
+    } catch (e) {
+      window.alert(e.message || 'No se pudo armar el PDF.')
+    }
+    setArmando(null)
+  }
   return (
     <section className={'frisa-restock__seccion' + (destacada ? ' card frisa-restock__propuesta' : '')}>
       <h2 className="section-title section-title--small">{titulo}</h2>
@@ -576,16 +592,22 @@ function ListaCompras({ titulo, compras, datos, puede, onRecibir, onListo, desta
                 </div>
               ))}
               <span className="frisa__sub">{c.estado === 'pedida' ? (c.fecha_esperada ? `Se espera ${fechaCorta(c.fecha_esperada)}` : 'Sin fecha') : c.estado === 'recibida' ? `Recibió ${c.recibido_por_nombre} · ${fechaCorta(c.recibido_en)}` : c.cancelado_motivo}</span>
-              {c.estado === 'pedida' && (
+              {(c.estado === 'pedida' || verPrecios) && (
                 <span className="frisa__botones">
-                  {puedeRecibir && <button type="button" className="btn btn--primary btn--small" onClick={() => onRecibir(c)}>Recibir</button>}
-                  {puede.compras && <BotonCancelarCompra compra={c} onListo={onListo} />}
+                  {c.estado === 'pedida' && puedeRecibir && <button type="button" className="btn btn--primary btn--small" onClick={() => onRecibir(c)}>Recibir</button>}
+                  {verPrecios && c.estado !== 'cancelada' && (
+                    <button type="button" className="btn btn--secondary btn--small" disabled={armando === c.id} onClick={() => pdfProveedor(c, grupos)}>
+                      {armando === c.id ? 'Armando…' : 'PDF para el proveedor'}
+                    </button>
+                  )}
+                  {c.estado === 'pedida' && puede.compras && <BotonCancelarCompra compra={c} onListo={onListo} />}
                 </span>
               )}
             </div>
           )
         })}
       </div>
+      {pdfVista && <PdfPreviewModal blob={pdfVista.blob} fileName={pdfVista.nombre} onClose={() => setPdfVista(null)} />}
     </section>
   )
 }
