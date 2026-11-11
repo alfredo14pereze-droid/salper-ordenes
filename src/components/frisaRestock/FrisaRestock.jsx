@@ -197,19 +197,26 @@ export default function FrisaRestock() {
   )
 }
 
-// 2026-11-11 — Aviso de reorden (como en Niveles de inventario): CRÍTICO, PEDIR y los que ya
-// están cerca (disponible hasta 20% arriba del punto de reorden). Con real, disponible, mínimo,
-// reorden y máximo calculados con el disponible de hoy, igual que Niveles.
-const ORDEN_AVISO = { critico: 0, pedir: 1, cerca: 2 }
+// 2026-11-11 — Aviso de reorden (como en Niveles de inventario), con dos estados:
+//   Hoy              = con el disponible de hoy (igual que Niveles).
+//   Con lo que viene = disponible + en camino (órdenes de taller y pedidos sin llegar).
+// CERCA = hasta 20% arriba del punto de reorden: para el siguiente pedido ya va a hacer falta.
+// Sale si cualquiera de los dos no está OK.
+const ORDEN_AVISO = { critico: 0, pedir: 1, cerca: 2, ok: 3 }
+const estadoAviso = (stock, n) => (stock <= n.minimo ? 'critico' : stock <= n.reorden ? 'pedir' : stock <= Math.ceil(n.reorden * 1.2) ? 'cerca' : 'ok')
+function BadgeAviso({ estado }) {
+  if (estado === 'cerca') return <span className="frisa-nivel frisa-nivel--amarillo">CERCA</span>
+  return <EstadoBadge estado={estado} />
+}
 function AvisoReorden({ titulo, filas, cfg }) {
   const lista = filas.map((f) => {
     const n = calcularNiveles(f.producto, cfg)
     const disp = Number(f.producto.disponible) || 0
-    const aviso = n.sinMovimiento ? null : n.estado !== 'ok' ? n.estado : disp <= Math.ceil(n.reorden * 1.2) ? 'cerca' : null
-    return { f, n, disp, aviso }
-  }).filter((x) => x.aviso)
-    .sort((a, b) => ORDEN_AVISO[a.aviso] - ORDEN_AVISO[b.aviso] || (a.disp - a.n.reorden) - (b.disp - b.n.reorden))
-  const conteo = (k) => lista.filter((x) => x.aviso === k).length
+    const viene = (f.enProceso || 0) + (f.porEntrar || 0)
+    return { f, n, disp, viene, conViene: disp + viene, hoy: estadoAviso(disp, n), despues: estadoAviso(disp + viene, n) }
+  }).filter((x) => !x.n.sinMovimiento && (x.hoy !== 'ok' || x.despues !== 'ok'))
+    .sort((a, b) => ORDEN_AVISO[a.despues] - ORDEN_AVISO[b.despues] || ORDEN_AVISO[a.hoy] - ORDEN_AVISO[b.hoy] || (a.conViene - a.n.reorden) - (b.conViene - b.n.reorden))
+  const conteo = (k) => lista.filter((x) => x.despues === k).length
   return (
     <section className="frisa-restock__seccion frisa-aviso">
       <h2 className="section-title section-title--small">{titulo}</h2>
@@ -217,25 +224,26 @@ function AvisoReorden({ titulo, filas, cfg }) {
         ? <p className="frisa__ok">Todo arriba del punto de reorden ✓</p>
         : <>
           <p className="frisa__sub">
-            {conteo('critico') ? <><strong className="frisa__falta">{conteo('critico')} en CRÍTICO</strong> · </> : ''}
+            Con lo que viene: {conteo('critico') ? <><strong className="frisa__falta">{conteo('critico')} en CRÍTICO</strong> · </> : ''}
             {conteo('pedir') ? <><strong>{conteo('pedir')} en PEDIR</strong> · </> : ''}
-            {conteo('cerca') ? <>{conteo('cerca')} cerca del reorden · </> : ''}
-            Igual que en Niveles de inventario: inventario actual contra mínimo, punto de reorden y máximo. "En camino" = en órdenes de taller o pedidos que no han llegado.
+            {conteo('cerca') ? <><strong>{conteo('cerca')} CERCA</strong> (para el siguiente pedido ya van a hacer falta) · </> : ''}
+            {conteo('ok') ? <>{conteo('ok')} ya cubiertas · </> : ''}
+            <strong>Hoy</strong> es con lo que hay (igual que Niveles); <strong>Con lo que viene</strong> suma lo que está en órdenes de taller o pedidos que no han llegado. CERCA = a menos de 20% arriba del punto de reorden.
           </p>
           <div className="revision__tabla-wrap">
             <table className="simple-table frisa-tabla frisa-niveles__tabla">
-              <thead><tr><th>Producto</th><th className="num">Real</th><th className="num">Disponible</th><th className="num">Mínimo</th><th className="num">Punto de reorden</th><th className="num">Máximo</th><th className="num">En camino</th><th>Estado</th></tr></thead>
+              <thead><tr><th className="frisa-aviso__prod">Producto</th><th className="num">Inventario actual</th><th className="num">Punto de reorden</th><th className="num">Máximo</th><th>Hoy</th><th className="num">En camino</th><th className="num">Con lo que viene</th><th>Después</th></tr></thead>
               <tbody>
-                {lista.map(({ f, n, disp, aviso }) => (
-                  <tr key={f.producto.id} className={'frisa-niveles__fila--' + (aviso === 'cerca' ? 'ok' : aviso)}>
+                {lista.map(({ f, n, disp, viene, conViene, hoy, despues }) => (
+                  <tr key={f.producto.id} className={'frisa-niveles__fila--' + (despues === 'cerca' || despues === 'ok' ? 'ok' : despues)}>
                     <td data-label="Producto"><NombreFrisa producto={f.producto} className="frisa__prod" /></td>
-                    <td data-label="Real" className="num">{num(f.producto.real ?? f.producto.stock_actual)}</td>
-                    <td data-label="Disponible" className="num"><strong>{num(disp)}</strong></td>
-                    <td data-label="Mínimo" className="num">{num(n.minimo)}</td>
+                    <td data-label="Inventario actual" className="num"><strong>{num(disp)}</strong></td>
                     <td data-label="Punto de reorden" className="num">{num(n.reorden)}</td>
                     <td data-label="Máximo" className="num">{num(n.maximo)}</td>
-                    <td data-label="En camino" className="num">{f.enProceso + f.porEntrar ? num(f.enProceso + f.porEntrar) : ''}</td>
-                    <td data-label="Estado">{aviso === 'cerca' ? <span className="frisa-nivel frisa-nivel--amarillo">CERCA</span> : <EstadoBadge estado={aviso} />}</td>
+                    <td data-label="Hoy"><BadgeAviso estado={hoy} /></td>
+                    <td data-label="En camino" className="num">{viene ? num(viene) : ''}</td>
+                    <td data-label="Con lo que viene" className="num"><strong>{num(conViene)}</strong></td>
+                    <td data-label="Después">{despues === 'ok' ? <span className="frisa-nivel frisa-nivel--verde">CUBIERTA</span> : <BadgeAviso estado={despues} />}</td>
                   </tr>
                 ))}
               </tbody>

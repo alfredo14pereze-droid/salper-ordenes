@@ -5619,3 +5619,4 @@ h4 {
 .frisa-restock__otro { display: flex; flex-direction: column; gap: 4px; max-width: 420px; margin: 4px 0 12px; }
 .frisa-lisas__sub td { border-top-style: dashed; }
 .frisa-lisas__totales { margin: 8px 0 12px; }
+.frisa-aviso__prod { min-width: 260px; }

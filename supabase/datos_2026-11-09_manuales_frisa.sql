@@ -231,7 +231,7 @@ Si una orden FR se creó por fuera de Restock, puedes ligarla en esa misma secci
 $man$),
       (7, $t$Cómo hacer un pedido de compra de pantalón$t$, $man$**Lo hace:** Gis (ventas).
 
-> **Aviso de reorden:** arriba de las pestañas **Pantalón** y **Playera lisa** sale una tabla, igual que en Niveles, con lo que está en **CRÍTICO**, **PEDIR** o **CERCA** del punto de reorden: real, disponible, mínimo, punto de reorden, máximo y lo que ya viene en camino. En Playera lisa muestra las playeras terminadas (con y sin reflejante), que son las que piden lisa.
+> **Aviso de reorden:** arriba de las pestañas **Pantalón** y **Playera lisa** sale una tabla con el inventario actual, el punto de reorden y el máximo, y dos estados: **Hoy** (con lo que hay, igual que en Niveles) y **Después** (sumando lo que viene en órdenes de taller o pedidos). **CERCA** = a menos de 20% arriba del punto de reorden: para el siguiente pedido ya va a hacer falta. **CUBIERTA** = con lo que viene ya alcanza. En Playera lisa muestra las playeras terminadas (con y sin reflejante), que son las que piden lisa.
 
 El pantalón (y la bata y la bolsa) no se fabrica: se compra hecho. Todo está en **Restock → Pantalón**. La tarjeta **"Pedido de compra (lo que se compra hecho)"** funciona igual que la de playera lisa:
 
