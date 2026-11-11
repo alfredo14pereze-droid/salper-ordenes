@@ -250,9 +250,11 @@ $man$),
 La playera lisa es la playera sin procesos con la que el taller hace las de Frisa. Todo está en **Restock → Playera lisa**. En la tarjeta **"Pedido de playera lisa"** salen **todas las tallas** de cada color y manga, para que veas el desglose completo:
 
 - **Hay**: lo que está en el anaquel.
-- **Necesitan**: lo que piden las órdenes de taller que hay que crear.
+- **Necesitan**: lo que piden las órdenes de taller que hay que crear (abajo dice cuántas son con reflejante y cuántas sin reflejante).
 - **Estado**: **OK** alcanza · **PEDIR** hay que pedir.
 - **A pedir**: las de PEDIR ya traen la cantidad que falta. Las de OK vienen en 0. Puedes cambiar cualquiera.
+
+Arriba de la tabla de playera lisa salen los totales: **Hay en anaquel**, **En proceso** (ya en órdenes de taller), **Faltan por hacer** (lo que piden las órdenes sugeridas), **A comprar** y el **Total** (en proceso + faltan por hacer). Cada talla se separa por producto: **Con reflejante** y **Sin reflejante**, aunque sea la misma lisa, para ver a cuál va cada una. "Piden" ya descuenta lo que está en proceso.
 
 ## Pasos
 

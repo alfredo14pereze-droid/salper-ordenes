@@ -44,3 +44,20 @@ test('stock (anaquel), en proceso y a comprar', () => {
   assert.equal(r.pedidos[0].proveedor, 'Máxima')
   assert.deepEqual(r.pedidos[0].lineas.map((l) => [l.lisa_id, l.cantidad]), [['mlL', 25]])
 })
+
+test('lisa por producto (2026-11-11): en proceso y piden separados con / sin reflejante', async () => {
+  const { calcularLisas, tipoReflejante } = await import('./frisaLisas.js')
+  assert.equal(tipoReflejante('PLAYERA CON REFLEJANTE AZUL MARINO MANGA LARGA'), 'Con reflejante')
+  assert.equal(tipoReflejante('PLAYERA LISA AZUL MARINO MANGA LARGA'), 'Sin reflejante')
+  const r = calcularLisas({
+    lisas: [{ id: 'm', color: 'Azul marino', manga: 'ML', talla: 'M', stock: 10 }],
+    productoLisa: [{ producto_frisa_id: 'CR', color: 'Azul marino', manga: 'ML' }, { producto_frisa_id: 'SR', color: 'Azul marino', manga: 'ML' }],
+    productosFrisa: [{ id: 'CR', nombre: 'Playera C/REF A. Marino M/L' }, { id: 'SR', nombre: 'Playera S/REF A. Marino M/L' }],
+    ligas: [{ order_id: 'o1' }],
+    orders: [{ id: 'o1', producto_frisa_id: 'SR', items: [{ sizes: [{ talla: 'M', cantidad: 7 }] }] }],
+    talleresPropuestos: [{ producto_frisa_id: 'CR', lineas: [{ talla: 'M', cantidad: 25 }] }],
+  })
+  const f = r.filas[0]
+  assert.deepEqual(f.porProducto.map((p) => [p.reflejante, p.enProceso, p.piden]), [['Con reflejante', 0, 25], ['Sin reflejante', 7, 0]])
+  assert.equal(f.aComprar, 15)
+})

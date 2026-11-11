@@ -30,11 +30,22 @@ export function buscadorLisa(productoLisa, lisas) {
   }
 }
 
+// "Con reflejante" / "Sin reflejante" según el nombre del producto (nombreFrisa: S/REF → LISA).
+export function tipoReflejante(nombre) {
+  const n = String(nombre || '').toUpperCase()
+  if (/CON REFLEJANTE/.test(n)) return 'Con reflejante'
+  if (/\bLISA\b|SIN REFLEJANTE/.test(n)) return 'Sin reflejante'
+  return ''
+}
+
 export function calcularLisas({ lisas = [], productoLisa = [], productosFrisa = [], ligas = [], orders = [], talleresPropuestos = [] }) {
   const lisaDe = buscadorLisa(productoLisa, lisas)
   const comprometidas = new Map()
   const piden = new Map()
   const suma = (m, k, n) => m.set(k, (m.get(k) || 0) + n)
+  // 2026-11-11: también por producto (con / sin reflejante) para ver a cuál va cada lisa.
+  const enProcesoProd = new Map() // `${lisa_id}|${producto_frisa_id}` → piezas
+  const pidenProd = new Map()
   const ordenPorId = new Map(orders.map((o) => [o.id, o]))
 
   for (const liga of ligas) {
@@ -43,13 +54,13 @@ export function calcularLisas({ lisas = [], productoLisa = [], productosFrisa = 
     if (!o || o.cancelled_at || o.eliminada_en) continue
     for (const { talla, cantidad } of tallasDeOrden(o)) {
       const l = lisaDe(o.producto_frisa_id, talla)
-      if (l) suma(comprometidas, l.id, cantidad)
+      if (l) { suma(comprometidas, l.id, cantidad); suma(enProcesoProd, `${l.id}|${o.producto_frisa_id}`, cantidad) }
     }
   }
   for (const g of talleresPropuestos) {
     for (const ln of g.lineas) {
       const l = lisaDe(g.producto_frisa_id, ln.talla)
-      if (l) suma(piden, l.id, Number(ln.cantidad) || 0)
+      if (l) { suma(piden, l.id, Number(ln.cantidad) || 0); suma(pidenProd, `${l.id}|${g.producto_frisa_id}`, Number(ln.cantidad) || 0) }
     }
   }
 
@@ -58,9 +69,10 @@ export function calcularLisas({ lisas = [], productoLisa = [], productosFrisa = 
   const usos = new Map()
   for (const pl of productoLisa) {
     const k = `${C(pl.color)}|${pl.manga}`
-    if (!usos.has(k)) usos.set(k, { productos: [], proveedor: null })
+    if (!usos.has(k)) usos.set(k, { productos: [], ids: [], proveedor: null })
     const u = usos.get(k)
     u.productos.push(codigo.get(pl.producto_frisa_id) || '')
+    u.ids.push(pl.producto_frisa_id)
     if (!u.proveedor && pl.proveedor) u.proveedor = pl.proveedor
   }
 
@@ -69,8 +81,12 @@ export function calcularLisas({ lisas = [], productoLisa = [], productosFrisa = 
     const stock = Number(l.stock) || 0
     const comp = comprometidas.get(l.id) || 0
     const pid = piden.get(l.id) || 0
-    const u = usos.get(`${C(l.color)}|${l.manga}`) || { productos: [], proveedor: null }
-    return { lisa: l, stock, enProceso: comp, piden: pid, aComprar: Math.max(0, pid - stock), productos: u.productos, proveedor: u.proveedor }
+    const u = usos.get(`${C(l.color)}|${l.manga}`) || { productos: [], ids: [], proveedor: null }
+    const porProducto = u.ids.map((id, i) => ({
+      producto_frisa_id: id, nombre: u.productos[i], reflejante: tipoReflejante(u.productos[i]),
+      enProceso: enProcesoProd.get(`${l.id}|${id}`) || 0, piden: pidenProd.get(`${l.id}|${id}`) || 0,
+    }))
+    return { lisa: l, stock, enProceso: comp, piden: pid, aComprar: Math.max(0, pid - stock), productos: u.productos, porProducto, proveedor: u.proveedor }
   }).sort((a, b) => a.lisa.color.localeCompare(b.lisa.color, 'es') || a.lisa.manga.localeCompare(b.lisa.manga)
     || ORDEN_TALLA.indexOf(T(a.lisa.talla)) - ORDEN_TALLA.indexOf(T(b.lisa.talla)))
 

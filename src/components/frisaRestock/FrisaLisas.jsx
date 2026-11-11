@@ -21,13 +21,26 @@ export default function FrisaLisas({ calculo, puede, onListo }) {
         se quita del restock. En proceso = las que ya están en órdenes de taller. A comprar = lo que piden las órdenes propuestas − stock.
         {puede.bodega ? ' Toca el stock para capturar el conteo del anaquel.' : ''}
       </p>
+      {(() => {
+        const s = (k) => calculo.filas.reduce((t, f) => t + Math.max(0, f[k] || 0), 0)
+        const hay = s('stock'), proceso = s('enProceso'), piden = s('piden'), comprar = s('aComprar')
+        return (
+          <div className="stats-grid frisa-lisas__totales">
+            <div className="stat-card"><span className="stat-card__label">Hay en anaquel</span><span className="stat-card__value">{num(hay)}</span></div>
+            <div className="stat-card"><span className="stat-card__label">En proceso</span><span className="stat-card__value">{num(proceso)}</span><span className="stat-card__hint">ya en órdenes de taller</span></div>
+            <div className="stat-card"><span className="stat-card__label">Faltan por hacer</span><span className="stat-card__value">{num(piden)}</span><span className="stat-card__hint">lo que piden las órdenes de taller sugeridas</span></div>
+            <div className="stat-card"><span className="stat-card__label">A comprar</span><span className="stat-card__value">{num(comprar)}</span><span className="stat-card__hint">faltan por hacer − hay</span></div>
+            <div className="stat-card"><span className="stat-card__label">Total</span><span className="stat-card__value">{num(proceso + piden)}</span><span className="stat-card__hint">en proceso + faltan por hacer</span></div>
+          </div>
+        )
+      })()}
       {!filas.length && <p className="frisa__sub">Sin movimiento de playera lisa todavía. Marca “Ver todas” para capturar el primer conteo.</p>}
       {filas.length > 0 && (
         <div className="revision__tabla-wrap">
           <table className="simple-table frisa-tabla frisa-niveles__tabla">
-            <thead><tr><th>Playera lisa</th><th className="num">Stock (anaquel)</th><th className="num">En proceso</th><th className="num">Piden</th><th className="num">A comprar</th><th>La usan</th></tr></thead>
+            <thead><tr><th>Playera lisa</th><th className="num">Stock (anaquel)</th><th>Para</th><th className="num">En proceso</th><th className="num">Piden</th><th className="num">Total</th><th className="num">A comprar</th></tr></thead>
             <tbody>
-              {filas.map((f) => <FilaLisa key={f.lisa.id} f={f} puede={puede.bodega} onListo={onListo} />)}
+              {filas.map((f) => <FilaLisa key={f.lisa.id} f={f} todas={todas} puede={puede.bodega} onListo={onListo} />)}
             </tbody>
           </table>
         </div>
@@ -37,7 +50,9 @@ export default function FrisaLisas({ calculo, puede, onListo }) {
   )
 }
 
-function FilaLisa({ f, puede, onListo }) {
+// Una lisa = un renglón por producto que la usa (con / sin reflejante). El stock y "A comprar"
+// son de la lisa (es la misma materia prima) y van en el primer renglón.
+function FilaLisa({ f, todas, puede, onListo }) {
   const [editando, setEditando] = useState(false)
   const [valor, setValor] = useState('')
   const [error, setError] = useState(null)
@@ -48,11 +63,14 @@ function FilaLisa({ f, puede, onListo }) {
     setEditando(false)
     onListo(`Conteo guardado: ${nombreLisa(f.lisa)} = ${num(valor)}.`)
   }
-  return (
-    <tr className={f.aComprar > 0 ? 'frisa-niveles__fila--critico' : f.stock < 0 ? 'frisa-niveles__fila--pedir' : 'frisa-niveles__fila--ok'}>
-      <td data-label="Playera lisa"><strong>{f.lisa.talla}</strong> <NombreFrisa producto={{ ...lisaComoProducto(f.lisa), nombre: `${f.lisa.color} ${MANGA[f.lisa.manga]}` }} /></td>
+  const clase = f.aComprar > 0 ? 'frisa-niveles__fila--critico' : f.stock < 0 ? 'frisa-niveles__fila--pedir' : 'frisa-niveles__fila--ok'
+  const prods = (f.porProducto || []).filter((p) => todas || p.enProceso || p.piden)
+  const renglones = prods.length ? prods : [null]
+  return renglones.map((p, i) => (
+    <tr key={p?.producto_frisa_id || 'x'} className={clase + (i > 0 ? ' frisa-lisas__sub' : '')}>
+      <td data-label="Playera lisa">{i === 0 && <><strong>{f.lisa.talla}</strong> <NombreFrisa producto={{ ...lisaComoProducto(f.lisa), nombre: `${f.lisa.color} ${MANGA[f.lisa.manga]}` }} /></>}</td>
       <td data-label="Stock" className="num">
-        {editando ? (
+        {i === 0 && (editando ? (
           <span className="frisa-niveles__editar">
             <input className="input frisa-input" type="number" min="0" step="1" inputMode="numeric" autoFocus value={valor} onFocus={(e) => e.target.select()}
               onChange={(e) => setValor(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') guardar(); if (e.key === 'Escape') setEditando(false) }} aria-label="Conteo de playera lisa" />
@@ -62,15 +80,16 @@ function FilaLisa({ f, puede, onListo }) {
           </span>
         ) : puede ? (
           <button type="button" className="frisa-niveles__stock" onClick={() => { setValor(String(Math.max(0, f.stock))); setError(null); setEditando(true) }}>{num(f.stock)}</button>
-        ) : <strong>{num(f.stock)}</strong>}
-        {f.stock < 0 && !editando && <div className="frisa__falta">faltó registrar</div>}
+        ) : <strong>{num(f.stock)}</strong>)}
+        {i === 0 && f.stock < 0 && !editando && <div className="frisa__falta">faltó registrar</div>}
       </td>
-      <td data-label="En proceso" className="num">{f.enProceso ? num(f.enProceso) : ''}</td>
-      <td data-label="Piden" className="num">{f.piden ? num(f.piden) : ''}</td>
-      <td data-label="A comprar" className="num"><strong>{f.aComprar ? num(f.aComprar) : ''}</strong></td>
-      <td data-label="La usan" className="frisa__sub">{f.productos.join(', ')}</td>
+      <td data-label="Para">{p ? <><strong>{p.reflejante || p.nombre}</strong>{p.reflejante && <div className="frisa__sub">{p.nombre}</div>}</> : <span className="frisa__sub">—</span>}</td>
+      <td data-label="En proceso" className="num">{p?.enProceso ? num(p.enProceso) : ''}</td>
+      <td data-label="Piden" className="num">{p?.piden ? num(p.piden) : ''}</td>
+      <td data-label="Total" className="num">{p && (p.enProceso + p.piden) ? <strong>{num(p.enProceso + p.piden)}</strong> : ''}</td>
+      <td data-label="A comprar" className="num">{i === 0 && f.aComprar ? <strong>{num(f.aComprar)}</strong> : ''}</td>
     </tr>
-  )
+  ))
 }
 
 // Pedido de playera lisa: TODAS las tallas, con lo que hay, lo que necesitan las órdenes
@@ -107,7 +126,13 @@ function PedidoLisas({ filas, proveedorSugerido, onListo }) {
               <tr key={f.lisa.id} className={f.aComprar > 0 ? 'frisa-niveles__fila--critico' : 'frisa-niveles__fila--ok'}>
                 <td data-label="Playera lisa"><strong>{f.lisa.talla}</strong> <NombreFrisa producto={{ ...lisaComoProducto(f.lisa), nombre: `${f.lisa.color} ${MANGA[f.lisa.manga]}` }} /></td>
                 <td data-label="Hay" className="num">{num(f.stock)}</td>
-                <td data-label="Necesitan" className="num">{f.piden ? num(f.piden) : '0'}</td>
+                <td data-label="Necesitan" className="num">{f.piden ? num(f.piden) : '0'}
+                  {(f.porProducto || []).filter((p) => p.piden).length > 1 && (
+                    <div className="frisa__sub">{f.porProducto.filter((p) => p.piden).map((p) => `${(p.reflejante || p.nombre).toLowerCase()} ${num(p.piden)}`).join(' · ')}</div>
+                  )}
+                  {(f.porProducto || []).filter((p) => p.piden).length === 1 && (
+                    <div className="frisa__sub">{(f.porProducto.find((p) => p.piden).reflejante || '').toLowerCase()}</div>
+                  )}</td>
                 <td data-label="Estado">{f.aComprar > 0
                   ? <span className="frisa-nivel frisa-nivel--rojo">PEDIR</span>
                   : <span className="frisa-nivel frisa-nivel--verde">OK</span>}</td>
