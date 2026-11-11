@@ -19,6 +19,9 @@ import { prendaYTalla } from '../../utils/frisaPlantas'
 const num = (n) => Number(n || 0).toLocaleString('es-MX')
 // V206 — precios de compra (pantalón, playera lisa).
 const peso = (n) => Number(n || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })
+// Los precios son más IVA (16%).
+const IVA = 0.16
+const conIva = (n) => Math.round((Number(n) || 0) * (1 + IVA) * 100) / 100
 const masDias = (d) => { const x = new Date(); x.setDate(x.getDate() + d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}` }
 const ESTADO_OT = {
   en_proceso: ['En proceso', 'neutro'], por_entrar: ['Por entrar (terminada)', 'naranja'],
@@ -303,7 +306,7 @@ function PropuestaCompra({ filas, puede, onListo }) {
     const { data, error: e } = await crearCompra({ proveedor, fechaEsperada: fecha, lineas: ls })
     setTrabajando(false)
     if (e) return setError(e.message)
-    onListo(`Se creó el pedido de compra #${data.folio} a ${data.proveedor} (${num(total)} pzas · ${peso(costo)}).`)
+    onListo(`Se creó el pedido de compra #${data.folio} a ${data.proveedor} (${num(total)} pzas · ${peso(conIva(costo))} con IVA).`)
   }
 
   const fila = (f) => {
@@ -343,7 +346,11 @@ function PropuestaCompra({ filas, puede, onListo }) {
             )}
             {lista.filter((f) => !(f.aPedir > 0)).map(fila)}
           </tbody>
-          <tfoot><tr><td colSpan={6}><strong>Total del pedido</strong>{sinPrecio ? <span className="frisa__falta"> · {sinPrecio} sin precio (no se suman)</span> : ''}</td><td className="num"><strong>{num(total)}</strong></td><td /><td className="num"><strong>{peso(costo)}</strong></td></tr></tfoot>
+          <tfoot>
+            <tr><td colSpan={6}>Subtotal (precios más IVA){sinPrecio ? <span className="frisa__falta"> · {sinPrecio} sin precio (no se suman)</span> : ''}</td><td className="num"><strong>{num(total)}</strong></td><td /><td className="num">{peso(costo)}</td></tr>
+            <tr><td colSpan={8}>IVA 16%</td><td className="num">{peso(conIva(costo) - costo)}</td></tr>
+            <tr><td colSpan={8}><strong>Total con IVA</strong></td><td className="num"><strong>{peso(conIva(costo))}</strong></td></tr>
+          </tfoot>
         </table>
       </div>
       {puede ? (
@@ -353,7 +360,7 @@ function PropuestaCompra({ filas, puede, onListo }) {
             <label><span className="field-label">Se espera (opcional)</span><input className="input" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} /></label>
           </div>
           {error && <p className="form-error">{error}</p>}
-          <button type="button" className="btn btn--primary" disabled={trabajando || total <= 0 || !proveedor.trim()} onClick={crear}>{trabajando ? 'Guardando…' : `Crear pedido de compra (${num(total)} pzas · ${peso(costo)})`}</button>
+          <button type="button" className="btn btn--primary" disabled={trabajando || total <= 0 || !proveedor.trim()} onClick={crear}>{trabajando ? 'Guardando…' : `Crear pedido de compra (${num(total)} pzas · ${peso(conIva(costo))} con IVA)`}</button>
         </>
       ) : <p className="frisa__sub">Los pedidos de compra los hacen los administradores.</p>}
     </div>
@@ -552,8 +559,9 @@ function ListaCompras({ titulo, compras, datos, puede, onRecibir, onListo, desta
               </span>
               <span className="frisa-oc__planta">{c.proveedor}</span>
               {verPrecios && ls.some((l) => l.precio != null) && (
-                <span className="frisa-compra__costo">Costo: <strong>{peso(ls.reduce((t, l) => t + l.cantidad * (Number(l.precio) || 0), 0))}</strong>
-                  {ls.some((l) => l.recibida != null) ? ` · llegó ${peso(ls.reduce((t, l) => t + (l.recibida ?? 0) * (Number(l.precio) || 0), 0))}` : ''}</span>
+                <span className="frisa-compra__costo">Costo: <strong>{peso(conIva(ls.reduce((t, l) => t + l.cantidad * (Number(l.precio) || 0), 0)))} con IVA</strong>
+                  {' '}({peso(ls.reduce((t, l) => t + l.cantidad * (Number(l.precio) || 0), 0))} + IVA)
+                  {ls.some((l) => l.recibida != null) ? ` · llegó ${peso(conIva(ls.reduce((t, l) => t + (l.recibida ?? 0) * (Number(l.precio) || 0), 0)))} con IVA` : ''}</span>
               )}
               {grupos.map((g) => (
                 <div key={g.prenda} className="frisa-compra__tallas">

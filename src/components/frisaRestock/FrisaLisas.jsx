@@ -5,6 +5,8 @@ import { NombreFrisa } from '../frisaNiveles/comunes'
 
 const num = (n) => Number(n || 0).toLocaleString('es-MX')
 const peso = (n) => Number(n || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })
+// Los precios son más IVA (16%).
+const conIva = (n) => Math.round((Number(n) || 0) * 1.16 * 100) / 100
 
 // V187 — Playera lisa (sin procesos): stock, comprometidas por las órdenes de
 // taller, libres, lo que piden las órdenes propuestas y cuánto comprar.
@@ -112,7 +114,7 @@ function PedidoLisas({ filas, proveedorSugerido, onListo }) {
     const { data, error: e } = await crearCompraLisas({ proveedor, fechaEsperada: fecha, lineas })
     setTrabajando(false)
     if (e) return setError(e.message)
-    onListo(`Se creó el pedido de playera lisa #${data.folio} a ${data.proveedor} (${num(total)} pzas · ${peso(costo)}).`)
+    onListo(`Se creó el pedido de playera lisa #${data.folio} a ${data.proveedor} (${num(total)} pzas · ${peso(conIva(costo))} con IVA).`)
   }
   return (
     <div className="card frisa-restock__propuesta">
@@ -148,7 +150,11 @@ function PedidoLisas({ filas, proveedorSugerido, onListo }) {
               </tr>
             ))}
           </tbody>
-          <tfoot><tr><td colSpan={4}><strong>Total del pedido</strong>{sinPrecio ? <span className="frisa__falta"> · {sinPrecio} talla{sinPrecio === 1 ? '' : 's'} sin precio (no se suman)</span> : ''}</td><td className="num"><strong>{num(total)}</strong></td><td /><td className="num"><strong>{peso(costo)}</strong></td></tr></tfoot>
+          <tfoot>
+            <tr><td colSpan={4}>Subtotal (precios más IVA){sinPrecio ? <span className="frisa__falta"> · {sinPrecio} talla{sinPrecio === 1 ? '' : 's'} sin precio (no se suman)</span> : ''}</td><td className="num"><strong>{num(total)}</strong></td><td /><td className="num">{peso(costo)}</td></tr>
+            <tr><td colSpan={6}>IVA 16%</td><td className="num">{peso(conIva(costo) - costo)}</td></tr>
+            <tr><td colSpan={6}><strong>Total con IVA</strong></td><td className="num"><strong>{peso(conIva(costo))}</strong></td></tr>
+          </tfoot>
         </table>
       </div>
       <div className="frisa-form__fila">
@@ -156,7 +162,7 @@ function PedidoLisas({ filas, proveedorSugerido, onListo }) {
         <label><span className="field-label">Se espera (opcional)</span><input className="input" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} /></label>
       </div>
       {error && <p className="form-error">{error}</p>}
-      <button type="button" className="btn btn--primary" disabled={trabajando || total <= 0 || !proveedor.trim()} onClick={crear}>{trabajando ? 'Guardando…' : `Crear pedido de playera lisa (${num(total)} pzas · ${peso(costo)})`}</button>
+      <button type="button" className="btn btn--primary" disabled={trabajando || total <= 0 || !proveedor.trim()} onClick={crear}>{trabajando ? 'Guardando…' : `Crear pedido de playera lisa (${num(total)} pzas · ${peso(conIva(costo))} con IVA)`}</button>
     </div>
   )
 }

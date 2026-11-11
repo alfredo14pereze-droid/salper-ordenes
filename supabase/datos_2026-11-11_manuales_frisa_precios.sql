@@ -1,7 +1,7 @@
 -- Manuales (página): precio e importe en los pedidos. Correr una sola vez.
 update public.manuales m
    set contenido = replace(contenido, $q$- **A pedir**: las de PEDIR ya traen la cantidad que falta. Las de OK vienen en 0. Puedes cambiar cualquiera.$q$, $q$- **A pedir**: las de PEDIR ya traen la cantidad que falta. Las de OK vienen en 0. Puedes cambiar cualquiera.
-- **Precio / Importe**: lo que cuesta cada pieza y cada renglón. Abajo sale el **total del pedido en pesos**, y también en el botón. En la lista de pedidos cada uno dice su costo.$q$),
+- **Precio / Importe**: lo que cuesta cada pieza y cada renglón. Los precios son **más IVA**: abajo sale el **subtotal, el IVA (16%) y el total del pedido en pesos**; el total con IVA también sale en el botón. En la lista de pedidos cada uno dice su costo.$q$),
        actualizado_en = now(), actualizado_por_nombre = 'Actualización (precios en pedidos)'
  where m.eliminado_en is null
    and contenido not like '%total del pedido en pesos%'
