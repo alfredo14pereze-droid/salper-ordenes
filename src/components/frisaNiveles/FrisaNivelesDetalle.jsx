@@ -10,7 +10,7 @@ const fechaHora = (d) => new Date(d).toLocaleString('es-MX', { dateStyle: 'mediu
 
 // Detalle de una clave: consumos, demanda, niveles, nota, captura con
 // comentario e historial de conteos.
-export default function FrisaNivelesDetalle({ fila, cfg, puedeCapturar, onGuardado, onClose }) {
+export default function FrisaNivelesDetalle({ fila, cfg, puedeCapturar, verDemanda = false, onGuardado, onClose }) {
   const [conteos, setConteos] = useState(null)
   const [errorHist, setErrorHist] = useState(null)
   const [stock, setStock] = useState(String(fila.stock_actual))
@@ -76,7 +76,7 @@ export default function FrisaNivelesDetalle({ fila, cfg, puedeCapturar, onGuarda
           <div><dt>Real (en bodega)</dt><dd>{num(fila.stock_actual)}</dd></div>
           <div><dt>Apartado</dt><dd>{num(apartado)}</dd></div>
           <div><dt>Disponible</dt><dd>{num((valido ? Number(stock) : fila.stock_actual) - apartado)}</dd></div>
-          <div><dt>Demanda diaria</dt><dd>{formatoDemanda(n.demanda)}</dd></div>
+          {verDemanda && <div><dt>Demanda diaria</dt><dd>{formatoDemanda(n.demanda)}</dd></div>}
           <div><dt>Clase ABC</dt><dd>{fila.clase_abc || '—'}</dd></div>
           <div><dt>Tendencia</dt><dd>{fila.tendencia || '—'}</dd></div>
           <div><dt>Mínimo ({cfg.dias_minimo} d)</dt><dd>{num(n.minimo)}</dd></div>

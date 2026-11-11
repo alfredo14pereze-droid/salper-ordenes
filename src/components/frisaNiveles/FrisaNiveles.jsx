@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { Loading, ErrorState } from '../common/States'
-import { canCapturarStockFrisa, canEditarSupuestosFrisa } from '../../utils/permissions'
+import { canCapturarStockFrisa, canEditarSupuestosFrisa, canVerDemandaFrisa } from '../../utils/permissions'
 import { fetchFrisaNiveles, capturarStock } from '../../services/frisaNivelesService'
 import { fetchSurtidosYLineas } from '../../services/frisaSurtidoService'
 import { conInventario } from '../../utils/frisaSurtido'
 import {
-  CONFIG_INICIAL, ESTADOS, calcularNiveles, conNiveles, filtrarNiveles, opcionesDe, ordenarPorEstado, resumenNiveles,
+  CONFIG_INICIAL, ESTADOS, calcularNiveles, conNiveles, filtrarNiveles, opcionesDe, ordenarPorEstado, resumenNiveles, formatoDemanda,
 } from '../../utils/frisaNiveles'
 import { EstadoBadge, fechaCorta, NombreFrisa, ColorFrisa } from './comunes'
 import { nombreFrisa } from '../../utils/frisaColores'
@@ -29,6 +29,7 @@ export default function FrisaNiveles() {
   const { role } = useAuth()
   const puedeCapturar = canCapturarStockFrisa(role)
   const puedeSupuestos = canEditarSupuestosFrisa(role)
+  const verDemanda = canVerDemandaFrisa(role)
 
   const [datos, setDatos] = useState(null)
   const [error, setError] = useState(null)
@@ -77,8 +78,8 @@ export default function FrisaNiveles() {
           <h1 className="page-title">Frisa · niveles de inventario</h1>
           <p className="page-subtitle">
             Inventario del almacén de la fábrica: real − apartado (surtido sin entregar) = disponible; los niveles se calculan con el
-            disponible. Demanda diaria = consumo 2026 ÷ {cfg.dias_periodo} días
-            {cfg.fecha_corte_consumo ? ` (${fechaCorta(cfg.fecha_inicio_consumo)} – ${fechaCorta(cfg.fecha_corte_consumo)})` : ''}.
+            disponible.{verDemanda && <> Demanda diaria = consumo 2026 ÷ {cfg.dias_periodo} días
+            {cfg.fecha_corte_consumo ? ` (${fechaCorta(cfg.fecha_inicio_consumo)} – ${fechaCorta(cfg.fecha_corte_consumo)})` : ''}.</>}
             Mínimo {cfg.dias_minimo} días · reorden {cfg.dias_reorden} · máximo {cfg.dias_maximo}.
           </p>
         </div>
@@ -166,6 +167,7 @@ export default function FrisaNiveles() {
                   <th className="num">Real</th>
                   <th className="num">Apartado</th>
                   <th className="num">Disponible</th>
+                  {verDemanda && <th className="num">Demanda diaria</th>}
                   <th className="num">Mínimo</th>
                   <th className="num">Reorden</th>
                   <th className="num">Máximo</th>
@@ -176,7 +178,7 @@ export default function FrisaNiveles() {
               </thead>
               <tbody>
                 {visibles.map((f) => (
-                  <FilaNivel key={f.id} fila={f} cfg={cfg} puedeCapturar={puedeCapturar} onGuardado={actualizarFila}
+                  <FilaNivel key={f.id} fila={f} cfg={cfg} puedeCapturar={puedeCapturar} verDemanda={verDemanda} onGuardado={actualizarFila}
                     onDetalle={() => setModal({ tipo: 'detalle', clave: f.clave })} />
                 ))}
                 {!visibles.length && (
@@ -189,7 +191,7 @@ export default function FrisaNiveles() {
       )}
 
       {detalle && (
-        <FrisaNivelesDetalle fila={detalle} cfg={cfg} puedeCapturar={puedeCapturar} onGuardado={actualizarFila} onClose={() => setModal(null)} />
+        <FrisaNivelesDetalle fila={detalle} cfg={cfg} puedeCapturar={puedeCapturar} verDemanda={verDemanda} onGuardado={actualizarFila} onClose={() => setModal(null)} />
       )}
       {modal?.tipo === 'supuestos' && (
         <FrisaNivelesSupuestos cfg={cfg} productos={datos.productos} onClose={() => setModal(null)}
@@ -205,7 +207,7 @@ export default function FrisaNiveles() {
   )
 }
 
-function FilaNivel({ fila, cfg, puedeCapturar, onGuardado, onDetalle }) {
+function FilaNivel({ fila, cfg, puedeCapturar, verDemanda, onGuardado, onDetalle }) {
   const [editando, setEditando] = useState(false)
   const [valor, setValor] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -256,6 +258,7 @@ function FilaNivel({ fila, cfg, puedeCapturar, onGuardado, onDetalle }) {
       </td>
       <td data-label="Apartado" className="num">{fila.apartado ? num(fila.apartado) : ''}</td>
       <td data-label="Disponible" className="num"><strong>{num(borrador == null ? fila.disponible : borrador - fila.apartado)}</strong></td>
+      {verDemanda && <td data-label="Demanda diaria" className="num">{n.sinMovimiento ? '' : formatoDemanda(n.demanda)}</td>}
       <td data-label="Mínimo" className="num">{num(n.minimo)}</td>
       <td data-label="Reorden" className="num">{num(n.reorden)}</td>
       <td data-label="Máximo" className="num">{num(n.maximo)}</td>

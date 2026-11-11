@@ -903,3 +903,8 @@ export function canAnotarTareasPropias(role) {
 export function canEditarManuales(role) {
   return tiene(role, 'man.editar', () => role === 'admin_general')
 }
+
+// 2026-11-11 — Demanda diaria en Niveles de Frisa: solo la ven los admins.
+export function canVerDemandaFrisa(role) {
+  return role === 'admin_general' || role === 'admin_fabrica' || role === 'admin_tienda'
+}
