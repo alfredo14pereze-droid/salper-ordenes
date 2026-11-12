@@ -8,6 +8,7 @@ import FrisaRestock from '../components/frisaRestock/FrisaRestock'
 import FrisaReportes from '../components/frisaReportes/FrisaReportes'
 import FrisaMicrosip from '../components/frisaMicrosip/FrisaMicrosip'
 import FrisaPlantas from '../components/frisaPlantas/FrisaPlantas'
+import FrisaMovimientos from '../components/frisaMovimientos/FrisaMovimientos'
 
 // V184 — sección "Frisa". 2026-11-06: se quitó la consignación de prueba de
 // V180/V181 (sus tablas siguen en la base, ya no se muestran).
@@ -44,6 +45,7 @@ function FrisaSeccion() {
       {parte === 'reportes' && <FrisaReportes />}
       {parte === 'microsip' && <FrisaMicrosip />}
       {parte === 'plantas' && <FrisaPlantas />}
+      {parte === 'movimientos' && <FrisaMovimientos />}
     </div>
   )
 }

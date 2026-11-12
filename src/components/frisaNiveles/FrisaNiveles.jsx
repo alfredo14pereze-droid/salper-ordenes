@@ -210,6 +210,7 @@ export default function FrisaNiveles() {
 function FilaNivel({ fila, cfg, puedeCapturar, verDemanda, onGuardado, onDetalle }) {
   const [editando, setEditando] = useState(false)
   const [valor, setValor] = useState('')
+  const [motivo, setMotivo] = useState('') // 2026-11-12: por qué se ajusta (sale en Movimientos)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState(null)
 
@@ -218,6 +219,7 @@ function FilaNivel({ fila, cfg, puedeCapturar, verDemanda, onGuardado, onDetalle
 
   function abrir() {
     setValor(String(fila.stock_actual))
+    setMotivo('')
     setError(null)
     setEditando(true)
   }
@@ -226,7 +228,7 @@ function FilaNivel({ fila, cfg, puedeCapturar, verDemanda, onGuardado, onDetalle
     if (!/^\d+$/.test(valor)) return setError('Escribe un número entero de 0 o más.')
     if (Number(valor) === fila.stock_actual) return setEditando(false)
     setGuardando(true)
-    const { data, error: e } = await capturarStock({ clave: fila.clave, stock: Number(valor) })
+    const { data, error: e } = await capturarStock({ clave: fila.clave, stock: Number(valor), comentario: motivo.trim() || null })
     setGuardando(false)
     if (e) return setError(e.message)
     setEditando(false)
@@ -246,6 +248,8 @@ function FilaNivel({ fila, cfg, puedeCapturar, verDemanda, onGuardado, onDetalle
               disabled={guardando} aria-label={`Stock de ${nombreFrisa(fila.nombre)}`} onFocus={(e) => e.target.select()}
               onChange={(e) => setValor(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') guardar(); if (e.key === 'Escape') setEditando(false) }} />
+            <input className="input frisa-niveles__motivo" value={motivo} placeholder="Motivo (ej. conteo físico)" disabled={guardando}
+              onChange={(e) => setMotivo(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') guardar(); if (e.key === 'Escape') setEditando(false) }} aria-label="Motivo del ajuste" />
             <button type="button" className="btn btn--primary btn--small" disabled={guardando} onClick={guardar} aria-label="Guardar">✓</button>
             <button type="button" className="btn btn--ghost btn--small" disabled={guardando} onClick={() => setEditando(false)} aria-label="Cancelar">×</button>
             {error && <span className="form-error frisa-niveles__error">{error}</span>}

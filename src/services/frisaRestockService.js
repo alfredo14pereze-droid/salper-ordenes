@@ -86,3 +86,15 @@ export async function fetchMovimientos(desde, hasta) {
   const error = m.error || l.error
   return error ? { data: null, error } : { data: { movs: m.data, lisaMovs: l.data }, error: null }
 }
+
+// 2026-11-12 — Pestaña Movimientos: movimientos + productos y lisas para el nombre.
+export async function fetchMovimientosVista(desde, hasta) {
+  if (!supabase) return sinCliente()
+  const [mv, pr, li] = await Promise.all([
+    fetchMovimientos(desde, hasta),
+    supabase.from('frisa_productos_niveles').select('id, clave, nombre, tipo, color, manga, reflejante').range(0, 4999),
+    supabase.from('frisa_lisas').select('*').range(0, 999),
+  ])
+  const error = mv.error || pr.error || li.error
+  return error ? { data: null, error } : { data: { ...mv.data, productos: pr.data, lisas: li.data }, error: null }
+}

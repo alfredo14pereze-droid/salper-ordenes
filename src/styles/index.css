@@ -5621,3 +5621,5 @@ h4 {
 .frisa-lisas__totales { margin: 8px 0 12px; }
 .frisa-aviso__prod { min-width: 260px; }
 .frisa-compra__costo { font-size: 13px; }
+.frisa-mov__buscar { flex: 1; min-width: 240px; }
+.frisa-niveles__motivo { width: 170px; font-size: 12px; }

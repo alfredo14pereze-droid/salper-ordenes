@@ -533,6 +533,7 @@ export const PESTANAS_FRISA = [
   ['surtido', 'Órdenes de surtido', 'fx.surtido', (r) => canViewFrisaSurtido(r)],
   // 2026-11-08: Urgente se quitó; su contenido ahora está en Órdenes de surtido.
   ['restock', 'Restock', 'fx.restock', (r) => canViewFrisaNiveles(r)],
+  ['movimientos', 'Movimientos', 'fx.niveles', (r) => canViewFrisaNiveles(r)], // 2026-11-12: quien ve Niveles ve Movimientos
   ['microsip', 'Revisión Microsip', 'fx.microsip', (r) => canViewFrisaNiveles(r)],
   ['plantas', 'Plantas Frisa', 'fx.plantas', (r) => canViewFrisaPlantas(r)],
   ['reportes', 'Reportes', 'fx.reportes', (r) => canViewFrisaNiveles(r)],

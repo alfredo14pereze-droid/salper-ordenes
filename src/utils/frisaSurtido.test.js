@@ -154,3 +154,16 @@ test('entrega parcial (V204): en una surtida solo sigue apartado lo que falta en
   assert.equal(inv[0].apartado, 2)
   assert.equal(inv[0].disponible, 8)
 })
+
+test('movimientos con motivo (2026-11-12)', async () => {
+  const { motivoBodega, motivoLisa, armarMovimientos } = await import('./frisaMovimientos.js')
+  assert.equal(motivoBodega({ tipo: 'entrega', referencia: 'OC 4500 · FRISA ACERIA' }).motivo, 'Entrega a Frisa')
+  assert.equal(motivoBodega({ tipo: 'ingreso_bodega', compra_id: 'c', referencia: 'Compra #1 · Lerdo' }).motivo, 'Compra recibida')
+  assert.equal(motivoBodega({ tipo: 'ingreso_bodega', order_id: 'o', referencia: 'Orden de taller FR-009' }).motivo, 'Orden de taller subida a bodega')
+  assert.equal(motivoBodega({ tipo: 'ajuste', referencia: 'Revisión Microsip del 06/11/2026' }).motivo, 'Ajuste por revisión Microsip')
+  assert.equal(motivoBodega({ tipo: 'ajuste', referencia: 'Conteo capturado en la app' }).motivo, 'Ajuste por conteo')
+  assert.equal(motivoLisa({ tipo: 'devolucion', referencia: 'Se borró la orden FR-013' }).detalle, 'Se borró la orden FR-013')
+  const r = armarMovimientos({ movs: [{ id: 1, creado_en: '2026-11-10', tipo: 'entrega', cantidad: -5, producto_id: 'x' }], lisaMovs: [{ id: 2, creado_en: '2026-11-11', tipo: 'compra', cantidad: 40, lisa_id: 'l' }],
+    productos: [{ id: 'x', nombre: 'PLAYERA M/C C/R ROJA FRISA T-M' }], lisas: [{ id: 'l', color: 'Azul marino', manga: 'MC', talla: 'M' }] })
+  assert.deepEqual(r.map((m) => [m.que, m.grupo, m.cantidad]), [['lisa', 'entrada', 40], ['bodega', 'entrega', -5]])
+})

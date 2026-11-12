@@ -66,6 +66,7 @@ Cada persona solo ve las pestañas que le tocan, para que no se confunda.
 | Niveles de inventario | Inventario de la bodega por clave, con mínimo, reorden y máximo. | Admins (vista) |
 | Órdenes de surtido | Subir OC, surtir, confirmar entregas. | Gis, Leo, admins |
 | Restock | Órdenes de taller, pedidos de compra, playera lisa, subir a bodega. | Gis, admins |
+| Movimientos | Cada entrada y salida del inventario con su motivo. | Admins (vista) |
 | Revisión Microsip | Comparar el inventario con Microsip y ajustar. | Admins (vista) |
 | Plantas Frisa | Lo que hay en cada planta (remitido − facturado). Contabilidad sube las facturas. | Contabilidad, admins (vista) |
 | Reportes | PDF o CSV en cualquier momento. | Gis, admins |
@@ -332,6 +333,12 @@ Para cada clave la página lleva tres números:
 ### El historial de cada clave
 
 En Niveles toca el **producto** para ver su detalle: real, apartado, disponible, niveles y el historial de conteos. El reporte **Movimientos del inventario** (Reportes) trae cada entrada y salida con fecha, quién y por qué.
+
+## Pestaña Movimientos
+
+En **Frisa → Movimientos** sale cada entrada y salida del inventario, la más reciente arriba, con su **motivo**: **Entrega a Frisa** (con la OC y la planta), **Orden de taller subida a bodega** (con su folio FR), **Compra recibida** (con el número de compra y proveedor), **Ajuste por conteo** (con el motivo que se escribió) o **Ajuste por revisión Microsip**. Arriba dice cuántas entradas y salidas hay. Se filtra por fechas, por tipo (salidas, entradas, ajustes) y se puede buscar un producto, una OC, una orden de taller o quién lo hizo. También tiene la **playera lisa** (compras, salidas al taller y regresos).
+
+> Cuando captures un conteo en Niveles, escribe el **motivo** (por ejemplo "conteo físico: 3 dañadas"): es lo que va a decir Movimientos.
 
 ## Las reglas para que cuadre
 
