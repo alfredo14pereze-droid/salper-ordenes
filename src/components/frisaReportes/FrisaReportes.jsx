@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { pdf } from '@react-pdf/renderer'
 import { Loading, ErrorState } from '../common/States'
+import { useAuth } from '../../contexts/AuthContext'
+import { canVerMovimientosFrisa } from '../../utils/permissions'
 import PdfPreviewModal from '../pdf/PdfPreviewModal'
 import FrisaReportePdf from '../pdf/FrisaReportePdf'
 import { fetchRestockTodo, fetchMovimientos } from '../../services/frisaRestockService'
@@ -16,6 +18,7 @@ const primeroDeMes = () => `${hoyISO().slice(0, 8)}01`
 
 // Reportes de Frisa para exportar en cualquier momento (CSV o PDF con vista previa).
 export default function FrisaReportes() {
+  const { role } = useAuth()
   const [datos, setDatos] = useState(null)
   const [error, setError] = useState(null)
   const [cargando, setCargando] = useState(true)
@@ -118,7 +121,7 @@ export default function FrisaReportes() {
       </div>
 
       <div className="frisa-reportes__lista">
-        {REPORTES.map(([k, titulo, desc, usaFechas]) => (
+        {REPORTES.filter(([k]) => k !== 'movimientos' || canVerMovimientosFrisa(role)).map(([k, titulo, desc, usaFechas]) => (
           <div key={k} className="card frisa-reportes__item">
             <div>
               <h3 className="section-title section-title--small">{titulo}</h3>

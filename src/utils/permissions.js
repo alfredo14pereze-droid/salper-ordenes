@@ -533,7 +533,7 @@ export const PESTANAS_FRISA = [
   ['surtido', 'Órdenes de surtido', 'fx.surtido', (r) => canViewFrisaSurtido(r)],
   // 2026-11-08: Urgente se quitó; su contenido ahora está en Órdenes de surtido.
   ['restock', 'Restock', 'fx.restock', (r) => canViewFrisaNiveles(r)],
-  ['movimientos', 'Movimientos', 'fx.niveles', (r) => canViewFrisaNiveles(r)], // 2026-11-12: quien ve Niveles ve Movimientos
+  ['movimientos', 'Movimientos', null, (r) => canVerMovimientosFrisa(r)], // 2026-11-12: solo Alfredo (admin general)
   ['microsip', 'Revisión Microsip', 'fx.microsip', (r) => canViewFrisaNiveles(r)],
   ['plantas', 'Plantas Frisa', 'fx.plantas', (r) => canViewFrisaPlantas(r)],
   ['reportes', 'Reportes', 'fx.reportes', (r) => canViewFrisaNiveles(r)],
@@ -544,7 +544,7 @@ export function canVerTodoFrisa(role) {
 }
 
 export function pestanasFrisa(role) {
-  return PESTANAS_FRISA.filter(([, , clave, fallback]) => tiene(role, clave, () => fallback(role))).map(([k, label]) => [k, label])
+  return PESTANAS_FRISA.filter(([, , clave, fallback]) => (clave ? tiene(role, clave, () => fallback(role)) : fallback(role))).map(([k, label]) => [k, label])
 }
 
 // La sección "Frisa" se ve si se puede ver cualquiera de sus partes.
@@ -908,4 +908,9 @@ export function canEditarManuales(role) {
 // 2026-11-11 — Demanda diaria en Niveles de Frisa: solo la ven los admins.
 export function canVerDemandaFrisa(role) {
   return role === 'admin_general' || role === 'admin_fabrica' || role === 'admin_tienda'
+}
+
+// 2026-11-12 — Movimientos de Frisa (pestaña y reporte): solo el administrador general.
+export function canVerMovimientosFrisa(role) {
+  return role === 'admin_general'
 }
