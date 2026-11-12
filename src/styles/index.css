@@ -5365,7 +5365,7 @@ h4 {
 .frisa-niveles__fila--critico td:first-child { box-shadow: inset 4px 0 0 var(--color-danger); }
 .frisa-niveles__fila--pedir td:first-child { box-shadow: inset 4px 0 0 var(--color-orange); }
 .frisa-niveles__fila--ok td:first-child { box-shadow: inset 4px 0 0 var(--color-good); }
-.frisa-niveles__fila--quieta { opacity: 0.55; }
+.frisa-niveles__fila--quieta { opacity: 0.85; }
 .frisa-niveles__clave { background: none; border: none; padding: 0; font: inherit; font-weight: 700; color: inherit; text-decoration: underline; text-decoration-color: var(--color-border); text-underline-offset: 3px; cursor: pointer; white-space: nowrap; text-align: left; }
 .frisa-niveles__stock { min-width: 64px; padding: 5px 10px; border: 1px dashed var(--color-text-muted); border-radius: 8px; background: var(--color-surface); font: inherit; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; text-align: right; }
 .frisa-niveles__stock:hover { border-style: solid; border-color: var(--color-black); }

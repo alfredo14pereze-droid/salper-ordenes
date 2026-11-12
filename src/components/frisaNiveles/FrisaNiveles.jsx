@@ -34,7 +34,7 @@ export default function FrisaNiveles() {
   const [datos, setDatos] = useState(null)
   const [error, setError] = useState(null)
   const [cargando, setCargando] = useState(true)
-  const [filtros, setFiltros] = useState({ estado: 'todos', tipo: '', color: '', texto: '', mostrarSinMovimiento: false })
+  const [filtros, setFiltros] = useState({ estado: 'todos', tipo: '', color: '', texto: '', mostrarSinMovimiento: true }) // 2026-11-12: siempre se ven (con su etiqueta)
   const [modal, setModal] = useState(null) // { tipo: 'detalle'|'supuestos'|'importar'|'exportar', clave? }
 
   const recargar = useCallback(async () => {
@@ -147,10 +147,6 @@ export default function FrisaNiveles() {
                 <option value="">Todos los colores</option>
                 {colores.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-              <label className="frisa-niveles__toggle">
-                <input type="checkbox" checked={filtros.mostrarSinMovimiento} onChange={(e) => set('mostrarSinMovimiento', e.target.checked)} />
-                Mostrar sin movimiento ({sinMovimiento})
-              </label>
             </div>
           </div>
 
@@ -266,7 +262,9 @@ function FilaNivel({ fila, cfg, puedeCapturar, verDemanda, onGuardado, onDetalle
       <td data-label="Mínimo" className="num">{num(n.minimo)}</td>
       <td data-label="Reorden" className="num">{num(n.reorden)}</td>
       <td data-label="Máximo" className="num">{num(n.maximo)}</td>
-      <td data-label="Estado"><EstadoBadge estado={n.estado} /></td>
+      <td data-label="Estado">{fila.niveles.sinMovimiento
+        ? <span className="frisa-nivel frisa-nivel--neutro" title="Sin ventas en 2026: no tiene mínimo, reorden ni máximo">SIN MOVIMIENTO</span>
+        : <EstadoBadge estado={n.estado} />}</td>
       <td data-label="A PEDIR" className="num"><strong>{n.aPedir == null ? '' : num(n.aPedir)}</strong></td>
       <td data-label="Tendencia">{fila.tendencia || ''}</td>
     </tr>
