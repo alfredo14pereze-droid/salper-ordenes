@@ -66,3 +66,61 @@ export function textoDestino(tarea, { userId, roleLabels = {} } = {}) {
   if (tarea.destino_id === userId) return 'Para ti'
   return `Para ${tarea.destino_nombre || 'una persona'}`
 }
+
+// ---------------------------------------------------------------------------
+// Avance por persona (filtro "Persona" en Asignadas). Solo pantalla; la base
+// no cambia. persona = fila de ta_destinatarios ({ id, nombre, rol, en_todos })
+// más alta_en (profiles.created_at) cuando se puede leer.
+
+// ¿Le aplica la tarea a la persona? Directa, por su rol o a todo el personal
+// (en "todo el personal" no cuentan los admins y, si se sabe cuándo se dio de
+// alta, solo las tareas creadas después de su alta).
+export function leAplica(tarea, persona) {
+  if (!persona) return false
+  if (tarea.destino_tipo === 'persona') return tarea.destino_id === persona.id
+  if (tarea.destino_tipo === 'rol') return tarea.destino_rol === persona.rol
+  if (tarea.destino_tipo === 'todos') {
+    if (persona.en_todos === false) return false
+    if (!persona.alta_en || !tarea.creado_en) return true
+    return Date.parse(persona.alta_en) <= Date.parse(tarea.creado_en)
+  }
+  return false
+}
+
+// 'hecha' | 'pendiente' | null (no se muestra en su filtro).
+//   Hecha: la persona la marcó.
+//   Pendiente: le aplica y no la ha marcado; en "basta con uno", además nadie la ha marcado.
+//   "Basta con uno" que hizo otra persona: null.
+export function estadoDePersona(tarea, completadas, persona) {
+  if (!persona) return null
+  if (completadas.some((c) => c.usuario_id === persona.id)) return 'hecha'
+  if (!leAplica(tarea, persona)) return null
+  if (tarea.modo === 'uno' && completadas.length > 0) return null
+  return 'pendiente'
+}
+
+// { hechas, pendientes, vencidas } de una persona. porTarea: Map tarea_id -> completadas.
+export function resumenDePersona(tareas, porTarea, persona, hoy = hoyLocal()) {
+  const r = { hechas: 0, pendientes: 0, vencidas: 0 }
+  for (const t of tareas) {
+    const e = estadoDePersona(t, porTarea.get(t.id) || [], persona)
+    if (e === 'hecha') r.hechas++
+    else if (e === 'pendiente') {
+      r.pendientes++
+      if (vencida(t, false, hoy)) r.vencidas++
+    }
+  }
+  return r
+}
+
+// Una fila por persona, las de más vencidas primero (luego más pendientes, luego nombre).
+export function resumenPorPersona(tareas, porTarea, personas, hoy = hoyLocal()) {
+  return personas
+    .map((p) => ({ persona: p, ...resumenDePersona(tareas, porTarea, p, hoy) }))
+    .sort(
+      (a, b) =>
+        b.vencidas - a.vencidas ||
+        b.pendientes - a.pendientes ||
+        (a.persona.nombre || '').localeCompare(b.persona.nombre || '', 'es'),
+    )
+}

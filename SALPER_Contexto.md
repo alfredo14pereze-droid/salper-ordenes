@@ -8084,3 +8084,29 @@ A pedido de Alfredo (con una imagen de referencia de un CRM tipo tablero). Decis
 - Manual: `supabase/datos_2026-11-13_manuales_crm.sql` crea la sección "CRM" en Manuales con 8 manuales (qué es,
   alta, seguimientos, registrar contacto, estatus/tablero, ficha, cifras, importar). Probado en PGlite con V196:
   no duplica si se corre dos veces. PENDIENTE: que Alfredo lo corra y subir el código a `main`. Sin PDF del CRM.
+
+### Tareas: filtro por persona en "Asignadas" (2026-11-13, sin SQL)
+
+Pedido de Alfredo: ver qué ha hecho y qué le falta a cada quien. Solo pantalla (`TareasPage.jsx`, cálculos en
+`utils/tareas.js`: `leAplica`, `estadoDePersona`, `resumenDePersona`, `resumenPorPersona`, con pruebas).
+- **Dónde**: pestaña Asignadas, arriba de Pendientes/Hechas, dropdown "Persona" (Todas las personas + las de
+  `ta_destinatarios`, por nombre). Solo admin_general, admin_tienda y admin_fabrica **y** con `ta.asignar` (quien
+  no lo tiene no ve Asignadas ni todas las tareas; hoy admin_fabrica no lo tiene: dárselo en Roles y permisos).
+  Se guarda en la URL: `#/tareas?persona=<id>` (abre directo en Asignadas).
+- **Regla por persona X** (le aplica = directa a X, a un rol de X, o a Todo el personal si X cuenta en "todos"
+  —no los admins— y su alta en `profiles.created_at` es anterior a la tarea):
+  - **Hecha por X**: X la marcó (aunque ya no le aplique).
+  - **Pendiente de X**: "Cada quien" → le aplica y X no la marcó. "Basta con uno" → le aplica y **nadie** la marcó.
+  - "Basta con uno" que hizo otra persona: no sale en el filtro de X (ni hecha ni pendiente).
+  - Vencida = pendiente de X con fecha límite < hoy.
+- **Resumen**: con persona, tarjeta Hechas · Pendientes · Vencidas (rojo). Con "Todas", tabla por persona con
+  esos 3 números, más vencidas primero; clic en la fila = elegirla. Los chips cuentan según la persona.
+- **Tarjeta** con persona, en "cada quien" de grupo: si X la hizo o no, "N de M ya la hicieron" y quién falta
+  (con la misma regla del alta).
+- **Límite**: la RLS de `profiles` solo deja leer todos los perfiles a admin_general; para admin_tienda no se sabe
+  la fecha de alta y en "Todo el personal" se toma que todos ya existían. Arreglarlo requeriría SQL
+  (`created_at` en `ta_destinatarios`). "Mis tareas" no usa la regla del alta (la base no la tiene).
+- Probado en el ejemplo local `salper-tareas-persona-harness` (puerto 5186, `.claude/harness-tareas/`, sin commit)
+  con 5 personas y 6 tareas (directa pendiente vencida, directa hecha, rol cada quien, rol basta con uno, todo
+  el personal × los 2 modos, una persona dada de alta después): los conteos por persona, la tabla, la URL al
+  recargar, ventas sin filtro y celular sin scroll horizontal.

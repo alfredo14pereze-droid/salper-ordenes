@@ -63,3 +63,12 @@ export async function quitarTarea(id) {
   if (cfgError) return { data: null, error: cfgError }
   return supabase.rpc('ta_quitar_tarea', { p_id: id }).single()
 }
+
+// Fecha de alta (profiles.created_at) de las personas, para el filtro por
+// persona ("todo el personal" solo cuenta tareas creadas después del alta).
+// La RLS de profiles solo deja leer a todos a admin_general; para los demás
+// regresa lo que pueda (las que falten se toman como "ya existía").
+export async function fetchAltasPersonas(ids) {
+  if (!supabase || !ids.length) return { data: [], error: null }
+  return supabase.from('profiles').select('id, created_at').in('id', ids)
+}

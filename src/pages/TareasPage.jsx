@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import RequireRole from '../components/common/RequireRole'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
 import { canViewTareas, canCompletarTareas, canAsignarTareas, canAnotarTareasPropias, ROLE_LABELS } from '../utils/permissions'
-import { fetchTareas, fetchDestinatariosTareas, crearTarea, crearTareaPropia, marcarTarea, quitarTarea } from '../services/tareasService'
-import { estadoGeneral, estadoParaMi, hoyLocal, meToca, ordenarTareas, textoDestino, vencida } from '../utils/tareas'
+import { fetchTareas, fetchDestinatariosTareas, fetchAltasPersonas, crearTarea, crearTareaPropia, marcarTarea, quitarTarea } from '../services/tareasService'
+import { estadoDePersona, estadoGeneral, leAplica, estadoParaMi, hoyLocal, meToca, ordenarTareas, resumenDePersona, resumenPorPersona, textoDestino, vencida } from '../utils/tareas'
 import { formatDate, formatDateTime } from '../utils/dates'
 
 // Nombres cortos de los roles que reciben tareas ("Tienda", no "Tienda (básico)").
 const ROL_CORTO = { tienda: 'Tienda', ventas: 'Ventas', contabilidad: 'Contabilidad' }
 const nombreRol = (r) => ROL_CORTO[r] || ROLE_LABELS[r] || r
 const ROLES_TAREAS = { ...ROLE_LABELS, ...ROL_CORTO }
+// Filtro "Persona" en Asignadas: solo administradores (y solo quien ya ve Asignadas, o sea con ta.asignar).
+const ROLES_FILTRO_PERSONA = ['admin_general', 'admin_tienda', 'admin_fabrica']
 
 // V164 — Tareas para el personal. Los administrativos asignan (a todos, a un
 // rol o a una persona; en grupo, "cada quien" o "basta con uno"; fecha límite
@@ -30,6 +33,11 @@ function TareasContent() {
   const puedeCompletar = canCompletarTareas(role)
   const puedeAnotar = canAnotarTareasPropias(role)
   const [anotando, setAnotando] = useState(false)
+  const puedeFiltrar = puedeAsignar && ROLES_FILTRO_PERSONA.includes(role)
+  // Persona elegida en la URL (#/tareas?persona=<id>) para compartir o recargar.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const personaId = puedeFiltrar ? searchParams.get('persona') || '' : ''
+  const [altas, setAltas] = useState({})
 
   const [datos, setDatos] = useState({ tareas: [], completadas: [] })
   const [destinatarios, setDestinatarios] = useState([])
@@ -55,6 +63,23 @@ function TareasContent() {
     if (!puedeAsignar) return
     fetchDestinatariosTareas().then(({ data }) => setDestinatarios(data || []))
   }, [puedeAsignar])
+
+  useEffect(() => {
+    if (!puedeFiltrar || !destinatarios.length) return
+    fetchAltasPersonas(destinatarios.map((d) => d.id)).then(({ data }) =>
+      setAltas(Object.fromEntries((data || []).map((p) => [p.id, p.created_at]))),
+    )
+  }, [puedeFiltrar, destinatarios])
+
+  // Personas para el filtro (ya vienen ordenadas por nombre) con su fecha de alta.
+  const personas = useMemo(() => destinatarios.map((d) => ({ ...d, alta_en: altas[d.id] || null })), [destinatarios, altas])
+  const persona = personaId ? personas.find((p) => p.id === personaId) || null : null
+  function elegirPersona(id) {
+    const sp = new URLSearchParams(searchParams)
+    if (id) sp.set('persona', id)
+    else sp.delete('persona')
+    setSearchParams(sp, { replace: true })
+  }
 
   const porTarea = useMemo(() => {
     const m = new Map()
@@ -91,9 +116,18 @@ function TareasContent() {
   // las que la base ya le deja leer, que son las suyas).
   const mias = filas.filter((f) => !puedeCompletar || f.toca).map((f) => ({ ...f, hecha: f.hechaMia }))
   const misPendientes = mias.filter((f) => !f.hecha).length
-  const seccion = seccionElegida ?? (misPendientes > 0 ? 'mis' : 'asignadas')
+  const seccion = seccionElegida ?? (personaId || misPendientes === 0 ? 'asignadas' : 'mis')
   const enAsignadas = puedeAsignar && seccion === 'asignadas'
-  const asignadas = filas.map((f) => ({ ...f, hecha: f.hechaGeneral }))
+  // Con persona elegida: solo las que le cuentan (hechas por ella o pendientes suyas; ver estadoDePersona).
+  const asignadas = persona
+    ? filas
+        .map((f) => ({ ...f, deX: estadoDePersona(f.t, f.comps, persona) }))
+        .filter((f) => f.deX)
+        .map((f) => ({ ...f, hecha: f.deX === 'hecha' }))
+    : filas.map((f) => ({ ...f, hecha: f.hechaGeneral }))
+  const verResumen = enAsignadas && puedeFiltrar
+  const resumenX = verResumen && persona ? resumenDePersona(datos.tareas, porTarea, persona, hoy) : null
+  const tablaPersonas = verResumen && !persona ? resumenPorPersona(datos.tareas, porTarea, personas, hoy) : null
   const base = enAsignadas ? asignadas : mias
   const ordenar = (l) => ordenarTareas(l.map((f) => f.t), hoy).map((t) => l.find((f) => f.t.id === t.id))
   const pendientes = ordenar(base.filter((f) => !f.hecha))
@@ -164,6 +198,56 @@ function TareasContent() {
           </div>
         ))}
 
+      {verResumen && (
+        <div className="tareas-persona">
+          <label className="tareas-persona__filtro">
+            <span className="field-label">Persona</span>
+            <select className="input" value={persona ? persona.id : ''} onChange={(e) => elegirPersona(e.target.value)}>
+              <option value="">Todas las personas</option>
+              {personas.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre || 'Sin nombre'}
+                </option>
+              ))}
+            </select>
+          </label>
+          {personaId && !persona && destinatarios.length > 0 && (
+            <p className="form-error">Esa persona ya no recibe tareas. <button type="button" className="btn btn--ghost btn--small" onClick={() => elegirPersona('')}>Ver todas</button></p>
+          )}
+          {resumenX && (
+            <div className="tareas-persona__resumen" aria-label={`Resumen de ${persona.nombre}`}>
+              <div><strong>{resumenX.hechas}</strong> Hechas</div>
+              <div><strong>{resumenX.pendientes}</strong> Pendientes</div>
+              <div className={resumenX.vencidas ? 'tareas-persona__vencidas' : ''}><strong>{resumenX.vencidas}</strong> Vencidas</div>
+            </div>
+          )}
+          {tablaPersonas && tablaPersonas.length > 0 && (
+            <div className="table-scroll">
+              <table className="stats-table tareas-persona__tabla">
+                <thead>
+                  <tr>
+                    <th>Persona</th>
+                    <th>Hechas</th>
+                    <th>Pendientes</th>
+                    <th>Vencidas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tablaPersonas.map((r) => (
+                    <tr key={r.persona.id} onClick={() => elegirPersona(r.persona.id)} tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), elegirPersona(r.persona.id))} title={`Ver las tareas de ${r.persona.nombre || 'esta persona'}`}>
+                      <td>{r.persona.nombre || 'Sin nombre'}</td>
+                      <td>{r.hechas}</td>
+                      <td>{r.pendientes}</td>
+                      <td className={r.vencidas ? 'tareas-persona__vencidas' : ''}>{r.vencidas}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="notas-filtros">
         <div className="notas-filtros__grupo">
           <button type="button" className={'chip' + (vista === 'pendientes' ? ' chip--active' : '')} onClick={() => setVista('pendientes')}>
@@ -181,7 +265,9 @@ function TareasContent() {
         <EmptyState>
           {vista === 'pendientes'
             ? enAsignadas
-              ? 'No hay tareas asignadas pendientes.'
+              ? persona
+                ? `${persona.nombre || 'Esta persona'} no tiene tareas pendientes.`
+                : 'No hay tareas asignadas pendientes.'
               : 'No tienes tareas pendientes. 🎉'
             : 'Todavía no hay tareas hechas.'}
         </EmptyState>
@@ -194,6 +280,8 @@ function TareasContent() {
               hoy={hoy}
               userId={userId}
               puedeAsignar={enAsignadas}
+              persona={enAsignadas ? persona : null}
+              personas={personas}
               ocupada={ocupada === f.t.id}
               onMarcar={(hecha) => accion(f.t.id, () => marcarTarea(f.t.id, hecha))}
               onQuitar={() => quitar(f.t)}
@@ -205,7 +293,7 @@ function TareasContent() {
   )
 }
 
-function TareaCard({ fila, hoy, userId, puedeAsignar, ocupada, onMarcar, onQuitar }) {
+function TareaCard({ fila, hoy, userId, puedeAsignar, persona, personas, ocupada, onMarcar, onQuitar }) {
   const { t, general, mio, toca, hecha } = fila
   const venc = vencida(t, hecha, hoy)
   return (
@@ -256,7 +344,7 @@ function TareaCard({ fila, hoy, userId, puedeAsignar, ocupada, onMarcar, onQuita
         </div>
       )}
 
-      {puedeAsignar && general && <Avance tarea={t} general={general} />}
+      {puedeAsignar && general && <Avance tarea={t} general={general} persona={persona} personas={personas} />}
       {(puedeAsignar || (t.propia && t.creado_por === userId)) && (
         <div>
           <button type="button" className="btn btn--ghost btn--small" disabled={ocupada} onClick={onQuitar}>
@@ -269,8 +357,32 @@ function TareaCard({ fila, hoy, userId, puedeAsignar, ocupada, onMarcar, onQuita
 }
 
 // Para quien asigna: quién ya la hizo y quién falta.
-function Avance({ tarea, general }) {
+function Avance({ tarea, general, persona, personas = [] }) {
   const nombres = (l) => l.map((x) => x.nombre || 'Sin nombre').join(', ')
+  // Con persona elegida, en "cada quien" para varios: cómo va ella y cuántos ya.
+  if (persona && tarea.modo !== 'uno' && tarea.destino_tipo !== 'persona') {
+    const suya = general.hechos.find((c) => c.usuario_id === persona.id)
+    // Misma regla que el filtro: en "todo el personal" no cuenta quien entró después.
+    const ya = new Set(general.hechos.map((c) => c.usuario_id))
+    const aplican = personas.filter((p) => leAplica(tarea, p) || ya.has(p.id))
+    const hicieron = aplican.filter((p) => ya.has(p.id))
+    const faltan = aplican.filter((p) => !ya.has(p.id))
+    return (
+      <div className="nota-leido">
+        <div className={suya ? 'nota-leido--ok' : ''}>
+          {suya ? `✓ ${persona.nombre || 'La persona'} la hizo · ${formatDateTime(suya.completada_en)}` : `${persona.nombre || 'La persona'} aún no la hace`}
+        </div>
+        {aplican.length > 1 && (
+          <>
+            <strong>
+              {hicieron.length} de {aplican.length} ya la hicieron
+            </strong>
+            {faltan.length > 0 && <div>Faltan: {nombres(faltan)}</div>}
+          </>
+        )}
+      </div>
+    )
+  }
   if (tarea.modo === 'uno') {
     const c = general.hechos[0]
     return (

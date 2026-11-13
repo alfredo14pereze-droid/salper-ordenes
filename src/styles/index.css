@@ -5694,3 +5694,13 @@ h4 {
   font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; line-height: 1;
   vertical-align: middle;
 }
+
+/* Filtro "Persona" en Tareas → Asignadas */
+.tareas-persona { display: flex; flex-direction: column; gap: 10px; margin: 0 0 12px; }
+.tareas-persona__filtro { display: flex; flex-direction: column; gap: 4px; max-width: 320px; }
+.tareas-persona__resumen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface, #fff); text-align: center; }
+.tareas-persona__resumen strong { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+.tareas-persona__vencidas, .tareas-persona__vencidas strong { color: var(--color-danger); font-weight: 700; }
+.tareas-persona__tabla tbody tr { cursor: pointer; }
+.tareas-persona__tabla tbody tr:hover, .tareas-persona__tabla tbody tr:focus { background: var(--color-surface-alt, rgba(0,0,0,0.04)); outline: none; }
+.tareas-persona__tabla td:not(:first-child), .tareas-persona__tabla th:not(:first-child) { text-align: right; }

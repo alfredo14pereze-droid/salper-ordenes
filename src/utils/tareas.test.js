@@ -1,7 +1,7 @@
 // node --test src/utils/tareas.test.js
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { destinatariosDe, estadoGeneral, estadoParaMi, hoyLocal, meToca, ordenarTareas, textoDestino, vencida } from './tareas.js'
+import { destinatariosDe, estadoDePersona, estadoGeneral, leAplica, resumenDePersona, resumenPorPersona, estadoParaMi, hoyLocal, meToca, ordenarTareas, textoDestino, vencida } from './tareas.js'
 
 const gente = [
   { id: 'g', nombre: 'Giss', rol: 'tienda' },
@@ -81,4 +81,63 @@ test('textoDestino', () => {
   assert.equal(textoDestino(tiendaUno, { roleLabels: { tienda: 'Tienda' } }), 'Para Tienda')
   assert.equal(textoDestino(aLaura, { userId: 'l' }), 'Para ti')
   assert.equal(textoDestino(aLaura, { userId: 'g' }), 'Para Laura')
+})
+
+// ---------------------------------------------------------------------------
+// Filtro por persona
+
+const P = {
+  giss: { id: 'g', nombre: 'Giss', rol: 'ventas', alta_en: '2026-01-01T00:00:00Z' },
+  jose: { id: 'j', nombre: 'Jose', rol: 'tienda', alta_en: '2026-01-01T00:00:00Z' },
+  nuevo: { id: 'n', nombre: 'Nuevo', rol: 'tienda', alta_en: '2026-11-10T00:00:00Z' },
+  admin: { id: 'a', nombre: 'Armando', rol: 'admin_tienda', en_todos: false },
+}
+const T = (id, extra) => ({ id, creado_en: '2026-11-01T00:00:00Z', modo: 'cada_quien', ...extra })
+const directa = T('d', { destino_tipo: 'persona', destino_id: 'g', destino_nombre: 'Giss' })
+const rolCada = T('rc', { destino_tipo: 'rol', destino_rol: 'tienda' })
+const rolUno = T('ru', { destino_tipo: 'rol', destino_rol: 'tienda', modo: 'uno' })
+const todosCada = T('tc', { destino_tipo: 'todos', fecha_limite: '2026-11-05' })
+const todosUno = T('tu', { destino_tipo: 'todos', modo: 'uno' })
+const comp = (tarea_id, usuario_id) => ({ tarea_id, usuario_id, nombre: usuario_id })
+
+test('leAplica: directa, por rol, todo el personal (sin admins y solo si ya existía)', () => {
+  assert.equal(leAplica(directa, P.giss), true)
+  assert.equal(leAplica(directa, P.jose), false)
+  assert.equal(leAplica(rolCada, P.jose), true)
+  assert.equal(leAplica(rolCada, P.giss), false)
+  assert.equal(leAplica(todosCada, P.giss), true)
+  assert.equal(leAplica(todosCada, P.admin), false)
+  assert.equal(leAplica(todosCada, P.nuevo), false) // se dio de alta después
+  assert.equal(leAplica(rolCada, P.nuevo), true) // por rol sí le aplica
+  assert.equal(leAplica(todosCada, { id: 'x', rol: 'ventas' }), true) // sin fecha de alta: cuenta
+})
+
+test('estadoDePersona: cada quien vs basta con uno', () => {
+  assert.equal(estadoDePersona(directa, [], P.giss), 'pendiente')
+  assert.equal(estadoDePersona(directa, [comp('d', 'g')], P.giss), 'hecha')
+  assert.equal(estadoDePersona(directa, [], P.jose), null)
+  // Cada quien: que otro la haga no la quita de pendientes.
+  assert.equal(estadoDePersona(rolCada, [comp('rc', 'n')], P.jose), 'pendiente')
+  assert.equal(estadoDePersona(rolCada, [comp('rc', 'j')], P.jose), 'hecha')
+  // Basta con uno: si nadie, pendiente; si otro, no se muestra; si él, hecha.
+  assert.equal(estadoDePersona(rolUno, [], P.jose), 'pendiente')
+  assert.equal(estadoDePersona(rolUno, [comp('ru', 'n')], P.jose), null)
+  assert.equal(estadoDePersona(rolUno, [comp('ru', 'j')], P.jose), 'hecha')
+  assert.equal(estadoDePersona(todosUno, [comp('tu', 'g')], P.jose), null)
+  assert.equal(estadoDePersona(todosUno, [comp('tu', 'g')], P.giss), 'hecha')
+  assert.equal(estadoDePersona(todosCada, [], P.admin), null)
+})
+
+test('resumenDePersona y resumenPorPersona (vencidas primero)', () => {
+  const tareas = [directa, rolCada, rolUno, todosCada, todosUno]
+  const porTarea = new Map([
+    ['d', [comp('d', 'g')]],
+    ['ru', [comp('ru', 'n')]],
+    ['tu', [comp('tu', 'g')]],
+  ])
+  const hoy = '2026-11-13'
+  assert.deepEqual(resumenDePersona(tareas, porTarea, P.giss, hoy), { hechas: 2, pendientes: 1, vencidas: 1 })
+  assert.deepEqual(resumenDePersona(tareas, porTarea, P.jose, hoy), { hechas: 0, pendientes: 2, vencidas: 1 })
+  assert.deepEqual(resumenDePersona(tareas, porTarea, P.nuevo, hoy), { hechas: 1, pendientes: 1, vencidas: 0 })
+  assert.deepEqual(resumenPorPersona(tareas, porTarea, [P.nuevo, P.giss, P.jose], hoy).map((r) => r.persona.id), ['j', 'g', 'n'])
 })
