@@ -5685,3 +5685,12 @@ h4 {
 .frisa-compra__costo { font-size: 13px; }
 .frisa-mov__buscar { flex: 1; min-width: 240px; }
 .frisa-niveles__motivo { width: 170px; font-size: 12px; }
+
+/* CRM Parte 2 — número de seguimientos vencidos + de hoy junto a "CRM" en el menú. */
+.app-nav__contador {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px; margin-left: 8px;
+  border-radius: 999px; background: var(--color-danger, #c0392b); color: #fff;
+  font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; line-height: 1;
+  vertical-align: middle;
+}

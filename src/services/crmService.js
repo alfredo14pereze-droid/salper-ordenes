@@ -29,7 +29,7 @@ export async function fetchCrmLista() {
     todas(() => supabase.from('crm_contactos').select('id, empresa_id, nombre, puesto, telefono, correo, es_principal')),
     todas(() => supabase.from('crm_seguimientos').select('id, empresa_id, fecha, nota, asignado_a').is('completado_en', null).order('fecha')),
     // Para las estadísticas: solo lo necesario de la bitácora.
-    todas(() => supabase.from('crm_actividades').select('id, empresa_id, fecha, tipo, usuario_id').order('fecha')),
+    todas(() => supabase.from('crm_actividades').select('id, empresa_id, contacto_id, fecha, tipo, nota, usuario_id, creado_en').order('fecha')),
   ])
   for (const r of [emp, con, seg, act]) if (r.error) return { data: null, error: r.error }
   return { data: { empresas: emp.data, contactos: con.data, seguimientos: seg.data, actividades: act.data }, error: null }
@@ -173,4 +173,24 @@ export async function importarProspectos(filas) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
   return supabase.rpc('crm_importar', { p_filas: filas })
+}
+
+// Contador del menú: seguimientos vencidos + de hoy asignados a esta persona
+// (solo de empresas que siguen en el CRM).
+export async function contarMisPendientes(userId, hoy) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError || !userId) return { data: 0, error: cfgError }
+  const { data, error } = await supabase
+    .from('crm_seguimientos')
+    .select('id, empresa_id')
+    .is('completado_en', null)
+    .eq('asignado_a', userId)
+    .lte('fecha', hoy)
+  if (error) return { data: 0, error }
+  const ids = [...new Set((data || []).map((s) => s.empresa_id))]
+  if (ids.length === 0) return { data: 0, error: null }
+  const { data: vivas, error: err2 } = await supabase.from('crm_empresas').select('id').in('id', ids)
+  if (err2) return { data: 0, error: err2 }
+  const ok = new Set((vivas || []).map((e) => e.id))
+  return { data: data.filter((s) => ok.has(s.empresa_id)).length, error: null }
 }

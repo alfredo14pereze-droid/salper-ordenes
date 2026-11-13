@@ -14,21 +14,21 @@ import {
   fetchCrmEmpresa,
   guardarContacto,
   guardarEmpresa,
-  registrarActividad,
 } from '../services/crmService'
 import {
   CRM_ESTATUS,
   CRM_SEGMENTOS,
-  CRM_TIPOS_ACTIVIDAD,
   MESES,
   formatoMonto,
   segmentoLabel,
   tipoActividad,
+  avisarCambioSeguimientos,
+  hoyMonterrey,
 } from '../utils/crm'
-import { hoyLocal } from '../utils/tareas'
 import { formatDate, formatDateTime } from '../utils/dates'
 import { EstatusBadge, telLink, useCrmUsuarios, waLink } from '../components/crm/CrmComunes'
 import EstatusModal, { AtajosFecha } from '../components/crm/EstatusModal'
+import RegistrarContactoModal from '../components/crm/RegistrarContactoModal'
 import '../components/crm/crm.css'
 
 // V207 — Ficha de una empresa del CRM: datos, estatus, contactos,
@@ -51,6 +51,7 @@ function Ficha() {
   const [editando, setEditando] = useState(false)
   const [estatusPendiente, setEstatusPendiente] = useState(null) // perdido | en_pausa
   const [contactoEditar, setContactoEditar] = useState(null) // {} nuevo | contacto
+  const [registrando, setRegistrando] = useState(false)
 
   const cargar = useCallback(async () => {
     setError(null)
@@ -81,6 +82,7 @@ function Ficha() {
     setActionError(null)
     const { error: err } = await fn()
     if (err) setActionError(err)
+    avisarCambioSeguimientos()
     await cargar()
     return !err
   }
@@ -104,6 +106,9 @@ function Ficha() {
       <div className="section-header">
         <h2 className="section-title">{e.nombre}</h2>
         <EstatusBadge estatus={e.estatus} />
+        <button type="button" className="btn btn--primary crm-ficha__registrar" onClick={() => setRegistrando(true)}>
+          📞 Registrar contacto
+        </button>
       </div>
 
       {actionError && <p className="form-error">{actionError.message}</p>}
@@ -253,8 +258,12 @@ function Ficha() {
 
           {/* Bitácora */}
           <section className="card crm-card">
-            <h3 className="crm-card__titulo">Bitácora</h3>
-            <ActividadForm contactos={contactos} onRegistrar={(v) => correr(() => registrarActividad({ empresaId: e.id, ...v }))} />
+            <div className="crm-card__head">
+              <h3 className="crm-card__titulo">Bitácora</h3>
+              <button type="button" className="btn btn--primary btn--small" onClick={() => setRegistrando(true)}>
+                Registrar contacto
+              </button>
+            </div>
             {actividades.length === 0 ? (
               <p className="crm-muted">Todavía no se ha registrado ningún contacto con esta empresa.</p>
             ) : (
@@ -297,6 +306,18 @@ function Ficha() {
           onConfirmar={async (v) => {
             const ok = await correr(() => cambiarEstatus(e.id, estatusPendiente, v))
             if (ok) setEstatusPendiente(null)
+          }}
+        />
+      )}
+      {registrando && (
+        <RegistrarContactoModal
+          empresa={e}
+          contactos={contactos}
+          seguimiento={pendientes[0] || null}
+          onClose={() => setRegistrando(false)}
+          onListo={() => {
+            setRegistrando(false)
+            cargar()
           }}
         />
       )}
@@ -541,7 +562,7 @@ function SeguimientoForm({ usuarios, empresa, onCrear }) {
 }
 
 function SeguimientoItem({ s, usuarios, onToggle }) {
-  const hoy = hoyLocal()
+  const hoy = hoyMonterrey()
   const hecho = !!s.completado_en
   const clase = hecho ? '' : s.fecha < hoy ? ' crm-vencido' : s.fecha === hoy ? ' crm-hoy' : ''
   return (
@@ -562,60 +583,5 @@ function SeguimientoItem({ s, usuarios, onToggle }) {
         </span>
       </div>
     </li>
-  )
-}
-
-function ActividadForm({ contactos, onRegistrar }) {
-  const [tipo, setTipo] = useState('llamada')
-  const [fecha, setFecha] = useState(hoyLocal())
-  const [nota, setNota] = useState('')
-  const principal = contactos.find((c) => c.es_principal)
-  const [contactoId, setContactoId] = useState('')
-  const [guardando, setGuardando] = useState(false)
-  const contactoElegido = contactoId === '' ? principal?.id || '' : contactoId
-  return (
-    <form
-      className="crm-form crm-form--inline crm-actividad-form"
-      onSubmit={async (ev) => {
-        ev.preventDefault()
-        setGuardando(true)
-        const ok = await onRegistrar({ tipo, fecha, nota, contactoId: contactoElegido === 'ninguno' ? null : contactoElegido || null })
-        setGuardando(false)
-        if (ok) {
-          setNota('')
-          setFecha(hoyLocal())
-        }
-      }}
-    >
-      <div className="crm-atajos">
-        {CRM_TIPOS_ACTIVIDAD.map((t) => (
-          <button key={t.key} type="button" className={'chip' + (tipo === t.key ? ' chip--active' : '')} onClick={() => setTipo(t.key)}>
-            {t.icono} {t.label}
-          </button>
-        ))}
-      </div>
-      <div className="form-row">
-        <label>
-          <span className="field-label">Fecha</span>
-          <input className="input" type="date" value={fecha} max={hoyLocal()} onChange={(ev) => setFecha(ev.target.value)} required />
-        </label>
-        <label>
-          <span className="field-label">Con quién</span>
-          <select className="input" value={contactoElegido} onChange={(ev) => setContactoId(ev.target.value)}>
-            <option value="ninguno">— Nadie en particular —</option>
-            {contactos.map((c) => (
-              <option key={c.id} value={c.id}>{c.nombre}</option>
-            ))}
-          </select>
-        </label>
-      </div>
-      <label>
-        <span className="field-label">¿Qué pasó?</span>
-        <textarea className="input" rows={2} value={nota} onChange={(ev) => setNota(ev.target.value)} placeholder="Ej. Le mandé el catálogo, pide precios de playera polo" />
-      </label>
-      <div className="crm-form__botones">
-        <button type="submit" className="btn btn--primary btn--small" disabled={guardando}>{guardando ? 'Guardando…' : 'Registrar en bitácora'}</button>
-      </div>
-    </form>
   )
 }

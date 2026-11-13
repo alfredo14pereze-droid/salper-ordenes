@@ -5,18 +5,20 @@ import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
 import { canImportarCrm, canUsarCrm } from '../utils/permissions'
 import { cambiarEstatus, fetchCrmLista } from '../services/crmService'
-import { CRM_ESTATUS, CRM_SEGMENTOS, normTexto } from '../utils/crm'
+import { CRM_ESTATUS, CRM_SEGMENTOS, CRM_VER_TODOS, avisarCambioSeguimientos, estaAbierto, hoyMonterrey, normTexto } from '../utils/crm'
 import { calcularStats, mesesConActividad } from '../utils/crmStats'
-import { hoyLocal } from '../utils/tareas'
 import { formatDate } from '../utils/dates'
 import { EstatusBadge, useCrmUsuarios } from '../components/crm/CrmComunes'
 import NuevoProspectoModal from '../components/crm/NuevoProspectoModal'
 import EstatusModal from '../components/crm/EstatusModal'
 import CrmTablero from '../components/crm/CrmTablero'
+import CrmPanel from '../components/crm/CrmPanel'
+import RegistrarContactoModal from '../components/crm/RegistrarContactoModal'
 import { CrmEstadisticas, CrmKpis, nombreMes } from '../components/crm/CrmEstadisticas'
 import '../components/crm/crm.css'
 
 const VISTAS = [
+  { key: 'seguimientos', label: 'Seguimientos' },
   { key: 'tablero', label: 'Tablero' },
   { key: 'lista', label: 'Lista' },
   { key: 'estadisticas', label: 'Estadísticas' },
@@ -41,7 +43,7 @@ export default function CrmPage() {
 }
 
 function Crm() {
-  const { role } = useAuth()
+  const { role, user } = useAuth()
   const navigate = useNavigate()
   const usuarios = useCrmUsuarios()
   const [datos, setDatos] = useState(null)
@@ -55,6 +57,7 @@ function Crm() {
   const [fResp, setFResp] = useState('')
   const [mes, setMes] = useState('')
   const [mover, setMover] = useState(null) // { empresa, estatus } que pide motivo o fecha
+  const [registrar, setRegistrar] = useState(null) // { fila, seguimiento }
 
   const setVista = (v) => {
     setVistaState(v)
@@ -105,7 +108,7 @@ function Crm() {
     )
   }, [filas, busca, fEstatus, fSegmento, fResp, vista])
 
-  const hoy = hoyLocal()
+  const hoy = hoyMonterrey()
   const meses = useMemo(() => (datos ? mesesConActividad(datos.actividades) : []), [datos])
   const st = useMemo(() => {
     if (!datos) return null
@@ -137,8 +140,14 @@ function Crm() {
     setDatos((d) => ({ ...d, empresas: d.empresas.map((e) => (e.id === empresa.id ? { ...e, estatus } : e)) }))
     const { error: err } = await cambiarEstatus(empresa.id, estatus)
     if (err) setActionError(err)
+    avisarCambioSeguimientos()
     cargar()
   }
+
+  // Seguimientos vencidos + de hoy asignados a mí (mismo número que el menú).
+  const misPendientes = datos
+    ? datos.seguimientos.filter((s) => s.asignado_a === user?.id && s.fecha <= hoy && filas.some((f) => f.e.id === s.empresa_id)).length
+    : 0
 
   if (error) return <ErrorState error={error} onRetry={cargar} />
   if (!datos) return <Loading label="Cargando prospectos…" />
@@ -188,6 +197,7 @@ function Crm() {
             onClick={() => setVista(v.key)}
           >
             {v.label}
+            {v.key === 'seguimientos' && misPendientes > 0 && <span className="notas-pestana__contador">{misPendientes}</span>}
           </button>
         ))}
       </div>
@@ -242,6 +252,16 @@ function Crm() {
 
       {filas.length === 0 ? (
         <EmptyState>Todavía no hay prospectos. Toca «+ Nuevo prospecto» para agregar el primero.</EmptyState>
+      ) : vista === 'seguimientos' ? (
+        <CrmPanel
+          filas={visibles}
+          datos={datos}
+          usuarios={usuarios}
+          userId={user?.id}
+          puedeVerTodos={CRM_VER_TODOS.includes(role)}
+          hoy={hoy}
+          onRegistrar={(fila, seguimiento) => setRegistrar({ fila, seguimiento })}
+        />
       ) : vista === 'tablero' ? (
         <CrmTablero filas={visibles} usuarios={usuarios} hoy={hoy} onMover={moverA} />
       ) : vista === 'estadisticas' ? (
@@ -260,6 +280,18 @@ function Crm() {
           onAbrir={(id) => navigate(`/crm/${id}`)}
         />
       )}
+      {registrar && (
+        <RegistrarContactoModal
+          empresa={registrar.fila.e}
+          contactos={datos.contactos.filter((c) => c.empresa_id === registrar.fila.e.id)}
+          seguimiento={registrar.seguimiento || datos.seguimientos.find((s) => s.empresa_id === registrar.fila.e.id) || null}
+          onClose={() => setRegistrar(null)}
+          onListo={() => {
+            setRegistrar(null)
+            cargar()
+          }}
+        />
+      )}
       {mover && (
         <EstatusModal
           estatus={mover.estatus}
@@ -268,6 +300,7 @@ function Crm() {
             const { error: err } = await cambiarEstatus(mover.empresa.id, mover.estatus, v)
             if (err) return setActionError(err)
             setMover(null)
+            avisarCambioSeguimientos()
             cargar()
           }}
         />
@@ -319,6 +352,8 @@ function ListaTabla({ filas, usuarios, hoy }) {
                     {proximo.fecha === hoy ? 'Hoy' : formatDate(proximo.fecha)}
                     {proximo.fecha < hoy && ' (vencido)'}
                   </span>
+                ) : estaAbierto(e.estatus) ? (
+                  <span className="crm-sin-seg">Sin seguimiento</span>
                 ) : (
                   <span className="crm-muted">—</span>
                 )}

@@ -39,6 +39,7 @@ import {
 } from '../../utils/permissions'
 import { esRolDeEstacion } from '../../config/vistasPorRol'
 import { PEDIDOS_PROVEEDOR_HABILITADO } from '../../utils/featureFlags'
+import useCrmContador from '../crm/useCrmContador'
 
 // V34: el nav pasó de barra horizontal arriba a menú lateral (pedido
 // explícito del usuario — con tantas secciones, la barra de arriba se
@@ -79,6 +80,8 @@ export default function AppLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
   useEnterComoTab() // V127 — Enter avanza de campo en los formularios
+  // CRM Parte 2 — seguimientos vencidos + de hoy del usuario, junto a "CRM".
+  const crmPendientes = useCrmContador(canUsarCrm(role) ? user?.id : null)
   // Los 5 roles de etapa de fábrica (corte/bordado/sublimado/producción/
   // terminado) solo necesitan Dashboard + Resumen para hacer su trabajo —
   // ver hasRestrictedNav en utils/permissions.js. admin_fabrica sigue
@@ -142,7 +145,7 @@ export default function AppLayout({ children }) {
     // V164 — tareas que los administrativos le asignan al personal.
     { to: '/tareas', label: 'Tareas', show: canViewTareas(role) },
     // V207 — CRM de prospectos (crm.usar: ventas, admin_tienda, admin_general).
-    { to: '/crm', label: 'CRM', show: canUsarCrm(role) },
+    { to: '/crm', label: 'CRM', show: canUsarCrm(role), contador: crmPendientes },
     // V196 — manuales de cada proceso: todos los roles los leen.
     { to: '/manuales', label: 'Manuales', show: true },
     // Entrega masiva: marcar varias órdenes como entregadas a la vez (permiso orden.entregar).
@@ -308,6 +311,11 @@ export default function AppLayout({ children }) {
                 className={({ isActive }) => 'app-nav__link' + (isActive ? ' app-nav__link--active' : '')}
               >
                 {item.label}
+                {item.contador > 0 && (
+                  <span className="app-nav__contador" aria-label={`${item.contador} pendientes`}>
+                    {item.contador}
+                  </span>
+                )}
               </NavLink>
             ))}
         </nav>

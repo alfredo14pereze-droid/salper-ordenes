@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import Modal from '../talleros/Modal'
-import { estatusLabel, sumarDias } from '../../utils/crm'
-import { hoyLocal } from '../../utils/tareas'
+import { estatusLabel, hoyMonterrey, sumarDias } from '../../utils/crm'
 
 // V207 — Cambio de estatus que pide algo más: 'perdido' (motivo) o
 // 'en_pausa' (fecha para volver a contactar). Se usa en la ficha y en el tablero.
 // Atajos para la fecha de "volver a contactar".
 export function AtajosFecha({ valor, onElegir }) {
-  const hoy = hoyLocal()
+  const hoy = hoyMonterrey()
   const atajos = [
     ['1 semana', sumarDias(hoy, 7)],
     ['2 semanas', sumarDias(hoy, 14)],
@@ -61,7 +60,7 @@ export default function EstatusModal({ estatus, onClose, onConfirmar }) {
             <AtajosFecha valor={fecha} onElegir={setFecha} />
             <label>
               <span className="field-label">Fecha para volver a contactar *</span>
-              <input className="input" type="date" value={fecha} min={hoyLocal()} onChange={(ev) => setFecha(ev.target.value)} />
+              <input className="input" type="date" value={fecha} min={hoyMonterrey()} onChange={(ev) => setFecha(ev.target.value)} />
             </label>
             <label>
               <span className="field-label">Nota (opcional)</span>

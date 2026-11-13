@@ -243,3 +243,32 @@ export function formatoMonto(n) {
   if (n === null || n === undefined || n === '') return '—'
   return Number(n).toLocaleString('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 })
 }
+
+// "Hoy" según Monterrey (America/Monterrey), sin importar la zona del aparato.
+export function hoyMonterrey(d = new Date()) {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Monterrey', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
+  } catch {
+    const p = (n) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+  }
+}
+
+// Días entre dos fechas YYYY-MM-DD (b - a).
+export function diasEntre(a, b) {
+  return Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000)
+}
+
+// Avisa (al contador del menú y a quien escuche) que cambiaron los seguimientos.
+export const EVENTO_SEGUIMIENTOS = 'crm:seguimientos'
+export function avisarCambioSeguimientos() {
+  try {
+    window.dispatchEvent(new Event(EVENTO_SEGUIMIENTOS))
+  } catch {
+    /* sin window (pruebas) */
+  }
+}
+
+// Quién puede ver los seguimientos de todos en el panel (además de los suyos y
+// los sin asignar). Pedido de la Parte 2: solo el administrador general.
+export const CRM_VER_TODOS = ['admin_general']

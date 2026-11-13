@@ -8049,3 +8049,30 @@ A pedido de Alfredo (con una imagen de referencia de un CRM tipo tablero). Decis
   seguimientos (`origen = 'Excel de prospectos'`). La bitácora importada también quedó con `usuario_id` de Alfredo
   (sale en "Contactos por persona"); se le dio el SQL para dejarla sin usuario. Los comentarios sin fecha del Excel
   quedaron con fecha 31-oct, por eso esa semana sale alta en "Contactos por semana".
+
+### 2026-11-13 — CRM Parte 2: "A quién le toca hoy" y registro rápido (sin SQL)
+- **Pestaña "Seguimientos"** (primera de `/crm`, con el número de vencidos + hoy del usuario; la de entrada sigue
+  siendo Tablero, decisión anterior de Alfredo; se recuerda la última usada). `components/crm/CrmPanel.jsx`:
+  secciones Vencidos (rojo, "hace N días"), Hoy, Esta semana (próximos 7 días) y **Sin seguimiento** (abiertos sin
+  seguimiento pendiente; muestra 12 y "Ver los restantes"). Tarjeta: empresa + estatus, fecha y nota del seguimiento,
+  contacto principal con ligas tel: / wa.me (10 dígitos → se antepone 52) / mailto:, último contacto de la bitácora y
+  botón «Registrar contacto». Filtro **Míos / Sin asignar / Todos**: "Míos" = seguimientos con `asignado_a` = yo (y,
+  en Sin seguimiento, empresas con `responsable_id` = yo); "Sin asignar" se agregó porque todo lo importado del Excel
+  quedó sin responsable; "Todos" solo para `CRM_VER_TODOS` (= admin_general, en `utils/crm.js`).
+- **"Hoy" = America/Monterrey** (`hoyMonterrey()` en `utils/crm.js`), en todo el CRM.
+- **Contador en el menú** junto a "CRM" (`components/crm/useCrmContador.js`, `.app-nav__contador` en index.css):
+  vencidos + de hoy asignados al usuario, de empresas no eliminadas. Se recalcula al abrir la app, al volver a la
+  pestaña del navegador y con el evento `crm:seguimientos` (`avisarCambioSeguimientos()`), que mandan el modal de
+  registro, la ficha y el tablero al cambiar algo.
+- **«Registrar contacto»** (`components/crm/RegistrarContactoModal.jsx`; en cada tarjeta del panel y en la ficha,
+  donde reemplaza al formulario de bitácora que había). En un paso: actividad (Llamada / hoy / contacto principal
+  por omisión), marca hecho el seguimiento actual (el de la tarjeta, o en la ficha el pendiente más próximo; casilla),
+  siguiente seguimiento con atajos 1 semana (por omisión) / 2 semanas / 1 mes / 3 meses / Elegir fecha / "Sin
+  seguimiento (cerrar)", y estatus. Cerrar un prospecto abierto obliga a elegir Se ganó / Se perdió (+ motivo);
+  pasar a En pausa usa la fecha elegida (el servidor crea ese seguimiento). Son llamadas a los RPC de V207 una tras
+  otra (no una sola transacción): si falla un paso después del primero, avisa "El contacto quedó registrado, pero
+  falló un paso". El seguimiento nuevo queda para el responsable de la empresa o, si no tiene, para quien registra.
+- Lista: si un prospecto abierto no tiene seguimiento, la columna dice "Sin seguimiento" en naranja.
+- Probado en `salper-crm-harness` (PGlite + RLS + el Excel real importado): Gis ve su vencido, registra la llamada
+  en 3 toques, el vencido queda hecho, sale el nuevo en "Esta semana" y el contador del menú pasa de 1 a 0.
+- Pendiente (Parte 3): ganar → cliente, órdenes del cliente en la ficha, correo diario. Sin borrar/editar bitácora aún.
