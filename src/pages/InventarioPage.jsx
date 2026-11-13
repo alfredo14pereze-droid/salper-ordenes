@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { canMoverInventario, canEditarInventario } from '../utils/permissions'
 import { useInventarioCatalogos, useInventarioEstructura, useInventarioCatalogo } from '../hooks/useInventario'
 import { formatTalla } from '../utils/inventarioTallas'
+import { agruparPlayeras, grupoContenedor } from '../utils/inventarioPlayeras'
 import MovimientoModal from '../components/inventario/MovimientoModal'
 import HistorialModal from '../components/inventario/HistorialModal'
 import ReporteModal from '../components/inventario/ReporteModal'
@@ -207,6 +208,10 @@ function InventarioContent() {
       ),
     [articulos, modelos, seccionActivaId, tallas]
   )
+  // Lo que se ve en pantalla: igual que gruposTodos, salvo que en un colegio
+  // con generaciones (Tricio) todas las playeras van en un solo desplegable.
+  // El Reporte sigue usando gruposTodos (una fila por modelo, como siempre).
+  const gruposVista = useMemo(() => agruparPlayeras(gruposTodos), [gruposTodos])
 
   const sinClasificar = useMemo(() => articulos.filter((a) => !a.modeloId).length, [articulos])
   const existenciaVista = useCallback((a) => (viewMode === 'total' ? a.total : a.porUbicacion[viewMode] ?? 0), [viewMode])
@@ -227,7 +232,16 @@ function InventarioContent() {
   function irAGrupo(seccion, grupoKey, articuloId = null) {
     setClasificacionFiltro('todas')
     setSeccionId(seccion)
-    setAbiertas((cur) => new Set(cur).add(`${seccion}:${grupoKey}`))
+    // Si el modelo quedó dentro de "Playeras", hay que abrir ese desplegable.
+    const vistaDestino = agruparPlayeras(
+      agrupar(
+        articulos.filter((a) => a.seccionId === seccion),
+        modelos.filter((m) => m.seccionId === seccion),
+        tallas
+      )
+    )
+    const contenedor = grupoContenedor(vistaDestino, grupoKey)
+    setAbiertas((cur) => new Set(cur).add(`${seccion}:${contenedor}`))
     setResaltado(articuloId)
     setDestino(`${seccion}:${grupoKey}`)
   }
@@ -238,7 +252,7 @@ function InventarioContent() {
     if (!el) return
     el.scrollIntoView({ block: 'center', behavior: 'smooth' })
     setDestino(null)
-  }, [destino, gruposTodos])
+  }, [destino, gruposVista])
 
   function closeAndRefresh() {
     setModal(null)
@@ -273,6 +287,96 @@ function InventarioContent() {
     })
     setPdfBlob(blob)
     setPdfName(reporteFileName(seccionActivaNombre, prendasFiltro, fecha))
+  }
+
+  // Botones de un modelo ("Dar entrada", "+ Talla / alias") y sus chips de
+  // talla; se usan igual en un desplegable normal y en cada bloque de "Playeras".
+  function renderAcciones(g) {
+    if (!g.modelo || !(canMover || canEditar)) return null
+    return (
+      <div className="inv-modelo-acciones">
+        {canMover && (
+          <button
+            type="button"
+            className="btn btn--secondary btn--small"
+            onClick={() => setModal({ kind: 'entrada', modelo: g.modelo })}
+          >
+            Dar entrada
+          </button>
+        )}
+        {canEditar && (
+          <button
+            type="button"
+            className="btn btn--ghost btn--small"
+            onClick={() => setModal({ kind: 'opciones', modeloId: g.modelo.id })}
+          >
+            + Talla / alias
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  function renderChips(g) {
+    return (
+      <div className="inv-chip-row">
+        {g.items.map((a) => {
+          const valor = existenciaVista(a)
+          const bajoMinimo = a.minimo != null && a.total < a.minimo
+          const chipKey = a.articuloId || `${a.prenda}-${a.tallaId}`
+          return (
+            <div
+              key={chipKey}
+              className={
+                'inv-chip' +
+                (bajoMinimo ? ' inv-chip--low' : '') +
+                (a.virtual ? ' inv-chip--virtual' : '') +
+                (valor === 0 && !bajoMinimo ? ' inv-chip--cero' : '') +
+                (a.articuloId && a.articuloId === resaltado ? ' inv-chip--hit' : '')
+              }
+            >
+              {a.articuloId ? (
+                <button
+                  type="button"
+                  className="inv-chip__main"
+                  onClick={() => setModal({ kind: 'historial', articulo: a })}
+                  title="Ver historial"
+                >
+                  <span className="inv-chip__talla">{formatTalla(a.talla)}</span>
+                  <span className="inv-chip__valor">{valor}</span>
+                  {a.minimo != null && <span className="inv-chip__minimo">mín. {a.minimo}</span>}
+                </button>
+              ) : (
+                <div className="inv-chip__main" title="Sin movimientos todavía">
+                  <span className="inv-chip__talla">{formatTalla(a.talla)}</span>
+                  <span className="inv-chip__valor">{valor}</span>
+                </div>
+              )}
+              {canMover && (
+                <div className="inv-chip__actions">
+                  <button
+                    type="button"
+                    className="inv-chip__btn"
+                    aria-label={`Salida de ${g.label} ${a.talla}`}
+                    onClick={() => setModal({ kind: 'movimiento', tipo: 'salida', articulo: a })}
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    className="inv-chip__btn"
+                    aria-label={`Entrada de ${g.label} ${a.talla}`}
+                    onClick={() => setModal({ kind: 'movimiento', tipo: 'entrada', articulo: a })}
+                  >
+                    +
+                  </button>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )
   }
 
   if (loadingCatalogos) return <Loading label="Cargando inventario…" />
@@ -404,7 +508,7 @@ function InventarioContent() {
             </EmptyState>
           )}
 
-          {!loadingExistencias && !existenciasError && gruposTodos.length > 0 && (
+          {!loadingExistencias && !existenciasError && gruposVista.length > 0 && (
             <>
               <div className="inv-expandir">
                 <button type="button" className="btn btn--ghost btn--small" onClick={() => setTodoAbierto((v) => !v)}>
@@ -412,7 +516,7 @@ function InventarioContent() {
                 </button>
               </div>
               <div className="inv-prenda-list">
-                {gruposTodos.map((g) => {
+                {gruposVista.map((g) => {
                   const key = `${seccionActivaId}:${g.key}`
                   const abierta = todoAbierto || abiertas.has(key)
                   const totalPrenda = g.items.reduce((sum, a) => sum + a.total, 0)
@@ -427,91 +531,45 @@ function InventarioContent() {
                         <span className={'inv-prenda-card__chevron' + (abierta ? ' inv-prenda-card__chevron--open' : '')}>▸</span>
                         <span className="inv-prenda-card__nombre">
                           {g.label}
-                          {!g.modelo && canEditar && estructuraLista && <span className="inv-prenda-card__tag">sin clasificar</span>}
+                          {!g.modelo && !g.playeras && canEditar && estructuraLista && <span className="inv-prenda-card__tag">sin clasificar</span>}
                         </span>
                         <span className="inv-prenda-card__total">{totalPrenda} pzas</span>
                       </button>
-                      {abierta && g.modelo && (canMover || canEditar) && (
-                        <div className="inv-modelo-acciones">
-                          {canMover && (
-                            <button
-                              type="button"
-                              className="btn btn--secondary btn--small"
-                              onClick={() => setModal({ kind: 'entrada', modelo: g.modelo })}
-                            >
-                              Dar entrada
-                            </button>
-                          )}
-                          {canEditar && (
-                            <button
-                              type="button"
-                              className="btn btn--ghost btn--small"
-                              onClick={() => setModal({ kind: 'opciones', modeloId: g.modelo.id })}
-                            >
-                              + Talla / alias
-                            </button>
-                          )}
-                        </div>
-                      )}
-                      {abierta && (
-                        <div className="inv-chip-row">
-                          {g.items.map((a) => {
-                            const valor = existenciaVista(a)
-                            const bajoMinimo = a.minimo != null && a.total < a.minimo
-                            const chipKey = a.articuloId || `${a.prenda}-${a.tallaId}`
-                            return (
-                              <div
-                                key={chipKey}
-                                className={
-                                  'inv-chip' +
-                                  (bajoMinimo ? ' inv-chip--low' : '') +
-                                  (a.virtual ? ' inv-chip--virtual' : '') +
-                                  (valor === 0 && !bajoMinimo ? ' inv-chip--cero' : '') +
-                                  (a.articuloId && a.articuloId === resaltado ? ' inv-chip--hit' : '')
-                                }
-                              >
-                                {a.articuloId ? (
-                                  <button
-                                    type="button"
-                                    className="inv-chip__main"
-                                    onClick={() => setModal({ kind: 'historial', articulo: a })}
-                                    title="Ver historial"
-                                  >
-                                    <span className="inv-chip__talla">{formatTalla(a.talla)}</span>
-                                    <span className="inv-chip__valor">{valor}</span>
-                                    {a.minimo != null && <span className="inv-chip__minimo">mín. {a.minimo}</span>}
-                                  </button>
-                                ) : (
-                                  <div className="inv-chip__main" title="Sin movimientos todavía">
-                                    <span className="inv-chip__talla">{formatTalla(a.talla)}</span>
-                                    <span className="inv-chip__valor">{valor}</span>
-                                  </div>
-                                )}
-                                {canMover && (
-                                  <div className="inv-chip__actions">
-                                    <button
-                                      type="button"
-                                      className="inv-chip__btn"
-                                      aria-label={`Salida de ${g.label} ${a.talla}`}
-                                      onClick={() => setModal({ kind: 'movimiento', tipo: 'salida', articulo: a })}
-                                    >
-                                      −
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="inv-chip__btn"
-                                      aria-label={`Entrada de ${g.label} ${a.talla}`}
-                                      onClick={() => setModal({ kind: 'movimiento', tipo: 'entrada', articulo: a })}
-                                    >
-                                      +
-                                    </button>
-                                  </div>
-                                )}
+                      {abierta && g.playeras && (
+                        <div className="inv-playeras">
+                          {g.playeras.map((t) => (
+                            <div key={t.key} className="inv-playeras__tipo">
+                              <div className="inv-playeras__tipo-titulo">
+                                <span>{t.label}</span>
+                                <span className="inv-prenda-card__total">{t.total} pzas</span>
                               </div>
-                            )
-                          })}
+                              {t.bloques.map((b) => (
+                                <div
+                                  key={b.key}
+                                  id={`inv-grupo-${seccionActivaId}:${b.key}`}
+                                  className={'inv-playeras__bloque' + (b.orden === 2 ? ' inv-playeras__bloque--sin' : '')}
+                                >
+                                  <div className="inv-playeras__gen">
+                                    <span className="inv-playeras__gen-nombre">
+                                      {b.titulo}
+                                      {!b.grupo.modelo && canEditar && estructuraLista && (
+                                        <span className="inv-prenda-card__tag">sin clasificar</span>
+                                      )}
+                                    </span>
+                                    <span className="inv-prenda-card__total">
+                                      {b.grupo.items.reduce((sum, a) => sum + a.total, 0)} pzas
+                                    </span>
+                                  </div>
+                                  {renderAcciones(b.grupo)}
+                                  {renderChips(b.grupo)}
+                                </div>
+                              ))}
+                            </div>
+                          ))}
                         </div>
                       )}
+                      {abierta && !g.playeras && renderAcciones(g)}
+                      {abierta && !g.playeras && renderChips(g)}
                     </div>
                   )
                 })}
