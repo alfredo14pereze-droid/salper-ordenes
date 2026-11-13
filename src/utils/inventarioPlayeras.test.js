@@ -13,7 +13,7 @@ test('generacionDe', () => {
   assert.equal(generacionDe('Blanca'), null)
 })
 
-test('Tricio: un solo desplegable, generaciones de la más reciente a la más vieja y "Sin generación" al final', () => {
+test('Tricio: "Playeras" arriba, "Sin generación" primero y luego generaciones de la más reciente a la más vieja', () => {
   const grupos = [
     modelo('a', 'Chamarra', 'Bordada', [it('M', 1030)]),
     modelo('g29', 'Playera polo', 'Gen 2029', [it('M', 1030, 3), it('4', 40, 1), it('XS', 1010, 2), it('S', 1020, 0)]),
@@ -24,14 +24,14 @@ test('Tricio: un solo desplegable, generaciones de la más reciente a la más vi
     modelo('dep', 'Playera deportiva', '', [it('S', 1020, 1)]),
   ]
   const vista = agruparPlayeras(grupos)
-  assert.deepEqual(vista.map((g) => g.label), ['Chamarra Bordada', 'Playeras'])
-  const p = vista[1]
+  assert.deepEqual(vista.map((g) => g.label), ['Playeras', 'Chamarra Bordada'])
+  const p = vista[0]
   assert.deepEqual(p.playeras.map((t) => t.label), ['Playera deportiva', 'Playera polo'])
   const polo = p.playeras[1]
-  assert.deepEqual(polo.bloques.map((b) => b.titulo), ['Gen 2038', 'Gen 2029', 'Sin generación'])
-  assert.deepEqual(polo.bloques[1].grupo.items.map((i) => i.talla), ['4', 'XS', 'M'])
+  assert.deepEqual(polo.bloques.map((b) => b.titulo), ['Sin generación', 'Gen 2038', 'Gen 2029'])
+  assert.deepEqual(polo.bloques[2].grupo.items.map((i) => i.talla), ['4', 'XS', 'M'])
   // la S en 0 de Gen 2029 no se ve; "Sin generación" sí muestra su 12 en 0
-  assert.deepEqual(polo.bloques[2].grupo.items.map((i) => i.talla), ['10', '12'])
+  assert.deepEqual(polo.bloques[0].grupo.items.map((i) => i.talla), ['10', '12'])
   assert.equal(polo.total, 13)
   assert.equal(p.playeras[0].bloques[0].titulo, 'Sin generación')
   assert.equal(grupoContenedor(vista, 'm:g29'), 'playeras')

@@ -3632,8 +3632,8 @@ h4 {
   flex-wrap: wrap;
   margin-top: 10px;
 }
-/* "Playeras" en un solo desplegable (Tricio): tipo de playera → bloque por
-   generación (más reciente primero) → "Sin generación" al final. */
+/* "Playeras" en un solo desplegable (Tricio): tipo de playera → "Sin
+   generación" a lo ancho → generaciones (más reciente primero) lado a lado. */
 .inv-playeras {
   display: flex;
   flex-direction: column;
@@ -3661,8 +3661,27 @@ h4 {
   padding-left: 10px;
   border-left: 3px solid var(--color-border);
 }
-.inv-playeras__bloque--sin {
-  border-left-style: dashed;
+.inv-playeras__gens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.inv-playeras__bloque--gen {
+  flex: 0 1 auto;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+.inv-playeras__bloque--gen .inv-modelo-acciones,
+.inv-playeras__bloque--gen .inv-chip-row {
+  margin-top: 6px;
+  gap: 6px;
+}
+@media (max-width: 600px) {
+  .inv-playeras__bloque--gen {
+    flex-basis: 100%;
+  }
 }
 .inv-playeras__gen {
   display: flex;

@@ -6,10 +6,11 @@ import { normalizar } from './inventarioBusqueda.js'
 // colegio con generaciones (Instituto Tricio: "Playera polo Gen 2029" …
 // "Gen 2038" y "sin generacion") eso eran 10+ desplegables casi iguales.
 // Aquí se juntan TODAS las playeras de la sección en un grupo "Playeras":
+//   el grupo "Playeras" va hasta arriba de la sección
 //   tipo de playera (Playera polo, Playera deportiva…)
+//     → "Sin generación" primero (y otras variantes sin año, si las hay)
 //     → bloques con generación, de la más reciente a la más vieja
-//     → otras variantes sin año (si las hay)
-//     → "Sin generación" al final
+//       (en pantalla, lado a lado para que quede compacto)
 // Las tallas ya vienen en el orden del catálogo (inv_tallas.orden:
 // 00, 0, 2, 4 … 16, XS, S, M …), no alfabético.
 //
@@ -81,10 +82,10 @@ export function agruparPlayeras(grupos) {
     if (items.length === 0) continue
     const tipoKey = normalizar(x.tipo)
     if (!tipos.has(tipoKey)) tipos.set(tipoKey, { key: tipoKey, label: primeraMayuscula(x.tipo), bloques: [] })
-    const orden = x.gen != null ? 0 : esSinGeneracion(x.variante) ? 2 : 1
+    const orden = x.gen != null ? 2 : esSinGeneracion(x.variante) ? 0 : 1
     tipos.get(tipoKey).bloques.push({
       key: x.g.key,
-      titulo: x.gen != null ? `Gen ${x.gen}` : orden === 2 ? 'Sin generación' : x.variante,
+      titulo: x.gen != null ? `Gen ${x.gen}` : orden === 0 ? 'Sin generación' : x.variante,
       gen: x.gen,
       orden,
       grupo: { ...x.g, items: [...items].sort((a, b) => a.tallaOrden - b.tallaOrden) },
@@ -107,7 +108,7 @@ export function agruparPlayeras(grupos) {
     playeras: listaTipos,
     items: listaTipos.flatMap((t) => t.bloques.flatMap((b) => b.grupo.items)),
   }
-  return [...resto, combinado].sort((x, y) => x.label.localeCompare(y.label, 'es'))
+  return [combinado, ...resto] // "Playeras" siempre hasta arriba
 }
 
 // Llave del desplegable que hay que abrir para llegar a `grupoKey`

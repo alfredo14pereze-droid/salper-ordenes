@@ -379,6 +379,28 @@ function InventarioContent() {
     )
   }
 
+  // Un bloque de "Playeras": "Sin generación" a lo ancho; cada generación
+  // como tarjeta chica, lado a lado (ver .inv-playeras__gens).
+  function renderBloquePlayera(b, tarjeta) {
+    return (
+      <div
+        key={b.key}
+        id={`inv-grupo-${seccionActivaId}:${b.key}`}
+        className={'inv-playeras__bloque' + (tarjeta ? ' inv-playeras__bloque--gen' : '')}
+      >
+        <div className="inv-playeras__gen">
+          <span className="inv-playeras__gen-nombre">
+            {b.titulo}
+            {!b.grupo.modelo && canEditar && estructuraLista && <span className="inv-prenda-card__tag">sin clasificar</span>}
+          </span>
+          <span className="inv-prenda-card__total">{b.grupo.items.reduce((sum, a) => sum + a.total, 0)} pzas</span>
+        </div>
+        {renderAcciones(b.grupo)}
+        {renderChips(b.grupo)}
+      </div>
+    )
+  }
+
   if (loadingCatalogos) return <Loading label="Cargando inventario…" />
   if (catalogosError) return <ErrorState error={catalogosError} onRetry={refreshCatalogos} />
 
@@ -543,27 +565,12 @@ function InventarioContent() {
                                 <span>{t.label}</span>
                                 <span className="inv-prenda-card__total">{t.total} pzas</span>
                               </div>
-                              {t.bloques.map((b) => (
-                                <div
-                                  key={b.key}
-                                  id={`inv-grupo-${seccionActivaId}:${b.key}`}
-                                  className={'inv-playeras__bloque' + (b.orden === 2 ? ' inv-playeras__bloque--sin' : '')}
-                                >
-                                  <div className="inv-playeras__gen">
-                                    <span className="inv-playeras__gen-nombre">
-                                      {b.titulo}
-                                      {!b.grupo.modelo && canEditar && estructuraLista && (
-                                        <span className="inv-prenda-card__tag">sin clasificar</span>
-                                      )}
-                                    </span>
-                                    <span className="inv-prenda-card__total">
-                                      {b.grupo.items.reduce((sum, a) => sum + a.total, 0)} pzas
-                                    </span>
-                                  </div>
-                                  {renderAcciones(b.grupo)}
-                                  {renderChips(b.grupo)}
+                              {t.bloques.filter((b) => b.gen == null).map((b) => renderBloquePlayera(b, false))}
+                              {t.bloques.some((b) => b.gen != null) && (
+                                <div className="inv-playeras__gens">
+                                  {t.bloques.filter((b) => b.gen != null).map((b) => renderBloquePlayera(b, true))}
                                 </div>
-                              ))}
+                              )}
                             </div>
                           ))}
                         </div>

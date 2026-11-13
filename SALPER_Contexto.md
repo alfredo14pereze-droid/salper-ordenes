@@ -7987,3 +7987,5 @@ Alfredo confirmó un color ÚNICO por producto Frisa (el mismo de las etiquetas 
 - Mismo día, a pedido de Alfredo: en los bloques CON generación solo se ven las tallas con existencia (total de todas
   las ubicaciones > 0); las de 0 siguen en la base y se les da entrada con "Dar entrada". Una generación sin piezas no
   aparece. "Sin generación" sigue mostrando todas sus tallas.
+- Después (mismo día): "Playeras" va hasta arriba de la sección; dentro, "Sin generación" primero a lo ancho y las
+  generaciones como tarjetas chicas lado a lado (`.inv-playeras__gens`, en celular una por renglón).
