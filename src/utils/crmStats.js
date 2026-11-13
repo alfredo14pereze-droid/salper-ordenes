@@ -6,6 +6,11 @@ import { CRM_ESTATUS, estaAbierto } from './crm'
 export const ESTATUS_CONTESTADO = ['en_conversacion', 'visita_reunion', 'cotizado', 'ganado']
 export const contesto = (estatus) => ESTATUS_CONTESTADO.includes(estatus)
 
+// "Se cotizó" = está en Cotizado o Ganado, o (en cualquier estatus) tiene monto
+// cotizado capturado. No hay historial de estatus: un perdido que se cotizó solo
+// se reconoce por su monto cotizado.
+export const fueCotizado = (e) => e.estatus === 'cotizado' || e.estatus === 'ganado' || Number(e.monto_cotizado) > 0
+
 const suma = (lista, f) => lista.reduce((t, x) => t + (Number(f(x)) || 0), 0)
 const pct = (a, b) => (b > 0 ? a / b : null)
 
@@ -43,6 +48,7 @@ export function calcularStats({ empresas, seguimientos, actividades }, { mes = '
   const sinSeguimiento = abiertos.filter((e) => !conSeg.has(e.id))
   const vencidos = seguimientos.filter((s) => ids.has(s.empresa_id) && s.fecha < hoy).length
   const contestaron = emps.filter((e) => contesto(e.estatus)).length
+  const cotizados = emps.filter(fueCotizado).length
 
   const embudo = CRM_ESTATUS.map((s) => {
     const lista = emps.filter((e) => e.estatus === s.key)
@@ -77,6 +83,9 @@ export function calcularStats({ empresas, seguimientos, actividades }, { mes = '
     ganados: ganados.length,
     perdidos: perdidos.length,
     tasaCierre: pct(ganados.length, ganados.length + perdidos.length),
+    cotizados,
+    tasaGanadosCotizados: pct(ganados.length, cotizados),
+    tasaGanadosContactados: pct(ganados.length, contestaron),
     contestaron,
     tasaRespuesta: pct(contestaron, emps.length),
     sinSeguimiento: sinSeguimiento.length,

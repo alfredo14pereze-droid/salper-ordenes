@@ -8076,3 +8076,11 @@ A pedido de Alfredo (con una imagen de referencia de un CRM tipo tablero). Decis
 - Probado en `salper-crm-harness` (PGlite + RLS + el Excel real importado): Gis ve su vencido, registra la llamada
   en 3 toques, el vencido queda hecho, sale el nuevo en "Esta semana" y el contador del menú pasa de 1 a 0.
 - Pendiente (Parte 3): ganar → cliente, órdenes del cliente en la ficha, correo diario. Sin borrar/editar bitácora aún.
+
+### 2026-11-13 — CRM: tasas nuevas y manual (sin SQL de esquema)
+- Cifras en dos filas: En proceso / Ganado / Sin seguimiento, y 4 tasas: Tasa de cierre (ganados ÷ ganados+perdidos),
+  **Ganados de cotizados** (ganados ÷ cotizados; cotizado = estatus Cotizado o Ganado, o `monto_cotizado` > 0 —
+  `fueCotizado` en `utils/crmStats.js`), **Ganados de contactados** (ganados ÷ contestaron) y Tasa de respuesta.
+- Manual: `supabase/datos_2026-11-13_manuales_crm.sql` crea la sección "CRM" en Manuales con 8 manuales (qué es,
+  alta, seguimientos, registrar contacto, estatus/tablero, ficha, cifras, importar). Probado en PGlite con V196:
+  no duplica si se corre dos veces. PENDIENTE: que Alfredo lo corra y subir el código a `main`. Sin PDF del CRM.

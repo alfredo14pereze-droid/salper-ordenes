@@ -20,44 +20,66 @@ function Barra({ valor }) {
 export function CrmKpis({ st }) {
   const maxMonto = Math.max(st.enProceso, st.ganadoMonto, 1)
   return (
-    <div className="crm-kpis">
-      <div className="crm-kpi">
-        <span className="crm-kpi__label">En proceso</span>
-        <strong className="crm-kpi__valor">{montoCorto(st.enProceso)}</strong>
-        <Barra valor={st.enProceso / maxMonto} />
-        <span className="crm-kpi__pie">{st.abiertos} prospectos abiertos · monto cotizado</span>
+    <div className="crm-kpis-grupo">
+      {/* Fila 1: dinero y pendientes */}
+      <div className="crm-kpis crm-kpis--3">
+        <div className="crm-kpi">
+          <span className="crm-kpi__label">En proceso</span>
+          <strong className="crm-kpi__valor">{montoCorto(st.enProceso)}</strong>
+          <Barra valor={st.enProceso / maxMonto} />
+          <span className="crm-kpi__pie">{st.abiertos} prospectos abiertos · monto cotizado</span>
+        </div>
+        <div className="crm-kpi">
+          <span className="crm-kpi__label">Ganado</span>
+          <strong className="crm-kpi__valor">{montoCorto(st.ganadoMonto)}</strong>
+          <Barra valor={st.ganadoMonto / maxMonto} />
+          <span className="crm-kpi__pie">
+            {st.ganados} ganado{st.ganados === 1 ? '' : 's'} · monto vendido
+          </span>
+        </div>
+        <div className={'crm-kpi' + (st.sinSeguimiento > 0 ? ' crm-kpi--alerta' : '')}>
+          <span className="crm-kpi__label">Sin seguimiento</span>
+          <strong className="crm-kpi__valor">{st.sinSeguimiento}</strong>
+          <Barra valor={st.abiertos ? st.sinSeguimiento / st.abiertos : 0} />
+          <span className="crm-kpi__pie">
+            abiertos sin fecha para volver a contactar{st.vencidos ? ` · ${st.vencidos} vencido${st.vencidos === 1 ? '' : 's'}` : ''}
+          </span>
+        </div>
       </div>
-      <div className="crm-kpi">
-        <span className="crm-kpi__label">Ganado</span>
-        <strong className="crm-kpi__valor">{montoCorto(st.ganadoMonto)}</strong>
-        <Barra valor={st.ganadoMonto / maxMonto} />
-        <span className="crm-kpi__pie">
-          {st.ganados} ganado{st.ganados === 1 ? '' : 's'} · monto vendido
-        </span>
-      </div>
-      <div className="crm-kpi">
-        <span className="crm-kpi__label">Tasa de cierre</span>
-        <strong className="crm-kpi__valor">{pctTexto(st.tasaCierre)}</strong>
-        <Barra valor={st.tasaCierre} />
-        <span className="crm-kpi__pie">
-          {st.ganados} ganados de {st.ganados + st.perdidos} cerrados (ganados + perdidos)
-        </span>
-      </div>
-      <div className="crm-kpi">
-        <span className="crm-kpi__label">Tasa de respuesta</span>
-        <strong className="crm-kpi__valor">{pctTexto(st.tasaRespuesta)}</strong>
-        <Barra valor={st.tasaRespuesta} />
-        <span className="crm-kpi__pie" title="Cuenta como que contestó si ya está En conversación, Visita / reunión, Cotizado o Ganado.">
-          {st.contestaron} de {st.total} contestaron ⓘ
-        </span>
-      </div>
-      <div className={'crm-kpi' + (st.sinSeguimiento > 0 ? ' crm-kpi--alerta' : '')}>
-        <span className="crm-kpi__label">Sin seguimiento</span>
-        <strong className="crm-kpi__valor">{st.sinSeguimiento}</strong>
-        <Barra valor={st.abiertos ? st.sinSeguimiento / st.abiertos : 0} />
-        <span className="crm-kpi__pie">
-          abiertos sin fecha para volver a contactar{st.vencidos ? ` · ${st.vencidos} vencido${st.vencidos === 1 ? '' : 's'}` : ''}
-        </span>
+      {/* Fila 2: tasas */}
+      <div className="crm-kpis crm-kpis--4">
+        <div className="crm-kpi crm-kpi--tasa">
+          <span className="crm-kpi__label">Tasa de cierre</span>
+          <strong className="crm-kpi__valor">{pctTexto(st.tasaCierre)}</strong>
+          <Barra valor={st.tasaCierre} />
+          <span className="crm-kpi__pie">
+            {st.ganados} ganados de {st.ganados + st.perdidos} cerrados (ganados + perdidos)
+          </span>
+        </div>
+        <div className="crm-kpi crm-kpi--tasa">
+          <span className="crm-kpi__label">Ganados de cotizados</span>
+          <strong className="crm-kpi__valor">{pctTexto(st.tasaGanadosCotizados)}</strong>
+          <Barra valor={st.tasaGanadosCotizados} />
+          <span className="crm-kpi__pie" title="Cuenta como cotizado si está en Cotizado o Ganado, o si tiene monto cotizado capturado (aunque después se haya perdido).">
+            {st.ganados} ganados de {st.cotizados} cotizados ⓘ
+          </span>
+        </div>
+        <div className="crm-kpi crm-kpi--tasa">
+          <span className="crm-kpi__label">Ganados de contactados</span>
+          <strong className="crm-kpi__valor">{pctTexto(st.tasaGanadosContactados)}</strong>
+          <Barra valor={st.tasaGanadosContactados} />
+          <span className="crm-kpi__pie" title="Contactados = los que contestaron (En conversación, Visita / reunión, Cotizado o Ganado).">
+            {st.ganados} ganados de {st.contestaron} que contestaron ⓘ
+          </span>
+        </div>
+        <div className="crm-kpi crm-kpi--tasa">
+          <span className="crm-kpi__label">Tasa de respuesta</span>
+          <strong className="crm-kpi__valor">{pctTexto(st.tasaRespuesta)}</strong>
+          <Barra valor={st.tasaRespuesta} />
+          <span className="crm-kpi__pie" title="Cuenta como que contestó si ya está En conversación, Visita / reunión, Cotizado o Ganado.">
+            {st.contestaron} de {st.total} contestaron ⓘ
+          </span>
+        </div>
       </div>
     </div>
   )
