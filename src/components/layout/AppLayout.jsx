@@ -22,6 +22,7 @@ import {
   canViewPendientes,
   canViewSeccionNotas,
   canViewTareas,
+  canUsarCrm,
   canDeliverOrder,
   canViewFinanzas,
   canViewInventario,
@@ -140,6 +141,8 @@ export default function AppLayout({ children }) {
     { to: '/notas-tienda', label: 'Notas de tienda', show: canViewSeccionNotas(role) },
     // V164 — tareas que los administrativos le asignan al personal.
     { to: '/tareas', label: 'Tareas', show: canViewTareas(role) },
+    // V207 — CRM de prospectos (crm.usar: ventas, admin_tienda, admin_general).
+    { to: '/crm', label: 'CRM', show: canUsarCrm(role) },
     // V196 — manuales de cada proceso: todos los roles los leen.
     { to: '/manuales', label: 'Manuales', show: true },
     // Entrega masiva: marcar varias órdenes como entregadas a la vez (permiso orden.entregar).

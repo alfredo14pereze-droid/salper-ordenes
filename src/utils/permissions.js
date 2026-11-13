@@ -905,6 +905,17 @@ export function canEditarManuales(role) {
   return tiene(role, 'man.editar', () => role === 'admin_general')
 }
 
+// V207 — CRM de prospectos. crm.usar = ver y editar todo el CRM;
+// crm.importar = subir el CSV del Excel viejo. Fallback = siembra de
+// schema_v207_crm_prospectos.sql (se cambia en "Roles y permisos").
+export const CRM_ROLES_ACCESO = ['admin_general', 'admin_tienda', 'ventas']
+export function canUsarCrm(role) {
+  return tiene(role, 'crm.usar', () => CRM_ROLES_ACCESO.includes(role))
+}
+export function canImportarCrm(role) {
+  return tiene(role, 'crm.importar', () => role === 'admin_general')
+}
+
 // 2026-11-11 — Demanda diaria en Niveles de Frisa: solo la ven los admins.
 export function canVerDemandaFrisa(role) {
   return role === 'admin_general' || role === 'admin_fabrica' || role === 'admin_tienda'

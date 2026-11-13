@@ -30,6 +30,9 @@ import TallerosPage from './pages/TallerosPage'
 import NotasTiendaPage from './pages/NotasTiendaPage'
 import TareasPage from './pages/TareasPage'
 import ManualesPage from './pages/ManualesPage'
+import CrmPage from './pages/CrmPage'
+import CrmEmpresaPage from './pages/CrmEmpresaPage'
+import CrmImportarPage from './pages/CrmImportarPage'
 import HojasImpresasPage from './pages/HojasImpresasPage'
 import EntregaMasivaPage from './pages/EntregaMasivaPage'
 import PedidosPage from './pages/PedidosPage'
@@ -122,6 +125,10 @@ function AuthGate() {
           <Route path="/manuales/ver/:manualId" element={<ManualesPage vista="ver" />} />
           <Route path="/manuales/editar/:manualId" element={<ManualesPage vista="editar" />} />
           <Route path="/manuales/nuevo/:seccionId" element={<ManualesPage vista="nuevo" />} />
+          {/* V207 — CRM de prospectos (crm.usar; importar: crm.importar). */}
+          <Route path="/crm" element={<CrmPage />} />
+          <Route path="/crm/importar" element={<CrmImportarPage />} />
+          <Route path="/crm/:id" element={<CrmEmpresaPage />} />
           <Route path="/entregas" element={<EntregaMasivaPage />} />
           {/* V176 — pedidos: varias órdenes con un anticipo, abonos y factura. */}
           <Route path="/pedidos" element={<PedidosPage />} />

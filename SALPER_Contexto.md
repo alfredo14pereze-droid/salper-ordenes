@@ -7989,3 +7989,39 @@ Alfredo confirmó un color ÚNICO por producto Frisa (el mismo de las etiquetas 
   aparece. "Sin generación" sigue mostrando todas sus tallas.
 - Después (mismo día): "Playeras" va hasta arriba de la sección; dentro, "Sin generación" primero a lo ancho y las
   generaciones como tarjetas chicas lado a lado (`.inv-playeras__gens`, en celular una por renglón).
+
+### 2026-11-13 — CRM de prospectos, Parte 1 (V207 + V208)
+Reemplaza el Excel "Formato reporte prospectos". El prompt pedía la rama `fase-2` y el rol `super_admin`: `fase-2`
+está obsoleta (se trabajó en la rama `crm-prospectos`, desde `main` 1f64021) y `super_admin` = `admin_general`.
+- **Tablas nuevas (V207, aplicado por Alfredo el 2026-11-13, verificado):** `crm_empresas` (soft-delete `eliminada_en`,
+  `nombre_norm` generada con `crm_norm_empresa`, `cliente_id` → `clientes` para la Parte 3, `responsable_id` →
+  `profiles`), `crm_contactos` (un solo `es_principal` por empresa, índice único parcial), `crm_actividades` (bitácora),
+  `crm_seguimientos` (índice en `fecha` where `completado_en is null`). No se tocó ninguna tabla existente.
+- **Permisos:** `crm.usar` (ver y editar todo; admin_general, admin_tienda, ventas) y `crm.importar` (solo
+  admin_general). Se cambian en Roles y permisos; fallback en `utils/permissions.js` (`CRM_ROLES_ACCESO`,
+  `canUsarCrm`, `canImportarCrm`). Lectura con RLS (`tiene_permiso('crm.usar')`); escritura solo por RPC `crm_*`
+  (`crm_guardar_empresa`, `crm_cambiar_estatus`, `crm_eliminar_empresa`, `crm_guardar_contacto`,
+  `crm_eliminar_contacto`, `crm_registrar_actividad`, `crm_crear_seguimiento`, `crm_completar_seguimiento`,
+  `crm_empresas_parecidas`, `crm_importar`). Fábrica no ve el módulo.
+- **Reglas:** `perdido` exige motivo; `en_pausa` exige fecha y crea el seguimiento (asignado al responsable). La primera
+  persona que se agrega a una empresa queda como contacto principal.
+- **Anti-duplicados:** `crm_norm_empresa` (SQL) = `normEmpresa` (`utils/crm.js`): sin acentos, minúsculas, sin
+  puntuación, sin "S.A. de C.V." / "S. de R.L." / "S.A.P.I." / "S.C." / "A.C." al final. Si se cambia una, cambiar la
+  otra (probado: dan lo mismo). El alta avisa de parecidas (mismo nombre normalizado o uno contiene al otro) y deja
+  abrir la existente o agregarle el contacto; para crear otra pide confirmar «Sí, es otra empresa».
+- **Rutas:** `/crm` (lista con filtros por estatus/segmento/responsable y búsqueda por empresa/contacto/correo/teléfono),
+  `/crm/:id` (ficha: estatus, datos y montos, contactos, "Volver a contactar", bitácora), `/crm/importar` (solo
+  crm.importar). Menú: «CRM» después de Tareas. Código: `pages/Crm*.jsx`, `components/crm/`, `services/crmService.js`.
+- **Importación (una vez):** CSV UTF-8 con los 13 encabezados del pedido; acepta coma o punto y coma, y estatus/segmento/
+  tipo escritos como en el Excel ("Catálogo enviado", "Educación"→escuela, "WhatsApp"). Vista previa calculada igual que
+  el servidor; `crm_importar` es todo o nada, se junta con empresas que ya existen y no repite contactos (correo, o
+  nombre si no hay correo), actividades ni seguimientos idénticos → correrlo dos veces no duplica. Fechas mal escritas
+  se avisan y se dejan vacías. Responsable de lo importado = quien importa.
+- **V208 `crm_usuarios()` (aplicado por Alfredo el 2026-11-13, verificado):** id + nombre de usuarios activos con crm.usar (la RLS de `profiles` no deja a ventas ver a
+  los demás). Sin V208 la pantalla funciona, pero el selector de responsable solo muestra al usuario actual y los
+  demás salen como «Otra persona».
+- Ejemplo local: `salper-crm-harness` (puerto 5184; PGlite en el navegador con el SQL real de V207/V208 y la RLS activa,
+  `?rol=admin_general|ventas|admin_tienda|corte`), en el scratchpad de esa sesión (`harness-crm/`).
+- **Pendiente (partes 2 y 3, no hechas):** panel "A quién le toca hoy", contador en el menú, registro rápido de
+  contacto, marca "Sin seguimiento"; ganar → cliente, órdenes del cliente en la ficha, dashboard/embudo, correo diario.
+  Tampoco hay todavía borrar/editar una entrada de la bitácora.

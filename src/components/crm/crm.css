@@ -1,0 +1,119 @@
+/* V207 — CRM de prospectos */
+.crm .crm-muted { color: var(--color-text-muted); }
+.crm-acciones { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.crm-volver { display: inline-block; margin-bottom: 8px; color: var(--color-text-muted); text-decoration: none; font-size: 14px; }
+.crm-volver:hover { color: var(--color-black); }
+
+.crm-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-family: 'Barlow Semi Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.crm-badge--borde { border: 1px solid var(--color-border); font-weight: 600; color: var(--color-text-muted); }
+
+.crm-filtros { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+.crm-conteo { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 14px; }
+
+.crm-tabla-wrap { width: 100%; overflow-x: auto; }
+.crm-tabla { width: 100%; }
+.crm-tabla__fila { cursor: pointer; }
+.crm-tabla__empresa { font-weight: 700; color: var(--color-black); text-decoration: none; }
+.crm-tabla__empresa:hover { text-decoration: underline; }
+.crm-tabla--compacta td, .crm-tabla--compacta th { padding: 6px 8px; font-size: 13px; }
+
+.crm-vencido { color: var(--color-danger); font-weight: 700; }
+.crm-hoy { color: var(--color-orange, #c2410c); font-weight: 700; }
+
+/* Formularios */
+.crm-form { display: flex; flex-direction: column; gap: 12px; }
+.crm-form label { display: flex; flex-direction: column; gap: 4px; }
+.crm-form .crm-check, .crm-check { flex-direction: row; align-items: center; gap: 8px; cursor: pointer; }
+.crm-form__botones { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.crm-form--inline { padding: 12px; border: 1px dashed var(--color-border); border-radius: var(--radius-md); margin-bottom: 12px; }
+.crm-subtitulo { margin: 4px 0 0; font-size: 14px; }
+.crm-atajos { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.crm-aviso {
+  background: #fff7e6;
+  border: 1px solid #f5c26b;
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-size: 14px;
+  margin: 0;
+}
+.crm-aviso--fuerte { border-color: var(--color-orange, #c2410c); box-shadow: 0 0 0 2px rgba(194, 65, 12, 0.15); }
+.crm-aviso__lista { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.crm-aviso__lista li { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.crm-aviso__pregunta { margin: 8px 0 0; font-weight: 600; }
+.crm-aviso ul { margin: 6px 0 0; padding-left: 18px; }
+
+/* Ficha */
+.crm-ficha .section-header { justify-content: flex-start; flex-wrap: wrap; }
+.crm-ficha__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.crm-ficha__col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.crm-card { padding: 16px; }
+.crm-card__head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.crm-card__titulo { margin: 0 0 10px; font-family: 'Barlow Semi Condensed', sans-serif; font-size: 18px; }
+.crm-card__head .crm-card__titulo { margin-bottom: 10px; }
+.crm-estatus-opciones { display: flex; flex-wrap: wrap; gap: 6px; }
+.crm-motivo { margin: 10px 0 0; font-size: 14px; }
+
+.crm-datos { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }
+.crm-datos dt { color: var(--color-text-muted); }
+.crm-datos dd { margin: 0; }
+
+.crm-contactos, .crm-seguimientos, .crm-bitacora { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.crm-contacto { border-bottom: 1px solid var(--color-border); padding-bottom: 10px; }
+.crm-contacto:last-child { border-bottom: 0; padding-bottom: 0; }
+.crm-principal { color: var(--color-amber); margin-right: 4px; }
+.crm-contacto__medios { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 4px; font-size: 14px; }
+.crm-contacto__medios a { color: var(--color-black); }
+.crm-contacto__notas { margin: 4px 0 0; font-size: 13px; color: var(--color-text-muted); }
+.crm-contacto__acciones { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+
+.crm-agregar { margin-bottom: 12px; }
+.crm-seguimiento { font-size: 14px; }
+.crm-seguimiento__fecha { font-weight: 700; }
+.crm-seguimiento__detalle { margin-left: 26px; }
+.crm-seguimiento--hecho .crm-seguimiento__fecha { text-decoration: line-through; color: var(--color-text-muted); }
+.crm-completados { margin-top: 12px; font-size: 14px; }
+.crm-completados summary { cursor: pointer; color: var(--color-text-muted); margin-bottom: 8px; }
+
+.crm-bitacora__item { border-left: 3px solid var(--color-amber); padding: 2px 0 2px 10px; }
+.crm-bitacora__head { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 14px; }
+.crm-bitacora__tipo { font-weight: 700; }
+.crm-bitacora__nota { margin: 4px 0 0; font-size: 14px; white-space: pre-wrap; }
+
+.crm-zona-peligro { margin-top: 24px; text-align: right; }
+
+/* Importación */
+.crm-columnas { display: block; padding: 8px 10px; background: var(--color-surface-muted, #f5f5f4); border-radius: var(--radius-md); font-size: 12px; word-break: break-word; margin: 8px 0; }
+.crm-ayuda { font-size: 14px; padding-left: 18px; margin: 8px 0 0; }
+.crm-previa { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.crm-previa__numeros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.crm-previa__numeros > div { border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 10px; text-align: center; display: flex; flex-direction: column; }
+.crm-previa__numeros strong { font-size: 26px; font-family: 'Barlow Semi Condensed', sans-serif; }
+.crm-previa__numeros span { font-size: 12px; color: var(--color-text-muted); }
+.crm-previa details summary { cursor: pointer; }
+.crm-resultado { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+
+@media (max-width: 760px) {
+  .crm-filtros { grid-template-columns: 1fr 1fr; }
+  .crm-filtros__busca { grid-column: 1 / -1; }
+  .crm-ficha__grid { grid-template-columns: 1fr; }
+  .crm-previa__numeros { grid-template-columns: 1fr 1fr; }
+  .crm .form-row { grid-template-columns: 1fr; gap: 12px; }
+  /* En celular la tabla se vuelve tarjetas. */
+  .crm-tabla:not(.crm-tabla--compacta) thead { display: none; }
+  .crm-tabla:not(.crm-tabla--compacta) tr { display: block; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 8px 10px; margin-bottom: 8px; }
+  .crm-tabla:not(.crm-tabla--compacta) td { display: flex; justify-content: space-between; gap: 10px; border: 0; padding: 3px 0; text-align: right; }
+  .crm-tabla:not(.crm-tabla--compacta) td::before { content: attr(data-label); color: var(--color-text-muted); font-size: 12px; text-align: left; }
+  .crm-tabla:not(.crm-tabla--compacta) td:first-child { text-align: left; }
+  .crm-tabla:not(.crm-tabla--compacta) td:first-child::before { content: none; }
+}
