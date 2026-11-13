@@ -73,6 +73,12 @@ export function agruparPlayeras(grupos) {
       continue
     }
     if (!tieneRegistros(x.g)) continue // generación (o variante) vacía: no aparece
+    // En las generaciones solo se ven las tallas con existencia (total de
+    // todas las ubicaciones); las de 0 siguen existiendo en la base y se les
+    // da entrada con "Dar entrada". Sin piezas en ninguna talla, la
+    // generación no aparece. "Sin generación" y otras variantes muestran todo.
+    const items = x.gen != null ? x.g.items.filter((i) => i.total > 0) : x.g.items
+    if (items.length === 0) continue
     const tipoKey = normalizar(x.tipo)
     if (!tipos.has(tipoKey)) tipos.set(tipoKey, { key: tipoKey, label: primeraMayuscula(x.tipo), bloques: [] })
     const orden = x.gen != null ? 0 : esSinGeneracion(x.variante) ? 2 : 1
@@ -81,7 +87,7 @@ export function agruparPlayeras(grupos) {
       titulo: x.gen != null ? `Gen ${x.gen}` : orden === 2 ? 'Sin generación' : x.variante,
       gen: x.gen,
       orden,
-      grupo: { ...x.g, items: [...x.g.items].sort((a, b) => a.tallaOrden - b.tallaOrden) },
+      grupo: { ...x.g, items: [...items].sort((a, b) => a.tallaOrden - b.tallaOrden) },
     })
   }
 

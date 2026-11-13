@@ -7984,3 +7984,6 @@ Alfredo confirmó un color ÚNICO por producto Frisa (el mismo de las etiquetas 
   para mostrar (`gruposVista`). El Reporte PDF sigue con un renglón por modelo (`gruposTodos`). Los demás
   colegios (sin generaciones) quedan igual. El buscador abre "Playeras" y resalta la talla.
 - La cuenta de `.env.capturas` ya no inicia sesión (credenciales inválidas al 2026-11-13).
+- Mismo día, a pedido de Alfredo: en los bloques CON generación solo se ven las tallas con existencia (total de todas
+  las ubicaciones > 0); las de 0 siguen en la base y se les da entrada con "Dar entrada". Una generación sin piezas no
+  aparece. "Sin generación" sigue mostrando todas sus tallas.
