@@ -7973,3 +7973,14 @@ Alfredo confirmó un color ÚNICO por producto Frisa (el mismo de las etiquetas 
   y la columna «Color» van en negritas del tono oscuro sobre el mismo color en claro (`texto`/`fondo` en `PALETA_FRISA`)
   para TODOS los productos, además de la muestra. Lisas marino del taller: texto marino sin muestra (`sinMuestra`).
   En los PDF igual (`estiloTextoFrisa`) y sin cortar palabras con guion. En producción (commit 4f60a1b, bundle index-SQCwiaay.js confirmado).
+
+### 2026-11-13 — Inventario: playeras en un solo desplegable (solo frontend, sin SQL; rama `inventario-playeras`)
+
+- En una sección con al menos una playera CON generación (hoy Instituto Tricio), todas las playeras se juntan en
+  un solo desplegable "Playeras": por tipo (Playera polo, Playera deportiva…) → bloque por generación de la más
+  reciente a la más vieja ("Gen 2038" … "Gen 2029") → otras variantes sin año → "Sin generación" al final.
+  Tallas en el orden de `inv_tallas.orden` (00, 0, 2 … 16, XS … 3XL). Un modelo sin ningún artículo no aparece.
+- Lógica en `src/utils/inventarioPlayeras.js` (+ `.test.js`, `node --test`); `InventarioPage.jsx` solo la usa
+  para mostrar (`gruposVista`). El Reporte PDF sigue con un renglón por modelo (`gruposTodos`). Los demás
+  colegios (sin generaciones) quedan igual. El buscador abre "Playeras" y resalta la talla.
+- La cuenta de `.env.capturas` ya no inicia sesión (credenciales inválidas al 2026-11-13).
