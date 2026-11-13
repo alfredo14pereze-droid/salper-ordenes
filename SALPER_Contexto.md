@@ -8025,3 +8025,27 @@ está obsoleta (se trabajó en la rama `crm-prospectos`, desde `main` 1f64021) y
 - **Pendiente (partes 2 y 3, no hechas):** panel "A quién le toca hoy", contador en el menú, registro rápido de
   contacto, marca "Sin seguimiento"; ganar → cliente, órdenes del cliente en la ficha, dashboard/embudo, correo diario.
   Tampoco hay todavía borrar/editar una entrada de la bitácora.
+
+### 2026-11-13 — CRM: tablero, cifras y estadísticas (sin SQL)
+A pedido de Alfredo (con una imagen de referencia de un CRM tipo tablero). Decisiones suyas: pestañas
+"Tablero | Lista" con el tablero de entrada (se agregó "Estadísticas"); arrastrar una tarjeta cambia el estatus;
+"contestado" se calcula por estatus, sin casilla nueva; cifras de arriba y filtro por mes y responsable.
+- `/crm` ahora: selector "Cifras de" (Todo o un mes) → 5 cifras (`CrmKpis`): En proceso (monto cotizado de los
+  abiertos), Ganado (monto vendido, o cotizado si no hay vendido), Tasa de cierre = ganados / (ganados + perdidos),
+  Tasa de respuesta = contestaron / todos, Sin seguimiento (abiertos sin seguimiento pendiente, + vencidos).
+  "Contestó" = estatus En conversación, Visita / reunión, Cotizado o Ganado (`ESTATUS_CONTESTADO` en `utils/crmStats.js`).
+- Filtro por mes = prospectos con algún contacto registrado en la bitácora ese mes (no hay historial de cambios
+  de estatus ni fecha de "ganado"; las empresas importadas tienen todas `creado_en` del 13-nov). Búsqueda,
+  segmento y responsable también filtran las cifras; el filtro de estatus (solo en Lista) no.
+- Tablero (`components/crm/CrmTablero.jsx`): una columna por estatus con su punto de color, número y suma de montos;
+  tarjeta con empresa, contacto principal (o ubicación), segmento como etiqueta, monto, próximo seguimiento (rojo
+  vencido, naranja hoy) o "Sin seguimiento", e iniciales del responsable. Arrastrar y soltar nativo de HTML5: funciona
+  con mouse; en celular/tablet no se arrastra (el estatus se cambia en la ficha). Soltar en Perdido / En pausa abre
+  el mismo modal de la ficha (`components/crm/EstatusModal.jsx`, movido de la ficha). Columnas largas con scroll propio.
+- Estadísticas (`components/crm/CrmEstadisticas.jsx`): embudo, contactos por semana (últimas 8), contactos por
+  persona y motivos de pérdida. La vista elegida se recuerda en el navegador (`localStorage` `crm.vista`).
+- `fetchCrmLista` ahora trae también `crm_actividades` (id, empresa_id, fecha, tipo, usuario_id).
+- Datos importados del Excel (13-nov): Alfredo corrió el SQL que dejó sin responsable las 66 empresas y los 4
+  seguimientos (`origen = 'Excel de prospectos'`). La bitácora importada también quedó con `usuario_id` de Alfredo
+  (sale en "Contactos por persona"); se le dio el SQL para dejarla sin usuario. Los comentarios sin fecha del Excel
+  quedaron con fecha 31-oct, por eso esa semana sale alta en "Contactos por semana".

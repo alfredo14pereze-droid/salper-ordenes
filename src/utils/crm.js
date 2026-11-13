@@ -4,14 +4,14 @@
 // Estatus del prospecto, en el orden del embudo. Rojo/verde solo para
 // ganado/perdido (son indicadores de estado, regla de identidad visual).
 export const CRM_ESTATUS = [
-  { key: 'nuevo', label: 'Nuevo', bg: '#f1f5f9', fg: '#334155' },
-  { key: 'catalogo_enviado', label: 'Catálogo enviado', bg: '#fef3c7', fg: '#78350f' },
-  { key: 'en_conversacion', label: 'En conversación', bg: '#fde68a', fg: '#78350f' },
-  { key: 'visita_reunion', label: 'Visita / reunión', bg: '#fdba74', fg: '#7c2d12' },
-  { key: 'cotizado', label: 'Cotizado', bg: '#f97316', fg: '#ffffff' },
-  { key: 'ganado', label: 'Ganado', bg: '#15803d', fg: '#ffffff' },
-  { key: 'perdido', label: 'Perdido', bg: '#b91c1c', fg: '#ffffff' },
-  { key: 'en_pausa', label: 'En pausa', bg: '#e2e8f0', fg: '#475569' },
+  { key: 'nuevo', label: 'Nuevo', dot: '#94a3b8', bg: '#f1f5f9', fg: '#334155' },
+  { key: 'catalogo_enviado', label: 'Catálogo enviado', dot: '#f5b301', bg: '#fef3c7', fg: '#78350f' },
+  { key: 'en_conversacion', label: 'En conversación', dot: '#f59e0b', bg: '#fde68a', fg: '#78350f' },
+  { key: 'visita_reunion', label: 'Visita / reunión', dot: '#f97316', bg: '#fdba74', fg: '#7c2d12' },
+  { key: 'cotizado', label: 'Cotizado', dot: '#c2410c', bg: '#f97316', fg: '#ffffff' },
+  { key: 'ganado', label: 'Ganado', dot: '#15803d', bg: '#15803d', fg: '#ffffff' },
+  { key: 'perdido', label: 'Perdido', dot: '#b91c1c', bg: '#b91c1c', fg: '#ffffff' },
+  { key: 'en_pausa', label: 'En pausa', dot: '#64748b', bg: '#e2e8f0', fg: '#475569' },
 ]
 export const ESTATUS_POR_KEY = Object.fromEntries(CRM_ESTATUS.map((e) => [e.key, e]))
 export const estatusLabel = (k) => ESTATUS_POR_KEY[k]?.label || k || '—'

@@ -24,15 +24,15 @@ async function todas(armar) {
 export async function fetchCrmLista() {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }
-  const [emp, con, seg] = await Promise.all([
+  const [emp, con, seg, act] = await Promise.all([
     todas(() => supabase.from('crm_empresas').select('*').order('nombre')),
     todas(() => supabase.from('crm_contactos').select('id, empresa_id, nombre, puesto, telefono, correo, es_principal')),
     todas(() => supabase.from('crm_seguimientos').select('id, empresa_id, fecha, nota, asignado_a').is('completado_en', null).order('fecha')),
+    // Para las estadísticas: solo lo necesario de la bitácora.
+    todas(() => supabase.from('crm_actividades').select('id, empresa_id, fecha, tipo, usuario_id').order('fecha')),
   ])
-  if (emp.error) return { data: null, error: emp.error }
-  if (con.error) return { data: null, error: con.error }
-  if (seg.error) return { data: null, error: seg.error }
-  return { data: { empresas: emp.data, contactos: con.data, seguimientos: seg.data }, error: null }
+  for (const r of [emp, con, seg, act]) if (r.error) return { data: null, error: r.error }
+  return { data: { empresas: emp.data, contactos: con.data, seguimientos: seg.data, actividades: act.data }, error: null }
 }
 
 export async function fetchCrmEmpresa(id) {
