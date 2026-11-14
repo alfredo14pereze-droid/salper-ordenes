@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { articulosDeFilas, articulosDeCSV, totalDelReporte, fechaDelReporte, ligarMicrosip, diasDesde } from './frisaMicrosip.js'
+import { articulosDeFilas, articulosDeCSV, columnasDelReporte, totalDelReporte, fechaDelReporte, ligarMicrosip, diasDesde } from './frisaMicrosip.js'
 
 const filas = [
   ['SALPER S.A. DE C.V.'], ['Existencia y valor del inventario'], ['Al 31 de diciembre del 2026'], ['Línea: FRISA'],
@@ -43,4 +43,29 @@ test('liga por código aprendido, por clave y por nombre (espacios de más), y c
 test('días desde la última revisión', () => {
   assert.equal(diasDesde('2026-10-27', new Date(2026, 10, 6)), 10)
   assert.equal(diasDesde(null), null)
+})
+
+test('reporte con "Solo artículos con disponible": nombre en la C y cantidad en "Disponible" (L)', () => {
+  const v = (codigo, nombre, n) => [codigo, null, nombre, null, null, null, null, 'Pza', null, null, null, n]
+  const marzo = [
+    ['SALPER S.A. DE C.V.'], ['Existencia y valor del inventario'], ['Al 31 de diciembre del 2026'], ['Solo existencias'],
+    ['Solo artículos con disponible'], ['Artículo', null, null, null, null, null, null, 'U. med.', null, null, null, 'Disponible'], [],
+    ['Línea: FRISA'],
+    v('1012564', 'PANTALON DE MEZCLILLA TALLA 34 14OZ FRISA LARGO 34', 23),
+    v('PLAFR-03XL-01MCRO2I', 'PLAYERA C/R M/C S/REFLEJANTE 2 IMP. ROJA FRISA T-3XL', 19),
+    ['2 artículos en FRISA', null, null, null, null, null, null, null, null, null, null, 42],
+  ]
+  assert.deepEqual(columnasDelReporte(marzo), { cantidad: 11, columna: 'Disponible' })
+  assert.deepEqual(articulosDeFilas(marzo), [
+    { codigo: '1012564', nombre: 'PANTALON DE MEZCLILLA TALLA 34 14OZ FRISA LARGO 34', existencia: 23 },
+    { codigo: 'PLAFR-03XL-01MCRO2I', nombre: 'PLAYERA C/R M/C S/REFLEJANTE 2 IMP. ROJA FRISA T-3XL', existencia: 19 },
+  ])
+  assert.deepEqual(totalDelReporte(marzo), { articulos: 2, piezas: 42 })
+  assert.equal(fechaDelReporte(marzo), '2026-12-31')
+})
+
+test('si trae "Existencia" y "Disponible", gana "Existencia"', () => {
+  const f = [['Artículo', null, 'Existencia', 'Disponible'], ['1', 'X', 5, 3]]
+  assert.deepEqual(columnasDelReporte(f), { cantidad: 2, columna: 'Existencia' })
+  assert.equal(articulosDeFilas(f)[0].existencia, 5)
 })

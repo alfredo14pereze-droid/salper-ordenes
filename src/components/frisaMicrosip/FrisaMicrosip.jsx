@@ -5,7 +5,8 @@ import { Loading, ErrorState } from '../common/States'
 import { canRevisarMicrosip } from '../../utils/permissions'
 import { fetchMicrosipTodo, guardarRevisionMicrosip } from '../../services/frisaMicrosipService'
 import { leerXlsx } from '../../utils/xlsxLector'
-import { articulosDeFilas, articulosDeCSV, totalDelReporte, fechaDelReporte, ligarMicrosip, diasDesde } from '../../utils/frisaMicrosip'
+import { articulosDeFilas, columnasDelReporte, totalDelReporte, fechaDelReporte, ligarMicrosip, diasDesde } from '../../utils/frisaMicrosip'
+import { parseCSV } from '../../utils/frisaNiveles'
 import { hoyISO } from '../../utils/frisaSurtido'
 import { NombreFrisa, fechaCorta } from '../frisaNiveles/comunes'
 
@@ -59,22 +60,20 @@ export default function FrisaMicrosip() {
     setErrArchivo(null)
     setAviso(null)
     try {
-      let filas = null
-      let articulos
-      if (/\.csv$/i.test(file.name) || file.type === 'text/csv') {
-        articulos = articulosDeCSV(await file.text())
-      } else {
-        filas = await leerXlsx(await file.arrayBuffer())
-        articulos = articulosDeFilas(filas)
-      }
+      const filas = /\.csv$/i.test(file.name) || file.type === 'text/csv'
+        ? parseCSV(await file.text())
+        : await leerXlsx(await file.arrayBuffer())
+      const articulos = articulosDeFilas(filas)
       if (!articulos.length) throw new Error('No encontré artículos en el archivo. ¿Es el reporte "Existencia y valor del inventario" de Microsip?')
-      const total = filas ? totalDelReporte(filas) : null
-      setArchivo({ nombre: file.name, articulos, total })
+      const total = totalDelReporte(filas)
+      // Si Microsip lo exportó con "Solo artículos con disponible", la cantidad viene en "Disponible".
+      const { columna } = columnasDelReporte(filas)
+      setArchivo({ nombre: file.name, articulos, total, columna })
       setManual({})
       // Por omisión se ajustan todas las que tienen diferencia.
       const r = ligarMicrosip(articulos, datos.productos, datos.codigos)
       setAjustar(new Set(r.lineas.filter((l) => l.diferencia !== 0).map((l) => l.producto.id)))
-      const f = filas ? fechaDelReporte(filas) : null
+      const f = fechaDelReporte(filas)
       if (f && f <= hoyISO()) setFecha(f)
     } catch (e) {
       setArchivo(null)
@@ -140,6 +139,13 @@ export default function FrisaMicrosip() {
             {archivo.total ? ` (el reporte dice ${archivo.total.articulos} artículos, ${num(archivo.total.piezas)} piezas${archivo.total.articulos !== archivo.articulos.length ? ' — no cuadra, revisa el archivo' : ''})` : ''}.
             {' '}{comparacion.lineas.length} ligados · <strong>{conDif.length} con diferencia</strong> · {iguales} iguales.
           </p>
+          {archivo.columna === 'Disponible' && (
+            <p className="frisa__nota">
+              <strong className="frisa__falta">Ojo:</strong> este reporte no trae la columna "Existencia"; se tomó la columna
+              "Disponible", que puede no coincidir con la existencia. Para la revisión normal exporta el reporte con la
+              columna "Existencia".
+            </p>
+          )}
 
           {conDif.length > 0 && (
             <div className="revision__tabla-wrap">

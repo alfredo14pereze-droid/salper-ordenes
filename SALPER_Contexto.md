@@ -8110,3 +8110,14 @@ Pedido de Alfredo: ver qué ha hecho y qué le falta a cada quien. Solo pantalla
   con 5 personas y 6 tareas (directa pendiente vencida, directa hecha, rol cada quien, rol basta con uno, todo
   el personal × los 2 modos, una persona dada de alta después): los conteos por persona, la tabla, la URL al
   recargar, ventas sin filtro y celular sin scroll horizontal.
+
+### 2026-11-13 — Revisión Microsip acepta el reporte con "Disponible" (solo frontend, sin SQL)
+
+- Microsip exporta "Existencia y valor del inventario" con otro acomodo si se marcan "Solo existencias / Solo artículos
+  con disponible": código en A, nombre en C, cantidad en L bajo "Disponible", y el total como "66 artículos en FRISA".
+  Antes la página solo leía A/B/C ("No encontré artículos en el archivo").
+- `columnasDelReporte` (`utils/frisaMicrosip.js`) busca el encabezado "Artículo" y toma la columna "Existencia"; si no
+  existe, "Disponible". El nombre es el primer texto entre el código y esa columna. Si usó "Disponible", la pantalla lo
+  avisa. El CSV pasa por el mismo lector (ahora también saca total y fecha).
+- Ojo: con los archivos de Alfredo del 13-nov, 9 claves traían más piezas en "Disponible" que en "Existencia"
+  (4,499 vs 4,435). La revisión normal debe hacerse con "Existencia".

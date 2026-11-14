@@ -4,17 +4,56 @@ import { parseCSV, numeroCSV } from './frisaNiveles.js'
 
 const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim()
 
+// Columnas del reporte. Microsip lo exporta con distinto acomodo según las
+// opciones que se elijan:
+//   normal:  Artículo | nombre | Existencia                         (A, B, C)
+//   "Solo existencias / Solo artículos con disponible":
+//            Artículo | — | nombre | … | U. med. | … | Disponible   (A, C, L)
+// Se buscan por el título del encabezado ("Artículo" en la 1ª columna):
+// la cantidad sale de "Existencia" y, si el reporte no la trae, de
+// "Disponible". Sin encabezado reconocible se usa el acomodo normal.
+// El nombre es el primer texto entre el código y la columna de cantidad.
+const tituloCelda = (c) => norm(c).toLowerCase()
+export function columnasDelReporte(filas) {
+  for (const f of (filas || []).slice(0, 20)) {
+    if (!/^articulo/.test(tituloCelda(f?.[0]))) continue
+    const titulos = Array.from(f, tituloCelda)
+    const ex = titulos.indexOf('existencia')
+    if (ex > 0) return { cantidad: ex, columna: 'Existencia' }
+    const disp = titulos.indexOf('disponible')
+    if (disp > 0) return { cantidad: disp, columna: 'Disponible' }
+  }
+  return { cantidad: 2, columna: 'Existencia' }
+}
+
+const esRenglonTotal = (codigo) =>
+  /^total\b/i.test(codigo) || /^art[ií]culo$/i.test(codigo) || /^\d+\s+art[ií]culos?\b/i.test(codigo)
+
+function nombreDe(f, hasta) {
+  for (let i = 1; i < hasta; i++) {
+    const t = String(f?.[i] ?? '').trim()
+    if (t && typeof f[i] !== 'number') return t
+  }
+  return ''
+}
+
+function cantidadDe(f, col) {
+  return typeof f?.[col] === 'number' ? f[col] : numeroCSV(f?.[col])
+}
+
 // filas: arreglo de renglones (de leerXlsx o de parseCSV).
-// Artículo = renglón con código en la 1ª columna, nombre en la 2ª y existencia numérica en la 3ª
-// (se saltan encabezados, "Total 63 artículos", "1 artículos sin existencia").
+// Artículo = renglón con código en la 1ª columna, nombre y cantidad numérica
+// (se saltan encabezados, "Línea: FRISA", "Total 63 artículos",
+// "66 artículos en FRISA", "1 artículos sin existencia").
 export function articulosDeFilas(filas) {
+  const { cantidad } = columnasDelReporte(filas)
   const out = []
   for (const f of filas || []) {
     const codigo = String(f?.[0] ?? '').trim()
-    const nombre = String(f?.[1] ?? '').trim()
-    const ex = typeof f?.[2] === 'number' ? f[2] : numeroCSV(f?.[2])
+    const nombre = nombreDe(f, cantidad)
+    const ex = cantidadDe(f, cantidad)
     if (!codigo || !nombre || ex == null || !Number.isFinite(ex)) continue
-    if (/^total\b/i.test(codigo) || /^art[ií]culo$/i.test(codigo)) continue
+    if (esRenglonTotal(codigo)) continue
     out.push({ codigo, nombre, existencia: Math.round(ex) })
   }
   return out
@@ -22,11 +61,14 @@ export function articulosDeFilas(filas) {
 
 export const articulosDeCSV = (texto) => articulosDeFilas(parseCSV(texto))
 
-// "Total 63 artículos … 3717" del reporte, para comprobar que se leyó todo.
+// "Total 63 artículos … 3717" o "66 artículos en FRISA … 4499" del reporte,
+// para comprobar que se leyó todo.
 export function totalDelReporte(filas) {
+  const { cantidad } = columnasDelReporte(filas)
   for (const f of filas || []) {
-    const m = String(f?.[0] ?? '').match(/^total\s+(\d+)\s+art/i)
-    if (m) return { articulos: Number(m[1]), piezas: typeof f[2] === 'number' ? f[2] : numeroCSV(f[2]) }
+    const texto = String(f?.[0] ?? '')
+    const m = texto.match(/^total\s+(\d+)\s+art/i) || texto.match(/^(\d+)\s+art[ií]culos?\s+en\b/i)
+    if (m) return { articulos: Number(m[1]), piezas: cantidadDe(f, cantidad) }
   }
   return null
 }
