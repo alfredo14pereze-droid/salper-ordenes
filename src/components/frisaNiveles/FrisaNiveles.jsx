@@ -12,7 +12,6 @@ import { EstadoBadge, fechaCorta, NombreFrisa, ColorFrisa } from './comunes'
 import { nombreFrisa } from '../../utils/frisaColores'
 import FrisaNivelesDetalle from './FrisaNivelesDetalle'
 import FrisaNivelesSupuestos from './FrisaNivelesSupuestos'
-import FrisaNivelesImportar from './FrisaNivelesImportar'
 import FrisaNivelesExportar from './FrisaNivelesExportar'
 
 const num = (n) => (n == null ? '—' : Number(n).toLocaleString('es-MX'))
@@ -35,7 +34,7 @@ export default function FrisaNiveles() {
   const [error, setError] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [filtros, setFiltros] = useState({ estado: 'todos', tipo: '', color: '', texto: '', mostrarSinMovimiento: true }) // 2026-11-12: siempre se ven (con su etiqueta)
-  const [modal, setModal] = useState(null) // { tipo: 'detalle'|'supuestos'|'importar'|'exportar', clave? }
+  const [modal, setModal] = useState(null) // { tipo: 'detalle'|'supuestos'|'exportar', clave? }
 
   const recargar = useCallback(async () => {
     // V185 — también las órdenes surtidas sin entregar (apartado).
@@ -89,22 +88,16 @@ export default function FrisaNiveles() {
               Exportar A PEDIR
             </button>
           )}
+          {/* "Importar del Sheet" se quitó el 2026-11-13: el Sheet ya se importó y no se vuelve a usar. */}
           {puedeSupuestos && (
-            <>
-              <button type="button" className="btn btn--secondary btn--small" onClick={() => setModal({ tipo: 'supuestos' })}>Supuestos</button>
-              <button type="button" className="btn btn--ghost btn--small" onClick={() => setModal({ tipo: 'importar' })}>Importar del Sheet</button>
-            </>
+            <button type="button" className="btn btn--secondary btn--small" onClick={() => setModal({ tipo: 'supuestos' })}>Supuestos</button>
           )}
         </div>
       </div>
 
       {!filas.length ? (
         <div className="card frisa__vacio">
-          <p>Todavía no hay claves.{' '}
-            {puedeSupuestos
-              ? <>Toca <strong>Importar del Sheet</strong> y sube <em>Niveles.csv</em> y <em>Supuestos.csv</em>.</>
-              : 'Un administrador de fábrica tiene que importar el Sheet.'}
-          </p>
+          <p>Todavía no hay claves.</p>
         </div>
       ) : (
         <>
@@ -192,9 +185,6 @@ export default function FrisaNiveles() {
       {modal?.tipo === 'supuestos' && (
         <FrisaNivelesSupuestos cfg={cfg} productos={datos.productos} onClose={() => setModal(null)}
           onGuardado={(c) => { setDatos((d) => ({ ...d, config: c })); setModal(null) }} />
-      )}
-      {modal?.tipo === 'importar' && (
-        <FrisaNivelesImportar existentes={datos.productos} onClose={() => setModal(null)} recargar={recargar} />
       )}
       {modal?.tipo === 'exportar' && (
         <FrisaNivelesExportar filas={filas} cfg={cfg} onClose={() => setModal(null)} />

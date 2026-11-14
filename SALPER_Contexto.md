@@ -8121,3 +8121,9 @@ Pedido de Alfredo: ver qué ha hecho y qué le falta a cada quien. Solo pantalla
   avisa. El CSV pasa por el mismo lector (ahora también saca total y fecha).
 - Ojo: con los archivos de Alfredo del 13-nov, 9 claves traían más piezas en "Disponible" que en "Existencia"
   (4,499 vs 4,435). La revisión normal debe hacerse con "Existencia".
+
+### 2026-11-13 — Frisa · Niveles: se quitó "Importar del Sheet" (solo frontend, sin SQL)
+
+- El Sheet "Consumos Frisa Niveles" ya se importó (V184) y no se vuelve a usar: se quitaron el botón, el modal
+  `FrisaNivelesImportar.jsx` y el texto que mandaba a importarlo cuando no hay claves. Las funciones del servicio y
+  la base no se tocaron. Ningún manual de Frisa lo mencionaba.
