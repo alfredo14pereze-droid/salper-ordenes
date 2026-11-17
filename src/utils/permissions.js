@@ -925,3 +925,16 @@ export function canVerDemandaFrisa(role) {
 export function canVerMovimientosFrisa(role) {
   return role === 'admin_general'
 }
+
+// V209 — Inventario de batas de ATR. Fallback = siembra de
+// schema_v209_atr_inventario.sql (se cambia en "Roles y permisos").
+export function canVerAtr(role) {
+  return tiene(role, 'atr.ver', () =>
+    ['admin_general', 'admin_fabrica', 'admin_tienda', 'terminado', 'admin_fabrica_lectura'].includes(role))
+}
+export function canEntregarAtr(role) {
+  return tiene(role, 'atr.entregar', () => ['admin_general', 'admin_fabrica', 'terminado'].includes(role))
+}
+export function canCargarAtr(role) {
+  return tiene(role, 'atr.cargar', () => ['admin_general', 'admin_fabrica'].includes(role))
+}

@@ -1,0 +1,42 @@
+/* V209 — Inventario ATR */
+.atr-muted { color: var(--color-text-muted); }
+.atr-acciones { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.atr-volver { display: inline-block; margin-bottom: 8px; color: var(--color-text-muted); text-decoration: none; font-size: 14px; }
+.atr-volver:hover { color: var(--color-black); }
+
+.atr-filtros { display: grid; grid-template-columns: 2fr 2fr auto; gap: 10px; align-items: center; margin-bottom: 8px; }
+.atr-check { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; white-space: nowrap; }
+.atr-conteo { margin: 4px 0 8px; font-size: 14px; }
+
+.atr-tabla-wrap { width: 100%; overflow-x: auto; }
+.atr-tabla { width: 100%; }
+.atr-tabla__fila { cursor: pointer; }
+.atr-num { text-align: right; font-variant-numeric: tabular-nums; }
+.atr-negativo { color: var(--color-danger); font-weight: 600; }
+.atr-revertido td { color: var(--color-text-muted); text-decoration: line-through; text-decoration-color: var(--color-border); }
+.atr-fila--roja td { background: color-mix(in srgb, var(--color-danger) 10%, transparent); }
+.atr-historial td { font-size: 13px; vertical-align: top; }
+
+.atr-campo { display: block; margin: 10px 0; }
+.atr-bloque { border: 1px solid var(--color-border); border-radius: 8px; padding: 8px 12px 12px; margin: 10px 0; }
+.atr-quitar { border: 0; background: none; font-size: 18px; line-height: 1; cursor: pointer; color: var(--color-text-muted); }
+.atr-tallas { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.atr-talla { display: flex; flex-direction: column; gap: 2px; }
+.atr-talla__nombre { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; }
+.atr-talla__hay { font-size: 12px; }
+.atr-input--negativo { border-color: var(--color-danger); }
+
+.atr-sentido { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 10px 0 4px; }
+.atr-sentido__cant { width: 110px; }
+
+.atr-aviso { border: 1px solid var(--color-amber); background: color-mix(in srgb, var(--color-amber) 14%, transparent); border-radius: 8px; padding: 10px 12px; margin: 10px 0; font-size: 14px; display: grid; gap: 8px; }
+.atr-pie { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+.atr-columnas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.atr-columnas label { display: grid; gap: 4px; font-size: 13px; }
+.atr-ligar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.atr-ligar select { min-width: 240px; }
+
+@media (max-width: 720px) {
+  .atr-filtros, .atr-columnas { grid-template-columns: 1fr; }
+}

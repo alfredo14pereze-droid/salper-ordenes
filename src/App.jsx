@@ -30,6 +30,8 @@ import TallerosPage from './pages/TallerosPage'
 import NotasTiendaPage from './pages/NotasTiendaPage'
 import TareasPage from './pages/TareasPage'
 import ManualesPage from './pages/ManualesPage'
+import AtrPage from './pages/AtrPage'
+import AtrCargaPage from './pages/AtrCargaPage'
 import CrmPage from './pages/CrmPage'
 import CrmEmpresaPage from './pages/CrmEmpresaPage'
 import CrmImportarPage from './pages/CrmImportarPage'
@@ -125,6 +127,9 @@ function AuthGate() {
           <Route path="/manuales/ver/:manualId" element={<ManualesPage vista="ver" />} />
           <Route path="/manuales/editar/:manualId" element={<ManualesPage vista="editar" />} />
           <Route path="/manuales/nuevo/:seccionId" element={<ManualesPage vista="nuevo" />} />
+          {/* V209 — Inventario de batas de ATR (atr.ver; carga inicial: atr.cargar). */}
+          <Route path="/atr" element={<AtrPage />} />
+          <Route path="/atr/carga" element={<AtrCargaPage />} />
           {/* V207 — CRM de prospectos (crm.usar; importar: crm.importar). */}
           <Route path="/crm" element={<CrmPage />} />
           <Route path="/crm/importar" element={<CrmImportarPage />} />

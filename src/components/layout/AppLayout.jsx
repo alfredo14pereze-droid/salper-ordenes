@@ -35,8 +35,7 @@ import {
   FABRICA_ETAPA_ROLES,
   ROLE_LABELS,
   esChofer,
-  RUTAS_CHOFER,
-} from '../../utils/permissions'
+  RUTAS_CHOFER, canVerAtr } from '../../utils/permissions'
 import { esRolDeEstacion } from '../../config/vistasPorRol'
 import { PEDIDOS_PROVEEDOR_HABILITADO } from '../../utils/featureFlags'
 import useCrmContador from '../crm/useCrmContador'
@@ -185,6 +184,8 @@ export default function AppLayout({ children }) {
     { to: '/talleros', label: 'Talleros', show: canViewTalleros(role) },
     // V95 — Inventario ya abierto por rol (ver canViewInventario).
     { to: '/inventario', label: 'Inventario', show: canViewInventario(role) },
+    // V209 — inventario de batas de ATR (atr.ver).
+    { to: '/atr', label: 'Inventario ATR', show: canVerAtr(role) },
     // V100 — Entrada/Ajuste de tela, admin_fabrica/admin_general.
     // V111 — también captura_produccion (Juanis), solo para entradas —
     // dentro de la pantalla se le oculta "Ajuste" (ver InventarioTelaPage.jsx).
@@ -237,6 +238,8 @@ export default function AppLayout({ children }) {
           ...(canViewPendientes(role) ? [{ to: '/pendientes', label: 'Pendientes' }] : []),
           // 2026-11-09 — Jackie y Adriana (terminado) suben a bodega y reciben la playera lisa de Frisa.
           ...(canViewSeccionFrisa(role) ? [{ to: '/frisa', label: 'Frisa' }] : []),
+          // V209 — terminado registra entregas de batas a ATR.
+          ...(canVerAtr(role) ? [{ to: '/atr', label: 'ATR' }] : []),
           // V200 — costura consulta las hojas de operaciones impresas.
           ...(esCosturaConsultaHojas(role) ? [{ to: '/hojas-impresas', label: 'Hojas impresas' }] : []),
           { to: '/manuales', label: 'Manuales' },
