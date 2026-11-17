@@ -40,3 +40,8 @@
 @media (max-width: 720px) {
   .atr-filtros, .atr-columnas { grid-template-columns: 1fr; }
 }
+
+/* V211 — etiqueta en la orden */
+.atr-etiqueta { display: flex; flex-direction: column; gap: 4px; margin: 0 0 12px; font-size: 14px; }
+.atr-etiqueta__ok { align-self: flex-start; padding: 4px 12px; border-radius: 999px; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; color: var(--color-good); border: 1px solid var(--color-good); background: color-mix(in srgb, var(--color-good) 10%, transparent); }
+.atr-etiqueta__aviso { color: var(--color-danger); }

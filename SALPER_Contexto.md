@@ -8127,3 +8127,76 @@ Pedido de Alfredo: ver qué ha hecho y qué le falta a cada quien. Solo pantalla
 - El Sheet "Consumos Frisa Niveles" ya se importó (V184) y no se vuelve a usar: se quitaron el botón, el modal
   `FrisaNivelesImportar.jsx` y el texto que mandaba a importarlo cuando no hay claves. Las funciones del servicio y
   la base no se tocaron. Ningún manual de Frisa lo mencionaba.
+
+### 2026-11-17 — Inventario de batas de ATR (V209, V210, V211)
+
+ATR es un cliente al que solo se le fabrican batas. Ahora su inventario vive en SALPER: arranca con una carga
+inicial y se alimenta solo cada vez que se completa Terminado en una orden de ATR. Las tres migraciones son
+aditivas y ya están APLICADAS en Supabase (verificadas: anon 401).
+
+**Regla central: existencia = suma de movimientos.** Nunca se edita un número. La tabla `atr_movimientos` es una
+bitácora y la vista `atr_existencias` (con `security_invoker`) suma por producto + talla. Nada se borra: para
+deshacer una entrada se marca `revertido_en` y se agrega un movimiento de signo contrario.
+
+**V209 — cliente, catálogo y tablas** (`schema_v209_atr_inventario.sql`)
+- Cliente `ATR`, tipo industrial (no existe en el sistema la idea de "cliente de stock vs. de venta").
+- **Un producto por bata y color** en `productos` (catálogo por cliente de V133): "Bata con bolsa Blanca", "Bata sin
+  bolsa Naranja"… 9 con bolsa + 14 sin bolsa = 23; `garment = 'Bata'`, `especificaciones.bolsa` (true/false), tallas
+  CH…4XL. Así una orden se liga sola por `items[].producto_id` y el color nunca se compara como texto libre.
+  El 2026-11-17 "Verde Jade" pasó a llamarse **"Verde Supervisor"** (`datos_2026-11-17_atr_verde_supervisor.sql`, corrido).
+- `atr_movimientos`: `producto_id`, `talla`, `tipo` (`carga_inicial` | `entrada_produccion` | `reversa_produccion` |
+  `salida_entrega` | `ajuste`), `cantidad` (+ entra, − sale; el signo lo exige un CHECK por tipo), `order_id`,
+  `item_index`, `size_index`, `revierte_id`, `revertido_en`, `fecha_corte` (obligatoria en carga inicial), `nota`
+  (obligatoria en ajuste), `usuario_id`, `usuario_nombre`, `creado_en`.
+- **No existe `orden_linea_id`**: lo surtido vive en `orders.items[i].sizes[j].cantidad_surtida` (V26) y
+  `orden_lineas` (V159) solo tiene filas en órdenes con precio. La línea de una orden se identifica por
+  **orden + número de prenda + número de talla**. Índice único `atr_mov_entrada_vigente_key` sobre
+  `(order_id, item_index, size_index)` donde `tipo = 'entrada_produccion' and revertido_en is null`: una línea
+  nunca está sumada dos veces a la vez, pero sí se puede volver a sumar después de revertirla.
+- Lectura solo con permiso (RLS `tiene_permiso('atr.ver')`); escritura solo por RPC.
+- Permisos (editables en Roles y permisos): `atr.ver` = admin_general, admin_fabrica, admin_tienda, terminado,
+  admin_fabrica_lectura · `atr.entregar` = admin_general, admin_fabrica, terminado · `atr.cargar` (carga inicial
+  y ajustes) = admin_general, admin_fabrica. (El prompt decía `super_admin`: es `admin_general`.)
+
+**V210 — escritura** (`schema_v210_atr_movimientos_rpc.sql`): `atr_cargar_inicial(fecha_corte, lineas,
+otra_carga)` (si ya hay una carga pide `otra_carga = true` y la nueva **se suma**), `atr_registrar_entrega(lineas,
+nota, permitir_negativo)` (si alguna talla quedaría en negativo responde `NEGATIVO: …` y no guarda sin
+confirmación), `atr_registrar_ajuste(producto, talla, cantidad, nota)`, `atr_crear_producto(con_bolsa, color)`.
+Todas validan que el producto sea de ATR y usan `pg_advisory_xact_lock` para que dos entregas simultáneas no
+dejen negativos sin aviso.
+
+**V211 — entrada automática al completar Terminado** (`schema_v211_atr_entrada_terminado.sql`)
+- Una sola regla, en la base: una orden de ATR tiene sumado lo **surtido** (no lo pedido) si y solo si su etapa
+  Terminado está `completado` y la orden no está eliminada. `atr_sincronizar_orden(order_id)` compara lo que
+  debería estar sumado (`atr_lineas_orden`) contra las entradas vigentes y corrige la diferencia. Es idempotente.
+- Se dispara con: `orden_etapas_atr_trg` (etapa terminado: insert, delete, cambio de estado), `orders_atr_trg`
+  (cambio de `items`, `eliminada_en` o `client_id`) y `orders_atr_borrar_trg` (BEFORE DELETE: revierte antes de un
+  borrado definitivo). Cubre: completar, volver a guardar Completado (no duplica), reabrir (revierte), corregir lo
+  surtido después, eliminar/restaurar y borrar la orden.
+- Solo cuentan prendas elegidas del catálogo de ATR (`items[].producto_id`); tallas sin `cantidad_surtida` o en 0
+  no suman. Los movimientos automáticos llevan `usuario_nombre` = "<quien hizo el cambio> (automático)".
+- `atr_estado_orden(order_id)` (cualquier sesión): `es_atr`, `sumado`, `piezas`, `sumado_en`, `prendas_sin_ligar`.
+- Probado SOLO en PGlite con el SQL real (sin crear órdenes en producción, para no gastar folios): los 5 casos del
+  pedido (sumar lo surtido; no duplicar; reabrir revierte y volver a completar suma una vez; otro cliente no toca;
+  borrar datos de prueba) más corregir surtido, eliminar/restaurar y borrado definitivo.
+
+**Frontend**
+- Menú "Inventario ATR" (`/atr`, `AtrPage.jsx`); a terminado le sale "ATR" en su menú de estación. Tabla producto ·
+  talla · color · existencia, buscador, filtro por producto, "Ver tallas en 0"; clic en fila → historial
+  (`AtrHistorialModal`: fecha, tipo, cantidad, folio de la orden, quién, nota).
+- "Carga inicial" (`/atr/carga`, `AtrCargaPage.jsx`): .xlsx (lector propio `xlsxLector.js`) o CSV; adivina
+  columnas y deja cambiarlas; vista previa obligatoria con lo que no liga en rojo (asignar, dar de alta u omitir);
+  fecha de corte; aviso si ya hay carga. Lógica pura con pruebas en `utils/atrCarga.js` / `atrCarga.test.js`.
+- "Registrar entrega a ATR" (`AtrEntregaModal`) y "Ajuste" (`AtrAjusteModal`, nota obligatoria).
+- Etiqueta `AtrEtiquetaOrden` en el detalle de la orden y en la pantalla de Terminado: "Sumado al inventario ATR ✓ ·
+  N batas", o aviso en rojo si hay prendas que no vienen del catálogo de ATR.
+- Ejemplo local: `salper-atr-harness` (puerto 5183, `.claude/harness-atr/`, PGlite en el navegador con V209–V211;
+  `?rol=…`, `#/orden-prueba` para el trigger).
+
+**Pendiente**
+- La carga inicial real la hace Alfredo desde la app con `~/Documents/ATR_carga_inicial.csv` (98 líneas, 1,756 batas,
+  ya con Verde Supervisor).
+- Las órdenes de ATR deben capturarse con el cliente ATR y cada bata elegida de su catálogo; las escritas a mano no
+  se suman (la etiqueta lo avisa).
+- La primera orden real de ATR que complete Terminado es la prueba en vivo del trigger: revisar que la etiqueta y el
+  historial cuadren con lo surtido.

@@ -27,6 +27,7 @@ import OrderBordadosCard from '../components/orders/OrderBordadosCard'
 import OrderDisenosCard from '../components/orders/OrderDisenosCard'
 import { DisenoAutorizadoCard } from '../components/orders/DisenoAutorizado'
 import OrderSurtidoCard from '../components/orders/OrderSurtidoCard'
+import AtrEtiquetaOrden from '../components/atr/AtrEtiquetaOrden'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import { Loading, ErrorState } from '../components/common/States'
 import {
@@ -235,6 +236,9 @@ function OrderDetailContent() {
             admin_tienda/tienda) y lectura es puro duplicado de solo
             lectura de lo que ya muestra el stepper de arriba — pedido
             explícito del usuario de quitarlo de esa vista por ser ruido. */}
+        {/* V211 — orden de ATR: ¿ya se sumó al inventario? */}
+        {user && <AtrEtiquetaOrden order={order} />}
+
         {user && !order.eliminada_en && canViewEtapas(role) && (
           <section className="card">
             <OrderEtapasCard orderId={order.id} onUpdated={refresh} />

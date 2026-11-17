@@ -23,6 +23,7 @@ import { estacionVeCambios } from '../utils/cambiosOrden'
 import { Loading, ErrorState } from '../components/common/States'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import Modal from '../components/talleros/Modal'
+import AtrEtiquetaOrden from '../components/atr/AtrEtiquetaOrden'
 import OrderDisenosCard from '../components/orders/OrderDisenosCard'
 import DisenoAutorizado from '../components/orders/DisenoAutorizado'
 import EtapaCronometro from '../components/orders/EtapaCronometro'
@@ -638,6 +639,8 @@ export default function EstacionOrderPage() {
         </>
       )}
       <AvisoTallasDanadas order={order} paraEstacion />
+      {/* V211 — terminado ve si la orden de ATR ya se sumó al inventario. */}
+      {estacion === 'terminado' && <AtrEtiquetaOrden order={order} />}
       {/* V178 — cambios sin aceptar, solo si la orden ya le toca a esta estación. */}
       {estacionVeCambios(order, estacion, etapas) && <OrderReconfirmBanner order={order} cambios={cambios} onUpdated={refresh} />}
 

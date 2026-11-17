@@ -104,3 +104,12 @@ export async function crearProductoAtr(conBolsa, color) {
   if (e) return { data: null, error: e }
   return supabase.rpc('atr_crear_producto', { p_con_bolsa: conBolsa, p_color: color })
 }
+
+// V211 — ¿la orden es de ATR y ya se sumó al inventario? (cualquier sesión)
+export async function fetchAtrEstadoOrden(orderId) {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  const { data, error } = await supabase.rpc('atr_estado_orden', { p_order_id: orderId })
+  if (error) return { data: null, error }
+  return { data: Array.isArray(data) ? data[0] || null : data, error: null }
+}
