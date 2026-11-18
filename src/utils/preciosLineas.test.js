@@ -8,6 +8,7 @@ import {
   lineasParaGuardar,
   marcarMostrador,
   mensajeFaltanPrecios,
+  traducirErrorPrecio,
   resumenPago,
   tipoLlevaPrecio,
 } from './preciosLineas.js'
@@ -87,7 +88,25 @@ test('detalle: filas desde orden_totales y de vuelta a líneas', () => {
   ])
 })
 
-test('V161: precio vacío o 0 se manda como null (queda "falta precio")', () => {
+test('precio vacío o 0 se manda como null (la base lo rechaza desde V212)', () => {
   const lineas = lineasParaGuardar([{ garment: 'Playera', sizes: [{ talla: 'M', cantidad: '3', precio_unitario: '' }, { talla: 'G', cantidad: '2', precio_unitario: '0' }] }])
   assert.deepEqual(lineas.map((l) => l.precio_unitario), [null, null])
+})
+
+test('V212: mensajeFaltanPrecios empieza con "Falta el precio unitario"', () => {
+  const filas = filasDeFormulario([{ garment: 'Playera', sizes: [{ talla: 'M', cantidad: '3', precio_unitario: '0' }] }])
+  assert.match(mensajeFaltanPrecios(filas, 'sublimacion'), /^Falta el precio unitario en: Playera M\./)
+})
+
+test('V212: traducirErrorPrecio convierte los errores de la base en mensajes claros', () => {
+  const desdeFuncion = traducirErrorPrecio({ code: '23514', message: 'Falta el precio unitario en: Playera M, Short L. La orden no se guardó.' })
+  assert.equal(desdeFuncion.message, 'Falta el precio unitario en: Playera M, Short L. Captúralo (mayor a 0) o marca la línea como venta de mostrador.')
+  const crudo = traducirErrorPrecio({ code: '23514', message: 'new row for relation "orden_lineas" violates check constraint "chk_precio_unitario_positivo"' })
+  assert.match(crudo.message, /^Falta el precio unitario: cada talla/)
+  assert.doesNotMatch(crudo.message, /violates|relation/)
+  const deEdicion = traducirErrorPrecio({ code: 'P0001', message: 'El precio unitario debe ser mayor a 0 (Playera, talla M).' })
+  assert.match(deEdicion.message, /^Falta el precio unitario/)
+  const otro = { code: '42501', message: 'permission denied' }
+  assert.equal(traducirErrorPrecio(otro), otro)
+  assert.equal(traducirErrorPrecio(null), null)
 })

@@ -18,8 +18,8 @@ import { uploadOrderPhotos, attachExistingPhotos } from '../services/photosServi
 import { copyTemplatePhotosToOrder } from '../services/templatesService'
 import { uploadOrderDocument } from '../services/documentsService'
 import { createAnticipo } from '../services/anticiposService'
-import { fetchAltaRequierePrecio, formatMxn } from '../services/finanzasService'
-import { filasDeFormulario, lineasParaGuardar, mensajeFaltanPrecios, resumenPago, tipoLlevaPrecio } from '../utils/preciosLineas'
+import { formatMxn } from '../services/finanzasService'
+import { FALTA_PRECIO, filasDeFormulario, lineasParaGuardar, mensajeFaltanPrecios, resumenPago, tipoLlevaPrecio, traducirErrorPrecio } from '../utils/preciosLineas'
 import { aplicarPrecios, estadoDeItem, sinDatosDePrecio, tallasDeItem } from '../utils/preciosPrenda'
 import PreciosPrendaEditor from '../components/orders/PreciosPrendaEditor'
 import VentaMostradorToggle from '../components/orders/VentaMostradorToggle'
@@ -342,12 +342,9 @@ function NewOrderForm() {
   function cambiarPrecioPrenda(indice, estado) {
     setItems((current) => current.map((item, i) => (i === indice ? { ...item, precios: estado } : item)))
   }
-  // V161 — mientras se acostumbran, el precio puede ser opcional al crear
-  // (interruptor fin_config.alta_requiere_precio, se cambia solo en la base).
-  const [precioObligatorio, setPrecioObligatorio] = useState(true)
-  useEffect(() => {
-    fetchAltaRequierePrecio().then(setPrecioObligatorio)
-  }, [])
+  // V212 — el precio unitario es obligatorio al crear (se quitó la pausa de
+  // V161). Con líneas sin precio el botón de crear queda bloqueado.
+  const faltaPrecioAlta = cobra && resumen.sinPrecio.length > 0
   // V176 — pedidos: solo quien edita precios (ventas y administradores de
   // tienda), y no en Frisa (no lleva cliente ni precio).
   const puedePedidos = canEditFinanzas(role) && !esFrisa
@@ -583,7 +580,7 @@ function NewOrderForm() {
     const itemsFiltrados = items
       .filter((item) => item.garment.trim() || item.sizes.some((s) => s.talla.trim()))
       .map(aplicarPrecios)
-    const faltaPrecio = cobra && precioObligatorio ? mensajeFaltanPrecios(filasDeFormulario(itemsFiltrados), form.orderTypeKey) : null
+    const faltaPrecio = cobra ? mensajeFaltanPrecios(filasDeFormulario(itemsFiltrados), form.orderTypeKey) : null
     if (faltaPrecio) {
       setSubmitError(new Error(faltaPrecio))
       return
@@ -664,7 +661,7 @@ function NewOrderForm() {
 
     if (createError) {
       setSubmitting(false)
-      setSubmitError(createError)
+      setSubmitError(traducirErrorPrecio(createError))
       return
     }
 
@@ -688,7 +685,7 @@ function NewOrderForm() {
       return
     }
     const faltaPrecio =
-      !ventaMostrador && precioObligatorio ? mensajeFaltanPrecios(filasDeFormulario([aplicarPrecios(items[0])]), form.orderTypeKey) : null
+      !ventaMostrador ? mensajeFaltanPrecios(filasDeFormulario([aplicarPrecios(items[0])]), form.orderTypeKey) : null
     if (faltaPrecio) {
       setSubmitError(new Error(faltaPrecio))
       return
@@ -721,7 +718,7 @@ function NewOrderForm() {
 
     if (createError) {
       setSubmitting(false)
-      setSubmitError(createError)
+      setSubmitError(traducirErrorPrecio(createError))
       return
     }
 
@@ -761,7 +758,7 @@ function NewOrderForm() {
     })
     if (createError) {
       setSubmitting(false)
-      setSubmitError(createError)
+      setSubmitError(traducirErrorPrecio(createError))
       return
     }
     // Sin precio: no se registra anticipo.
@@ -1230,22 +1227,16 @@ function NewOrderForm() {
             <span className="field-label" style={{ marginBottom: 8, display: 'block' }}>
               Precios y pago
             </span>
-            {!precioObligatorio && (
-              <p className="pantone-hint" style={{ marginTop: 0 }}>
-                El precio es opcional por ahora: puedes crear la orden sin precio y capturarlo después en el detalle.
-              </p>
-            )}
             <PreciosPrendaEditor
               prendas={prendasPrecio}
               estados={estadosPrecio}
               onChange={cambiarPrecioPrenda}
-              marcarFaltantes={precioObligatorio}
+              marcarFaltantes
             />
             <ResumenPagoAlta
               resumen={resumen}
               anticipo={{ monto: anticipoMonto, metodo: anticipoMetodo, recibidoPor: anticipoRecibidoPor, notas: anticipoNotas }}
               onAnticipo={cambiarAnticipo}
-              obligatorio={precioObligatorio}
               sinAnticipo={enPedido}
             />
           </div>
@@ -1281,9 +1272,15 @@ function NewOrderForm() {
         </details>
 
         {submitError && <p className="form-error">{submitError.message}</p>}
+        {faltaPrecioAlta && !submitError && <p className="form-error">{FALTA_PRECIO}</p>}
 
         <div className="order-form__actions">
-          <button type="submit" className="btn btn--primary" disabled={submitting}>
+          <button
+            type="submit"
+            className="btn btn--primary"
+            disabled={submitting || faltaPrecioAlta}
+            title={faltaPrecioAlta ? FALTA_PRECIO : undefined}
+          >
             {submitting ? 'Creando…' : 'Crear orden'}
           </button>
         </div>

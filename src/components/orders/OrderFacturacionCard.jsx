@@ -17,7 +17,7 @@ import PdfPreviewModal from '../pdf/PdfPreviewModal'
 import { buildEntregaPdfBlob, entregaPdfFileName } from '../../utils/generateEntregaPdf'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditFinanzas } from '../../utils/permissions'
-import { esOrdenMostrador, filasDeRenglones, lineasDeFilas, resumenPago } from '../../utils/preciosLineas'
+import { FALTA_PRECIO, esOrdenMostrador, filasDeRenglones, lineasDeFilas, resumenPago, traducirErrorPrecio } from '../../utils/preciosLineas'
 import { claveTalla, estadoDesdePrecios, precioDeTalla } from '../../utils/preciosPrenda'
 import PreciosPrendaEditor from './PreciosPrendaEditor'
 import VentaMostradorToggle from './VentaMostradorToggle'
@@ -183,6 +183,11 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
   )
 
   async function handleSave() {
+    // V212 — precio unitario obligatorio también al editar (el botón ya se bloquea).
+    if (!ventaMostrador && resumenPago(filasEnPantalla).sinPrecio.length > 0) {
+      setError(new Error(FALTA_PRECIO))
+      return
+    }
     setSaving(true)
     setError(null)
     // Líneas sin precio y sin mostrador no se guardan: quedan "falta precio".
@@ -190,7 +195,7 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
     const { error: pErr } = await setOrdenLineas(order.id, lineas)
     if (pErr) {
       setSaving(false)
-      setError(pErr)
+      setError(traducirErrorPrecio(pErr))
       return
     }
     refrescarLineasMostrador(order.id)
@@ -238,6 +243,7 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
   const sinPrecio = faltantes?.renglones_sin_precio || []
   const conSugerencia = filas.some((x) => x.sugerido)
   const enPantalla = resumenPago(filasEnPantalla)
+  const faltaPrecioEdicion = !ventaMostrador && enPantalla.sinPrecio.length > 0
   const fiscalIncompleto = FISCAL_OBLIGATORIOS.some((k) => !fiscal[k].trim())
   const setFiscalCampo = (campo, valor) => {
     setFiscal((prev) => ({ ...prev, [campo]: valor }))
@@ -373,11 +379,12 @@ export default function OrderFacturacionCard({ order, onUpdated }) {
       )}
 
       {!readOnly && (
-        <button type="button" className="btn btn--primary" style={{ marginTop: 10 }} onClick={handleSave} disabled={saving || !dirty}>
+        <button type="button" className="btn btn--primary" style={{ marginTop: 10 }} onClick={handleSave} disabled={saving || !dirty || faltaPrecioEdicion} title={faltaPrecioEdicion ? FALTA_PRECIO : undefined}>
           {saving ? 'Guardando…' : ventaMostrador ? 'Guardar' : 'Guardar precios y facturación'}
         </button>
       )}
       {error && <p className="form-error">{error.message}</p>}
+      {!readOnly && dirty && faltaPrecioEdicion && !error && <p className="form-error">{FALTA_PRECIO}</p>}
 
       {totales && !dirty && ventaMostrador && order.status !== 'completado' && (
         <p className={totales.lista_para_entregar ? 'fin-ok' : 'fin-missing'}>

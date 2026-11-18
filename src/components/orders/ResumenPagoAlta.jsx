@@ -6,7 +6,7 @@ import { formatMxn } from '../../services/finanzasService'
 // líneas son de venta de mostrador no hay nada que cobrar y el anticipo no
 // aplica.
 // V176 — `sinAnticipo`: la orden va en un pedido; el anticipo es del pedido.
-export default function ResumenPagoAlta({ resumen, anticipo, onAnticipo, obligatorio = true, sinAnticipo = false }) {
+export default function ResumenPagoAlta({ resumen, anticipo, onAnticipo, sinAnticipo = false }) {
   const { monto, metodo, recibidoPor, notas } = anticipo
   const set = (patch) => onAnticipo({ ...anticipo, ...patch })
 
@@ -34,13 +34,8 @@ export default function ResumenPagoAlta({ resumen, anticipo, onAnticipo, obligat
         )}
       </div>
 
-      {resumen.sinPrecio.length > 0 && !obligatorio && (
-        <p className="pantone-hint">
-          Sin precio todavía: {resumen.sinPrecio.map((f) => `${f.prenda} ${f.talla}`).join(', ')}. Puedes crear la orden y
-          capturarlo después en el detalle (se necesita para entregarla).
-        </p>
-      )}
-      {resumen.sinPrecio.length > 0 && obligatorio && (
+      {/* V212 — el precio es obligatorio al crear (ya no hay modo opcional de V161). */}
+      {resumen.sinPrecio.length > 0 && (
         <p className="fin-missing">
           Falta precio en: {resumen.sinPrecio.map((f) => `${f.prenda} ${f.talla}`).join(', ')}. Captúralo o márcalo como venta de
           mostrador.

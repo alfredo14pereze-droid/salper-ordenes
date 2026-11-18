@@ -111,7 +111,31 @@ export function mensajeFaltanPrecios(filas, tipo) {
   if (!tipoLlevaPrecio(tipo)) return null
   const sin = filasSinPrecio(filas)
   if (sin.length === 0) return null
-  return `Falta precio unitario en: ${sin.map((f) => `${f.prenda} ${f.talla}`).join(', ')}. Captúralo o marca la orden como venta de mostrador.`
+  return `${FALTA_PRECIO} en: ${sin.map((f) => `${f.prenda} ${f.talla}`).join(', ')}. Captúralo o marca la orden como venta de mostrador.`
+}
+
+// V212 — texto corto del aviso junto al botón de guardar.
+export const FALTA_PRECIO = 'Falta el precio unitario'
+
+// V212 — si la base rechaza el guardado por precio (orden_lineas_validar,
+// el candado orders_lineas_precio_chk o el CHECK chk_precio_unitario_positivo
+// de orden_lineas), devuelve un Error con un mensaje para la persona en vez
+// del error crudo de Postgres. Cualquier otro error se regresa igual.
+export function traducirErrorPrecio(error) {
+  if (!error) return error
+  const msg = String(error.message || '')
+  const esDePrecio =
+    /chk_precio_unitario_positivo|orden_lineas_precio_ck/.test(msg) ||
+    /precio unitario/i.test(msg) ||
+    (error.code === '23514' && /precio/i.test(msg))
+  if (!esDePrecio) return error
+  // Los mensajes de las funciones ya traen las líneas: "Falta el precio unitario en: Playera M. …"
+  const lineas = msg.match(/precio unitario en:?\s*([^.]+)/i)?.[1]?.trim()
+  return new Error(
+    lineas
+      ? `${FALTA_PRECIO} en: ${lineas}. Captúralo (mayor a 0) o marca la línea como venta de mostrador.`
+      : `${FALTA_PRECIO}: cada talla necesita un precio mayor a 0 o marcarse como venta de mostrador.`
+  )
 }
 
 // Líneas para create_order_con_lineas: `items` son las prendas YA filtradas
@@ -128,7 +152,8 @@ export function lineasParaGuardar(items, { ventaMostrador = false } = {}) {
       lineas.push({
         item_index: itemIndex,
         size_index: sizeIndex,
-        // V161 — sin precio (vacío o 0) se manda null: la línea queda "falta precio".
+        // Sin precio (vacío o 0) se manda null. Desde V212 la base no deja crear
+        // la orden así (el alta ya lo bloquea antes con mensajeFaltanPrecios).
         precio_unitario: mostrador || !(precio > 0) ? null : precio,
         venta_mostrador: mostrador,
       })

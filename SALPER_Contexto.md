@@ -8200,3 +8200,17 @@ dejen negativos sin aviso.
   se suman (la etiqueta lo avisa).
 - La primera orden real de ATR que complete Terminado es la prueba en vivo del trigger: revisar que la etiqueta y el
   historial cuadren con lo surtido.
+
+### 2026-11-17 — V212 Precio unitario obligatorio al crear (definitivo) (rama `precio-obligatorio`)
+
+- Quita la pausa de V161: borra `fin_config.alta_requiere_precio` y `fin_alta_requiere_precio()`; `orden_lineas_validar` y
+  `orders_lineas_precio_guard` (trigger diferido `orders_lineas_precio_chk`, solo INSERT) ya no tienen bypass. Errores con
+  SQLSTATE 23514 y texto "Falta el precio unitario en: …".
+- `orden_lineas_precio_ck` se renombró a `chk_precio_unitario_positivo` (misma regla). Sin NOT NULL en la columna: las líneas de
+  venta de mostrador guardan precio NULL. Una línea sin precio = fila que no existe; el candado real es el trigger.
+- Decisión de Alfredo: solo órdenes nuevas. Las viejas sin precio no se tocan (no hace falta NOT VALID/VALIDATE); siguen
+  "falta precio" y para entregarlas hace falta precio o "Entregar de todos modos" (V160).
+- Front: alta (`NewOrderPage`) y tarjeta "Precios y facturación" del detalle bloquean el botón con "Falta el precio unitario";
+  `traducirErrorPrecio` (utils/preciosLineas.js) cambia el error crudo de Postgres por un mensaje claro. Editar prendas
+  (`OrderItemsCard`) no cambia. Ensayado en PGlite (validar, insert directo, CHECK, frisa, mostrador, rollback).
+- Siguiente migración: V213.
