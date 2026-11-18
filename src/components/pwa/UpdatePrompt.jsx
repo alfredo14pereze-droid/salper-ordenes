@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 
 // La app se actualiza SOLA (V150, registerType 'autoUpdate' en vite.config.js):
@@ -11,16 +13,22 @@ import { useRegisterSW } from 'virtual:pwa-register/react'
 // guarda su borrador). Ya no se busca cada 30 minutos ni al volver a la
 // pestaña, que es justo cuando alguien regresa a seguir capturando.
 export default function UpdatePrompt() {
+  const registro = useRef(null)
+  const { pathname } = useLocation()
   const {
     needRefresh: [needRefresh],
     updateServiceWorker,
   } = useRegisterSW({
     immediate: true,
     onRegisteredSW(_url, registration) {
-      if (!registration) return
-      window.addEventListener('hashchange', () => registration.update().catch(() => {}))
+      registro.current = registration || null
     },
   })
+
+  // Al cambiar de pantalla (antes era el evento hashchange del HashRouter).
+  useEffect(() => {
+    registro.current?.update().catch(() => {})
+  }, [pathname])
 
   // Con autoUpdate no debería hacer falta; se queda por si un navegador deja
   // la versión nueva en espera.

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate, NavLink, useLocation } from 'react-router-dom'
+import { cerrarSesion } from '../../lib/rutas'
 import ErrorBoundary from '../common/ErrorBoundary'
 import Logo from './Logo'
 import ChatWidget from '../chat/ChatWidget'
@@ -257,7 +258,7 @@ export default function AppLayout({ children }) {
             ))}
           </nav>
           {user && (
-            <button type="button" className="btn btn--ghost btn--small" onClick={signOut}>
+            <button type="button" className="btn btn--ghost btn--small" onClick={() => cerrarSesion(signOut)}>
               Cerrar sesión
             </button>
           )}
@@ -361,7 +362,7 @@ export default function AppLayout({ children }) {
               {/* V122 — botón completo y visible (antes era un link fantasma
                   que en el sidebar oscuro casi no se veía, y en celular
                   quedaba fuera de la pantalla — ver .app-sidebar__signout). */}
-              <button type="button" className="btn app-sidebar__signout" onClick={signOut}>
+              <button type="button" className="btn app-sidebar__signout" onClick={() => cerrarSesion(signOut)}>
                 Cerrar sesión
               </button>
             </>

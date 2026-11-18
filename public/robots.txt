@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Allow: /catalogo
+Disallow: /app
+Disallow: /login
+
+Sitemap: https://salperdeportes.com/sitemap.xml

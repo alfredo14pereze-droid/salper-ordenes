@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { parseMarkdown, parseInline } from '../../utils/markdownManual'
 
 // V196 — pinta el markdown de un manual como elementos de React (sin HTML
@@ -10,6 +11,16 @@ function Inline({ texto }) {
     if (p.t === 'codigo') return <code key={i}>{p.v}</code>
     if (p.t === 'liga') {
       const externa = /^https?:/i.test(p.href)
+      // Ligas internas escritas como "#/ruta" (de cuando el sistema usaba
+      // HashRouter): ahora el sistema vive en /app con BrowserRouter, así que
+      // se navegan con <Link> (el basename /app lo pone el router).
+      if (!externa && p.href.startsWith('#/')) {
+        return (
+          <Link key={i} to={p.href.slice(1)}>
+            {p.v}
+          </Link>
+        )
+      }
       return (
         <a key={i} href={p.href} {...(externa ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
           {p.v}

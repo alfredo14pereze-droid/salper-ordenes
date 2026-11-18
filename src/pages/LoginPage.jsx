@@ -1,26 +1,24 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import Logo from '../components/layout/Logo'
+import { destinoSeguro, irA } from '../lib/rutas'
 
 // Sin registro público a propósito: solo un admin puede dar de alta
 // usuarios nuevos (ver pages/UsersPage.jsx), así que aquí no hay link de
 // "crear cuenta".
 //
-// Ya no es la puerta de entrada de la app (ver App.jsx: el modo invitado
-// deja ver todo sin sesión) — es una ruta normal, /login. Por eso, en
-// cuanto hay sesión, navega sola de regreso al dashboard.
+// Vive en /login (fuera de /app). En cuanto hay sesión, manda al sistema:
+// a la ruta que se intentaba abrir (?next=/app/...) o, si no, a /app.
 export default function LoginPage() {
   const { user, signIn } = useAuth()
-  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (user) navigate('/', { replace: true })
-  }, [user, navigate])
+    if (user) irA(destinoSeguro(new URLSearchParams(window.location.search).get('next')))
+  }, [user])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -81,7 +79,10 @@ export default function LoginPage() {
 
         <p className="login-card__hint">¿No tienes cuenta? Pídele acceso a un administrador.</p>
         <p className="login-card__hint">
-          <Link to="/instalar">Instalar la app</Link>
+          <a href="/app/instalar">Instalar la app</a>
+        </p>
+        <p className="login-card__hint">
+          <a href="/">← Volver a salperdeportes.com</a>
         </p>
       </div>
     </div>

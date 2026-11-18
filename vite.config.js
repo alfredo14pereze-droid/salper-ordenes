@@ -2,10 +2,10 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// base: './' hace que los assets se referencien con rutas relativas.
-// Esto permite desplegar el mismo build tanto en Vercel (raíz del dominio)
-// como en GitHub Pages (subcarpeta tipo usuario.github.io/salper-ordenes/)
-// sin tener que tocar esta configuración.
+// base: '/' (nov-2026, página pública): con BrowserRouter el sistema vive en
+// /app/... y /catalogo; con rutas relativas ('./') los assets se pedirían a
+// /app/assets/... y la página saldría en blanco al recargar. Ya no se puede
+// publicar en una subcarpeta de GitHub Pages (solo Vercel, en la raíz).
 //
 // PWA: el service worker SOLO precachea los archivos de la app (JS, CSS, HTML,
 // íconos). No hay runtimeCaching, así que Supabase y cualquier API van siempre
@@ -26,8 +26,9 @@ export default defineConfig({
         description: 'SALPER · Sistema Operativo',
         lang: 'es',
         display: 'standalone',
-        start_url: './#/',
-        scope: './',
+        // La app instalada abre directo al sistema, no a la página pública.
+        start_url: '/app',
+        scope: '/',
         theme_color: '#16130f',
         background_color: '#f7f6f2',
         icons: [
@@ -38,8 +39,13 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,ico,svg,webmanifest}'],
+        // Imágenes y PDFs de la página pública: no se precachean (no los usa el sistema).
+        globIgnores: ['img/**', 'docs/**', 'og-salper.jpg'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: 'index.html',
+        // Abrir un PDF, el sitemap o /api en el navegador también es una
+        // "navegación": sin esto el service worker contestaría con la app.
+        navigateFallbackDenylist: [/^\/api\//, /^\/docs\//, /^\/img\//, /\.(pdf|xml|txt|webp|png|jpg)$/i],
         cleanupOutdatedCaches: true,
         // Con injectRegister: false el plugin NO activa esto solo, aunque
         // registerType sea 'autoUpdate': sin estas dos líneas la versión nueva
@@ -50,5 +56,5 @@ export default defineConfig({
       },
     }),
   ],
-  base: './',
+  base: '/',
 })

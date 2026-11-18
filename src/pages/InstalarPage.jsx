@@ -63,7 +63,7 @@ export default function InstalarPage() {
           Al abrir la app instalada por primera vez tendrás que iniciar sesión una vez (en iPhone la app no comparte la sesión con Safari).
         </p>
         <p className="login-card__hint">
-          <Link to={user ? '/' : '/login'}>{user ? 'Ir al dashboard' : 'Ir a iniciar sesión'}</Link>
+          {user ? <Link to="/">Ir al dashboard</Link> : <a href="/login">Ir a iniciar sesión</a>}
         </p>
       </div>
     </div>

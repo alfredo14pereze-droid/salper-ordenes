@@ -1,4 +1,11 @@
-import { HashRouter, Routes, Route } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import './styles/index.css'
+// V117 — rediseño visual (branch rediseno-visual). Ambos archivos solo
+// pintan dentro de `.design-root` — cero efecto fuera de esa clase.
+import './styles/design-system.css'
+import './styles/dashboard-redesign.css'
+import { BASE_SISTEMA, esRutaLogin, irA, estaSaliendo } from './lib/rutas'
 import AppLayout from './components/layout/AppLayout'
 import ConfigMissing from './components/common/ConfigMissing'
 import LoginPage from './pages/LoginPage'
@@ -63,55 +70,98 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { Loading } from './components/common/States'
 import { PEDIDOS_PROVEEDOR_HABILITADO } from './utils/featureFlags'
 
-// HashRouter (en vez de BrowserRouter) para que las rutas funcionen igual
-// en Vercel y en GitHub Pages sin configuración extra de reescritura de URLs.
+// Sistema operativo (todo lo que antes vivía en /#/...). Desde la página
+// pública (nov-2026) el sistema vive en /app con BrowserRouter + basename, y el
+// login en /login. Ver src/lib/rutas.js y main.jsx.
 export default function App() {
+  const [pathname, setPathname] = useState(window.location.pathname)
+
+  useEffect(() => {
+    const actualizar = () => setPathname(window.location.pathname)
+    window.addEventListener('salper:ruta', actualizar)
+    window.addEventListener('popstate', actualizar)
+    return () => {
+      window.removeEventListener('salper:ruta', actualizar)
+      window.removeEventListener('popstate', actualizar)
+    }
+  }, [])
+
+  // El sistema no se indexa en buscadores (además del X-Robots-Tag de vercel.json).
+  useEffect(() => {
+    document.title = 'SALPER · Sistema Operativo'
+    let meta = document.querySelector('meta[name="robots"]')
+    if (!meta) {
+      meta = document.createElement('meta')
+      meta.name = 'robots'
+      document.head.appendChild(meta)
+    }
+    meta.content = 'noindex, nofollow'
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#16130f')
+  }, [])
+
   if (!isSupabaseConfigured) {
     return <ConfigMissing />
   }
 
   return (
     <AuthProvider>
-      <AuthGate />
+      {esRutaLogin(pathname) ? <LoginGate /> : <AuthGate />}
     </AuthProvider>
   )
 }
 
+function LoginGate() {
+  const { loading } = useAuth()
+  if (loading) return <Loading label="Cargando…" />
+  return (
+    <BrowserRouter>
+      <LoginPage />
+    </BrowserRouter>
+  )
+}
+
+// Sin sesión, /app/... manda a /login?next=<ruta> y, al entrar, regresa ahí.
+function RedirigirALogin() {
+  const location = useLocation()
+  useEffect(() => {
+    const next = BASE_SISTEMA + location.pathname + location.search
+    irA('/login?next=' + encodeURIComponent(next))
+  }, [location])
+  return <Loading label="Cargando…" />
+}
+
 // V29 — se quitó el "modo invitado": SALPER es un sistema interno y no
-// debe verlo nadie externo a la empresa. Antes de V29, quien entraba al
-// link sin sesión veía la app completa en modo lectura (Dashboard,
-// calendario, órdenes, etc.) — eso era a propósito en su momento, pero
-// el usuario pidió expresamente cerrarlo. Ahora, sin sesión, lo único que
-// se monta es LoginPage — ninguna ruta, ningún dato, ni el nav de
-// AppLayout. El servidor refuerza esto mismo del lado de la base
-// (schema_v29_no_acceso_externo.sql revoca el acceso de `anon` al schema
-// `public` por completo), así que aunque alguien se saltara este
-// chequeo del cliente, la base ya no le regresa nada de todos modos.
+// debe verlo nadie externo a la empresa. Sin sesión no se monta ninguna
+// ruta del sistema, ningún dato, ni el nav de AppLayout: se manda a /login
+// (salvo /app/instalar). El servidor refuerza esto mismo del lado de la
+// base (schema_v29_no_acceso_externo.sql revoca el acceso de `anon` al
+// schema `public`), así que aunque alguien se saltara este chequeo del
+// cliente, la base no le regresa nada.
 function AuthGate() {
   const { loading, user } = useAuth()
 
-  if (loading) return <Loading label="Cargando…" />
+  if (loading || estaSaliendo()) return <Loading label="Cargando…" />
 
   if (!user) {
     return (
-      <HashRouter>
+      <BrowserRouter basename={BASE_SISTEMA}>
         <Routes>
           <Route path="/instalar" element={<InstalarPage />} />
-          <Route path="*" element={<LoginPage />} />
+          <Route path="*" element={<RedirigirALogin />} />
         </Routes>
         <UpdatePrompt />
-      </HashRouter>
+      </BrowserRouter>
     )
   }
 
   return (
-    <HashRouter>
+    <BrowserRouter basename={BASE_SISTEMA}>
       <AppLayout>
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/pasadas" element={<PastOrdersPage />} />
           <Route path="/resumen" element={<ResumenPage />} />
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/instalar" element={<InstalarPage />} />
           <Route path="/nueva" element={<NewOrderPage />} />
           <Route path="/orden/:id" element={<OrderDetailPage />} />
@@ -192,6 +242,6 @@ function AuthGate() {
         </Routes>
       </AppLayout>
       <UpdatePrompt />
-    </HashRouter>
+    </BrowserRouter>
   )
 }

@@ -5,8 +5,10 @@ Sistema de gestión de órdenes de producción para SALPER, S.A. DE C.V.
 
 ## Stack
 
-- **Frontend:** React 18 + Vite, `HashRouter` (react-router-dom) — a propósito,
-  para que las rutas funcionen igual en Vercel sin config extra de rewrites.
+- **Frontend:** React 18 + Vite, `BrowserRouter` (react-router-dom). Desde
+  nov-2026 (página pública) `/` es el sitio corporativo y el sistema vive en
+  `/app/...` (ver "Página pública + login" al final). Antes era `HashRouter`
+  (`/#/...`); esas direcciones viejas se redirigen solas a `/app/...`.
 - **Backend:** Supabase (Postgres + Auth + Storage + Realtime). **Una sola
   base de datos**, sin entornos separados de staging/producción — cualquier
   migración de SQL que se aplique afecta directo a lo que usan los usuarios
@@ -8214,3 +8216,61 @@ dejen negativos sin aviso.
   `traducirErrorPrecio` (utils/preciosLineas.js) cambia el error crudo de Postgres por un mensaje claro. Editar prendas
   (`OrderItemsCard`) no cambia. Ensayado en PGlite (validar, insert directo, CHECK, frisa, mostrador, rollback).
 - Siguiente migración: V213.
+
+### 2026-11-17 — Página pública + sistema detrás del login (sin SQL)
+
+salperdeportes.com ya no abre directo el sistema: `/` es el sitio corporativo de SALPER y el sistema queda en `/app`.
+Rama `pagina-publica`. No se tocó la base, ni roles, ni permisos, ni la lógica de los módulos.
+
+**Rutas**
+
+| Ruta | Qué muestra | Sesión |
+|---|---|---|
+| `/` | Página pública (landing) | No |
+| `/catalogo` | Catálogo de uniformes navegable | No |
+| `/login` | Login del sistema (`?next=/app/...` para regresar a donde iba) | No |
+| `/app/*` | Todo el sistema (lo que antes era `/#/*`) | Sí (salvo `/app/instalar`) |
+
+- `src/main.jsx` decide qué cargar según la ruta: `/app` y `/login` cargan `App.jsx` (sistema, con todo su CSS);
+  lo demás carga `src/public-site/PublicApp.jsx`. Son paquetes separados: la página pública NO descarga el sistema
+  ni Supabase.
+- El sistema usa `BrowserRouter basename="/app"`: todos los `navigate('/x')` / `<Link to="/x">` existentes quedan
+  en `/app/x` sin tocarlos. Ayudantes en `src/lib/rutas.js` (`irA`, `destinoSeguro`, `cerrarSesion`).
+- Direcciones viejas: `/#/orden/5` → `/app/orden/5` (en `main.jsx`); `/pendientes` y otras rutas del sistema sin
+  `/app` → `/app/...` (lista `RUTAS_DEL_SISTEMA` en `PublicApp.jsx`); cualquier otra ruta desconocida → `/`.
+- Sin sesión en `/app/x` → `/login?next=/app/x` → al entrar regresa a `/app/x` (por defecto `/app`). `next` solo
+  acepta rutas `/app...`. `/app/login` con sesión → `/app`.
+- "Cerrar sesión" → `/` (página pública).
+- Con sesión guardada, la página pública muestra "Ir al sistema" en vez de "Iniciar sesión"; lo sabe leyendo la
+  llave `sb-<ref>-auth-token` de localStorage (sin llamar a Supabase).
+- Ligas internas de Manuales escritas como `#/ruta` siguen funcionando (`MarkdownManual.jsx` las pinta con `<Link>`).
+
+**PWA / Vercel / SEO**
+- `vite.config.js`: `base: '/'` (ya no `./`; se pierde la opción de publicar en subcarpeta de GitHub Pages),
+  `start_url: '/app'` (la app instalada abre el sistema), `scope: '/'`, mismo `id`. `navigateFallbackDenylist`
+  para `/api`, `/docs`, `/img` y `.pdf/.xml/.txt/...` (si no, el service worker contestaría la app al abrir un PDF).
+  `globIgnores` deja fuera de la precarga las imágenes y PDFs públicos. `UpdatePrompt` busca versión nueva al
+  cambiar de pantalla con `useLocation` (antes `hashchange`).
+- `vercel.json`: rewrite SPA `/((?!api/).*)` → `/index.html` (recargar en `/catalogo` o `/app/...` no da 404) +
+  `X-Robots-Tag: noindex` en `/app` y `/login`. El sistema además pone `<meta name="robots" content="noindex">`.
+- `public/robots.txt` (permite `/` y `/catalogo`, bloquea `/app` y `/login`), `public/sitemap.xml`,
+  `public/og-salper.jpg` (tarjeta para compartir por WhatsApp, 1200×630), meta description y Open Graph en
+  `index.html`.
+
+**Contenido (editable sin tocar componentes)**
+- `src/public-site/content.js`: textos, teléfonos, correos, número de WhatsApp (`WHATSAPP_VENTAS`, hoy el de Armando),
+  redes sociales (`REDES`, con `'#'` se oculta el ícono), clientes, uniformes, PDFs.
+- `src/public-site/catalogo.js`: productos del catálogo (categoría, composición, manga, corte, tallas, fotos).
+  Para agregar uno: fotos WebP en `public/img/catalogo/` + un objeto en `PRODUCTOS`.
+- Componentes: `Landing.jsx`, `CatalogoPage.jsx` (no `Catalogo.jsx`: en Mac choca con `catalogo.js`), `Marco.jsx`
+  (header, footer, WhatsApp flotante), `Iconos.jsx` (SVG en línea), estilos en `public-site.css` (prefijo `ps-`).
+- Imágenes: `public/img/catalogo/` (recortes del Catálogo Industrial 2025), `public/img/clientes/` (logos de la pág. 6
+  del Perfil 2025, fondo limpiado), `public/img/sitio/` (logo blanco/azul generados del logo del repo, nave, tienda,
+  bata, UL, Intertek, foto de "Sobre nosotros" = portada del catálogo). PDFs en `public/docs/`.
+- Scripts de recorte (fuera del repo, en el scratchpad de la sesión): pdftoppm/pdfimages + sharp.
+
+**Pendiente**
+- URLs de Facebook / Instagram / TikTok en `REDES`.
+- Probar con una cuenta real: login → `/app`, cerrar sesión → `/`, "Ir al sistema" con sesión (en local solo se probó
+  simulando la sesión guardada, porque no hay cuenta de prueba que funcione).
+- Al publicar: revisar en Vercel que `/catalogo` y `/app/...` recarguen sin 404, y la tarjeta de WhatsApp.

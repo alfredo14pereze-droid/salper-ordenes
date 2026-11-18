@@ -1,18 +1,27 @@
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
-import './styles/index.css'
-// V117 — rediseño visual (branch rediseno-visual). Ambos archivos solo
-// pintan dentro de `.design-root` (ver comentarios en cada uno) — cero
-// efecto en cualquier pantalla que no lleve esa clase todavía.
-import './styles/design-system.css'
-import './styles/dashboard-redesign.css'
-import { initPwaInstall } from './lib/pwaInstall'
+import { esRutaSistema, esRutaLogin, rutaDesdeHashViejo } from './lib/rutas'
 
-initPwaInstall()
+// Direcciones viejas del HashRouter (salperdeportes.com/#/orden/123) → /app/orden/123.
+const viejo = rutaDesdeHashViejo(window.location.hash)
+if (viejo) window.history.replaceState(null, '', viejo)
+
+const { pathname } = window.location
+const esSistema = esRutaSistema(pathname) || esRutaLogin(pathname)
+
+// La página pública y el sistema se cargan por separado: quien abre el sitio
+// desde WhatsApp no descarga el sistema (ni Supabase), y viceversa.
+const Raiz = esSistema ? lazy(() => import('./App.jsx')) : lazy(() => import('./public-site/PublicApp.jsx'))
+
+if (esSistema) {
+  // El evento beforeinstallprompt llega pronto: se captura desde el arranque.
+  import('./lib/pwaInstall').then((m) => m.initPwaInstall())
+}
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    <Suspense fallback={null}>
+      <Raiz />
+    </Suspense>
   </React.StrictMode>
 )
