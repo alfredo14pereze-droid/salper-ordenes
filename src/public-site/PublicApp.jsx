@@ -42,7 +42,28 @@ function ScrollAlCambiar() {
   return null
 }
 
+// El service worker del sistema (scope "/") también controla la página pública.
+// La página pública no lo registra, pero si ya hay uno instalado, al abrir el
+// sitio se busca la versión nueva; cuando la nueva toma el control se recarga
+// una vez para mostrar la página actualizada.
+function useServiceWorkerAlDia() {
+  useEffect(() => {
+    const sw = typeof navigator !== 'undefined' && navigator.serviceWorker
+    if (!sw || !sw.controller) return
+    let recargado = false
+    const alCambiar = () => {
+      if (recargado) return
+      recargado = true
+      window.location.reload()
+    }
+    sw.addEventListener('controllerchange', alCambiar)
+    sw.getRegistration().then((r) => r?.update()).catch(() => {})
+    return () => sw.removeEventListener('controllerchange', alCambiar)
+  }, [])
+}
+
 export default function PublicApp() {
+  useServiceWorkerAlDia()
   return (
     <BrowserRouter>
       <ScrollAlCambiar />

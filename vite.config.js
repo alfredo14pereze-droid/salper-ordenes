@@ -49,6 +49,10 @@ export default defineConfig({
         globIgnores: ['img/**', 'docs/**', 'og-salper.jpg'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: 'index.html',
+        // Solo el sistema (/app, /login) se abre desde la caché del service worker.
+        // La página pública (/, /catalogo, /tienda…) siempre se pide a la red: si no,
+        // quien ya usó el sistema veía la versión vieja del sitio hasta abrir /app.
+        navigateFallbackAllowlist: [/^\/app(\/|$)/, /^\/login(\/|$|\?)/],
         // Abrir un PDF, el sitemap o /api en el navegador también es una
         // "navegación": sin esto el service worker contestaría con la app.
         navigateFallbackDenylist: [/^\/api\//, /^\/docs\//, /^\/img\//, /\.(pdf|xml|txt|webp|png|jpg)$/i],
