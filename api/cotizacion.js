@@ -5,16 +5,20 @@ import nodemailer from 'nodemailer'
 // POST /api/cotizacion — formulario de cotización de la página pública.
 // 1) valida los campos, 2) honeypot (`sitio_web` lleno = bot: se responde
 // "ok" sin guardar nada), 3) límite por IP, 4) inserta en cotizaciones_web
-// con la service role key (solo existe aquí, en el servidor), 5) manda
-// correo a ventas por SMTP. Si faltan las variables SMTP o el correo falla,
-// la cotización YA quedó guardada y el usuario ve éxito igual.
+// con la service role key (solo existe aquí, en el servidor), 5) avisa a
+// ventas por correo: con Resend (API HTTP) si hay RESEND_API_KEY; si no, por
+// SMTP. Si faltan las variables o el correo falla, la cotización YA quedó
+// guardada y el usuario ve éxito igual (el error queda en los logs).
 //
 // Variables de entorno (Vercel → Settings → Environment Variables):
 //   VITE_SUPABASE_URL           (ya existe)
-//   SUPABASE_SERVICE_ROLE_KEY   llave "service_role" de Supabase (secreta)
-//   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
-//   COTIZACION_EMAIL_TO         p. ej. ventas@gruposalper.com
-//   COTIZACION_EMAIL_FROM       (opcional; si falta se usa SMTP_USER)
+//   SUPABASE_SERVICE_ROLE_KEY   llave secreta de Supabase
+//   RESEND_API_KEY              llave de Resend (secreta) — opción principal
+//   COTIZACION_EMAIL_FROM       remitente de un dominio verificado en Resend,
+//                               p. ej. avisos@gruposalper.com
+//   COTIZACION_EMAIL_TO         p. ej. ventas@gruposalper.com (varios: separados por coma)
+//   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS  (alternativa sin Resend; Zoho
+//                               gratis NO permite SMTP: 554 Access Restricted)
 
 const LIMITE_ENVIOS = 5
 const VENTANA_MIN = 15
@@ -76,26 +80,12 @@ function filasCorreo(c) {
   ].filter(([, v]) => v)
 }
 
-async function mandarCorreo(c) {
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, COTIZACION_EMAIL_TO, COTIZACION_EMAIL_FROM } = process.env
-  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS || !COTIZACION_EMAIL_TO) {
-    console.warn('[cotizacion] Faltan variables SMTP_* o COTIZACION_EMAIL_TO: se guardó sin mandar correo.')
-    return false
-  }
-  const puerto = Number(SMTP_PORT)
-  const transporte = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: puerto,
-    secure: puerto === 465,
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-  })
+function armarCorreo(c) {
   const filas = filasCorreo(c)
-  await transporte.sendMail({
-    from: `"Página SALPER" <${COTIZACION_EMAIL_FROM || SMTP_USER}>`,
-    to: COTIZACION_EMAIL_TO,
-    replyTo: c.correo,
+  const pie = 'Llegó desde salperdeportes.com. Está en el sistema: Cotizaciones web.'
+  return {
     subject: `Nueva cotización web: ${c.nombre}${c.empresa ? ` (${c.empresa})` : ''}`,
-    text: filas.map(([k, v]) => `${k}: ${v}`).join('\n') + '\n\nLlegó desde salperdeportes.com. Está en el sistema: Cotizaciones web.',
+    text: filas.map(([k, v]) => `${k}: ${v}`).join('\n') + `\n\n${pie}`,
     html:
       '<h2 style="font-family:sans-serif;color:#0f2a44">Nueva solicitud de cotización</h2>' +
       '<table style="font-family:sans-serif;border-collapse:collapse">' +
@@ -106,9 +96,65 @@ async function mandarCorreo(c) {
             `<td style="padding:6px 0;white-space:pre-wrap">${escapar(v)}</td></tr>`
         )
         .join('') +
-      '</table><p style="font-family:sans-serif;color:#4b5868">Llegó desde salperdeportes.com. Está en el sistema: Cotizaciones web.</p>',
+      `</table><p style="font-family:sans-serif;color:#4b5868">${pie}</p>`,
+  }
+}
+
+const destinatarios = (v) =>
+  String(v || '')
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean)
+
+async function porResend(c, correo, { RESEND_API_KEY, COTIZACION_EMAIL_FROM, COTIZACION_EMAIL_TO }) {
+  const r = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: `Página SALPER <${COTIZACION_EMAIL_FROM || 'onboarding@resend.dev'}>`,
+      to: destinatarios(COTIZACION_EMAIL_TO),
+      reply_to: c.correo,
+      ...correo,
+    }),
   })
-  return true
+  if (!r.ok) {
+    const detalle = await r.text().catch(() => '')
+    throw new Error(`Resend ${r.status}: ${detalle.slice(0, 300)}`)
+  }
+}
+
+async function porSmtp(c, correo, { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, COTIZACION_EMAIL_TO, COTIZACION_EMAIL_FROM }) {
+  const puerto = Number(SMTP_PORT)
+  const transporte = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: puerto,
+    secure: puerto === 465,
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+  })
+  await transporte.sendMail({
+    from: `"Página SALPER" <${COTIZACION_EMAIL_FROM || SMTP_USER}>`,
+    to: destinatarios(COTIZACION_EMAIL_TO),
+    replyTo: c.correo,
+    ...correo,
+  })
+}
+
+export async function mandarCorreo(c, env = process.env) {
+  if (!env.COTIZACION_EMAIL_TO) {
+    console.warn('[cotizacion] Falta COTIZACION_EMAIL_TO: se guardó sin mandar correo.')
+    return false
+  }
+  const correo = armarCorreo(c)
+  if (env.RESEND_API_KEY) {
+    await porResend(c, correo, env)
+    return 'resend'
+  }
+  if (env.SMTP_HOST && env.SMTP_PORT && env.SMTP_USER && env.SMTP_PASS) {
+    await porSmtp(c, correo, env)
+    return 'smtp'
+  }
+  console.warn('[cotizacion] Falta RESEND_API_KEY (o SMTP_*): se guardó sin mandar correo.')
+  return false
 }
 
 export default async function handler(req, res) {
@@ -163,7 +209,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    await mandarCorreo(c)
+    const via = await mandarCorreo(c)
+    if (via) console.log(`[cotizacion] aviso enviado por ${via}`)
   } catch (e) {
     console.error('[cotizacion] se guardó, pero falló el correo:', e?.message || e)
   }

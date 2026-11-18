@@ -8321,9 +8321,18 @@ función (`supabase/schema_v213_cotizaciones_web.sql`). No se tocaron tablas, ro
   la lista), honeypot `sitio_web` (lleno = responde ok sin guardar), límite 5 envíos por IP cada 15 min (cuenta en la
   tabla por `ip_hash`), inserta con la service role key y manda correo por SMTP (nodemailer) con `replyTo` = correo del
   cliente. Si faltan variables SMTP o el correo falla, la cotización queda guardada y el usuario ve éxito.
-- Variables de entorno nuevas en Vercel (Production): `SUPABASE_SERVICE_ROLE_KEY` (secreta, nunca `VITE_`),
-  `SMTP_HOST`, `SMTP_PORT` (465 = SSL; 587 = STARTTLS), `SMTP_USER`, `SMTP_PASS`, `COTIZACION_EMAIL_TO`
-  (= ventas@gruposalper.com), opcional `COTIZACION_EMAIL_FROM`. Usa también `VITE_SUPABASE_URL` (ya existía).
+- Variables en Vercel (Production): `SUPABASE_SERVICE_ROLE_KEY` (secreta, nunca `VITE_`; si es inválida → "Invalid API
+  key" y el formulario responde 500), `RESEND_API_KEY` (secreta), `COTIZACION_EMAIL_FROM` (remitente de un dominio
+  verificado en Resend, p. ej. avisos@gruposalper.com), `COTIZACION_EMAIL_TO` (= ventas@gruposalper.com; varios
+  separados por coma). Usa también `VITE_SUPABASE_URL`. Cambiar una variable exige Redeploy.
+- Correo: Resend (API HTTP, sin dependencia) si hay `RESEND_API_KEY`; si no, SMTP con nodemailer (`SMTP_HOST`,
+  `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`). Zoho Mail de gruposalper.com es el plan gratis: su SMTP responde
+  `554 5.7.8 Access Restricted`, por eso se cambió a Resend (2026-11-18). Los DNS de gruposalper.com y
+  salperdeportes.com están en GoDaddy (domaincontrol.com). El log dice "[cotizacion] aviso enviado por resend|smtp" o
+  el error; los logs de Vercel tardan unos segundos en aparecer.
+- Service worker: `navigateFallbackAllowlist` solo `/app` y `/login` (c61c155); la página pública siempre pide
+  index.html a la red y, si hay SW instalado, busca versión nueva y recarga una vez (`useServiceWorkerAlDia` en
+  `PublicApp.jsx`). Antes, quien ya usaba el sistema veía la página vieja.
 - Probada con un PostgREST falso (11 casos: 405, honeypot, validaciones, limpieza, límite por IP, sin SMTP).
 
 **Sistema (`/app/cotizaciones-web`)**
@@ -8342,7 +8351,7 @@ función (`supabase/schema_v213_cotizaciones_web.sql`). No se tocaron tablas, ro
   `LocalBusiness`.
 
 **Pendiente**
-- SQL V213 APLICADO en Supabase (2026-11-18; verificado con la llave pública: leer, insertar y la RPC dan 401). Falta dar de alta las variables en Vercel antes de publicar.
+- SQL V213 APLICADO en Supabase (2026-11-18; verificado con la llave pública: leer, insertar y la RPC dan 401). EN PRODUCCIÓN desde 2026-11-18 (main 042f9f2 + c61c155). Falta: dominio verificado en Resend + `RESEND_API_KEY` / `COTIZACION_EMAIL_FROM` en Vercel (hasta entonces se guardan las cotizaciones pero no llega el aviso). Hay una cotización "PRUEBA Claude (borrar)" en la tabla.
 - Datos en `TODO`: pedido mínimo, tiempo de entrega, envíos, marcas de la tienda, URLs de Facebook/Instagram, logos de
   IMES/Tricio/Echavarría/Avenue (`public/img/escolar/`), foto de serigrafía.
 - El mapa de Google no carga en el navegador de vista previa de Claude (bloquea iframes externos); revisar en producción.
