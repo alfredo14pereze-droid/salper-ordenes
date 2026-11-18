@@ -4,4 +4,4 @@ Allow: /catalogo
 Disallow: /app
 Disallow: /login
 
-Sitemap: https://salperdeportes.com/sitemap.xml
+Sitemap: https://www.salperdeportes.com/sitemap.xml
