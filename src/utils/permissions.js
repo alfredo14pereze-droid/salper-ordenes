@@ -938,3 +938,10 @@ export function canEntregarAtr(role) {
 export function canCargarAtr(role) {
   return tiene(role, 'atr.cargar', () => ['admin_general', 'admin_fabrica'].includes(role))
 }
+
+// V213 — Cotizaciones web (formulario de salperdeportes.com). Solo
+// admin_general (el "super_admin" del pedido) y admin_tienda; fijo, sin
+// clave en rol_permisos (igual que la política RLS de cotizaciones_web).
+export function canVerCotizacionesWeb(role) {
+  return role === 'admin_general' || role === 'admin_tienda'
+}

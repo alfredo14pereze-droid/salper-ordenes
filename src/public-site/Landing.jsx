@@ -1,7 +1,9 @@
-import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Header, Footer, BotonWhatsAppFlotante } from './Marco'
 import { Icono } from './Iconos'
+import { usePagina, EstadoTienda, direccionTienda } from './comun'
+import { Historia, MisionVision, Sectores, Servicios, ComoTrabajamos } from './Secciones'
+import Cotizacion from './Cotizacion'
 import {
   HERO,
   NOSOTROS,
@@ -14,9 +16,11 @@ import {
 } from './content'
 
 export default function Landing() {
-  useEffect(() => {
-    document.title = 'SALPER | Uniformes industriales y corporativos en Torreón desde 1970'
-  }, [])
+  usePagina(
+    'SALPER | Uniformes industriales y corporativos en Torreón desde 1970',
+    'Fabricantes de uniformes industriales, corporativos y escolares en Torreón, Coahuila. Ve nuestro catálogo y cotiza en línea o por WhatsApp.',
+    '/'
+  )
 
   return (
     <div className="ps">
@@ -66,6 +70,9 @@ export default function Landing() {
           </div>
         </section>
 
+        <Historia />
+        <MisionVision />
+
         <section id="procesos" className="ps-seccion ps-seccion--gris">
           <div className="ps-wrap">
             <div className="ps-instalacion">
@@ -99,32 +106,8 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="ps-seccion">
-          <div className="ps-wrap ps-tienda">
-            <img src={TIENDA.imagen} alt="Artículos deportivos de la tienda SALPER" loading="lazy" width="900" height="1010" />
-            <div>
-              <p className="ps-kicker">Tienda en el centro de Torreón</p>
-              <h2 className="ps-titulo">{TIENDA.titulo}</h2>
-              {TIENDA.texto.map((t) => (
-                <p key={t.slice(0, 20)}>{t}</p>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="clientes" className="ps-seccion ps-seccion--gris">
-          <div className="ps-wrap">
-            <p className="ps-kicker ps-centro">Confían en nosotros</p>
-            <h2 className="ps-titulo ps-centro">Nuestros clientes</h2>
-            <ul className="ps-clientes">
-              {CLIENTES.map((c) => (
-                <li key={c.logo}>
-                  <img src={`/img/clientes/${c.logo}`} alt={c.nombre} title={c.nombre} loading="lazy" />
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
+        <Sectores />
+        <Servicios />
 
         <section id="uniformes" className="ps-seccion">
           <div className="ps-wrap">
@@ -143,6 +126,52 @@ export default function Landing() {
                 Ver catálogo completo <Icono nombre="flecha" size={18} />
               </Link>
             </div>
+          </div>
+        </section>
+
+        <ComoTrabajamos />
+
+        <section id="clientes" className="ps-seccion">
+          <div className="ps-wrap">
+            <p className="ps-kicker ps-centro">Confían en nosotros</p>
+            <h2 className="ps-titulo ps-centro">Nuestros clientes</h2>
+            <ul className="ps-clientes">
+              {CLIENTES.map((c) => (
+                <li key={c.logo}>
+                  <img src={`/img/clientes/${c.logo}`} alt={c.nombre} title={c.nombre} loading="lazy" />
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section className="ps-seccion ps-seccion--gris ps-seccion--compacta">
+          <div className="ps-wrap ps-visita">
+            <Link to="/tienda" className="ps-visita__tarjeta">
+              <img src={TIENDA.imagen} alt="Artículos deportivos de la tienda SALPER" loading="lazy" width="900" height="1010" />
+              <span className="ps-visita__cuerpo">
+                <span className="ps-kicker">Tienda en el centro de Torreón</span>
+                <strong>Visita nuestra tienda deportiva</strong>
+                <span>{direccionTienda()}</span>
+                <EstadoTienda />
+                <span className="ps-sector__ver">
+                  Horario y mapa <Icono nombre="flecha" size={16} />
+                </span>
+              </span>
+            </Link>
+            <Link to="/escolar" className="ps-visita__tarjeta ps-visita__tarjeta--escolar">
+              <span className="ps-icono-circulo ps-icono-circulo--grande">
+                <Icono nombre="educacion" size={32} />
+              </span>
+              <span className="ps-visita__cuerpo">
+                <span className="ps-kicker">Uniformes escolares</span>
+                <strong>¿Buscas el uniforme de tu colegio?</strong>
+                <span>Revisa qué colegios tenemos y cómo se compra cada uno.</span>
+                <span className="ps-sector__ver">
+                  Ver colegios <Icono nombre="flecha" size={16} />
+                </span>
+              </span>
+            </Link>
           </div>
         </section>
 
@@ -171,7 +200,9 @@ export default function Landing() {
           </div>
         </section>
 
-        <section id="descargas" className="ps-seccion">
+        <Cotizacion />
+
+        <section id="descargas" className="ps-seccion ps-seccion--gris">
           <div className="ps-wrap">
             <p className="ps-kicker ps-centro">Descargas</p>
             <h2 className="ps-titulo ps-centro">Conoce más de SALPER</h2>

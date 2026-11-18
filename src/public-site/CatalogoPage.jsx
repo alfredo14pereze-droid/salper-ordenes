@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Header, Footer } from './Marco'
+import { usePagina } from './comun'
 import { Icono, IconoWhatsApp } from './Iconos'
 import { CATEGORIAS, PRODUCTOS } from './catalogo'
 import { PDF_CATALOGO, linkWhatsApp } from './content'
@@ -74,6 +76,9 @@ function Modal({ producto, onCerrar }) {
           <a href={cotizar(producto)} className="ps-btn ps-btn--whatsapp" target="_blank" rel="noopener noreferrer">
             <IconoWhatsApp /> Cotizar por WhatsApp
           </a>
+          <Link to={`/?producto=${producto.id}#cotizar`} className="ps-btn ps-btn--borde">
+            Cotizar con formulario
+          </Link>
         </div>
       </div>
     </div>
@@ -81,12 +86,18 @@ function Modal({ producto, onCerrar }) {
 }
 
 export default function Catalogo() {
-  const [categoria, setCategoria] = useState('Todos')
+  // ?categoria=… (lo usan las tarjetas de "Sectores que atendemos").
+  const [params, setParams] = useSearchParams()
+  const deUrl = params.get('categoria')
+  const categoria = CATEGORIAS.includes(deUrl) ? deUrl : 'Todos'
+  const setCategoria = (c) => setParams(c === 'Todos' ? {} : { categoria: c }, { replace: true })
   const [abierto, setAbierto] = useState(null)
 
-  useEffect(() => {
-    document.title = 'Catálogo de uniformes | SALPER Torreón'
-  }, [])
+  usePagina(
+    'Catálogo de uniformes | SALPER Torreón',
+    'Catálogo de uniformes SALPER: corporativo, industrial y seguridad, médico, gastronomía y pantalones. Cotiza en línea o por WhatsApp.',
+    '/catalogo'
+  )
 
   const productos = useMemo(
     () => (categoria === 'Todos' ? PRODUCTOS : PRODUCTOS.filter((p) => p.categoria === categoria)),
@@ -137,9 +148,14 @@ export default function Catalogo() {
                       <Ficha p={p} />
                     </span>
                   </button>
-                  <a href={cotizar(p)} className="ps-producto__cotizar" target="_blank" rel="noopener noreferrer">
-                    <IconoWhatsApp size={18} /> Cotizar por WhatsApp
-                  </a>
+                  <div className="ps-producto__acciones">
+                    <a href={cotizar(p)} className="ps-producto__cotizar" target="_blank" rel="noopener noreferrer">
+                      <IconoWhatsApp size={18} /> Cotizar por WhatsApp
+                    </a>
+                    <Link to={`/?producto=${p.id}#cotizar`} className="ps-producto__formulario">
+                      Cotizar con formulario
+                    </Link>
+                  </div>
                 </li>
               ))}
             </ul>

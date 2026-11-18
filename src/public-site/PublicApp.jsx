@@ -2,6 +2,9 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Landing from './Landing'
 import Catalogo from './CatalogoPage'
+import EscolarPage from './EscolarPage'
+import TiendaPage from './TiendaPage'
+import AvisoPage from './AvisoPage'
 import './public-site.css'
 
 // Primer tramo de rutas que existían en el sistema (antes /#/...). Si alguien
@@ -10,7 +13,7 @@ const RUTAS_DEL_SISTEMA = [
   'pasadas', 'resumen', 'nueva', 'orden', 'ordenes', 'calendario', 'anuncios', 'pendientes', 'notas-tienda', 'tareas',
   'manuales', 'hojas-impresas', 'atr', 'crm', 'entregas', 'pedidos', 'pedido', 'usuarios', 'roles-permisos', 'design',
   'catalogos', 'inventario-tela', 'consumos-prenda', 'control-rapido', 'estadisticas', 'produccion', 'cotizador',
-  'estadisticas-produccion', 'talleros', 'inventario', 'frisa', 'pedidos-colegio', 'pedidos-proveedor', 'instalar', 'dashboard',
+  'estadisticas-produccion', 'talleros', 'inventario', 'frisa', 'pedidos-colegio', 'pedidos-proveedor', 'instalar', 'dashboard', 'cotizaciones-web',
 ]
 
 function RutaDesconocida() {
@@ -46,6 +49,9 @@ export default function PublicApp() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/catalogo" element={<Catalogo />} />
+        <Route path="/escolar" element={<EscolarPage />} />
+        <Route path="/tienda" element={<TiendaPage />} />
+        <Route path="/aviso-de-privacidad" element={<AvisoPage />} />
         <Route path="*" element={<RutaDesconocida />} />
       </Routes>
     </BrowserRouter>

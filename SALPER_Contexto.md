@@ -8274,3 +8274,76 @@ Rama `pagina-publica`. No se tocó la base, ni roles, ni permisos, ni la lógica
 - Probar con una cuenta real: login → `/app`, cerrar sesión → `/`, "Ir al sistema" con sesión (en local solo se probó
   simulando la sesión guardada, porque no hay cuenta de prueba que funcione).
 - Al publicar: revisar en Vercel que `/catalogo` y `/app/...` recarguen sin 404, y la tarjeta de WhatsApp.
+
+### 2026-11-18 — Página pública Fase 2: sitio corporativo completo + cotizaciones web (V213)
+
+Rama `pagina-publica-f2` (sale de `main` eb01a9b). Único cambio en la base: tabla nueva `cotizaciones_web` + su
+función (`supabase/schema_v213_cotizaciones_web.sql`). No se tocaron tablas, roles, permisos ni módulos existentes.
+
+**Estructura de páginas públicas**
+
+| Ruta | Qué muestra |
+|---|---|
+| `/` | Hero → Sobre nosotros → Historia (línea de tiempo) → Misión/Visión/Valores → Instalación y procesos → Sectores → Personalización y maquila (`#servicios`) → Nuestros uniformes → Cómo trabajamos → Clientes → franja "Visita la tienda / Uniformes escolares" → Factores de competitividad → Cotización (`#cotizar`) → Descargas → footer (`#contacto`) |
+| `/catalogo` | Igual que la Fase 1 + `?categoria=<CATEGORIAS>` (filtro desde las tarjetas de Sectores) + botón "Cotizar con formulario" → `/?producto=<id>#cotizar` |
+| `/escolar` | Colegios (badge verde "En tienda" / ámbar "Pedido anual"), "¿Tu colegio no está?" → `/?sector=educacion#cotizar`, dirección/horario de la tienda + WhatsApp "si hay mi talla" |
+| `/tienda` | Hero con foto, dirección, horario, "Abierto ahora / Cerrado" (hora de `America/Monterrey`), mapa de Google embebido (iframe sin API key), "Cómo llegar", marcas (se oculta si `TIENDA.marcas` está vacío) |
+| `/aviso-de-privacidad` | Aviso integral LFPDPPP — **plantilla: revisar con abogado/contador** (comentario en `AvisoPage.jsx` y `content.js`) |
+
+- Header: Nosotros · Servicios · Catálogo · Escolar · Tienda · Contacto · **Cotizar** (botón) · Iniciar sesión. En móvil
+  (<600 px) "Iniciar sesión" pasa al menú desplegable.
+- Footer en 4 columnas: marca + WhatsApp + redes · contacto (incluye ventas@gruposalper.com) · tienda (dirección +
+  horario) · planta (solo dirección, "No es punto de venta", sin horario ni mapa) + links.
+- Todo el contenido en `src/public-site/content.js`: `HISTORIA`, `MISION_VISION`, `SECTORES` (cada uno con la
+  `categoria` del catálogo o `href`), `SERVICIOS`, `COMO_TRABAJAMOS` (`datos` = franja pedido mínimo / tiempo / envíos),
+  `COTIZACION`, `ESCOLAR`, `TIENDA` (dirección, `horario` con días 0-6, `marcas`), `PLANTA`, `AVISO`, `CORREO_VENTAS`,
+  `FACEBOOK_URL`, `INSTAGRAM_URL` (vacías = no hay ícono; TikTok quitado). `hayDato(v)`: '' / null / texto que empieza
+  con `TODO` = no se muestra.
+- Componentes nuevos: `Secciones.jsx` (Historia, MisionVision, Sectores, Servicios, ComoTrabajamos), `Cotizacion.jsx`,
+  `EscolarPage.jsx`, `TiendaPage.jsx`, `AvisoPage.jsx`, `comun.jsx` (`usePagina` título/description/canonical por
+  página, `useAparecer` animación con IntersectionObserver, `estadoTienda`/`EstadoTienda`, `TiendaInfo`, `MapaTienda`),
+  `jsonld.js`.
+- Fotos de servicios: bordado = `catalogo/seguridad-2.webp`, sublimación = `catalogo/sudadera-2.webp`, maquila =
+  `sitio/nave.webp`, serigrafía = ícono (sin foto todavía: poner la ruta en `SERVICIOS.lista[].imagen`).
+
+**Tabla `cotizaciones_web` (V213)**
+- Columnas: `id`, `created_at`, `nombre`, `empresa`, `telefono`, `correo`, `sector`, `productos text[]`,
+  `cantidad_aprox`, `personalizacion text[]`, `fecha_deseada`, `mensaje`, `estado` (default `nueva`; nueva /
+  contactado / cotizado / ganado / perdido), `origen` (default `web`), `ip_hash` (HMAC de la IP, para el límite; no se
+  guarda la IP), `actualizado_en`, `actualizado_por`.
+- RLS: anon sin ningún permiso; `authenticated` solo SELECT y la política deja ver solo a `admin_general` ("super_admin"
+  del pedido) y `admin_tienda` (fijo, sin clave en `rol_permisos`). Nadie inserta desde el navegador. Cambio de estado:
+  `cotizacion_web_cambiar_estado(p_id, p_estado)` (security definer, mismos dos roles).
+- Probado en PGlite (13 casos: anon no lee/inserta, ventas lee 0, admins leen, RPC con candado, corre dos veces).
+
+**Función `/api/cotizacion` (Vercel, `api/cotizacion.js`)**
+- POST JSON. Limpia y valida (nombre, teléfono 10 dígitos, correo, aviso aceptado; cantidades y personalización solo de
+  la lista), honeypot `sitio_web` (lleno = responde ok sin guardar), límite 5 envíos por IP cada 15 min (cuenta en la
+  tabla por `ip_hash`), inserta con la service role key y manda correo por SMTP (nodemailer) con `replyTo` = correo del
+  cliente. Si faltan variables SMTP o el correo falla, la cotización queda guardada y el usuario ve éxito.
+- Variables de entorno nuevas en Vercel (Production): `SUPABASE_SERVICE_ROLE_KEY` (secreta, nunca `VITE_`),
+  `SMTP_HOST`, `SMTP_PORT` (465 = SSL; 587 = STARTTLS), `SMTP_USER`, `SMTP_PASS`, `COTIZACION_EMAIL_TO`
+  (= ventas@gruposalper.com), opcional `COTIZACION_EMAIL_FROM`. Usa también `VITE_SUPABASE_URL` (ya existía).
+- Probada con un PostgREST falso (11 casos: 405, honeypot, validaciones, limpieza, límite por IP, sin SMTP).
+
+**Sistema (`/app/cotizaciones-web`)**
+- `CotizacionesWebPage.jsx` (tabla fecha/nombre/empresa/productos/estado, filtro por estado con conteos, cambio de
+  estado, clic en la fila = detalle con teléfono, correo, sector, cantidad, personalización, fecha y mensaje),
+  `services/cotizacionesWebService.js`, `components/cotizaciones/` (hook del contador + CSS). Menú lateral "Cotizaciones
+  web" con número de "nueva", solo para `admin_general` / `admin_tienda` (`canVerCotizacionesWeb`). Pendiente: integrarlo
+  al CRM.
+
+**SEO**
+- `sitemap.xml` con `/escolar`, `/tienda`, `/aviso-de-privacidad`; `robots.txt` bloquea `/api`.
+- Título y description por página (`usePagina`; `/escolar` "Uniformes escolares en Torreón | SALPER", `/tienda`
+  "Tienda deportiva en el centro de Torreón | SALPER").
+- JSON-LD `Organization` + `SportingGoodsStore` (dirección y `openingHoursSpecification`) que `vite.config.js` (plugin
+  `salper-jsonld`) inserta en `index.html` al compilar, a partir de `content.js`. La planta NO se marca como
+  `LocalBusiness`.
+
+**Pendiente**
+- SQL V213 APLICADO en Supabase (2026-11-18; verificado con la llave pública: leer, insertar y la RPC dan 401). Falta dar de alta las variables en Vercel antes de publicar.
+- Datos en `TODO`: pedido mínimo, tiempo de entrega, envíos, marcas de la tienda, URLs de Facebook/Instagram, logos de
+  IMES/Tricio/Echavarría/Avenue (`public/img/escolar/`), foto de serigrafía.
+- El mapa de Google no carga en el navegador de vista previa de Claude (bloquea iframes externos); revisar en producción.
+- Revisar el aviso de privacidad con abogado/contador.

@@ -1,0 +1,71 @@
+/* V213 — Cotizaciones web (/app/cotizaciones-web). */
+.cotweb__ayuda {
+  margin: -4px 0 14px;
+  color: var(--color-text-muted, #6b7280);
+}
+.cotweb__filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.cotweb__n {
+  margin-left: 4px;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+.cotweb__tabla-wrap {
+  overflow-x: auto;
+}
+.cotweb__fila {
+  cursor: pointer;
+}
+.cotweb__fila td {
+  vertical-align: top;
+}
+.cotweb__fila.is-nueva td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-primary, #2aa5a0);
+}
+.cotweb__fila strong {
+  display: block;
+}
+.cotweb__muted {
+  display: block;
+  font-size: 13px;
+  color: var(--color-text-muted, #6b7280);
+}
+td > .cotweb__muted {
+  display: inline;
+}
+.cotweb__estado {
+  min-width: 130px;
+  font-weight: 600;
+}
+.cotweb__estado--nueva { color: #1f6fb2; }
+.cotweb__estado--contactado { color: #8a5a00; }
+.cotweb__estado--cotizado { color: #6b3fa0; }
+.cotweb__estado--ganado { color: #11733a; }
+.cotweb__estado--perdido { color: #9b3b2a; }
+.cotweb__detalle td {
+  background: var(--color-surface-muted, #f6f8fa);
+}
+.cotweb__detalle dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px 20px;
+}
+.cotweb__detalle dt {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted, #6b7280);
+}
+.cotweb__detalle dd {
+  margin: 2px 0 0;
+  white-space: pre-wrap;
+}
+.cotweb__dato--ancho {
+  grid-column: 1 / -1;
+}

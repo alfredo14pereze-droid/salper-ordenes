@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { jsonLdHtml } from './src/public-site/jsonld.js'
 
 // base: '/' (nov-2026, página pública): con BrowserRouter el sistema vive en
 // /app/... y /catalogo; con rutas relativas ('./') los assets se pedirían a
@@ -15,6 +16,11 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   plugins: [
     react(),
+    // Fase 2 de la página pública: JSON-LD (Organization + tienda) en el <head>.
+    {
+      name: 'salper-jsonld',
+      transformIndexHtml: (html) => html.replace('</head>', `    ${jsonLdHtml()}\n  </head>`),
+    },
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: false,

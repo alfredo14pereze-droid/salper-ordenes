@@ -40,6 +40,7 @@ import ManualesPage from './pages/ManualesPage'
 import AtrPage from './pages/AtrPage'
 import AtrCargaPage from './pages/AtrCargaPage'
 import CrmPage from './pages/CrmPage'
+import CotizacionesWebPage from './pages/CotizacionesWebPage'
 import CrmEmpresaPage from './pages/CrmEmpresaPage'
 import CrmImportarPage from './pages/CrmImportarPage'
 import HojasImpresasPage from './pages/HojasImpresasPage'
@@ -184,6 +185,8 @@ function AuthGate() {
           <Route path="/crm" element={<CrmPage />} />
           <Route path="/crm/importar" element={<CrmImportarPage />} />
           <Route path="/crm/:id" element={<CrmEmpresaPage />} />
+          {/* V213 — cotizaciones del formulario público (admin_general / admin_tienda). */}
+          <Route path="/cotizaciones-web" element={<CotizacionesWebPage />} />
           <Route path="/entregas" element={<EntregaMasivaPage />} />
           {/* V176 — pedidos: varias órdenes con un anticipo, abonos y factura. */}
           <Route path="/pedidos" element={<PedidosPage />} />

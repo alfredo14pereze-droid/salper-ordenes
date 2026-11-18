@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { NAV, CONTACTO, REDES, linkWhatsApp, HERO } from './content'
+import { NAV, CONTACTO, REDES, linkWhatsApp, HERO, CORREO_VENTAS, PLANTA, TIENDA, hayDato } from './content'
+import { direccionTienda, horaBonita } from './comun'
 import { Icono, IconoWhatsApp, IconoRed } from './Iconos'
 
 // ¿Hay una sesión de Supabase guardada en este navegador? Se lee directo de
@@ -54,7 +55,8 @@ export function Header() {
     }
   }, [abierto])
 
-  const hrefDe = (item) => item.href || (enInicio ? `#${item.id}` : `/#${item.id}`)
+  // El footer (#contacto) está en todas las páginas: ese ancla no sale de la página.
+  const hrefDe = (item) => item.href || (enInicio || item.id === 'contacto' ? `#${item.id}` : `/#${item.id}`)
 
   return (
     <header className={'ps-header' + (scroll || !enInicio ? ' ps-header--solido' : '')}>
@@ -78,6 +80,9 @@ export function Header() {
         </nav>
 
         <div className="ps-header__acciones">
+          <a href={enInicio ? '#cotizar' : '/#cotizar'} className="ps-btn ps-btn--primario ps-header__cotizar">
+            Cotizar
+          </a>
           <BotonSesion className="ps-header__sesion" />
           <button
             type="button"
@@ -105,6 +110,10 @@ export function Header() {
                 </a>
               )
             )}
+            <a href={enInicio ? '#cotizar' : '/#cotizar'} className="ps-btn ps-btn--primario ps-movil__cotizar" onClick={() => setAbierto(false)}>
+              Cotizar
+            </a>
+            <BotonSesion className="ps-movil__sesion" />
           </nav>
         </div>
       )}
@@ -112,8 +121,17 @@ export function Header() {
   )
 }
 
+const LINKS_FOOTER = [
+  { label: 'Catálogo', to: '/catalogo' },
+  { label: 'Escolar', to: '/escolar' },
+  { label: 'Tienda', to: '/tienda' },
+  { label: 'Cotizar', to: '/#cotizar', ancla: true },
+  { label: 'Aviso de privacidad', to: '/aviso-de-privacidad' },
+]
+
 export function Footer() {
-  const redes = Object.entries(REDES).filter(([, url]) => url && url !== '#')
+  const redes = Object.entries(REDES).filter(([, url]) => hayDato(url) && url !== '#')
+  const { pathname } = useLocation()
   return (
     <footer id="contacto" className="ps-footer ps-textura">
       <div className="ps-wrap ps-footer__grid">
@@ -121,6 +139,18 @@ export function Footer() {
           <img src="/img/sitio/logo-blanco.png" alt="SALPER" width="180" height="81" loading="lazy" />
           <p className="ps-footer__desde">{HERO.desde}</p>
           <p>{HERO.frase}</p>
+          <a href={linkWhatsApp()} className="ps-btn ps-btn--whatsapp" target="_blank" rel="noopener noreferrer">
+            <IconoWhatsApp /> {CONTACTO.botonWhatsApp}
+          </a>
+          {redes.length > 0 && (
+            <div className="ps-footer__redes">
+              {redes.map(([red, url]) => (
+                <a key={red} href={url} target="_blank" rel="noopener noreferrer" aria-label={red === 'facebook' ? 'Facebook' : 'Instagram'}>
+                  <IconoRed red={red} />
+                </a>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
@@ -137,26 +167,57 @@ export function Footer() {
                 </a>
               </li>
             ))}
+            <li>
+              <strong>Cotizaciones</strong>
+              <a href={`mailto:${CORREO_VENTAS}`}>
+                <Icono nombre="correo" size={16} /> {CORREO_VENTAS}
+              </a>
+            </li>
           </ul>
         </div>
 
-        <div className="ps-footer__cta">
-          <a href={linkWhatsApp()} className="ps-btn ps-btn--whatsapp" target="_blank" rel="noopener noreferrer">
-            <IconoWhatsApp /> {CONTACTO.botonWhatsApp}
-          </a>
-          {redes.length > 0 && (
-            <div className="ps-footer__redes">
-              {redes.map(([red, url]) => (
-                <a key={red} href={url} target="_blank" rel="noopener noreferrer" aria-label={red}>
-                  <IconoRed red={red} />
-                </a>
-              ))}
-            </div>
-          )}
+        <div>
+          <h2 className="ps-footer__titulo">Tienda deportiva</h2>
+          <p className="ps-footer__dato">{direccionTienda()}</p>
+          <ul className="ps-footer__horario">
+            {TIENDA.horario.map((h) => (
+              <li key={h.etiqueta}>
+                <span>{h.etiqueta}</span>
+                <span>
+                  {horaBonita(h.abre)} – {horaBonita(h.cierra)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <Link to="/tienda" className="ps-footer__mas">
+            Ver mapa <Icono nombre="flecha" size={14} />
+          </Link>
+        </div>
+
+        <div>
+          <h2 className="ps-footer__titulo">{PLANTA.titulo}</h2>
+          <p className="ps-footer__dato">{PLANTA.direccion}</p>
+          <p className="ps-footer__nota">{PLANTA.nota}</p>
+          <ul className="ps-footer__links">
+            {LINKS_FOOTER.map((l) =>
+              l.ancla ? (
+                <li key={l.label}>
+                  <a href={pathname === '/' ? '#cotizar' : l.to}>{l.label}</a>
+                </li>
+              ) : (
+                <li key={l.label}>
+                  <Link to={l.to}>{l.label}</Link>
+                </li>
+              )
+            )}
+            <li>
+              <a href={haySesionGuardada() ? '/app' : '/login'}>{haySesionGuardada() ? 'Ir al sistema' : 'Iniciar sesión'}</a>
+            </li>
+          </ul>
         </div>
       </div>
       <div className="ps-wrap ps-footer__legal">
-        © {new Date().getFullYear()} {CONTACTO.copyright}
+        © {new Date().getFullYear()} {CONTACTO.copyright} · <Link to="/aviso-de-privacidad">Aviso de privacidad</Link>
       </div>
     </footer>
   )

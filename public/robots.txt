@@ -3,5 +3,6 @@ Allow: /
 Allow: /catalogo
 Disallow: /app
 Disallow: /login
+Disallow: /api
 
 Sitemap: https://www.salperdeportes.com/sitemap.xml

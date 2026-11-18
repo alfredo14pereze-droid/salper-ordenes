@@ -28,6 +28,27 @@ const PATHS = {
   flecha: <><path d="M5 12h14M13 6l6 6-6 6" /></>,
   check: <><path d="M20 6L9 17l-5-5" /></>,
   usuario: <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>,
+  // Fase 2
+  calidad: <><circle cx="12" cy="9" r="6" /><path d="M8.5 13.7L7 22l5-3 5 3-1.5-8.3" /><path d="M12 6.5l.9 1.8 2 .3-1.4 1.4.3 2-1.8-.9-1.8.9.3-2-1.4-1.4 2-.3z" /></>,
+  reloj: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+  saludo: <><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z" /></>,
+  escudo: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></>,
+  equipo: <><circle cx="9" cy="8" r="3.5" /><path d="M2 21a7 7 0 0 1 14 0" /><path d="M16 4.3a3.5 3.5 0 0 1 0 7.4" /><path d="M18 14.5a7 7 0 0 1 4 6.5" /></>,
+  mejora: <><path d="M3 17l6-6 4 4 8-8" /><path d="M15 7h6v6" /></>,
+  mineria: <><path d="M3 18a9 9 0 0 1 18 0z" /><path d="M10 9V5h4v4" /><path d="M2 18h20v2H2z" /></>,
+  fabrica: <><path d="M2 20V10l6 4v-4l6 4V4h4l1 16z" /><path d="M2 20h20" /><path d="M7 17h2M12 17h2" /></>,
+  alimentos: <><path d="M5 2v8a3 3 0 0 0 6 0V2" /><path d="M8 2v20" /><path d="M17 2c-2 0-3 3-3 7s1 5 3 5v8" /></>,
+  salud: <><rect x="3" y="3" width="18" height="18" rx="4" /><path d="M12 8v8M8 12h8" /></>,
+  educacion: <><path d="M22 9L12 4 2 9l10 5 10-5z" /><path d="M6 11v5c3 2.5 9 2.5 12 0v-5" /><path d="M22 9v6" /></>,
+  gastronomia: <><path d="M6 13.9A4 4 0 0 1 7.5 6a5 5 0 0 1 9 0A4 4 0 0 1 18 13.9V20H6z" /><path d="M6 17h12" /></>,
+  maletin: <><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" /><path d="M2 13h20" /></>,
+  chat: <><path d="M21 12a8 8 0 0 1-11.8 7L3 21l2-6A8 8 0 1 1 21 12z" /></>,
+  camion: <><path d="M1 4h13v12H1z" /><path d="M14 9h4l3 3v4h-7" /><circle cx="5.5" cy="18.5" r="2" /><circle cx="17.5" cy="18.5" r="2" /></>,
+  maquila: <><path d="M2 20V10l6 4v-4l6 4V4h4l1 16z" /><path d="M2 20h20" /><path d="M7 17h2M12 17h2" /></>,
+  mapa: <><path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z" /><circle cx="12" cy="10" r="2.5" /></>,
+  tienda: <><path d="M3 9l1.5-5h15L21 9" /><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" /><path d="M5 12v9h14v-9" /><path d="M10 21v-5h4v5" /></>,
+  colegio: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M8 10h8M12 7v9" /></>,
+  enviar: <><path d="M22 2L11 13" /><path d="M22 2l-7 20-4-9-9-4z" /></>,
 }
 
 export function Icono({ nombre, size = 24, ...rest }) {
@@ -52,8 +73,6 @@ export function IconoRed({ red, size = 20 }) {
     facebook: 'M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9H17l.5-4h-4V8.8c0-.5.3-.8.5-.8z',
     instagram:
       'M12 2.2c3.2 0 3.6 0 4.8.1 3.3.1 4.8 1.7 4.9 4.9.1 1.3.1 1.6.1 4.8s0 3.6-.1 4.8c-.1 3.2-1.7 4.8-4.9 4.9-1.3.1-1.6.1-4.8.1s-3.6 0-4.8-.1c-3.3-.1-4.8-1.7-4.9-4.9C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.8C2.4 3.9 3.9 2.4 7.2 2.3 8.4 2.2 8.8 2.2 12 2.2zm0 4.7a5.1 5.1 0 1 0 0 10.2 5.1 5.1 0 0 0 0-10.2zm0 8.4a3.3 3.3 0 1 1 0-6.6 3.3 3.3 0 0 1 0 6.6zm5.3-9.8a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4z',
-    tiktok:
-      'M19.6 6.7a4.8 4.8 0 0 1-3.8-4.2V2h-3.4v13.7a2.9 2.9 0 1 1-2-2.7V9.5a6.3 6.3 0 1 0 5.4 6.2V8.8a8.2 8.2 0 0 0 4.8 1.5V6.9l-1-.2z',
   }[red]
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
