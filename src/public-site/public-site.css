@@ -1864,15 +1864,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  background: var(--ps-gris);
+  width: 100%;
+  height: 120px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--ps-blanco);
   color: var(--ps-marino-2);
 }
 .ps-colegio__logo img {
-  max-width: 72px;
-  max-height: 72px;
+  max-width: 100%;
+  max-height: 104px;
   object-fit: contain;
 }
 .ps-colegio strong {
@@ -1927,15 +1928,13 @@ body {
 }
 @media (max-width: 479px) {
   .ps-colegio {
-    padding: 16px 10px;
+    padding: 14px 10px;
   }
   .ps-colegio__logo {
-    width: 72px;
-    height: 72px;
+    height: 96px;
   }
   .ps-colegio__logo img {
-    max-width: 56px;
-    max-height: 56px;
+    max-height: 80px;
   }
 }
 

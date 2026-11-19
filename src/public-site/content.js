@@ -262,16 +262,16 @@ export const COTIZACION = {
 }
 
 // /escolar. `compra`: 'tienda' (badge verde) o 'anual' (badge ámbar).
-// `logo`: ruta en public/img/escolar/ (vacío = escudo genérico).
+// `logo`: ruta de la imagen (public/img/escolar/; vacío = escudo genérico).
 export const ESCOLAR = {
   titulo: 'Uniformes escolares en Torreón',
   texto: 'Fabricamos los uniformes de varios colegios de la ciudad. Revisa cómo se compra el de tu escuela.',
   colegios: [
     { nombre: 'Instituto Domus', compra: 'tienda', logo: '/img/clientes/domus.png' },
-    { nombre: 'IMES', compra: 'tienda', logo: '' },
-    { nombre: 'Instituto Tricio', compra: 'anual', logo: '' },
-    { nombre: 'Echavarría', compra: 'anual', logo: '' },
-    { nombre: 'Avenue', compra: 'anual', logo: '' },
+    { nombre: 'IMES', compra: 'tienda', logo: '/img/escolar/imes.png' },
+    { nombre: 'Instituto Tricio', compra: 'anual', logo: '/img/escolar/tricio.jpg' },
+    { nombre: 'Echavarría', compra: 'anual', logo: '/img/escolar/echavarria.jpg' },
+    { nombre: 'Avenue', compra: 'anual', logo: '/img/escolar/avenue.jpg' },
   ],
   compra: {
     tienda: { badge: 'En tienda', texto: 'Disponible en tienda' },
