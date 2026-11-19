@@ -2,23 +2,24 @@
    (el sistema en /app no la ve). Colores sacados del Perfil 2025. */
 
 :root {
-  --ps-marino: #0f2a44;
-  --ps-marino-2: #14365a;
-  --ps-marino-3: #0b1f33;
+  /* Grafito #3A3F47 (antes azul marino). */
+  --ps-marino: #3a3f47;
+  --ps-marino-2: #454b54;
+  --ps-marino-3: #2c3036;
   /* Acento naranja = el del sistema (--color-orange en src/styles/index.css). */
   --ps-naranja: #e8720c; /* rellenos: botones, bordes, puntos */
   --ps-naranja-osc: #b85304; /* texto e íconos sobre blanco/gris (contraste 4.5:1) y hover */
-  --ps-naranja-claro: #ffa94d; /* texto sobre el azul marino */
+  --ps-naranja-claro: #ffa94d; /* texto sobre el grafito */
   --ps-naranja-suave: #fdead4; /* fondos de íconos */
-  --ps-texto: #16212e;
-  --ps-texto-2: #4b5868;
-  --ps-gris: #f3f6f9;
-  --ps-borde: #e1e7ee;
+  --ps-texto: #24272c;
+  --ps-texto-2: #555b64;
+  --ps-gris: #f4f5f6;
+  --ps-borde: #e3e5e8;
   --ps-blanco: #ffffff;
   --ps-wa: #25d366;
   --ps-wa-osc: #1ebe5b;
   --ps-radio: 14px;
-  --ps-sombra: 0 10px 30px rgba(15, 42, 68, 0.1);
+  --ps-sombra: 0 10px 30px rgba(58, 63, 71, 0.1);
   --ps-header-h: 68px;
 }
 
@@ -61,7 +62,7 @@ body {
   text-align: center;
 }
 
-/* Textura de líneas del Perfil: curvas finas sobre el azul marino. */
+/* Textura de líneas del Perfil: curvas finas sobre el grafito. */
 .ps-textura {
   position: relative;
   isolation: isolate;
@@ -142,7 +143,7 @@ body {
   transition: background-color 0.2s, box-shadow 0.2s;
 }
 .ps-header--solido {
-  background: rgba(15, 42, 68, 0.97);
+  background: rgba(58, 63, 71, 0.97);
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.18);
 }
 .ps-header__fila {
@@ -202,7 +203,7 @@ body {
 .ps-movil {
   position: fixed;
   inset: var(--ps-header-h) 0 0 0;
-  background: rgba(5, 15, 26, 0.5);
+  background: rgba(20, 22, 25, 0.5);
 }
 .ps-movil__panel {
   display: flex;
@@ -540,7 +541,7 @@ body {
   padding: 36px 14px 14px;
   font: 700 clamp(15px, 2.4vw, 19px) / 1.2 'Barlow', sans-serif;
   color: var(--ps-blanco);
-  background: linear-gradient(transparent, rgba(11, 31, 51, 0.88));
+  background: linear-gradient(transparent, rgba(44, 48, 54, 0.88));
 }
 
 /* Competitividad */
@@ -952,7 +953,7 @@ body {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  background: rgba(5, 15, 26, 0.6);
+  background: rgba(20, 22, 25, 0.6);
 }
 .ps-modal__caja {
   position: relative;
@@ -1367,7 +1368,7 @@ body {
   overflow: hidden;
   border-radius: var(--ps-radio);
   background: var(--ps-blanco);
-  box-shadow: 0 4px 14px rgba(15, 42, 68, 0.06);
+  box-shadow: 0 4px 14px rgba(58, 63, 71, 0.06);
 }
 .ps-servicio__foto {
   width: 100%;
@@ -1425,7 +1426,7 @@ body {
   top: 14px;
   right: 16px;
   font: 800 30px/1 'Barlow', sans-serif;
-  color: #d5e4ee;
+  color: #dfe2e6;
 }
 .ps-paso strong {
   margin-top: 4px;
@@ -1599,7 +1600,7 @@ body {
   width: 100%;
   min-height: 46px;
   padding: 10px 12px;
-  border: 1px solid #c9d4df;
+  border: 1px solid #cdd1d6;
   border-radius: 10px;
   background: var(--ps-blanco);
   color: var(--ps-texto);
@@ -1721,7 +1722,7 @@ body {
   position: relative;
   isolation: isolate;
   color: var(--ps-blanco);
-  background: linear-gradient(90deg, rgba(11, 31, 51, 0.92) 30%, rgba(11, 31, 51, 0.55)), var(--foto) center 30% / cover no-repeat;
+  background: linear-gradient(90deg, rgba(44, 48, 54, 0.92) 30%, rgba(44, 48, 54, 0.55)), var(--foto) center 30% / cover no-repeat;
   padding-bottom: 80px;
 }
 

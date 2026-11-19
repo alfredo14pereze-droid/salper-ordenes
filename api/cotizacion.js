@@ -87,7 +87,7 @@ function armarCorreo(c) {
     subject: `Nueva cotización web: ${c.nombre}${c.empresa ? ` (${c.empresa})` : ''}`,
     text: filas.map(([k, v]) => `${k}: ${v}`).join('\n') + `\n\n${pie}`,
     html:
-      '<h2 style="font-family:sans-serif;color:#0f2a44">Nueva solicitud de cotización</h2>' +
+      '<h2 style="font-family:sans-serif;color:#3a3f47">Nueva solicitud de cotización</h2>' +
       '<table style="font-family:sans-serif;border-collapse:collapse">' +
       filas
         .map(
