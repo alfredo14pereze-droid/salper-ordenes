@@ -651,7 +651,7 @@ export const AYUDA_MODULOS = [
       'Frisa no acepta parciales: una orden solo está lista si alcanza para toda.',
       'Lo apartado ya no se usa para otras órdenes.',
     ],
-    roles: [...ADMINS, R.chofer],
+    roles: [...ADMINS, R.ventas, R.chofer],
   },
   {
     id: 'frisa-restock',

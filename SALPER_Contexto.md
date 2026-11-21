@@ -8378,7 +8378,7 @@ función (`supabase/schema_v213_cotizaciones_web.sql`). No se tocaron tablas, ro
   bordado, costura, terminado) comparten `estacion` con tips por rol; en `EstacionOrderPage` sublimado usa `sublimado`.
   Si la estación tiene varias etapas (sin título único), el botón va solo arriba (`.ayuda-modulo__arriba`). NO va en la
   página pública ni en el login. Fuera: Sistema de diseño, Pedidos a Proveedor (apagado), Instalar.
-- **Ojo con `roles`:** son los que trae el código por defecto (más Terminado en Restock y Chofer en Surtido de Frisa,
+- **Ojo con `roles`:** son los que trae el código por defecto (más Terminado en Restock y Ventas y Chofer en Surtido de Frisa,
   dados en "Roles y permisos"). Si se cambian permisos en "Roles y permisos", actualizar la lista en `ayudaModulos.js`.
 - **Cómo agregar la ayuda a un módulo nuevo:** (1) agregar su entrada en `src/config/ayudaModulos.js` con un `id` nuevo,
   usando los nombres de botones y campos tal como salen en pantalla, frases cortas, sin lenguaje técnico; (2) poner
