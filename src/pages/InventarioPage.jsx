@@ -16,6 +16,7 @@ import NuevoModeloModal from '../components/inventario/NuevoModeloModal'
 import ModeloOpcionesModal from '../components/inventario/ModeloOpcionesModal'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import { buildReporteBlob, reporteFileName } from '../utils/generateInventarioReportePdf'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V89/V92 — Inventario (artículos por fuera de Microsip), pantalla
 // principal: secciones (colegios / líneas) como pestañas, prendas como
@@ -410,7 +411,7 @@ function InventarioContent() {
   return (
     <div className="page">
       <div className="new-order-header">
-        <h2 className="section-title">Inventario</h2>
+        <h2 className="section-title">Inventario <AyudaModulo id="inventario" /></h2>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {canMover && estructuraLista && (
             <button type="button" className="btn btn--primary btn--small" onClick={() => setModal({ kind: 'entrada', modelo: null })}>

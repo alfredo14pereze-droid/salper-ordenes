@@ -15,6 +15,7 @@ import { estacionDeRol } from '../config/vistasPorRol'
 import Modal from '../components/talleros/Modal'
 import { LoteImpresionModal, LoteReporte, LotesImpresionLista } from '../components/orders/LoteImpresion'
 import { telasDeOrden } from '../utils/loteImpresion'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V120 — pantalla de inicio del rol sublimado (Samuel). El buscador de
 // folio abarca TODAS las órdenes (cualquier tipo), porque también sube
@@ -143,7 +144,7 @@ export default function SublimadoHomePage() {
 
   return (
     <div className="page estacion-page">
-      <h2 className="section-title">Órdenes de sublimado</h2>
+      <h2 className="section-title">Órdenes de sublimado <AyudaModulo id="sublimado" /></h2>
 
       <input
         type="search"

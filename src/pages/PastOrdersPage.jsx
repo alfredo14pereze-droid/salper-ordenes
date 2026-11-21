@@ -4,6 +4,7 @@ import { useOrders } from '../hooks/useOrders'
 import { useOrderTypes } from '../hooks/useOrderTypes'
 import OrderCard from '../components/orders/OrderCard'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // Órdenes ya entregadas — nunca se borran, solo se sacan de "Todas las
 // órdenes" del Dashboard (ver DashboardPage.jsx) para que no se mezclen
@@ -36,7 +37,7 @@ export default function PastOrdersPage() {
   return (
     <div className="page">
       <div className="section-header">
-        <h2 className="section-title">Órdenes pasadas</h2>
+        <h2 className="section-title">Órdenes pasadas <AyudaModulo id="ordenes-pasadas" /></h2>
         <span className="section-count">{filteredOrders.length} de {pastOrders.length}</span>
       </div>
       <p className="page-subtitle">Órdenes ya entregadas — se archivan aquí, nunca se borran.</p>

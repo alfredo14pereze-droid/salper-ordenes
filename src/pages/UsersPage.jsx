@@ -13,6 +13,7 @@ import RequireRole from '../components/common/RequireRole'
 import { canManageUsers, ROLE_LABELS, ROLES_ASIGNABLES } from '../utils/permissions'
 import { Loading, ErrorState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 const ROLES = ROLES_ASIGNABLES
 
@@ -357,7 +358,7 @@ function UsersPageContent() {
 
   return (
     <div className="page page--narrow">
-      <h2 className="section-title">Usuarios</h2>
+      <h2 className="section-title">Usuarios <AyudaModulo id="usuarios" /></h2>
       <p className="page-subtitle">
         Crear cuentas nuevas, editar nombre/rol, suspender o eliminar (tienda: ventas / contabilidad / admin — fábrica:
         corte / bordado / sublimado / producción / terminado / admin — o administrador general).

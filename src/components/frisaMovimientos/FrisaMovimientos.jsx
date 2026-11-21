@@ -4,6 +4,7 @@ import { fetchMovimientosVista } from '../../services/frisaRestockService'
 import { armarMovimientos } from '../../utils/frisaMovimientos'
 import { buscadorProducto, hoyISO } from '../../utils/frisaSurtido'
 import { NombreFrisa } from '../frisaNiveles/comunes'
+import AyudaModulo from '../common/AyudaModulo'
 
 const num = (n) => Number(n || 0).toLocaleString('es-MX')
 const fechaHora = (d) => new Date(d).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })
@@ -50,7 +51,7 @@ export default function FrisaMovimientos() {
     <div className="page frisa frisa-surtido">
       <div className="frisa__encabezado">
         <div>
-          <h1 className="page-title">Frisa · movimientos</h1>
+          <h1 className="page-title">Frisa · movimientos <AyudaModulo id="frisa-movimientos" /></h1>
           <p className="page-subtitle">Cada entrada y salida del inventario con su motivo: entregas de las órdenes de compra, órdenes de taller que se subieron a bodega, compras recibidas y ajustes (por conteo o por la revisión de Microsip).</p>
         </div>
       </div>

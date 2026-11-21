@@ -15,6 +15,7 @@ import {
   statsOperaciones,
   statsDias,
 } from '../services/produccionService'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V72 — Estadísticas de producción: mismo estilo/estructura que Estadísticas (tarjetas .stat-card,
 // barras .stage-bars / .month-bars, tablas .stats-table). TODO el cálculo viene de Supabase
@@ -152,7 +153,7 @@ function Contenido() {
   if (todas.length === 0) {
     return (
       <div className="page">
-        <h2 className="section-title">Estadísticas de producción</h2>
+        <h2 className="section-title">Estadísticas de producción <AyudaModulo id="estadisticas-produccion" /></h2>
         <EmptyState>Todavía no hay semanas de producción.</EmptyState>
       </div>
     )
@@ -174,7 +175,7 @@ function Contenido() {
   return (
     <div className="page">
       <div className="section-header">
-        <h2 className="section-title">Estadísticas de producción</h2>
+        <h2 className="section-title">Estadísticas de producción <AyudaModulo id="estadisticas-produccion" /></h2>
       </div>
       <p className="page-subtitle">
         Valor generado y premios por semana (miércoles a martes). Valor generado no es el sueldo. Solo lectura: todo se calcula en el servidor.

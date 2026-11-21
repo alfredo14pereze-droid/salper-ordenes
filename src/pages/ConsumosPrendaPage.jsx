@@ -9,6 +9,7 @@ import {
   fetchPrendasConocidas,
   fetchPrecisionConsumos,
 } from '../services/consumosPrendaService'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V101 — Consumos por prenda (rendimientos de tela). Exclusivo
 // admin_fabrica/admin_general. Tabla editable + import de CSV con
@@ -412,7 +413,7 @@ function ConsumosPrendaContent() {
 
   return (
     <div className="page page--narrow">
-      <h2 className="section-title">Consumos por prenda</h2>
+      <h2 className="section-title">Consumos por prenda <AyudaModulo id="consumos-prenda" /></h2>
       <p className="page-subtitle">
         Cuánta tela usa cada prenda (por talla, o un promedio general). Con esto se calcula el consumo estimado y el
         comprometido de cada tela en las órdenes.

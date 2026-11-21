@@ -12,6 +12,7 @@ import { createPedido, fetchPedidoById } from '../services/pedidosColegioService
 import { buildPedidoColegioPdfBlob, pedidoColegioPdfFileName } from '../utils/generatePedidoColegioPdf'
 import { canManagePedidosColegio } from '../utils/permissions'
 import { formatMonto, round2 } from '../utils/pedidosColegio'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V57 — alta de un Pedido Colegio (BETA, solo admin_general).
 export default function NewPedidoColegioPage() {
@@ -112,7 +113,7 @@ function NewPedidoColegioForm() {
       <Link to="/pedidos-colegio" className="back-link">
         ← Volver a Pedidos Colegio
       </Link>
-      <h2 className="section-title">Nuevo pedido de colegio</h2>
+      <h2 className="section-title">Nuevo pedido de colegio <AyudaModulo id="pedidos-colegio" /></h2>
 
       <form className="order-form" onSubmit={handleSubmit}>
         <label>

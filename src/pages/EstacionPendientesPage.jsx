@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { usePendientes } from '../hooks/usePendientes'
 import { cambiarEstado, SIGUIENTE, esTrabajoDe, marcarParte, partesDe } from '../services/pendientesService'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V97 — Pendientes para bordado/producción (costura): a diferencia de
 // PendientesPage.jsx (bandejas completas, para tienda/terminado/admin),
@@ -36,7 +37,7 @@ export default function EstacionPendientesPage({ tipoNombre }) {
 
   return (
     <div className="page estacion-page">
-      <h2 className="section-title">Pendientes de {tipoNombre.toLowerCase()}</h2>
+      <h2 className="section-title">Pendientes de {tipoNombre.toLowerCase()} <AyudaModulo id="pendientes" /></h2>
       {msg && <p className={msg.error ? 'form-error' : 'fin-ok'}>{msg.text}</p>}
       {lista.length === 0 ? (
         <EmptyState>No tienes pendientes de {tipoNombre.toLowerCase()} por hacer ahora mismo 🎉</EmptyState>

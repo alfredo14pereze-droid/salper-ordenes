@@ -8,6 +8,7 @@ import { adivinarColumnas, armarRenglones, leerBata, leerCsv } from '../utils/at
 import { leerXlsx } from '../utils/xlsxLector'
 import { formatDate } from '../utils/dates'
 import '../components/atr/atr.css'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V209/V210 — Carga inicial del inventario ATR desde Excel/CSV, con vista
 // previa obligatoria: lo que no liga con el catálogo sale en rojo y se asigna,
@@ -116,7 +117,7 @@ function AtrCarga() {
     <div className="page atr">
       <Link to="/atr" className="atr-volver">← Inventario ATR</Link>
       <div className="section-header">
-        <h2 className="section-title">Carga inicial ATR</h2>
+        <h2 className="section-title">Carga inicial ATR <AyudaModulo id="atr" /></h2>
       </div>
 
       {cargaPrevia && (

@@ -9,6 +9,7 @@ import { formatMxn } from '../services/finanzasService'
 import { crearPedido, fetchPedidosLista } from '../services/pedidosService'
 import { PEDIDO_VACIO, datosParaGuardar, errorPedido } from '../utils/pedidos'
 import { formatDate } from '../utils/dates'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V176 — lista de pedidos (varias órdenes de un cliente con un anticipo,
 // abonos y factura). Lo normal es crearlos desde "Nueva orden"; aquí también
@@ -63,6 +64,7 @@ function PedidosContent() {
       <div className="section-header">
         <h2 className="section-title" style={{ margin: 0 }}>
           Pedidos
+          <AyudaModulo id="pedidos" />
         </h2>
         {canEditFinanzas(role) && !nuevo && (
           <button type="button" className="btn btn--ghost btn--small" onClick={() => setNuevo({ ...PEDIDO_VACIO, anticipoRecibidoPor: profile?.full_name || '' })}>

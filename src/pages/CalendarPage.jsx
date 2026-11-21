@@ -4,6 +4,7 @@ import { useOrderTypes } from '../hooks/useOrderTypes'
 import MonthCalendar from '../components/calendar/MonthCalendar'
 import { Loading, ErrorState } from '../components/common/States'
 import { isActiveStatus } from '../utils/status'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 export default function CalendarPage() {
   const { orders, loading, error, refresh } = useOrders()
@@ -21,7 +22,7 @@ export default function CalendarPage() {
   return (
     <div className="page">
       <div className="section-header">
-        <h2 className="section-title">Calendario de producción</h2>
+        <h2 className="section-title">Calendario de producción <AyudaModulo id="calendario" /></h2>
         <label className="checkbox-label">
           <input type="checkbox" checked={showCompleted} onChange={(e) => setShowCompleted(e.target.checked)} />
           Incluir completadas

@@ -9,6 +9,7 @@ import TypeBadge from '../components/orders/TypeBadge'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import RequireRole from '../components/common/RequireRole'
 import { canViewEstadisticas } from '../utils/permissions'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V35: pantalla de estadísticas de producción — cuánto nos tardamos, qué
 // tan seguido entregamos a tiempo y en qué etapa se atora más una orden.
@@ -84,7 +85,7 @@ function EstadisticasPageContent() {
   return (
     <div className="page">
       <div className="section-header">
-        <h2 className="section-title">Estadísticas</h2>
+        <h2 className="section-title">Estadísticas <AyudaModulo id="estadisticas" /></h2>
         <button type="button" className="btn btn--ghost btn--small" onClick={refresh}>
           Actualizar
         </button>

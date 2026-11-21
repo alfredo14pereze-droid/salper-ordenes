@@ -37,6 +37,9 @@ Sistema de gestión de órdenes de producción para SALPER, S.A. DE C.V.
 - `src/utils/permissions.js` — **única fuente de verdad** de "quién puede qué"
   del lado del cliente (solo para mostrar/ocultar UI — el servidor valida todo
   de nuevo, ver abajo).
+- `src/config/ayudaModulos.js` + `components/common/AyudaModulo.jsx` — botón "¿Cómo se usa?" de cada
+  módulo. **Regla:** todo módulo nuevo lleva su entrada en `ayudaModulos.js` y `<AyudaModulo id="..." />` en su
+  título (ver nota del 2026-11-21 al final).
 - `supabase/schema*.sql` — migraciones numeradas en orden (`schema.sql`,
   `schema_v2.sql`, ... `schema_v10_guest_read.sql`, ...). Se aplican pegando
   el archivo completo en el SQL Editor de Supabase. **Nunca se edita una
@@ -8356,3 +8359,29 @@ función (`supabase/schema_v213_cotizaciones_web.sql`). No se tocaron tablas, ro
   IMES/Tricio/Echavarría/Avenue (`public/img/escolar/`), foto de serigrafía.
 - El mapa de Google no carga en el navegador de vista previa de Claude (bloquea iframes externos); revisar en producción.
 - Revisar el aviso de privacidad con abogado/contador.
+
+### 2026-11-21 — Botón "¿Cómo se usa?" en cada módulo (solo frontend, sin SQL) (rama `ayuda-modulos`)
+
+- **Componente:** `src/components/common/AyudaModulo.jsx` (+ `AyudaModulo.css`). Se usa como
+  `<AyudaModulo id="inventario" />` **dentro del título** del módulo, a la derecha del texto
+  (`<h2 className="section-title">Inventario <AyudaModulo id="inventario" /></h2>`). Botón discreto con "?" +
+  "¿Cómo se usa?" en escritorio y solo "?" en celular (≤720px). Abre un panel lateral desde la derecha (escritorio) o una
+  hoja desde abajo (celular), montado en `<body>` con portal; se cierra con la X, Esc o tocando fuera. Contenido: título,
+  ¿Qué es?, ¿Para qué sirve?, ¿Cómo se usa? (pasos numerados), Tips (opcional), ¿Quién lo usa?. No lee ni escribe nada en
+  la base.
+- **Textos:** TODOS en `src/config/ayudaModulos.js` (48 entradas, una por `id`, con `titulo`, `queEs`, `paraQueSirve`,
+  `pasos` 3–6, `tips` 0–3, `roles` con nombres entendibles del mapa `R`). Para cambiar un texto solo se edita ese archivo.
+  Si un `id` no tiene entrada, el botón no aparece (no rompe la página).
+- **Dónde está:** en el título de 59 pantallas (todas las del menú + subpantallas: detalle de orden, pedidos, CRM empresa
+  e importar, talleros, inventario, ATR carga, etc.). Frisa lleva una ayuda por pestaña (`frisa-niveles`, `frisa-surtido`,
+  `frisa-restock`, `frisa-movimientos`, `frisa-microsip`, `frisa-plantas`, `frisa-reportes`). Las estaciones (corte,
+  bordado, costura, terminado) comparten `estacion` con tips por rol; en `EstacionOrderPage` sublimado usa `sublimado`.
+  Si la estación tiene varias etapas (sin título único), el botón va solo arriba (`.ayuda-modulo__arriba`). NO va en la
+  página pública ni en el login. Fuera: Sistema de diseño, Pedidos a Proveedor (apagado), Instalar.
+- **Ojo con `roles`:** son los que trae el código por defecto (más Terminado en Restock y Chofer en Surtido de Frisa,
+  dados en "Roles y permisos"). Si se cambian permisos en "Roles y permisos", actualizar la lista en `ayudaModulos.js`.
+- **Cómo agregar la ayuda a un módulo nuevo:** (1) agregar su entrada en `src/config/ayudaModulos.js` con un `id` nuevo,
+  usando los nombres de botones y campos tal como salen en pantalla, frases cortas, sin lenguaje técnico; (2) poner
+  `<AyudaModulo id="..." />` dentro del título de la pantalla.
+- **REGLA A FUTURO:** cada módulo nuevo debe incluir su entrada en `ayudaModulos.js` y su `<AyudaModulo />` en el título.
+- Fuera de alcance por ahora: tutoriales interactivos, liga a "Ver manual completo" del módulo Manuales, videos/capturas.

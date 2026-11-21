@@ -31,6 +31,7 @@ import { fetchProductosResumen } from '../services/productosService'
 import { CLIENTE_TIPO_ORDEN_OPTIONS } from '../lib/constants'
 import BuscadorNombre from '../components/common/BuscadorNombre'
 import { coincideNombre } from '../utils/buscarPorNombre'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // Fila genérica con nombre + botón Eliminar — usada por las 3 secciones
 // simples (proveedores/clientes/telas). Pide confirmación en dos pasos y,
@@ -601,7 +602,7 @@ function CatalogosPageContent() {
 
   return (
     <div className="page page--narrow">
-      <h2 className="section-title">Catálogos</h2>
+      <h2 className="section-title">Catálogos <AyudaModulo id="catalogos" /></h2>
       <p className="page-subtitle">
         Dar de alta depende del catálogo: Clientes y Productos son de ventas y administrador general; Telas es de
         ventas, administrador de fábrica y administrador general. Eliminar (hard-delete, definitivo) sigue siendo

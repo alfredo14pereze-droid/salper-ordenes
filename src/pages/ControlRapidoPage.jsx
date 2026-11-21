@@ -4,6 +4,7 @@ import { fetchAllOrdersForControl, fetchAllOrdenEtapas, subscribeToOrderChanges 
 import { getStatus } from '../utils/status'
 import { ETAPA_LABELS } from '../lib/constants'
 import { Loading, ErrorState } from '../components/common/States'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // "Control rápido de órdenes" (V24, tarea 9 de Roles y permisos): tabla de
 // solo lectura — folio, cliente, estado — visible para TODOS los roles
@@ -66,7 +67,7 @@ export default function ControlRapidoPage() {
 
   return (
     <div className="page">
-      <h2 className="section-title">Control rápido de órdenes</h2>
+      <h2 className="section-title">Control rápido de órdenes <AyudaModulo id="control-rapido" /></h2>
       <p className="page-subtitle">Folio, cliente y estado de todas las órdenes — incluidas las eliminadas.</p>
 
       <div style={{ overflowX: 'auto' }}>

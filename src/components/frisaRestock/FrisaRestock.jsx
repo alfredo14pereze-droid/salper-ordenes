@@ -16,6 +16,7 @@ import { calcularLisas, nombreLisa } from '../../utils/frisaLisas'
 import FrisaLisas from './FrisaLisas'
 import { EstadoBadge, NombreFrisa, fechaCorta } from '../frisaNiveles/comunes'
 import { prendaYTalla } from '../../utils/frisaPlantas'
+import AyudaModulo from '../common/AyudaModulo'
 
 const num = (n) => Number(n || 0).toLocaleString('es-MX')
 // V206 — precios de compra (pantalón, playera lisa).
@@ -79,7 +80,7 @@ export default function FrisaRestock() {
     <div className="page frisa frisa-surtido">
       <div className="frisa__encabezado">
         <div>
-          <h1 className="page-title">Frisa · restock</h1>
+          <h1 className="page-title">Frisa · restock <AyudaModulo id="frisa-restock" /></h1>
           <p className="page-subtitle">
             Para cada clave: disponible + en proceso + por entrar = proyectado. Si el proyectado llega al reorden, se pide lo que falta
             para el máximo: lo que se fabrica como orden de taller (FR) y lo que se compra hecho como pedido de compra.

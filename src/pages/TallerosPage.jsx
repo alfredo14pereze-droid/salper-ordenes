@@ -10,6 +10,7 @@ import PrestarModal from '../components/talleros/PrestarModal'
 import DevolverModal from '../components/talleros/DevolverModal'
 import TalleroFormModal from '../components/talleros/TalleroFormModal'
 import CatalogoPrendasPanel from '../components/talleros/CatalogoPrendasPanel'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V63 — Talleros: listado filtrable + prestar/devolver + (admin) alta,
 // edición, baja y catálogo de prendas. Lo ven todos los roles con sesión
@@ -72,7 +73,7 @@ function TallerosContent() {
   return (
     <div className="page">
       <div className="new-order-header">
-        <h2 className="section-title">Talleros</h2>
+        <h2 className="section-title">Talleros <AyudaModulo id="talleros" /></h2>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {canLoan && (
             <>

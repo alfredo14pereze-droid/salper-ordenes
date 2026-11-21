@@ -11,6 +11,7 @@ import { leerXlsxHojas } from '../../utils/xlsxLector'
 import { leerDiarios, ligarDocs, separarNuevos, calcularPlantas, resumenArchivo, docsParaImportar, reportePlantasMatriz, reportePlantasResumen } from '../../utils/frisaPlantas'
 import { reporteCSV, nombreArchivo } from '../../utils/frisaReportes'
 import { NombreFrisa, fechaCorta } from '../frisaNiveles/comunes'
+import AyudaModulo from '../common/AyudaModulo'
 
 const num = (n) => Number(n || 0).toLocaleString('es-MX')
 
@@ -108,7 +109,7 @@ export default function FrisaPlantas() {
     <div className="page frisa frisa-surtido">
       <div className="frisa__encabezado">
         <div>
-          <h1 className="page-title">Frisa · inventario en plantas</h1>
+          <h1 className="page-title">Frisa · inventario en plantas <AyudaModulo id="frisa-plantas" /></h1>
           <p className="page-subtitle">
             Lo que hay en cada planta de Frisa = lo remitido − lo facturado. Cada entrega confirmada en la página se suma sola a su planta; las facturas (y lo que no haya pasado por la página) se suben con los Diarios de Microsip.
             {ultimaFecha && ` Movimientos hasta el ${fechaCorta(ultimaFecha)}.`}

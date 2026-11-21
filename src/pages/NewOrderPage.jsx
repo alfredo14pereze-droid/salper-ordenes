@@ -53,6 +53,7 @@ import { faltaTela, tipoLlevaCorte } from '../utils/telaObligatoria'
 import { CAPTURA_FECHA_CREACION_HABILITADA } from '../utils/featureFlags'
 import Miniatura from '../components/common/Miniatura'
 import { ACEPTA_FOTO_O_PDF } from '../utils/archivos'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 const initialForm = {
   // Fase 1A — toda la orden es venta de mostrador: sin precio, anticipo ni factura.
@@ -882,7 +883,7 @@ function NewOrderForm() {
   return (
     <div className="page page--narrow">
       <div className="new-order-header">
-        <h2 className="section-title">Nueva orden</h2>
+        <h2 className="section-title">Nueva orden <AyudaModulo id="nueva-orden" /></h2>
         <FileDropLabel
           className="btn btn--ghost btn--small"
           style={{ display: 'inline-flex' }}

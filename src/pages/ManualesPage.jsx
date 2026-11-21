@@ -9,6 +9,7 @@ import { formatDate } from '../utils/dates'
 import {
   fetchManuales, guardarSeccion, eliminarSeccion, guardarManual, eliminarManual, moverManual,
 } from '../services/manualesService'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V196 — Manuales: cómo se hace cada proceso. Sección → manual.
 // Leer: todos los roles. Editar (crear, cambiar, eliminar, reordenar): man.editar
@@ -141,7 +142,7 @@ function VistaInicio({ secciones, manuales, puedeEditar, recargar }) {
   return (
     <div className="page page--narrow manuales">
       <div className="section-header">
-        <h2 className="section-title">Manuales</h2>
+        <h2 className="section-title">Manuales <AyudaModulo id="manuales" /></h2>
         {puedeEditar && !editando && (
           <button type="button" className="btn btn--primary btn--small" onClick={() => setEditando('nueva')}>+ Nueva sección</button>
         )}

@@ -12,6 +12,7 @@ import { pfEsTienda, pfEsFabrica, canMarcarEntregado } from '../utils/permission
 import { formatDate, formatDateTime } from '../utils/dates'
 import Miniatura from '../components/common/Miniatura'
 import { esPdf } from '../utils/archivos'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 export default function PendienteDetailPage() {
   const { id } = useParams()
@@ -78,7 +79,7 @@ export default function PendienteDetailPage() {
       </Link>
       <div className="order-detail__header">
         <div>
-          <h2 className="order-detail__number">{p.folio}</h2>
+          <h2 className="order-detail__number">{p.folio} <AyudaModulo id="pendientes" /></h2>
           <p className="order-detail__client">
             {p.tipo?.nombre} · × {p.cantidad}
           </p>

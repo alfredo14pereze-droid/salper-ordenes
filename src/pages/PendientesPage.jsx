@@ -11,6 +11,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { pfEsTienda, pfEsFabrica, canCrearPendienteFabrica, canManageTiposPendiente, canMarcarEntregado, canViewPendientes, esFabricaSoloLectura } from '../utils/permissions'
 import { estacionDeRol } from '../config/vistasPorRol'
 import RequireRole from '../components/common/RequireRole'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // Bandejas por rol (V78). tienda: lo que mandó y espera; fábrica: lo que le toca.
 // V85 — sin filtros ni buscador: no son tantos pendientes a la vez como para
@@ -150,7 +151,7 @@ function PendientesContent() {
   return (
     <div className="page page--narrow pf-page">
       <div className="section-header">
-        <h2 className="section-title">Pendientes tienda ↔ fábrica</h2>
+        <h2 className="section-title">Pendientes tienda ↔ fábrica <AyudaModulo id="pendientes" /></h2>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {canManageTiposPendiente(role) && (
             <button type="button" className="btn btn--ghost btn--small" onClick={() => setShowTipos(true)}>

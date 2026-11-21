@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { canManagePedidosColegio, canViewPedidosColegio } from '../utils/permissions'
 import { formatDate } from '../utils/dates'
 import { formatMonto, calcSaldo } from '../utils/pedidosColegio'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V57 — Pedidos Colegio (BETA, solo admin_general). Lista de colegios,
 // cada uno expandible a sus pedidos, con el saldo pendiente de cada uno.
@@ -118,6 +119,7 @@ function PedidosColegioContent() {
       <div className="section-header">
         <h2 className="section-title">
           Pedidos Colegio <span className="badge badge--outline">Beta</span>
+          <AyudaModulo id="pedidos-colegio" />
         </h2>
         {puedeGestionar && <AddColegioForm onCreated={refresh} />}
       </div>

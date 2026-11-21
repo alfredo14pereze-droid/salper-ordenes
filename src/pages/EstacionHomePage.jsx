@@ -9,6 +9,7 @@ import { estaPausada } from '../utils/pausasEtapa'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import EstacionCard from '../components/orders/EstacionCard'
 import SublimadoHomePage from './SublimadoHomePage'
+import AyudaModulo from '../components/common/AyudaModulo'
 import { coincideBusquedaOrden } from '../utils/ordenesBusqueda'
 import { estacionVeCambios } from '../utils/cambiosOrden'
 
@@ -92,7 +93,11 @@ function SiguientesOrdenes() {
 
   return (
     <div className="page estacion-page">
-      {!variasEtapas && <h2 className="section-title">Siguientes órdenes</h2>}
+      {variasEtapas ? (
+        <div className="ayuda-modulo__arriba"><AyudaModulo id="estacion" /></div>
+      ) : (
+        <h2 className="section-title">Siguientes órdenes <AyudaModulo id="estacion" /></h2>
+      )}
       <input
         type="search"
         className="input"

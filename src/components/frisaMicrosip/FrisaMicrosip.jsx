@@ -9,6 +9,7 @@ import { articulosDeFilas, columnasDelReporte, totalDelReporte, fechaDelReporte,
 import { parseCSV } from '../../utils/frisaNiveles'
 import { hoyISO } from '../../utils/frisaSurtido'
 import { NombreFrisa, fechaCorta } from '../frisaNiveles/comunes'
+import AyudaModulo from '../common/AyudaModulo'
 
 const num = (n) => Number(n || 0).toLocaleString('es-MX')
 const signo = (n) => (n > 0 ? `+${num(n)}` : num(n))
@@ -105,7 +106,7 @@ export default function FrisaMicrosip() {
     <div className="page frisa frisa-surtido">
       <div className="frisa__encabezado">
         <div>
-          <h1 className="page-title">Frisa · revisión contra Microsip</h1>
+          <h1 className="page-title">Frisa · revisión contra Microsip <AyudaModulo id="frisa-microsip" /></h1>
           <p className="page-subtitle">
             Cada 10 días: exporta de Microsip el reporte "Existencia y valor del inventario" (línea FRISA) y súbelo tal cual (Excel o
             CSV). La página te muestra las diferencias y ajusta las que elijas.

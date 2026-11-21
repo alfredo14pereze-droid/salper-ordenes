@@ -9,6 +9,7 @@ import { fetchTraspasos, fetchTraspasoDetalle } from '../services/inventarioServ
 import TraspasoFormModal from '../components/inventario/TraspasoFormModal'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import { buildTraspasoBlob, traspasoFileName } from '../utils/generateInventarioTraspasoPdf'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 function formatFecha(value) {
   if (!value) return '—'
@@ -107,7 +108,7 @@ function InventarioTraspasosContent() {
   return (
     <div className="page">
       <div className="new-order-header">
-        <h2 className="section-title">Traspasos de inventario</h2>
+        <h2 className="section-title">Traspasos de inventario <AyudaModulo id="inventario-traspasos" /></h2>
         <div style={{ display: 'flex', gap: 8 }}>
           <Link to="/inventario" className="btn btn--ghost btn--small">
             ← Inventario

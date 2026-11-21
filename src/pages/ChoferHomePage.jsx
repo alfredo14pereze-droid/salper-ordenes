@@ -9,6 +9,7 @@ import { ordenesParaEntregar, pendientesPorLlevar, piezasDeOrden, tareasPendient
 import { hoyLocal } from '../utils/tareas'
 import { daysUntil, formatDate } from '../utils/dates'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V169 — pantalla de inicio del chofer: sus tareas, las órdenes listas para
 // entregar (solo consulta, sin precios) y los pendientes tienda ↔ fábrica
@@ -108,7 +109,7 @@ function MisTareas() {
   return (
     <section className="chofer-seccion">
       <div className="section-header">
-        <h2 className="section-title">Mis tareas {lista && <span className="section-count">{lista.length}</span>}</h2>
+        <h2 className="section-title">Mis tareas {lista && <span className="section-count">{lista.length}</span>} <AyudaModulo id="chofer" /></h2>
         <div className="chofer-acciones">
           {puedeAnotar && !agregando && (
             <button type="button" className="btn btn--secondary btn--small" onClick={() => setAgregando(true)}>

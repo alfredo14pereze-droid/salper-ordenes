@@ -52,6 +52,7 @@ import {
 import { esRolDeEstacion } from '../config/vistasPorRol'
 import EstacionOrderPage from './EstacionOrderPage'
 import OrderCorteResumen from '../components/orders/OrderCorteResumen'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V96 — mismo criterio que DashboardPage.jsx: los roles de etapa ven una
 // vista de estación mucho más chica, en la misma ruta /orden/:id. El
@@ -129,7 +130,7 @@ function OrderDetailContent() {
       <div className="order-detail__header">
         <div>
           <h2 className="order-detail__number">
-            Orden #{order.order_number}
+            Orden #{order.order_number} <AyudaModulo id="detalle-orden" />
             {order.folios_externos?.length > 0 && (
               <span style={{ fontSize: '0.55em', color: 'var(--color-muted, #6b6558)', marginLeft: 10 }}>
                 (folio{order.folios_externos.length === 1 ? '' : 's'} externo{order.folios_externos.length === 1 ? '' : 's'}:{' '}

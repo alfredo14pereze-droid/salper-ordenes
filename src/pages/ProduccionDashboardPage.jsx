@@ -7,6 +7,7 @@ import { canVerRankingProduccion } from '../utils/permissions'
 import { historialValores, fetchOperadorasTodas, revisionSemana, prodRankingSemana } from '../services/produccionService'
 import { agruparSemanas, estadisticasOperadora, serieOperadora, UMBRAL_CAMBIO_PCT } from '../utils/produccionStats'
 import { buildProduccionOperadorasPdfBlob, buildProduccionRankingPdfBlob, produccionPdfFileName } from '../utils/generateProduccionPdf'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V70 — Dashboard de producción (admin_general / admin_fabrica): una fila por operadora con su semana
 // actual vs anterior vs promedio de las 4 anteriores, mejor semana y una clasificación simple; más los
@@ -102,7 +103,7 @@ function Dashboard() {
 
   return (
     <div className="page">
-      <h2 className="section-title">Producción por operadora</h2>
+      <h2 className="section-title">Producción por operadora <AyudaModulo id="produccion-dashboard" /></h2>
       <p className="template-hint">
         Valor generado = lo que produjo cada operadora (no es su sueldo). Clasificación: arriba/abajo de su promedio cuando cambia
         ±{UMBRAL_CAMBIO_PCT}% contra el promedio de sus 4 semanas anteriores.

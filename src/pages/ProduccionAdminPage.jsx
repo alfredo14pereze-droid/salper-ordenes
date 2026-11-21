@@ -5,6 +5,7 @@ import OperacionesAdmin from '../components/produccion/OperacionesAdmin'
 import OperadorasAdmin from '../components/produccion/OperadorasAdmin'
 import ReglasAdmin from '../components/produccion/ReglasAdmin'
 import ConfigAdmin from '../components/produccion/ConfigAdmin'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V70 — Administración de producción (admin_general / admin_fabrica).
 export default function ProduccionAdminPage() {
@@ -26,7 +27,7 @@ function Admin() {
   const [tab, setTab] = useState('operaciones')
   return (
     <div className="page">
-      <h2 className="section-title">Administración de producción</h2>
+      <h2 className="section-title">Administración de producción <AyudaModulo id="produccion-admin" /></h2>
       <p className="form-hint produccion__aviso">
         Cambiar un tiempo o un precio <b>no modifica semanas ya capturadas</b> (cada registro guarda el tiempo y el precio con que se capturó).
       </p>

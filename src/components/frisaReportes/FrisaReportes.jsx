@@ -13,6 +13,7 @@ import { calcularLisas } from '../../utils/frisaLisas'
 import {
   reporteInventario, reportePorSurtir, reporteMovimientos, reporteSurtidos, reporteRestock, reporteLisas, reporteCompras, reporteCSV, nombreArchivo,
 } from '../../utils/frisaReportes'
+import AyudaModulo from '../common/AyudaModulo'
 
 const primeroDeMes = () => `${hoyISO().slice(0, 8)}01`
 
@@ -103,7 +104,7 @@ export default function FrisaReportes() {
     <div className="page frisa frisa-surtido">
       <div className="frisa__encabezado">
         <div>
-          <h1 className="page-title">Frisa · reportes</h1>
+          <h1 className="page-title">Frisa · reportes <AyudaModulo id="frisa-reportes" /></h1>
           <p className="page-subtitle">Exporta en cualquier momento: CSV (para Excel) o PDF con vista previa antes de descargar.</p>
         </div>
       </div>

@@ -11,6 +11,7 @@ import { esPdf } from '../utils/archivos'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import { fetchAllOrdenEtapas } from '../services/ordersService'
 import { buildPendientesPdfBlob, pendientesPdfFileName } from '../utils/generatePendientesPdf'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // Resumen de todo lo que sigue pendiente (no completado, no cancelado),
 // agrupado por CLIENTE — no por orden — porque un mismo cliente puede
@@ -86,7 +87,7 @@ export default function ResumenPage() {
   return (
     <div className="page">
       <div className="section-header">
-        <h2 className="section-title">Resumen</h2>
+        <h2 className="section-title">Resumen <AyudaModulo id="resumen" /></h2>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button type="button" className="btn btn--secondary btn--small" disabled={!!generando} onClick={() => verPdf('entrega')}>
             {generando === 'entrega' ? 'Generando…' : 'PDF: pendientes de entrega'}

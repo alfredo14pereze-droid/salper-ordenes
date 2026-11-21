@@ -16,6 +16,7 @@ import CrmPanel from '../components/crm/CrmPanel'
 import RegistrarContactoModal from '../components/crm/RegistrarContactoModal'
 import { CrmEstadisticas, CrmKpis, nombreMes } from '../components/crm/CrmEstadisticas'
 import '../components/crm/crm.css'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 const VISTAS = [
   { key: 'seguimientos', label: 'Seguimientos' },
@@ -157,7 +158,7 @@ function Crm() {
   return (
     <div className="page crm">
       <div className="section-header">
-        <h2 className="section-title">CRM · Prospectos</h2>
+        <h2 className="section-title">CRM · Prospectos <AyudaModulo id="crm" /></h2>
         <div className="crm-acciones">
           {canImportarCrm(role) && (
             <Link to="/crm/importar" className="btn btn--ghost btn--small">

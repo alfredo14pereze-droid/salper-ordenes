@@ -8,6 +8,7 @@ import { useInventarioCatalogos, useInventarioEstructura, useInventarioCatalogo 
 import { vincularArticulos, clasificarSeccion } from '../services/inventarioService'
 import { sugerirClasificacion, nombreModelo } from '../utils/inventarioCatalogo'
 import { formatTalla } from '../utils/inventarioTallas'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V121 — "Artículos sin clasificar" (solo quien administra catálogos).
 // Los artículos que ya existían antes del catálogo estructurado NO se
@@ -155,7 +156,7 @@ function Content() {
   return (
     <div className="page">
       <div className="new-order-header">
-        <h2 className="section-title">Artículos sin clasificar</h2>
+        <h2 className="section-title">Artículos sin clasificar <AyudaModulo id="inventario-admin" /></h2>
         <Link to="/inventario" className="btn btn--ghost btn--small">
           ← Inventario
         </Link>

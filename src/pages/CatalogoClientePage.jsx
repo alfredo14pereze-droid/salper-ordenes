@@ -14,6 +14,7 @@ import BuscadorNombre from '../components/common/BuscadorNombre'
 import { coincideNombre } from '../utils/buscarPorNombre'
 import Miniatura from '../components/common/Miniatura'
 import { ACEPTA_FOTO_O_PDF, esPdf } from '../utils/archivos'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V133 — catálogo de UN cliente (colegio): se entra desde Catálogos y aquí se
 // ven sus productos con foto, se abre la ficha completa de cada uno y se
@@ -464,7 +465,7 @@ function CatalogoClienteContent() {
       <Link to="/catalogos" className="back-link">
         ← Catálogos
       </Link>
-      <h2 className="section-title">{cliente?.nombre || 'Cliente'}</h2>
+      <h2 className="section-title">{cliente?.nombre || 'Cliente'} <AyudaModulo id="catalogos" /></h2>
       <p className="page-subtitle">
         {productos.length} producto(s) en el catálogo{pendientes > 0 ? ` · ${pendientes} con datos por validar` : ''}
       </p>

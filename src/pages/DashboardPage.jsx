@@ -16,6 +16,7 @@ import { esChofer, hasRestrictedNav, isTiendaBasica } from '../utils/permissions
 import { esRolDeEstacion } from '../config/vistasPorRol'
 import EstacionHomePage from './EstacionHomePage'
 import ChoferHomePage from './ChoferHomePage'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 const emptyFilters = { types: [], statuses: [], search: '' }
 
@@ -110,7 +111,7 @@ function DashboardContent() {
   return (
     <div className="page">
       <div className="section-header">
-        <h2 className="section-title">Dashboard</h2>
+        <h2 className="section-title">Dashboard <AyudaModulo id="dashboard" /></h2>
         {/* V34: "Órdenes pasadas" y "Control rápido" dejaron de ser links
             del nav principal (se estaba amontonando arriba) — ahora viven
             aquí, como botones dentro del propio Dashboard. "Resumen" se

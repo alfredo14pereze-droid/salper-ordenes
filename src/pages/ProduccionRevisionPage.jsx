@@ -12,6 +12,7 @@ import {
   fetchRegistrosOperadora,
 } from '../services/produccionService'
 import { textoMejora, textoVs, etiquetaPocasSemanas, baseMejora, esPromedio } from '../utils/produccionMejora'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V69 — Revisión y aprobación semanal (admin_general / admin_fabrica). Terminología:
 // "valor generado" (NO es el sueldo). Todo el cálculo viene del servidor
@@ -134,7 +135,7 @@ function Revision() {
 
   return (
     <div className="page">
-      <h2 className="section-title">Revisión de producción</h2>
+      <h2 className="section-title">Revisión de producción <AyudaModulo id="produccion-revision" /></h2>
       <p className="template-hint">Valor generado = lo que produjo cada operadora (no es su sueldo). Con él se calculan los premios.</p>
 
       <div className="revision__barra">

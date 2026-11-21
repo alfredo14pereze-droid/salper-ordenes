@@ -1,0 +1,172 @@
+/* Botón "¿Cómo se usa?" + panel de ayuda (AyudaModulo.jsx). Discreto:
+   contorno gris como los botones secundarios, nunca compite con las
+   acciones del módulo. El panel va en <body>, fuera de .design-root, así que
+   lleva sus propios colores (los mismos del rediseño). */
+
+.ayuda-modulo__boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 10px;
+  padding: 3px 10px 3px 4px;
+  vertical-align: middle;
+  border: 1px solid #c9ced4;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #4b535d;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ayuda-modulo__boton:hover {
+  border-color: #6b7480;
+  color: #1c2127;
+}
+.ayuda-modulo__boton:focus-visible {
+  outline: 2px solid #e8762c;
+  outline-offset: 2px;
+}
+.ayuda-modulo__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #1c2127;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* Fondo oscuro: tocar fuera del panel lo cierra. */
+.ayuda-modulo__fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(22, 19, 15, 0.45);
+  animation: ayuda-modulo-fade 0.15s ease-out;
+}
+
+/* Escritorio: panel lateral desde la derecha. */
+.ayuda-modulo__panel {
+  display: flex;
+  flex-direction: column;
+  width: min(420px, 100%);
+  height: 100%;
+  background: #ffffff;
+  color: #1c2127;
+  font-family: 'Inter', system-ui, sans-serif;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+  animation: ayuda-modulo-lado 0.2s ease-out;
+}
+.ayuda-modulo__cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #1c2127;
+  color: #ffffff;
+}
+.ayuda-modulo__titulo {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+.ayuda-modulo__cerrar {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #ffffff;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ayuda-modulo__cerrar:hover { background: rgba(255, 255, 255, 0.12); }
+.ayuda-modulo__cerrar:focus-visible { outline: 2px solid #e8762c; outline-offset: -2px; }
+
+.ayuda-modulo__cuerpo {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 20px 24px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.ayuda-modulo__cuerpo section { margin-top: 16px; }
+.ayuda-modulo__cuerpo h3 {
+  margin: 0 0 6px;
+  color: #e8762c;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.ayuda-modulo__cuerpo p { margin: 0; }
+.ayuda-modulo__cuerpo ol,
+.ayuda-modulo__cuerpo ul {
+  margin: 0;
+  padding-left: 22px;
+}
+.ayuda-modulo__cuerpo li + li { margin-top: 6px; }
+.ayuda-modulo__roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ayuda-modulo__rol {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #eceef1;
+  color: #4b535d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Celular: solo el ícono "?" y hoja desde abajo. */
+@media (max-width: 720px) {
+  .ayuda-modulo__boton {
+    padding: 3px;
+    margin-left: 8px;
+  }
+  .ayuda-modulo__texto { display: none; }
+  .ayuda-modulo__icono {
+    width: 22px;
+    height: 22px;
+    font-size: 13px;
+  }
+  .ayuda-modulo__fondo { align-items: flex-end; }
+  .ayuda-modulo__panel {
+    width: 100%;
+    height: auto;
+    max-height: 85vh;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.18);
+    animation: ayuda-modulo-abajo 0.2s ease-out;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .ayuda-modulo__cabeza { border-radius: 16px 16px 0 0; }
+}
+
+@keyframes ayuda-modulo-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ayuda-modulo-lado { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes ayuda-modulo-abajo { from { transform: translateY(100%); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .ayuda-modulo__fondo, .ayuda-modulo__panel { animation: none; }
+}
+
+/* Pantallas sin un solo título (estación con varias etapas): el botón va
+   solo, arriba a la derecha. */
+.ayuda-modulo__arriba {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}

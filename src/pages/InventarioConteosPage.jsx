@@ -10,6 +10,7 @@ import { fetchConteos, crearConteo, fetchConteoLineas } from '../services/invent
 import ConteoCapturaModal from '../components/inventario/ConteoCapturaModal'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import { buildConteoBlob, conteoFileName } from '../utils/generateInventarioConteoPdf'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 function formatFecha(value) {
   if (!value) return '—'
@@ -157,7 +158,7 @@ function InventarioConteosContent() {
   return (
     <div className="page">
       <div className="new-order-header">
-        <h2 className="section-title">Conteos físicos de inventario</h2>
+        <h2 className="section-title">Conteos físicos de inventario <AyudaModulo id="inventario-conteos" /></h2>
         <div style={{ display: 'flex', gap: 8 }}>
           <Link to="/inventario" className="btn btn--ghost btn--small">
             ← Inventario

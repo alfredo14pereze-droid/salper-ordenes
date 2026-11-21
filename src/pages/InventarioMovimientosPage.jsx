@@ -5,6 +5,7 @@ import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { useInventarioCatalogos } from '../hooks/useInventario'
 import { fetchReporteMovimientos } from '../services/inventarioService'
 import { formatTalla } from '../utils/inventarioTallas'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V119 — Reporte global de movimientos: a diferencia del historial por
 // artículo (HistorialModal, un folio/talla a la vez), esta pantalla junta
@@ -104,7 +105,7 @@ function InventarioMovimientosContent() {
   return (
     <div className="page">
       <div className="new-order-header">
-        <h2 className="section-title">Movimientos de inventario</h2>
+        <h2 className="section-title">Movimientos de inventario <AyudaModulo id="inventario-movimientos" /></h2>
         <Link to="/inventario" className="btn btn--ghost btn--small">
           ← Inventario
         </Link>

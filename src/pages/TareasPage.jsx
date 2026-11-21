@@ -7,6 +7,7 @@ import { canViewTareas, canCompletarTareas, canAsignarTareas, canAnotarTareasPro
 import { fetchTareas, fetchDestinatariosTareas, fetchAltasPersonas, crearTarea, crearTareaPropia, marcarTarea, quitarTarea } from '../services/tareasService'
 import { estadoDePersona, estadoGeneral, leAplica, estadoParaMi, hoyLocal, meToca, ordenarTareas, resumenDePersona, resumenPorPersona, textoDestino, vencida } from '../utils/tareas'
 import { formatDate, formatDateTime } from '../utils/dates'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // Nombres cortos de los roles que reciben tareas ("Tienda", no "Tienda (básico)").
 const ROL_CORTO = { tienda: 'Tienda', ventas: 'Ventas', contabilidad: 'Contabilidad' }
@@ -154,7 +155,7 @@ function TareasContent() {
   return (
     <div className="page page--narrow">
       <div className="section-header">
-        <h2 className="section-title">Tareas</h2>
+        <h2 className="section-title">Tareas <AyudaModulo id="tareas" /></h2>
       </div>
 
       {puedeAsignar && (

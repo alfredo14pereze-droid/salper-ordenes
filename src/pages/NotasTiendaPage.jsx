@@ -24,6 +24,7 @@ import {
 import { formatDateTime } from '../utils/dates'
 import Miniatura from '../components/common/Miniatura'
 import { ACEPTA_FOTO_O_PDF, esPdf } from '../utils/archivos'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V158 — Notas de tienda: producto faltante, notas del día, errores, otros.
 // Escribe el personal de tienda; admin de tienda / admin general las marcan
@@ -76,7 +77,7 @@ function NotasTiendaContent() {
   return (
     <div className="page page--narrow">
       <div className="section-header">
-        <h2 className="section-title">Notas de tienda</h2>
+        <h2 className="section-title">Notas de tienda <AyudaModulo id="notas-tienda" /></h2>
       </div>
 
       {verDel && verPara && (

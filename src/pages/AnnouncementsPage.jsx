@@ -5,6 +5,7 @@ import AnnouncementForm from '../components/announcements/AnnouncementForm'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
 import { canManageAnnouncements } from '../utils/permissions'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 export default function AnnouncementsPage() {
   const { role } = useAuth()
@@ -23,7 +24,7 @@ export default function AnnouncementsPage() {
   return (
     <div className="page page--narrow">
       <div className="section-header">
-        <h2 className="section-title">Anuncios internos</h2>
+        <h2 className="section-title">Anuncios internos <AyudaModulo id="anuncios" /></h2>
       </div>
 
       {editable && <AnnouncementForm onCreated={refresh} />}

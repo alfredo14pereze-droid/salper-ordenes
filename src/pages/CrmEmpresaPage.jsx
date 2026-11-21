@@ -30,6 +30,7 @@ import { EstatusBadge, telLink, useCrmUsuarios, waLink } from '../components/crm
 import EstatusModal, { AtajosFecha } from '../components/crm/EstatusModal'
 import RegistrarContactoModal from '../components/crm/RegistrarContactoModal'
 import '../components/crm/crm.css'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V207 — Ficha de una empresa del CRM: datos, estatus, contactos,
 // seguimientos y bitácora.
@@ -104,7 +105,7 @@ function Ficha() {
     <div className="page crm crm-ficha">
       <Link to="/crm" className="crm-volver">← Prospectos</Link>
       <div className="section-header">
-        <h2 className="section-title">{e.nombre}</h2>
+        <h2 className="section-title">{e.nombre} <AyudaModulo id="crm" /></h2>
         <EstatusBadge estatus={e.estatus} />
         <button type="button" className="btn btn--primary crm-ficha__registrar" onClick={() => setRegistrando(true)}>
           📞 Registrar contacto

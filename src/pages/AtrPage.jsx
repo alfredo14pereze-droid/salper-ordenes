@@ -10,6 +10,7 @@ import AtrHistorialModal from '../components/atr/AtrHistorialModal'
 import AtrEntregaModal from '../components/atr/AtrEntregaModal'
 import AtrAjusteModal from '../components/atr/AtrAjusteModal'
 import '../components/atr/atr.css'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V209/V210 — Inventario de batas de ATR. Existencia = suma de movimientos
 // (vista atr_existencias). Clic en una fila → su historial.
@@ -69,7 +70,7 @@ function Atr() {
   return (
     <div className="page atr">
       <div className="section-header">
-        <h2 className="section-title">Inventario ATR</h2>
+        <h2 className="section-title">Inventario ATR <AyudaModulo id="atr" /></h2>
         <div className="atr-acciones">
           {canCargarAtr(role) && (
             <>

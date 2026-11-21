@@ -5,6 +5,7 @@ import Cotizador from '../components/cotizador/Cotizador'
 import CotizacionesGuardadas from '../components/cotizador/CotizacionesGuardadas'
 import CotizarDesdeHoja from '../components/cotizador/CotizarDesdeHoja'
 import { esCotizacionDeHoja } from '../utils/cotizarHoja'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // Cotizador de destajo por prenda (solo admin_general y admin_fabrica).
 // V172 — pestaña "Guardadas" con las cotizaciones que se guardaron.
@@ -39,7 +40,7 @@ export default function CotizadorPage() {
   return (
     <RequireRole allow={canUsarCotizador}>
       <div className="page">
-        <h2 className="section-title">Cotizador</h2>
+        <h2 className="section-title">Cotizador <AyudaModulo id="cotizador" /></h2>
         <div className="notas-pestanas" role="tablist">
           <button type="button" role="tab" aria-selected={pestana === 'cotizar'} className={'notas-pestana' + (pestana === 'cotizar' ? ' notas-pestana--activa' : '')} onClick={() => setPestana('cotizar')}>
             Cotizar

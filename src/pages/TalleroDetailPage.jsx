@@ -12,6 +12,7 @@ import PrestarModal from '../components/talleros/PrestarModal'
 import DevolverModal from '../components/talleros/DevolverModal'
 import TalleroFormModal from '../components/talleros/TalleroFormModal'
 import Miniatura from '../components/common/Miniatura'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 export default function TalleroDetailPage() {
   return (
@@ -59,6 +60,7 @@ function TalleroDetail() {
       <div className="new-order-header" style={{ marginTop: 8 }}>
         <h2 className="section-title">
           {tallero.codigo} · {tallero.mt_productos?.nombre}
+          <AyudaModulo id="talleros" />
         </h2>
         <TalleroEstadoBadge estado={tallero.estado_uso} />
       </div>

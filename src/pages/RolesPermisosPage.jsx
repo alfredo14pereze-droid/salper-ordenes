@@ -9,6 +9,7 @@ import {
   fetchRolPermisosLog,
   setRolPermiso,
 } from '../services/permisosService'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V125 — Roles y permisos (Fase 1). Se elige un rol y se marca/desmarca qué
 // puede hacer en cada módulo. Cada casilla guarda al instante por el RPC
@@ -100,7 +101,7 @@ function RolesPermisosContent() {
 
   return (
     <div className="page page--narrow">
-      <h2 className="section-title">Roles y permisos</h2>
+      <h2 className="section-title">Roles y permisos <AyudaModulo id="roles-permisos" /></h2>
       <p className="page-subtitle">
         Elige un rol y marca lo que puede hacer. Los cambios se guardan al instante y aplican la próxima vez que esa
         persona abra o recargue la app. Por ahora aquí se controlan <strong>Inventario de tienda, Precios y

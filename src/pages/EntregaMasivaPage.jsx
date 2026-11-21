@@ -10,6 +10,7 @@ import { entregarOrden } from '../services/ordersService'
 import { resumenPrendas } from '../utils/prendas'
 import { formatDate } from '../utils/dates'
 import { entregarVarias, motivoBloqueo, ordenesEntregables } from '../utils/entregaMasiva'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // Entrega masiva: marcar muchas órdenes como entregadas a la vez. Cada una
 // pasa por entregar_orden (V160): mismas reglas que el botón del detalle. Las
@@ -98,7 +99,7 @@ function EntregaMasivaContent() {
 
   return (
     <div className="page">
-      <h1 className="page-title">Entrega masiva</h1>
+      <h1 className="page-title">Entrega masiva <AyudaModulo id="entrega-masiva" /></h1>
       <p className="page-subtitle">
         Marca varias órdenes como entregadas al mismo tiempo. Se revisa cada una igual que en su detalle (precios y factura).
       </p>

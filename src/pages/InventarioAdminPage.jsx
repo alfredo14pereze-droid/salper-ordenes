@@ -18,6 +18,7 @@ import {
   clasificarSeccion,
 } from '../services/inventarioService'
 import { formatTalla } from '../utils/inventarioTallas'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V89 — Administración de catálogos de Inventario: alta/edición/baja
 // (siempre "desactivar", nunca borrar — no hay RPC de delete para ninguno
@@ -679,7 +680,7 @@ function InventarioAdminContent() {
   return (
     <div className="page">
       <div className="new-order-header">
-        <h2 className="section-title">Administración de inventario</h2>
+        <h2 className="section-title">Administración de inventario <AyudaModulo id="inventario-admin" /></h2>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {hayEstructura && (
             <Link to="/inventario/sin-clasificar" className="btn btn--secondary btn--small">

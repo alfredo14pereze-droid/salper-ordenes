@@ -13,6 +13,7 @@ import { nombreFrisa } from '../../utils/frisaColores'
 import FrisaNivelesDetalle from './FrisaNivelesDetalle'
 import FrisaNivelesSupuestos from './FrisaNivelesSupuestos'
 import FrisaNivelesExportar from './FrisaNivelesExportar'
+import AyudaModulo from '../common/AyudaModulo'
 
 const num = (n) => (n == null ? '—' : Number(n).toLocaleString('es-MX'))
 
@@ -74,7 +75,7 @@ export default function FrisaNiveles() {
     <div className="page frisa frisa-niveles">
       <div className="frisa__encabezado">
         <div>
-          <h1 className="page-title">Frisa · niveles de inventario</h1>
+          <h1 className="page-title">Frisa · niveles de inventario <AyudaModulo id="frisa-niveles" /></h1>
           <p className="page-subtitle">
             Inventario del almacén de la fábrica: real − apartado (surtido sin entregar) = disponible; los niveles se calculan con el
             disponible.{verDemanda && <> Demanda diaria = consumo 2026 ÷ {cfg.dias_periodo} días

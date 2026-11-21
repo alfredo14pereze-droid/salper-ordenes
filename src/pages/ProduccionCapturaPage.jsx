@@ -14,6 +14,7 @@ import {
   resumenCaptura,
   puedeEditarSemana,
 } from '../services/produccionService'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V68 — Captura rápida de producción (Juanis). Prioridad: más rápida que el
 // Excel y 100% con teclado. Flujo: fecha → operadora (número o nombre, Enter)
@@ -342,7 +343,7 @@ function Captura() {
 
   return (
     <div className="page page--narrow captura">
-      <h2 className="section-title">Captura de producción</h2>
+      <h2 className="section-title">Captura de producción <AyudaModulo id="produccion-captura" /></h2>
 
       <div className="captura__top">
         <div className="captura__op">

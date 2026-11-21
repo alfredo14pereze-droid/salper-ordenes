@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { canManagePedidosColegio, canViewPedidosColegio } from '../utils/permissions'
 import { formatDate } from '../utils/dates'
 import { formatImporte, formatMonto, calcSaldo, sumAbonos } from '../utils/pedidosColegio'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V57 — detalle de un Pedido Colegio (BETA, solo admin_general): folio,
 // cliente, líneas, anticipo, abonos posteriores (con saldo en vivo) y el
@@ -126,6 +127,7 @@ function PedidoColegioDetailContent() {
         <div>
           <h2 className="order-detail__number">
             Pedido {pedido.folio} <span className="badge badge--outline">Beta</span>
+            <AyudaModulo id="pedidos-colegio" />
           </h2>
           <p className="order-detail__client">
             {pedido.colegio?.nombre} · {formatDate(pedido.fecha_pedido)}

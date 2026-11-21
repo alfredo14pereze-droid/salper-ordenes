@@ -5,6 +5,7 @@ import { canImportarCrm } from '../utils/permissions'
 import { fetchExistentesParaImportar, importarProspectos } from '../services/crmService'
 import { CSV_COLUMNAS, leerCsvProspectos, previaImportacion } from '../utils/crm'
 import '../components/crm/crm.css'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V207 — Importación (una sola vez) del Excel "Formato reporte prospectos",
 // guardado como CSV. Solo crm.importar (admin_general).
@@ -58,7 +59,7 @@ function Importar() {
     <div className="page page--narrow crm">
       <Link to="/crm" className="crm-volver">← Prospectos</Link>
       <div className="section-header">
-        <h2 className="section-title">Importar prospectos del Excel</h2>
+        <h2 className="section-title">Importar prospectos del Excel <AyudaModulo id="crm" /></h2>
       </div>
 
       <section className="card crm-card">

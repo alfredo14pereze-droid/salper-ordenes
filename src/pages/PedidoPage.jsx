@@ -22,6 +22,7 @@ import {
 } from '../services/pedidosService'
 import { datosParaGuardar, errorPedido, pedidoAFormulario } from '../utils/pedidos'
 import { formatDate, formatDateTime } from '../utils/dates'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V176 — un pedido: sus órdenes, total (calculado), anticipo, abonos, saldo
 // y datos de factura. Lo ven los roles de dinero; lo editan ventas y
@@ -85,6 +86,7 @@ function PedidoContent() {
       <div className="pedido-page__head">
         <h2 className="section-title" style={{ margin: 0 }}>
           Pedido {pedido.folio}
+          <AyudaModulo id="pedidos" />
         </h2>
         {pedido.es_mostrador && <span className="badge badge--mostrador">Venta de mostrador</span>}
         {eliminado && <span className="badge">Eliminado</span>}

@@ -5,6 +5,7 @@ import { canGestionarInventarioTela, canRegistrarEntradaTela } from '../utils/pe
 import { Loading, ErrorState } from '../components/common/States'
 import { fetchTelas } from '../services/telasService'
 import { fetchInventarioTelas, registrarEntradaTela, registrarAjusteTela } from '../services/movimientosTelaService'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V100 — Entrada de tela / Ajuste de inventario. admin_fabrica/
 // admin_general tienen ambos formularios. El inventario que se ve aquí y
@@ -170,7 +171,7 @@ function InventarioTelaContent() {
 
   return (
     <div className="page page--narrow">
-      <h2 className="section-title">Inventario de tela</h2>
+      <h2 className="section-title">Inventario de tela <AyudaModulo id="inventario-tela" /></h2>
       <p className="page-subtitle">
         El inventario de cada tela es la suma de sus movimientos — nunca un número editable directamente. Si una tela no tiene
         unidad definida, primero configúrala desde Catálogos.

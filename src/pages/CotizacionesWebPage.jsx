@@ -10,6 +10,7 @@ import {
   fetchCotizacionesWeb,
 } from '../services/cotizacionesWebService'
 import '../components/cotizaciones/cotizaciones.css'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 // V213 — Cotizaciones web: lo que llega del formulario de salperdeportes.com.
 // Vista simple (fecha, nombre, empresa, productos, estado); luego se integra al CRM.
@@ -65,7 +66,7 @@ function CotizacionesWeb() {
   return (
     <div className="page cotweb">
       <div className="section-header">
-        <h2 className="section-title">Cotizaciones web</h2>
+        <h2 className="section-title">Cotizaciones web <AyudaModulo id="cotizaciones-web" /></h2>
         <button type="button" className="btn btn--ghost btn--small" onClick={cargar}>
           Actualizar
         </button>

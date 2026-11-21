@@ -33,6 +33,7 @@ import { formatMinutosHabiles } from '../utils/horasHabiles'
 import { formatDate, formatDateTime } from '../utils/dates'
 import Miniatura from '../components/common/Miniatura'
 import { esPdf } from '../utils/archivos'
+import AyudaModulo from '../components/common/AyudaModulo'
 
 const conTalla = (talla) => (talla ? `T.${talla}` : '')
 
@@ -619,7 +620,7 @@ export default function EstacionOrderPage() {
         ← {estacion?.dashboardSublimado ? 'Órdenes de sublimado' : 'Siguientes órdenes'}
       </Link>
 
-      <h2 className="estacion-order__folio">#{order.order_number}</h2>
+      <h2 className="estacion-order__folio">#{order.order_number} <AyudaModulo id={estacion?.dashboardSublimado ? 'sublimado' : 'estacion'} /></h2>
       <p className="estacion-order__cliente">{order.client_name}</p>
       {order.equipo && <p className="estacion-order__cliente">Equipo: {order.equipo}</p>}
       {order.numero_corte && <p className="estacion-order__cliente">Corte: {order.numero_corte}</p>}

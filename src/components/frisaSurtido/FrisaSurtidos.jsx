@@ -6,6 +6,7 @@ import { EstadoSurtido } from './comunes'
 import FrisaSurtidoDetalle from './FrisaSurtidoDetalle'
 import FrisaSurtidoForm from './FrisaSurtidoForm'
 import FrisaEntregasVarias from './FrisaEntregasVarias'
+import AyudaModulo from '../common/AyudaModulo'
 
 const num = (n) => Number(n || 0).toLocaleString('es-MX')
 
@@ -58,7 +59,7 @@ export default function FrisaSurtidos({ datos, inv, urgente, permisos, recargar 
     <div className="page frisa frisa-surtido">
       <div className="frisa__encabezado">
         <div>
-          <h1 className="page-title">Frisa · órdenes de surtido</h1>
+          <h1 className="page-title">Frisa · órdenes de surtido <AyudaModulo id="frisa-surtido" /></h1>
           <p className="page-subtitle">
             Cada orden de compra de Frisa se surte completa: al marcarla surtida las piezas se apartan, y cuando el chofer ya la
             entregó se descuentan del inventario.
