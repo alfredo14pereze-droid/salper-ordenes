@@ -3,6 +3,7 @@ import { useProfiles } from '../hooks/useProfiles'
 import {
   createUser,
   deleteUser,
+  setUserPassword,
   fetchUserEmails,
   suspendUser,
   unsuspendUser,
@@ -169,6 +170,11 @@ function UserRow({ profile, email, currentUserId, onUpdated }) {
   const [saving, setSaving] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [error, setError] = useState(null)
+  // 2026-11-22: contraseña nueva (para quien la olvidó).
+  const [pwOpen, setPwOpen] = useState(false)
+  const [pw, setPw] = useState('')
+  const [pw2, setPw2] = useState('')
+  const [pwOk, setPwOk] = useState(false)
 
   const isSelf = profile.id === currentUserId
   const isSuspended = !!profile.suspended_at
@@ -215,6 +221,29 @@ function UserRow({ profile, email, currentUserId, onUpdated }) {
       return
     }
     onUpdated?.()
+  }
+
+  function abrirPassword() {
+    setPw('')
+    setPw2('')
+    setPwOk(false)
+    setError(null)
+    setPwOpen(true)
+  }
+
+  async function handleSetPassword(e) {
+    e.preventDefault()
+    if (pw.length < 6) return setError(new Error('La contraseña debe tener al menos 6 caracteres.'))
+    if (pw !== pw2) return setError(new Error('Las contraseñas no coinciden.'))
+    setSaving(true)
+    setError(null)
+    const { error: pwError } = await setUserPassword(profile.id, pw, pw2)
+    setSaving(false)
+    if (pwError) return setError(pwError)
+    setPwOpen(false)
+    setPw('')
+    setPw2('')
+    setPwOk(true)
   }
 
   async function handleDelete() {
@@ -297,6 +326,14 @@ function UserRow({ profile, email, currentUserId, onUpdated }) {
         ))}
       </select>
 
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {!pwOpen && (
+          <button type="button" className="btn btn--small btn--ghost" onClick={abrirPassword} disabled={saving}>
+            Cambiar contraseña
+          </button>
+        )}
+      </div>
+
       {!isSelf && (
         <div style={{ display: 'flex', gap: 6 }}>
           <button type="button" className="btn btn--small btn--ghost" onClick={handleToggleSuspend} disabled={saving}>
@@ -317,6 +354,47 @@ function UserRow({ profile, email, currentUserId, onUpdated }) {
             </button>
           )}
         </div>
+      )}
+
+      {pwOpen && (
+        <form className="user-row__password" onSubmit={handleSetPassword}>
+          <label>
+            Contraseña nueva
+            <input
+              type="password"
+              className="input"
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
+              placeholder="Mínimo 6 caracteres"
+              autoComplete="new-password"
+              autoFocus
+            />
+          </label>
+          <label>
+            Confirmar contraseña
+            <input
+              type="password"
+              className="input"
+              value={pw2}
+              onChange={(e) => setPw2(e.target.value)}
+              placeholder="Repite la contraseña"
+              autoComplete="new-password"
+            />
+          </label>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button type="submit" className="btn btn--small btn--primary" disabled={saving || !pw || !pw2}>
+              {saving ? 'Guardando…' : 'Guardar contraseña'}
+            </button>
+            <button type="button" className="btn btn--small btn--ghost" onClick={() => setPwOpen(false)} disabled={saving}>
+              Cancelar
+            </button>
+          </div>
+        </form>
+      )}
+      {pwOk && (
+        <p className="fin-ok" style={{ margin: 0 }}>
+          ✓ Contraseña cambiada. Dásela a la persona; con ella ya puede entrar.
+        </p>
       )}
 
       {error && <p className="form-error">{error.message}</p>}

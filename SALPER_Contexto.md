@@ -8446,6 +8446,26 @@ de México, de "tú". Si algo no está claro: `[CONFIRMAR: …]`.
 **REGLA A FUTURO:** todo módulo nuevo lleva su entrada en `ayudaModulos.js` **y** su manual en Manuales.
 
 **SQL APLICADO** por Alfredo el 2026-11-22 (verificado: Órdenes 6, Tienda 8, Fábrica 8, Administración 4, todos con clave; Frisa 14 con 6 claves y CRM 8 con 1).
-**Pendiente:** publicar el frontend; un `[CONFIRMAR]` en Usuarios (cómo se
-restablece una contraseña).
+**Publicado** en `main`/producción el 2026-11-22 (commit 768837a, Vercel por git). El `[CONFIRMAR]` de Usuarios se resolvió
+abajo (contraseña nueva).
+
+### 2026-11-22 — Contraseña nueva desde Usuarios, CORS de admin-create-user, sin plantillas, traspasos (rama `contrasenas-plantillas-traspasos`)
+
+- **Contraseña nueva:** en **Usuarios**, cada renglón tiene **Cambiar contraseña** (Contraseña nueva + Confirmar, mínimo 6) →
+  `setUserPassword` (`services/usersService.js`) → Edge Function `admin-create-user` acción nueva **`set_password`**
+  (`auth.admin.updateUserById(user_id, { password })`, solo admin_general, valida largo y que coincidan). El login dice
+  "¿Olvidaste tu contraseña? Pídele al administrador que te ponga una nueva." No hay recuperación por correo (los correos de
+  varias cuentas no son reales y el SMTP de Supabase es limitado).
+- **Bug encontrado (CORS):** la función desplegada (v11) solo aceptaba el origen `salper-ordenes.vercel.app`; desde
+  `www.salperdeportes.com` el navegador bloqueaba la respuesta, así que Usuarios no podía crear/suspender/eliminar ni ver
+  correos. Ahora acepta `salperdeportes.com`, `www.salperdeportes.com` y los previews `salper-*-salper1.vercel.app`. La
+  versión desplegada tampoco tenía los roles `costura`, `consulta_tienda` y `chofer` (el repo sí): se suben juntos.
+  Desplegar con: `supabase functions deploy admin-create-user --project-ref gqygblbytvtdgvwqzxtf --no-verify-jwt`
+  (verify_jwt ya estaba apagado; la función valida el token adentro).
+- **Plantillas:** se quitó "Guardar esta orden como plantilla" del editor de prendas (`OrderItemsCard.jsx`) y el hook muerto
+  `useOrderTemplates.js`; `templatesService.copyTemplatePhotosToOrder` se queda (lo usa Nueva orden para fotos de maquila).
+- **Traspasos:** si una prenda pide más de lo que hay en el origen, **Crear traspaso** se desactiva con aviso (antes cambiaba
+  a "Confirmar traspaso" y el servidor lo rechazaba).
+- **Manuales:** `datos_2026-11-22_manuales_correcciones.sql` actualiza el contenido de `usuarios` e `inventario` solo si no
+  se editaron en la app (`actualizado_por_nombre = 'Carga inicial'`).
 

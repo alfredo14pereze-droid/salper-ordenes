@@ -60,7 +60,10 @@ export default function TraspasoFormModal({ ubicaciones, articulos, loadingArtic
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!origenId || !destinoId || origenId === destinoId || lineasValidas.length === 0) return
+    // 2026-11-22: el servidor (inv_crear_traspaso) rechaza traspasar más de lo
+    // que hay en el origen; antes el botón cambiaba a "Confirmar traspaso" y
+    // parecía que dejaba pasar. Ahora se bloquea aquí mismo con su aviso.
+    if (!origenId || !destinoId || origenId === destinoId || lineasValidas.length === 0 || hayExceso) return
     setSaving(true)
     setError(null)
     const { data, error: err } = await crearTraspaso({
@@ -150,6 +153,11 @@ export default function TraspasoFormModal({ ubicaciones, articulos, loadingArtic
           <input type="text" className="input" value={nota} onChange={(e) => setNota(e.target.value)} />
         </label>
 
+        {hayExceso && (
+          <p className="form-error">
+            Alguna prenda pide más de lo que hay en el origen. Baja la cantidad o quítala para poder crear el traspaso.
+          </p>
+        )}
         {error && <p className="form-error">{error.message}</p>}
         <div className="order-form__actions">
           <button type="button" className="btn btn--ghost" onClick={onClose} disabled={saving}>
@@ -158,9 +166,9 @@ export default function TraspasoFormModal({ ubicaciones, articulos, loadingArtic
           <button
             type="submit"
             className="btn btn--primary"
-            disabled={saving || !origenId || !destinoId || origenId === destinoId || lineasValidas.length === 0}
+            disabled={saving || !origenId || !destinoId || origenId === destinoId || lineasValidas.length === 0 || hayExceso}
           >
-            {saving ? 'Guardando…' : hayExceso ? 'Confirmar traspaso' : 'Crear traspaso'}
+            {saving ? 'Guardando…' : 'Crear traspaso'}
           </button>
         </div>
         {loadingArticulos && <Loading label="Cargando catálogo de artículos…" />}

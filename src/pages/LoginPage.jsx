@@ -78,6 +78,7 @@ export default function LoginPage() {
         </form>
 
         <p className="login-card__hint">¿No tienes cuenta? Pídele acceso a un administrador.</p>
+        <p className="login-card__hint">¿Olvidaste tu contraseña? Pídele al administrador que te ponga una nueva.</p>
         <p className="login-card__hint">
           <a href="/app/instalar">Instalar la app</a>
         </p>

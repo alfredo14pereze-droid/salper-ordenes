@@ -112,3 +112,9 @@ export async function fetchUserEmails() {
   const { data, error } = await invokeAdminUserFn({ action: 'list' })
   return { data: data?.users || null, error }
 }
+
+// 2026-11-22: contraseña nueva para un usuario (admin_general), para
+// cuando alguien la olvidó. La Edge Function valida otra vez.
+export async function setUserPassword(userId, password, confirmPassword) {
+  return invokeAdminUserFn({ action: 'set_password', user_id: userId, password, password_confirm: confirmPassword })
+}

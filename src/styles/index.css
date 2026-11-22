@@ -2366,6 +2366,24 @@ h4 {
   color: var(--color-text-muted);
 }
 
+/* 2026-11-22 — contraseña nueva: ocupa todo el ancho del renglón. */
+.user-row__password {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: flex-end;
+}
+.user-row__password label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  flex: 1 1 180px;
+}
+.user-row > .fin-ok,
+.user-row > .form-error { flex-basis: 100%; }
+
 /* ---------- Chat (asistente) ---------- */
 
 .chat-widget {

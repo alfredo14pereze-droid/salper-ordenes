@@ -13,7 +13,6 @@ import { esOrdenMaquila } from '../../utils/maquila'
 import { esOrdenFrisa } from '../../utils/frisa'
 import { setOrderItems, fetchOrdenEtapas } from '../../services/ordersService'
 import { faltaTela } from '../../utils/telaObligatoria'
-import { createOrderTemplate } from '../../services/templatesService'
 import { useAuth } from '../../contexts/AuthContext'
 import { canEditFinanzas, canEditOrder } from '../../utils/permissions'
 import { useTelas } from '../../hooks/useTelas'
@@ -186,8 +185,8 @@ function ItemSummary({ item, index, mostrador }) {
 }
 
 // Prendas de una orden ya creada: tienda/admin pueden editarlas (mientras
-// canEditOrder lo permita) y, aparte, guardar la orden completa como
-// plantilla reutilizable. Fábrica las ve, pero no le toca cambiarlas —
+// canEditOrder lo permita). (2026-11-22: se quitó "Guardar esta orden como
+// plantilla": Nueva orden ya no muestra plantillas, el botón no servía.) Fábrica las ve, pero no le toca cambiarlas —
 // su trabajo es el tiempo/etapa, no re-especificar qué se está pidiendo.
 export default function OrderItemsCard({ order, onUpdated }) {
   const { role } = useAuth()
@@ -202,11 +201,6 @@ export default function OrderItemsCard({ order, onUpdated }) {
   const { productos, refresh: refreshProductos } = useProductosByCliente(order.client_id)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
-
-  const [savingTemplate, setSavingTemplate] = useState(false)
-  const [templateName, setTemplateName] = useState('')
-  const [showTemplateForm, setShowTemplateForm] = useState(false)
-  const [templateSaved, setTemplateSaved] = useState(false)
 
   const grandTotal = (order.items || []).reduce(
     (sum, item) => sum + (item.sizes || []).reduce((s, sz) => s + (Number(sz.cantidad) || 0), 0),
@@ -274,31 +268,6 @@ export default function OrderItemsCard({ order, onUpdated }) {
     onUpdated?.()
   }
 
-  async function handleSaveTemplate() {
-    if (!templateName.trim()) return
-    setSavingTemplate(true)
-    setError(null)
-
-    const { error: templateError } = await createOrderTemplate({
-      name: templateName.trim(),
-      orderTypeKey: order.order_type_key,
-      description: order.description,
-      estimatedProductionDays: order.estimated_production_days,
-      items: order.items || [],
-      referencePhotos: order.reference_photos || [],
-    })
-
-    setSavingTemplate(false)
-
-    if (templateError) {
-      setError(templateError)
-      return
-    }
-    setTemplateSaved(true)
-    setShowTemplateForm(false)
-    setTemplateName('')
-  }
-
   if (!editing) {
     return (
       <div>
@@ -337,38 +306,7 @@ export default function OrderItemsCard({ order, onUpdated }) {
         <h3 className="section-title section-title--small" style={{ marginBottom: 0 }}>
           Editar prendas
         </h3>
-        {!showTemplateForm && (
-          <button type="button" className="btn btn--ghost" onClick={() => setShowTemplateForm(true)}>
-            Guardar esta orden como plantilla
-          </button>
-        )}
       </div>
-
-      {showTemplateForm && (
-        <div className="template-picker" style={{ marginBottom: 14 }}>
-          <div className="form-row">
-            <input
-              type="text"
-              className="input"
-              placeholder='Nombre de la plantilla, ej. "Polo Colegio Vanguard"'
-              value={templateName}
-              onChange={(e) => setTemplateName(e.target.value)}
-            />
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" className="btn btn--primary" onClick={handleSaveTemplate} disabled={savingTemplate}>
-                {savingTemplate ? 'Guardando…' : 'Guardar plantilla'}
-              </button>
-              <button type="button" className="btn btn--ghost" onClick={() => setShowTemplateForm(false)}>
-                Cancelar
-              </button>
-            </div>
-          </div>
-          <p className="pantone-hint">
-            Guarda el tipo, descripción, prendas y fotos actuales de esta orden para reutilizarlos en pedidos futuros.
-          </p>
-        </div>
-      )}
-      {templateSaved && <p className="template-hint">✓ Plantilla guardada — ya aparece en "Nueva orden".</p>}
 
       <div data-enter-next>
         {esOrdenMaquila(order.order_type_key) ? (

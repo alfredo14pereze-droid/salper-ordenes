@@ -33,6 +33,15 @@ En **Usuarios** se dan de alta las cuentas de las personas que usan el sistema, 
 
 > La persona ve el cambio la próxima vez que abra o recargue la app.
 
+### Cómo ponerle una contraseña nueva a alguien (si la olvidó)
+
+1. Busca a la persona en la lista y dale **Cambiar contraseña**.
+2. Escribe la **Contraseña nueva** (mínimo 6 caracteres) y repítela en **Confirmar contraseña**.
+3. Dale **Guardar contraseña**. Sale "✓ Contraseña cambiada".
+4. Dásela a la persona. Con ella ya puede entrar; la anterior deja de servir.
+
+> En la pantalla de inicio de sesión dice: "¿Olvidaste tu contraseña? Pídele al administrador que te ponga una nueva."
+
 ### Cómo quitarle el acceso a alguien
 
 1. Si ya no trabaja aquí, dale **Suspender**. Ya no puede entrar y su renglón dice **Suspendido**.
@@ -78,7 +87,7 @@ En **Usuarios** se dan de alta las cuentas de las personas que usan el sistema, 
 - **"La contraseña debe tener al menos 6 caracteres"** → Usa una más larga.
 - **"Las contraseñas no coinciden"** → Escríbela igual en las dos casillas.
 - **Le cambié el rol y sigue viendo lo mismo** → Que cierre y vuelva a abrir la app, o que recargue la página.
-- **Alguien olvidó su contraseña** → La app no tiene un botón para restablecerla. [CONFIRMAR: cómo se restablece hoy la contraseña de un usuario (ej. desde Supabase)]
+- **Alguien olvidó su contraseña** → Dale **Cambiar contraseña** en su renglón y ponle una nueva (ver arriba).
 
 ## Se conecta con
 

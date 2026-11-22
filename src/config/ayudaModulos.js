@@ -763,6 +763,7 @@ export const AYUDA_MODULOS = [
     pasos: [
       'Dale "+ Nuevo usuario": nombre, correo, contraseña inicial y Rol.',
       'Para cambiar el nombre o el rol, dale editar.',
+      'Si alguien olvidó su contraseña, dale "Cambiar contraseña" y ponle una nueva.',
       'Si alguien ya no trabaja aquí, suspéndelo.',
     ],
     tips: ['El rol decide qué ve cada quien; revisa "Roles y permisos" para el detalle.'],

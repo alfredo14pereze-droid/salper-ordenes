@@ -20,6 +20,14 @@
 //   - 'list' (V37): regresa {id, email} de todos los usuarios — el correo
 //     vive solo en auth.users (profiles no lo guarda), así que la pantalla
 //     de Usuarios lo pide aquí para mostrarlo junto a cada perfil.
+//   - 'set_password' (2026-11-22): admin_general le pone una contraseña
+//     nueva a cualquier usuario (para cuando alguien la olvidó). Pide
+//     password + password_confirm, mínimo 6 caracteres.
+//
+// 2026-11-22: CORS también para salperdeportes.com (el sistema vive ahí
+// desde la página pública) y los previews del proyecto salper1/salper.
+// Antes de esto, desde www.salperdeportes.com el navegador bloqueaba la
+// respuesta y Usuarios no podía crear/suspender/eliminar ni ver correos.
 //
 // Desplegada vía el editor del Dashboard de Supabase (Edge Functions →
 // admin-create-user). Este archivo es la copia de respaldo/documentación
@@ -52,6 +60,8 @@ const VALID_ROLES = [
 function isAllowedOrigin(origin) {
   if (!origin) return false
   if (origin === 'https://salper-ordenes.vercel.app') return true
+  if (origin === 'https://salperdeportes.com' || origin === 'https://www.salperdeportes.com') return true
+  if (/^https:\/\/salper-[a-z0-9-]+-salper1\.vercel\.app$/.test(origin)) return true
   if (/^https:\/\/salper-ordenes[a-z0-9-]*\.vercel\.app$/.test(origin)) return true
   if (/^http:\/\/localhost:\d+$/.test(origin)) return true
   return false
@@ -60,7 +70,7 @@ function isAllowedOrigin(origin) {
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin')
   const corsHeaders = {
-    'Access-Control-Allow-Origin': isAllowedOrigin(origin) ? origin : 'https://salper-ordenes.vercel.app',
+    'Access-Control-Allow-Origin': isAllowedOrigin(origin) ? origin : 'https://www.salperdeportes.com',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     Vary: 'Origin',
   }
@@ -210,6 +220,24 @@ Deno.serve(async (req) => {
       const { error: deleteError } = await adminClient.auth.admin.deleteUser(user_id)
       if (deleteError) {
         return jsonResponse({ error: deleteError.message }, 400)
+      }
+      return jsonResponse({ ok: true }, 200)
+    }
+
+    if (action === 'set_password') {
+      const { user_id, password, password_confirm } = body
+      if (!user_id) {
+        return jsonResponse({ error: 'Falta user_id.' }, 400)
+      }
+      if (!password || String(password).length < 6) {
+        return jsonResponse({ error: 'La contraseña debe tener al menos 6 caracteres.' }, 400)
+      }
+      if (password !== password_confirm) {
+        return jsonResponse({ error: 'Las contraseñas no coinciden.' }, 400)
+      }
+      const { error: pwError } = await adminClient.auth.admin.updateUserById(user_id, { password: String(password) })
+      if (pwError) {
+        return jsonResponse({ error: pwError.message }, 400)
       }
       return jsonResponse({ ok: true }, 200)
     }

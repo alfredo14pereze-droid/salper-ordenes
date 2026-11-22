@@ -64,7 +64,7 @@ titulo: Inventario de tienda
 5. Dale **Crear traspaso**. Se genera un folio (ej. **T-0001**) y su PDF.
 6. Para volver a ver un traspaso, búscalo por folio y dale **Ver PDF**.
 
-> Si junto a una prenda sale **— no alcanza**, en el origen no hay tantas piezas. Baja la cantidad: el sistema no deja traspasar más de lo que hay.
+> Si junto a una prenda sale **— no alcanza**, en el origen no hay tantas piezas. El botón **Crear traspaso** no se activa hasta que bajes la cantidad o quites esa prenda.
 
 ### Cómo hacer un conteo físico
 
