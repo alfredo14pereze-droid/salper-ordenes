@@ -7,6 +7,9 @@
 //   # / ## / ### títulos          1. pasos numerados      - viñetas
 //   > nota (se ve como recuadro)  | tabla | simple |       --- línea
 //   **negritas**, *cursivas*, `código`, [texto](https://liga)
+//   [texto](manual:clave)  → liga a otro manual (V214, por su columna clave)
+// Cada título trae un `id` (ancla) para el índice de procesos y las ligas
+// directas a un proceso (/manuales/ver/<id>#<ancla>).
 // Un renglón con sangría debajo de un paso o viñeta se pega a ese paso.
 
 const RE_TITULO = /^(#{1,4})\s+(.*)$/
@@ -17,11 +20,47 @@ const RE_LINEA = /^\s{0,3}(-{3,}|\*{3,})\s*$/
 const RE_TABLA = /^\s*\|.*\|\s*$/
 const RE_SEPARADOR_TABLA = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/
 
+// "Cómo crear una orden" → "como-crear-una-orden" (sin acentos ni signos).
+export function anclaDe(texto) {
+  const base = String(texto || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\*\*|`/g, '')
+    .replace(/[^a-z0-9ñ]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return base || 'seccion'
+}
+
 function celdas(linea) {
   return linea.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim())
 }
 
 export function parseMarkdown(texto) {
+  const usadas = new Map()
+  return conAnclas(parseBloques(texto), usadas)
+}
+
+// Pone un id único a cada título (si se repite: "-2", "-3"…).
+function conAnclas(bloques, usadas) {
+  for (const b of bloques) {
+    if (b.tipo === 'titulo') {
+      const base = anclaDe(b.texto)
+      const n = (usadas.get(base) || 0) + 1
+      usadas.set(base, n)
+      b.id = n === 1 ? base : `${base}-${n}`
+    } else if (b.tipo === 'nota') {
+      conAnclas(b.bloques, usadas)
+    }
+  }
+  return bloques
+}
+
+// Índice de procesos: los títulos ### (nivel 3) en orden, con su ancla.
+export function indiceProcesos(bloques) {
+  return (bloques || []).filter((b) => b.tipo === 'titulo' && b.nivel === 3).map((b) => ({ id: b.id, texto: b.texto }))
+}
+
+function parseBloques(texto) {
   const lineas = String(texto || '').replace(/\r\n?/g, '\n').split('\n')
   const bloques = []
   let i = 0
@@ -56,7 +95,7 @@ export function parseMarkdown(texto) {
         partes.push(lineas[i].match(RE_NOTA)[1])
         i++
       }
-      bloques.push({ tipo: 'nota', bloques: parseMarkdown(partes.join('\n')) })
+      bloques.push({ tipo: 'nota', bloques: parseBloques(partes.join('\n')) })
       continue
     }
     const esNum = RE_NUM.test(l)
@@ -118,9 +157,11 @@ export function parseInline(texto) {
     if (m[2] != null) piezas.push({ t: 'negrita', v: m[2] })
     else if (m[3] != null) piezas.push({ t: 'codigo', v: m[3] })
     else if (m[4] != null) {
-      // Solo ligas http(s) o internas de la app (#/...). Lo demás queda como texto.
+      // Solo ligas http(s), internas de la app (#/...) o a otro manual
+      // (manual:clave). Lo demás queda como texto.
       const href = m[5]
       if (/^(https?:\/\/|#\/)/i.test(href)) piezas.push({ t: 'liga', v: m[4], href })
+      else if (/^manual:[a-z0-9-]+$/i.test(href)) piezas.push({ t: 'manual', v: m[4], clave: href.slice(7).toLowerCase() })
       else piezas.push({ t: 'texto', v: m[4] })
     } else if (m[6] != null) piezas.push({ t: 'cursiva', v: m[6] })
     ultimo = m.index + m[0].length

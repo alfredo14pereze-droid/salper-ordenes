@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Loading, ErrorState, EmptyState } from '../components/common/States'
-import MarkdownManual from '../components/manuales/MarkdownManual'
+import MarkdownManual, { irAAncla } from '../components/manuales/MarkdownManual'
 import { useAuth } from '../contexts/AuthContext'
 import { canEditarManuales } from '../utils/permissions'
-import { buscarManuales, contarPorSeccion, ordenar } from '../utils/manuales'
+import { buscarManuales, clavesDeManuales, contarPorSeccion, ordenar } from '../utils/manuales'
 import { formatDate } from '../utils/dates'
 import {
   fetchManuales, guardarSeccion, eliminarSeccion, guardarManual, eliminarManual, moverManual,
@@ -76,9 +76,10 @@ function Buscador({ secciones, manuales, texto, setTexto }) {
             {resultados.length === 0 ? 'No se encontró nada.' : `${resultados.length} ${resultados.length === 1 ? 'manual' : 'manuales'}`}
           </div>
           {resultados.map((r) => (
-            <Link key={r.manual.id} to={`/manuales/ver/${r.manual.id}`} className="manuales-resultado">
+            <Link key={r.manual.id} to={`/manuales/ver/${r.manual.id}${r.proceso ? `#${r.proceso.id}` : ''}`} className="manuales-resultado">
               <span className="manuales-resultado__seccion">{r.seccion.icono ? `${r.seccion.icono} ` : ''}{r.seccion.nombre}</span>
               <span className="manuales-resultado__titulo">{r.manual.titulo}</span>
+              {r.proceso && <span className="manuales-resultado__proceso">→ {r.proceso.texto.replace(/\*\*/g, '')}</span>}
               {r.fragmento && <span className="manuales-resultado__frag">{r.fragmento}</span>}
             </Link>
           ))}
@@ -303,13 +304,33 @@ function VistaSeccion({ secciones, manuales, puedeEditar, recargar, seccionId })
 // ---------------------------------------------------------------------
 function VistaManual({ secciones, manuales, puedeEditar, recargar, manualId }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const manual = manuales.find((m) => m.id === manualId)
   const seccion = manual && secciones.find((s) => s.id === manual.seccion_id)
+  const claves = useMemo(() => clavesDeManuales(manuales), [manuales])
   const [error, setError] = useState(null)
 
+  // Al abrir: arriba, o directo al proceso si la liga trae #ancla
+  // (resultado del buscador o "Ver manual completo" con proceso).
   useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [manualId])
+    const ancla = decodeURIComponent(location.hash.replace(/^#/, ''))
+    if (ancla && document.getElementById(ancla)) {
+      requestAnimationFrame(() => irAAncla(ancla))
+    } else {
+      window.scrollTo(0, 0)
+    }
+  }, [manualId, location.hash])
+
+  // Imprimir: solo el artículo, en hoja carta (ver @media print en index.css).
+  function imprimir() {
+    document.body.classList.add('imprime-manual')
+    const quitar = () => {
+      document.body.classList.remove('imprime-manual')
+      window.removeEventListener('afterprint', quitar)
+    }
+    window.addEventListener('afterprint', quitar)
+    window.print()
+  }
 
   if (!manual || !seccion) return <NoExiste que="El manual" />
 
@@ -326,7 +347,12 @@ function VistaManual({ secciones, manuales, puedeEditar, recargar, manualId }) {
       <Link to={`/manuales/seccion/${seccion.id}`} className="manuales-regresar">← {seccion.nombre}</Link>
       <article className="manual-articulo">
         <h1 className="manual-articulo__titulo">{manual.titulo}</h1>
-        <div className="manual-articulo__fecha">Última actualización: {formatDate(manual.actualizado_en)}</div>
+        <div className="manual-articulo__fecha">
+          {seccion.icono ? `${seccion.icono} ` : ''}{seccion.nombre} · Última actualización: {formatDate(manual.actualizado_en)}
+        </div>
+        <div className="manual-articulo__acciones">
+          <button type="button" className="btn btn--secondary btn--small" onClick={imprimir}>🖨 Imprimir</button>
+        </div>
         {puedeEditar && (
           <div className="manuales-admin-barra manuales-admin-barra--manual">
             <Link to={`/manuales/editar/${manual.id}`} className="btn btn--secondary btn--small">Editar</Link>
@@ -334,7 +360,7 @@ function VistaManual({ secciones, manuales, puedeEditar, recargar, manualId }) {
           </div>
         )}
         {error && <div className="form-error">{error}</div>}
-        <MarkdownManual texto={manual.contenido} />
+        <MarkdownManual texto={manual.contenido} clavesManuales={claves} indice />
       </article>
       <Link to={`/manuales/seccion/${seccion.id}`} className="btn btn--secondary manuales-regresar-abajo">← Regresar a {seccion.nombre}</Link>
     </div>

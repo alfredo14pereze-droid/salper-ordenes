@@ -170,3 +170,17 @@
   justify-content: flex-end;
   margin-bottom: 8px;
 }
+
+/* V214 — liga al manual completo (solo si existe un manual con esa clave). */
+.ayuda-modulo__manual {
+  display: block;
+  margin-top: 4px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--ds-blue-bg, #e8efff);
+  color: var(--ds-blue-text, #1d4ed8);
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+}
+.ayuda-modulo__manual:hover { text-decoration: underline; }

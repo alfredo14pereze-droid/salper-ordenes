@@ -10,9 +10,14 @@
 //   pasos        — de 3 a 6 pasos, cada uno en una línea
 //   tips         — de 0 a 3 (opcional)
 //   roles        — quién lo usa, con los nombres de R (abajo)
+//   manual       — (opcional) clave del manual completo en Manuales, si no es
+//                  igual al id. El botón muestra "Ver manual completo →" solo
+//                  si existe un manual con esa clave (columna clave, V214).
 //
 // Módulo nuevo: agrega aquí su entrada y pon <AyudaModulo id="..." /> dentro
 // del título de su pantalla. Si un id no tiene entrada, el botón no aparece.
+// Regla: todo módulo nuevo lleva su entrada aquí Y su manual en Manuales
+// (supabase/manuales/<seccion>/N_<clave>.md, con clave = este id).
 //
 // Ojo: "roles" son los de fábrica por defecto. Si en "Roles y permisos" le
 // das o quitas un módulo a un rol, actualiza aquí la lista.
@@ -64,6 +69,7 @@ export const AYUDA_MODULOS = [
   },
   {
     id: 'resumen',
+    manual: 'dashboard',
     titulo: 'Resumen',
     queEs: 'Todo lo que sigue pendiente, agrupado por cliente.',
     paraQueSirve: 'Saber qué tiene en proceso cada cliente aunque sean órdenes de distintos tipos.',
@@ -78,6 +84,7 @@ export const AYUDA_MODULOS = [
   },
   {
     id: 'ordenes-pasadas',
+    manual: 'dashboard',
     titulo: 'Órdenes pasadas',
     queEs: 'El archivo de las órdenes que ya se entregaron.',
     paraQueSirve: 'Consultar una orden vieja: qué se hizo, para quién y cuándo.',
@@ -101,7 +108,7 @@ export const AYUDA_MODULOS = [
       'Pon la Fecha de entrega y, si aplica, el Número de corte o el Equipo.',
       'Agrega Notas y fotos de referencia (opcional).',
       'En Precios y pago pon el precio de cada prenda y, si dejan anticipo, quién lo recibió.',
-      'Dale clic en Crear orden. Se baja el PDF solo.',
+      'Dale clic en Crear orden. Se abre la orden con la vista previa de su PDF; de ahí lo descargas.',
     ],
     tips: [
       'Si es venta de mostrador, prende "Venta de mostrador": no lleva anticipo ni factura.',
@@ -262,6 +269,7 @@ export const AYUDA_MODULOS = [
   },
   {
     id: 'control-rapido',
+    manual: 'dashboard',
     titulo: 'Control rápido de órdenes',
     queEs: 'Una tabla sencilla con folio, cliente y estado de todas las órdenes.',
     paraQueSirve: 'Encontrar rápido en qué va una orden, incluso las eliminadas.',
@@ -337,6 +345,7 @@ export const AYUDA_MODULOS = [
   },
   {
     id: 'inventario-traspasos',
+    manual: 'inventario',
     titulo: 'Traspasos de inventario',
     queEs: 'El paso de prendas de una ubicación a otra.',
     paraQueSirve: 'Que la existencia de cada lugar siempre cuadre cuando se mueve mercancía.',
@@ -351,6 +360,7 @@ export const AYUDA_MODULOS = [
   },
   {
     id: 'inventario-conteos',
+    manual: 'inventario',
     titulo: 'Conteos físicos de inventario',
     queEs: 'El conteo a mano de una sección y ubicación, comparado con lo que dice el sistema.',
     paraQueSirve: 'Encontrar diferencias y dejar el inventario igual a lo que hay de verdad.',
@@ -365,6 +375,7 @@ export const AYUDA_MODULOS = [
   },
   {
     id: 'inventario-movimientos',
+    manual: 'inventario',
     titulo: 'Movimientos de inventario',
     queEs: 'La lista de entradas, salidas, ajustes y conteos en un rango de fechas.',
     paraQueSirve: 'Saber quién movió qué, cuándo y por qué.',
@@ -377,6 +388,7 @@ export const AYUDA_MODULOS = [
   },
   {
     id: 'inventario-admin',
+    manual: 'inventario',
     titulo: 'Administración de inventario',
     queEs: 'Los catálogos del inventario: secciones, tipos de prenda, tallas, ubicaciones y motivos.',
     paraQueSirve: 'Dejar todo ordenado para que dar de alta modelos y buscar sea fácil.',
@@ -408,6 +420,7 @@ export const AYUDA_MODULOS = [
   },
   {
     id: 'estadisticas',
+    manual: 'calendario',
     titulo: 'Estadísticas',
     queEs: 'Números de cómo vamos con los tiempos de entrega.',
     paraQueSirve: 'Ver qué tan a tiempo entregamos y qué etapas tardan más.',
@@ -458,6 +471,7 @@ export const AYUDA_MODULOS = [
   },
   {
     id: 'hojas-impresas',
+    manual: 'produccion-captura',
     titulo: 'Hojas impresas',
     queEs: 'Las hojas de operaciones que ya se imprimieron para fábrica.',
     paraQueSirve: 'Volver a imprimir una hoja sin armarla otra vez.',
@@ -505,6 +519,7 @@ export const AYUDA_MODULOS = [
   },
   {
     id: 'produccion-dashboard',
+    manual: 'produccion-revision',
     titulo: 'Producción por operadora',
     queEs: 'El ranking de cada operadora: semana actual, anterior y promedio.',
     paraQueSirve: 'Ver quién va mejorando y sacar el ranking impreso.',
@@ -535,6 +550,7 @@ export const AYUDA_MODULOS = [
   },
   {
     id: 'produccion-operaciones',
+    manual: 'produccion-captura',
     titulo: 'Operaciones de producción',
     queEs: 'El catálogo de operaciones con su folio, parte y tiempo.',
     paraQueSirve: 'Consultar el folio correcto de cada operación para capturar e imprimir hojas.',
@@ -562,6 +578,7 @@ export const AYUDA_MODULOS = [
   },
   {
     id: 'estadisticas-produccion',
+    manual: 'produccion-revision',
     titulo: 'Estadísticas de producción',
     queEs: 'Valor generado y premios por semana, por operadora y por operación.',
     paraQueSirve: 'Ver tendencias, quién mejora y quién lleva varias semanas abajo.',
@@ -592,6 +609,7 @@ export const AYUDA_MODULOS = [
   },
   {
     id: 'consumos-prenda',
+    manual: 'inventario-tela',
     titulo: 'Consumos por prenda',
     queEs: 'Cuánta tela usa cada prenda, por talla o en promedio.',
     paraQueSirve: 'Calcular cuánta tela necesita cada orden y lo comprometido de cada tela.',
@@ -669,6 +687,7 @@ export const AYUDA_MODULOS = [
   },
   {
     id: 'frisa-movimientos',
+    manual: 'frisa-niveles',
     titulo: 'Frisa · Movimientos',
     queEs: 'Cada entrada y salida del inventario de Frisa con su motivo.',
     paraQueSirve: 'Saber de dónde salió una diferencia: entregas, órdenes de taller, compras o ajustes.',
@@ -751,6 +770,7 @@ export const AYUDA_MODULOS = [
   },
   {
     id: 'roles-permisos',
+    manual: 'usuarios',
     titulo: 'Roles y permisos',
     queEs: 'Lo que puede hacer cada rol en el sistema.',
     paraQueSirve: 'Dar o quitar acceso a un módulo sin pedir un cambio al sistema.',
@@ -778,6 +798,12 @@ export const AYUDA_MODULOS = [
 ]
 
 const POR_ID = Object.fromEntries(AYUDA_MODULOS.map((a) => [a.id, a]))
+
+// Clave del manual completo de un módulo (la suya o la de `manual`).
+export function claveManualDe(id) {
+  const a = POR_ID[id]
+  return a ? a.manual || a.id : null
+}
 
 // Regresa la ayuda de un módulo, o null si no tiene (el botón no se muestra).
 export function ayudaDeModulo(id) {

@@ -5643,6 +5643,58 @@ h4 {
   .manuales-secciones { grid-template-columns: 1fr; }
 }
 
+/* V214 — índice de procesos, botón Imprimir y ligas entre manuales */
+.manual-articulo__acciones { display: flex; flex-wrap: wrap; gap: 8px; margin: -4px 0 14px; }
+.manual-indice { background: var(--ds-bg, #f3f4f6); border: 1px solid var(--ds-divider, #e3e6ea); border-radius: 10px; padding: 12px 14px; margin: 0 0 18px; }
+.manual-indice__titulo { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ds-text-muted, #6b7480); margin-bottom: 6px; }
+.manual-indice__lista { margin: 0; padding-left: 22px; columns: 2; column-gap: 28px; }
+.manual-indice__lista li { break-inside: avoid; margin-bottom: 4px; line-height: 1.35; }
+.manual-indice__lista a { color: var(--ds-blue-text, #1d4ed8); text-decoration: none; }
+.manual-indice__lista a:hover { text-decoration: underline; }
+.manual-md h2, .manual-md h3, .manual-md h4 { scroll-margin-top: 72px; }
+/* Los manuales usan ## para cada parte (sale como h3) y ### para cada
+   proceso (h4): la parte lleva línea abajo y el proceso un poco más de peso. */
+.manual-md h3 { font-size: 1.15rem; margin-top: 26px; padding-bottom: 6px; border-bottom: 1px solid var(--ds-divider, #e3e6ea); }
+.manual-md h4 { font-size: 1.04rem; margin: 22px 0 8px; }
+.manual-md__liga-manual { font-weight: 600; }
+.manuales-resultado__proceso { display: block; font-size: 0.88rem; color: var(--ds-blue-text, #1d4ed8); margin-top: 2px; }
+@media (max-width: 640px) {
+  .manual-indice__lista { columns: 1; }
+  .manual-md__pasos > li { padding-left: 38px; }
+}
+
+/* Imprimir un manual: solo el artículo, hoja carta, sin menú ni botones. */
+@page manual { size: letter; margin: 16mm 14mm; }
+@media print {
+  body.imprime-manual * { visibility: hidden; }
+  body.imprime-manual .manual-articulo,
+  body.imprime-manual .manual-articulo * { visibility: visible; }
+  body.imprime-manual .manual-articulo {
+    page: manual;
+    position: absolute; inset: 0 auto auto 0; width: 100%;
+    border: 0; border-radius: 0; padding: 0; background: #fff; color: #000;
+  }
+  body.imprime-manual .manual-articulo__acciones,
+  body.imprime-manual .manuales-admin-barra,
+  body.imprime-manual .manual-indice { display: none; }
+  body.imprime-manual .manual-md { font-size: 11pt; line-height: 1.45; color: #000; }
+  body.imprime-manual .manual-md h2 { break-after: avoid; border-color: #999; }
+  body.imprime-manual .manual-md h3 { break-after: avoid; }
+  body.imprime-manual .manual-md__pasos > li,
+  body.imprime-manual .manual-md__nota,
+  body.imprime-manual .manual-md__tabla tr { break-inside: avoid; }
+  body.imprime-manual .manual-md a { color: #000; text-decoration: none; }
+  /* La tabla se imprime como tabla aunque se imprima desde el celular. */
+  body.imprime-manual .manual-md__tabla { display: table; }
+  body.imprime-manual .manual-md__tabla thead { display: table-header-group; }
+  body.imprime-manual .manual-md__tabla tbody { display: table-row-group; }
+  body.imprime-manual .manual-md__tabla tr { display: table-row; border: 0; padding: 0; }
+  body.imprime-manual .manual-md__tabla td { display: table-cell; border: 1px solid #999; padding: 4px 6px; }
+  body.imprime-manual .manual-md__tabla th { border: 1px solid #999; padding: 4px 6px; background: #eee; }
+  body.imprime-manual .manual-md__tabla td[data-col]::before { content: none; }
+  body.imprime-manual .manual-md__tabla-wrap { overflow: visible; }
+}
+
 /* --- Editor --- */
 .manuales-editor { max-width: 1280px; }
 .manuales-editor__datos { display: grid; grid-template-columns: 1fr 240px; gap: 10px; margin: 10px 0 12px; }

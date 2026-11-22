@@ -8383,5 +8383,69 @@ función (`supabase/schema_v213_cotizaciones_web.sql`). No se tocaron tablas, ro
 - **Cómo agregar la ayuda a un módulo nuevo:** (1) agregar su entrada en `src/config/ayudaModulos.js` con un `id` nuevo,
   usando los nombres de botones y campos tal como salen en pantalla, frases cortas, sin lenguaje técnico; (2) poner
   `<AyudaModulo id="..." />` dentro del título de la pantalla.
-- **REGLA A FUTURO:** cada módulo nuevo debe incluir su entrada en `ayudaModulos.js` y su `<AyudaModulo />` en el título.
-- Fuera de alcance por ahora: tutoriales interactivos, liga a "Ver manual completo" del módulo Manuales, videos/capturas.
+- **REGLA A FUTURO:** cada módulo nuevo debe incluir su entrada en `ayudaModulos.js` y su `<AyudaModulo />` en el título
+  **y su manual en Manuales** (ver la sección V214 de abajo).
+- Fuera de alcance por ahora: tutoriales interactivos, videos/capturas. (La liga "Ver manual completo" ya se hizo en V214.)
+
+### V214 — Un manual por módulo en "Manuales" (2026-11-22, rama `manuales-modulos`)
+
+Pedido de Alfredo: un manual completo por cada módulo dentro de Manuales (V196), ligado al botón "¿Cómo se usa?".
+
+**Dónde viven los manuales**
+- En la base (tablas V196 `manual_secciones` / `manuales`, markdown en `contenido`). Todos los leen; solo `man.editar`
+  (admin_general) los cambia desde la app (editor de V196, sin cambios).
+- **Fuente de los manuales nuevos:** `supabase/manuales/<carpeta>/N_<clave>.md` (front matter `clave` + `titulo`; N = orden
+  en la sección) y `supabase/manuales/<carpeta>/_seccion.json` (`nombre`, `descripcion`, `icono`). Carpetas: `ordenes` (6),
+  `tienda` (8), `fabrica` (8), `administracion` (4) = 26 manuales. Frisa (14) y CRM (8) siguen como estaban (V196 / datos
+  2026-11-09 y 2026-11-13) y NO se tocaron.
+- **Generador:** `node scripts/manuales-sql.mjs <carpeta> [fecha]` → `supabase/datos_<fecha>_manuales_<carpeta>.sql`
+  (crea la sección si no existe e inserta cada manual SOLO si su clave no está; nunca actualiza ni borra; se puede correr
+  dos veces). Si ya se cargó un manual y hay que corregirlo: con el editor de la app o con un UPDATE aparte (el script no
+  pisa). Ojo: después de cargar, la base manda; si se edita en la app, el .md queda viejo.
+
+**SQL**
+- `schema_v214_manuales_clave.sql`: columna `manuales.clave` (texto, única entre los no eliminados). Aditiva; no cambia
+  funciones (`man_guardar_manual` no toca `clave`, así que editar en la app la conserva).
+- `datos_2026-11-21_manuales_{ordenes,tienda,fabrica,administracion}.sql`: los 26 manuales.
+- `datos_2026-11-22_manuales_claves_frisa_crm.sql`: solo pone `clave` a 7 manuales existentes (frisa-surtido,
+  frisa-restock, frisa-niveles, frisa-microsip, frisa-plantas, frisa-reportes, crm) por sección + título exacto; no
+  cambia texto. Orden de aplicación: V214 → los 4 de datos → claves Frisa/CRM.
+- Probado en PGlite: todo dos veces, sin duplicar; contenido de Frisa/CRM idéntico antes y después; 33 claves únicas; 0
+  ligas `manual:` rotas.
+
+**Estructura estándar de cada manual** (usar `##` para cada parte y `###` para cada proceso):
+Resumen · ¿Quién lo usa? · Antes de empezar · Procesos paso a paso (un `###` "Cómo …" por proceso, pasos numerados, nombres
+de pantalla en **negritas**) · Qué significa cada estado o color · Si eres de… · Problemas comunes · Se conecta con. Español
+de México, de "tú". Si algo no está claro: `[CONFIRMAR: …]`.
+
+**Pantalla (frontend)**
+- `utils/markdownManual.js`: cada título trae `id` (ancla sin acentos, única: `anclaDe`); `indiceProcesos()` = los `###`;
+  liga nueva `[texto](manual:clave)` → otro manual por su clave (si no existe, queda como texto).
+- `components/manuales/MarkdownManual.jsx`: props `clavesManuales` (Map clave→id) e `indice` (cuadro "En este manual" con
+  los procesos, si hay 2 o más). `irAAncla()` hace scroll suave y deja `#ancla` en la URL.
+- `ManualesPage.jsx` (vista de un manual): índice, ligas entre manuales, botón **🖨 Imprimir** (`window.print()` con
+  `body.imprime-manual`: solo el artículo, hoja carta `@page manual`, sin menú/botones/índice, tablas como tabla) y abre
+  directo en un proceso si la URL trae `#ancla`. El buscador (título + contenido) liga al proceso que coincide.
+  El editor quedó igual.
+- `AyudaModulo.jsx`: al abrir el panel busca una vez por sesión `manuales(id, clave)` (`fetchClavesManuales`) y, si hay
+  manual con la clave del módulo, muestra **Ver manual completo →**. Si no hay (o V214 no está), no sale nada.
+- `config/ayudaModulos.js`: campo opcional `manual: '<clave>'` cuando la clave no es el `id` (ej. `resumen`,
+  `ordenes-pasadas`, `control-rapido` → `dashboard`; `estadisticas` → `calendario`; `inventario-*` → `inventario`;
+  `consumos-prenda` → `inventario-tela`; `produccion-operaciones`, `hojas-impresas` → `produccion-captura`;
+  `produccion-dashboard`, `estadisticas-produccion` → `produccion-revision`; `roles-permisos` → `usuarios`;
+  `frisa-movimientos` → `frisa-niveles`). `claveManualDe(id)`. Las 48 ayudas tienen manual.
+- Pruebas: `node --test src/utils/*.test.js` (205), `vite build`, y una página local con los .md (sin Supabase): índice,
+  ligas, buscador, ayuda, 375px y PDF de impresión.
+
+**Cómo agregar un manual (módulo nuevo)**
+1. Entrada en `src/config/ayudaModulos.js` (id = clave del manual) y `<AyudaModulo id="..." />` en el título.
+2. Escribir `supabase/manuales/<seccion>/N_<clave>.md` con la estructura estándar, leyendo el código real de la pantalla.
+3. `node scripts/manuales-sql.mjs <seccion> <fecha>` y darle a Alfredo el SQL completo en el chat; él lo aplica.
+4. Si el manual ya existe en la base y solo cambia el texto: editarlo en la app (o un UPDATE aparte) y actualizar el .md.
+
+**REGLA A FUTURO:** todo módulo nuevo lleva su entrada en `ayudaModulos.js` **y** su manual en Manuales.
+
+**SQL APLICADO** por Alfredo el 2026-11-22 (verificado: Órdenes 6, Tienda 8, Fábrica 8, Administración 4, todos con clave; Frisa 14 con 6 claves y CRM 8 con 1).
+**Pendiente:** publicar el frontend; un `[CONFIRMAR]` en Usuarios (cómo se
+restablece una contraseña).
+

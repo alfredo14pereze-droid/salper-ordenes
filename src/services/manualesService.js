@@ -21,6 +21,25 @@ export async function fetchManuales() {
   return { data: { secciones: sec.data || [], manuales: man.data || [] }, error: null }
 }
 
+// V214 — solo clave → id, para el "Ver manual completo →" del botón de ayuda.
+// Se pide una sola vez por sesión (los manuales casi no cambian). Si falla
+// (ej. todavía no se aplica V214), regresa un Map vacío: la liga no aparece.
+let clavesCache = null
+export function fetchClavesManuales() {
+  if (!clavesCache) {
+    clavesCache = (async () => {
+      if (!supabase) return new Map()
+      const { data, error } = await supabase.from('manuales').select('id, clave').not('clave', 'is', null).is('eliminado_en', null)
+      if (error) {
+        clavesCache = null // reintenta la próxima vez
+        return new Map()
+      }
+      return new Map((data || []).map((x) => [String(x.clave).toLowerCase(), x.id]))
+    })()
+  }
+  return clavesCache
+}
+
 export async function guardarSeccion({ id, nombre, descripcion, icono }) {
   const { error: cfgError } = ensureClient()
   if (cfgError) return { data: null, error: cfgError }

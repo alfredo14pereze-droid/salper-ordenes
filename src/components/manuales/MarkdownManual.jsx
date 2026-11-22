@@ -1,11 +1,34 @@
-import { useMemo } from 'react'
+import { createContext, useContext, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { parseMarkdown, parseInline } from '../../utils/markdownManual'
+import { parseMarkdown, parseInline, indiceProcesos } from '../../utils/markdownManual'
 
 // V196 — pinta el markdown de un manual como elementos de React (sin HTML
 // crudo). Estilos en .manual-md (index.css).
+// V214 — [texto](manual:clave) liga a otro manual por su clave; si ese
+// manual no existe (todavía), queda como texto normal. Cada título lleva su
+// ancla (id) y, con `indice`, arriba sale el índice de procesos (los ###).
+const ClavesContext = createContext(null)
+
+export function irAAncla(id, e) {
+  const el = typeof document !== 'undefined' ? document.getElementById(id) : null
+  if (!el) return
+  e?.preventDefault()
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  window.history.replaceState(window.history.state, '', `#${id}`)
+}
+
 function Inline({ texto }) {
+  const claves = useContext(ClavesContext)
   return parseInline(texto).map((p, i) => {
+    if (p.t === 'manual') {
+      const destino = claves?.get(p.clave)
+      if (!destino) return <span key={i}>{p.v}</span>
+      return (
+        <Link key={i} to={`/manuales/ver/${destino}`} className="manual-md__liga-manual">
+          {p.v}
+        </Link>
+      )
+    }
     if (p.t === 'negrita') return <strong key={i}>{p.v}</strong>
     if (p.t === 'cursiva') return <em key={i}>{p.v}</em>
     if (p.t === 'codigo') return <code key={i}>{p.v}</code>
@@ -44,7 +67,7 @@ function Bloques({ bloques }) {
     switch (b.tipo) {
       case 'titulo': {
         const Tag = `h${Math.min(b.nivel + 1, 5)}` // # → h2 (el h1 es el título del manual)
-        return <Tag key={i}><Inline texto={b.texto} /></Tag>
+        return <Tag key={i} id={b.id}><Inline texto={b.texto} /></Tag>
       }
       case 'pasos':
         return (
@@ -83,12 +106,34 @@ function Bloques({ bloques }) {
   })
 }
 
-export default function MarkdownManual({ texto }) {
+function IndiceProcesos({ procesos }) {
+  return (
+    <nav className="manual-indice" aria-label="Procesos de este manual">
+      <div className="manual-indice__titulo">En este manual</div>
+      <ol className="manual-indice__lista">
+        {procesos.map((p) => (
+          <li key={p.id}>
+            <a href={`#${p.id}`} onClick={(e) => irAAncla(p.id, e)}>
+              <Inline texto={p.texto} />
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )
+}
+
+// clavesManuales: Map clave → id del manual (para las ligas manual:clave).
+export default function MarkdownManual({ texto, clavesManuales = null, indice = false }) {
   const bloques = useMemo(() => parseMarkdown(texto), [texto])
+  const procesos = useMemo(() => (indice ? indiceProcesos(bloques) : []), [bloques, indice])
   if (!bloques.length) return <p className="manual-md__vacio">Este manual todavía no tiene contenido.</p>
   return (
-    <div className="manual-md">
-      <Bloques bloques={bloques} />
-    </div>
+    <ClavesContext.Provider value={clavesManuales}>
+      {procesos.length >= 2 && <IndiceProcesos procesos={procesos} />}
+      <div className="manual-md">
+        <Bloques bloques={bloques} />
+      </div>
+    </ClavesContext.Provider>
   )
 }

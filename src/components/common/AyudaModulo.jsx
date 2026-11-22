@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ayudaDeModulo } from '../../config/ayudaModulos'
+import { Link } from 'react-router-dom'
+import { ayudaDeModulo, claveManualDe } from '../../config/ayudaModulos'
+import { fetchClavesManuales } from '../../services/manualesService'
 import './AyudaModulo.css'
 
 // Botón "¿Cómo se usa?" del encabezado de cada módulo. Los textos viven en
@@ -12,12 +14,27 @@ import './AyudaModulo.css'
 //
 // El panel se monta en <body> (portal): lateral desde la derecha en
 // escritorio, hoja desde abajo en celular. Se cierra con la X, con Esc o
-// tocando fuera. Solo frontend: no lee ni escribe nada en la base.
+// tocando fuera. Los textos son solo frontend. V214: al abrir el panel se
+// busca (una vez por sesión) si hay un manual con la clave del módulo; si lo
+// hay, abajo sale "Ver manual completo →". Si no, no se muestra nada.
 export default function AyudaModulo({ id }) {
   const ayuda = ayudaDeModulo(id)
   const [abierto, setAbierto] = useState(false)
   const botonRef = useRef(null)
   const cerrarRef = useRef(null)
+  const [manualId, setManualId] = useState(null)
+
+  useEffect(() => {
+    if (!abierto) return undefined
+    let vivo = true
+    const clave = claveManualDe(id)
+    fetchClavesManuales().then((mapa) => {
+      if (vivo) setManualId((clave && mapa.get(clave)) || null)
+    })
+    return () => {
+      vivo = false
+    }
+  }, [abierto, id])
 
   useEffect(() => {
     if (!abierto) return undefined
@@ -94,6 +111,11 @@ export default function AyudaModulo({ id }) {
                     {ayuda.roles.map((r) => <span key={r} className="ayuda-modulo__rol">{r}</span>)}
                   </div>
                 </section>
+              )}
+              {manualId && (
+                <Link to={`/manuales/ver/${manualId}`} className="ayuda-modulo__manual" onClick={() => setAbierto(false)}>
+                  Ver manual completo →
+                </Link>
               )}
             </div>
           </div>

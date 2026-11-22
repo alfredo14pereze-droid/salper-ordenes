@@ -1,7 +1,7 @@
 // V196 — Manuales: buscador y ayudas de la pantalla (sin React, con pruebas
 // en manuales.test.js).
 import { normalizar, palabras } from './inventarioBusqueda.js'
-import { textoPlano } from './markdownManual.js'
+import { textoPlano, parseMarkdown, indiceProcesos } from './markdownManual.js'
 
 // Cada letra a minúscula y sin acento, conservando la posición (para poder
 // recortar el fragmento del texto original).
@@ -39,7 +39,10 @@ export function buscarManuales(texto, manuales, secciones) {
     const donde = titulo + ' ' + normalizar(plano)
     if (!buscadas.every((b) => donde.includes(b))) continue
     const enTitulo = buscadas.every((b) => titulo.includes(b))
-    res.push({ manual: m, seccion, enTitulo, fragmento: fragmento(plano, buscadas) })
+    // V214 — si un proceso (###) trae todas las palabras, el resultado liga
+    // directo a ese proceso.
+    const proceso = indiceProcesos(parseMarkdown(m.contenido)).find((p) => buscadas.every((b) => normalizar(p.texto).includes(b))) || null
+    res.push({ manual: m, seccion, enTitulo, proceso, fragmento: fragmento(plano, buscadas) })
   }
   res.sort((a, b) => (a.enTitulo === b.enTitulo ? 0 : a.enTitulo ? -1 : 1) || a.seccion.orden - b.seccion.orden || a.manual.orden - b.manual.orden)
   return res
@@ -52,5 +55,13 @@ export function ordenar(lista) {
 export function contarPorSeccion(manuales) {
   const m = new Map()
   for (const x of manuales) m.set(x.seccion_id, (m.get(x.seccion_id) || 0) + 1)
+  return m
+}
+
+// V214 — Map clave → id de los manuales que tienen clave (para las ligas
+// [texto](manual:clave) y el "Ver manual completo" de la ayuda).
+export function clavesDeManuales(manuales) {
+  const m = new Map()
+  for (const x of manuales || []) if (x.clave && !x.eliminado_en) m.set(String(x.clave).toLowerCase(), x.id)
   return m
 }

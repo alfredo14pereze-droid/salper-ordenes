@@ -49,3 +49,39 @@ test('fragmento recorta alrededor de la palabra', () => {
   const f = fragmento(plano, ['catarina'])
   assert.ok(f.startsWith('…') && f.endsWith('…') && f.includes('Catarina'))
 })
+
+// V214 — anclas, índice de procesos y ligas entre manuales.
+import { anclaDe, indiceProcesos } from './markdownManual.js'
+import { clavesDeManuales } from './manuales.js'
+import { ayudaDeModulo, claveManualDe } from '../config/ayudaModulos.js'
+
+test('anclas sin acentos y únicas; índice con los ###', () => {
+  assert.equal(anclaDe('Cómo crear una **orden**'), 'como-crear-una-orden')
+  const b = parseMarkdown('## Procesos paso a paso\n\n### Cómo entregar\n\n1. x\n\n### Cómo entregar\n\n## Problemas comunes')
+  assert.equal(b[0].id, 'procesos-paso-a-paso')
+  assert.deepEqual(indiceProcesos(b).map((p) => p.id), ['como-entregar', 'como-entregar-2'])
+})
+
+test('liga manual:clave y claves de manuales', () => {
+  const p = parseInline('Ver [Pedidos](manual:pedidos).')
+  assert.deepEqual(p[1], { t: 'manual', v: 'Pedidos', clave: 'pedidos' })
+  assert.equal(textoPlano('Ver [Pedidos](manual:pedidos).'), 'Ver Pedidos.')
+  const m = clavesDeManuales([{ id: 'a', clave: 'pedidos' }, { id: 'b', clave: null }, { id: 'c', clave: 'x', eliminado_en: '2026-01-01' }])
+  assert.equal(m.get('pedidos'), 'a')
+  assert.equal(m.size, 1)
+})
+
+test('el buscador liga al proceso que coincide', () => {
+  const secciones = [{ id: 's', nombre: 'Órdenes', orden: 1 }]
+  const manuales = [{ id: 'm', seccion_id: 's', orden: 1, titulo: 'Pedidos', contenido: '## Procesos paso a paso\n\n### Cómo registrar un abono\n\n1. Dale **+ Registrar abono**.' }]
+  const r = buscarManuales('registrar abono', manuales, secciones)
+  assert.equal(r[0].proceso.id, 'como-registrar-un-abono')
+  assert.equal(buscarManuales('pedidos', manuales, secciones)[0].proceso, null)
+})
+
+test('cada ayuda apunta a una clave de manual', () => {
+  assert.equal(claveManualDe('resumen'), 'dashboard')
+  assert.equal(claveManualDe('nueva-orden'), 'nueva-orden')
+  assert.equal(claveManualDe('no-existe'), null)
+  assert.ok(ayudaDeModulo('nueva-orden').pasos.some((x) => /vista previa/.test(x)))
+})
