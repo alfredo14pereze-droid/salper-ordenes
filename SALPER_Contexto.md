@@ -8536,3 +8536,37 @@ abajo (contraseña nueva).
   lista de lo que se captura, el chip Calendario y la nota de manual físico →
   `supabase/datos_2026-11-22_manuales_procesos_v2.sql` (reemplaza el contenido solo si sigue en 'Carga inicial').
   SQL APLICADO por Alfredo el 2026-11-22 (verificado: tiene_fabrica = true, 4369 caracteres).
+
+### 2026-11-22 — Manual Procesos, Parte 3: sección Frisa (sin base de datos) (rama `manual-procesos`)
+
+- **Dónde:** en **Manual Procesos** (`src/data/manualesProcesos.js`), pestaña Frisa — no en Manuales: Alfredo ya había
+  decidido que Manual Procesos es un módulo aparte. Los 14 manuales de Frisa que ya existen en **Manuales** (base) no se
+  tocaron; se ligan por su clave (`manualesPagina` → «En Manuales», y abajo de la pestaña Frisa «También en Manuales»,
+  con `fetchClavesManuales` → `/manuales/ver/:id`; sin sesión o sin clave cae en `/manuales`).
+- **7 procesos** (el prompt dice FR1–FR8 pero trae 7): Ciclo completo, Llega una OC, Remisiones en Microsip, Salir a entregar
+  y confirmar, Revisión Microsip vs página, Recompra, Recepción de compras y subida a bodega. «Ir al módulo» → `/frisa`.
+- **Campos nuevos opcionales:** `bloques` (explicaciones antes de los pasos: párrafos, viñetas o tabla — tabla en tarjetas en
+  celular), `manualesPagina`, `reportarAntes` (la checklist sale antes de los pasos: «Antes de salir, checa que llevas»).
+- **Nombres reales usados:** Frisa → Órdenes de surtido: «+ Subir orden de compra» → «Subir orden de compra de Frisa» →
+  «Crear orden de surtido»; «Ya entregó el chofer» → «Se entregó todo» (Fecha de entrega, Folio de remisión); «Confirmar
+  entregas de Leo». Revisión Microsip: subir Excel/CSV, «Ver diferencias», «Todo cuadró», «Ajustar». Restock: pestañas
+  Órdenes de taller / Pantalón / Playera lisa; tabla Producto · Hay · Viene · Alcanza para · Estado · Pedir; «Crear orden de
+  taller», «Crear pedido de compra», «Crear pedido de playera lisa», «Recibir», «Subir a bodega» → «Confirmar: subir N pzas».
+- **Lo que NO coincidió con la app (pendiente, no se cambió nada):**
+  1. No existe «Confirmar subir a bodega»: es «Subir a bodega» (en Restock → Por entrar) y luego «Confirmar: subir N pzas».
+  2. La entrega se confirma con «Ya entregó el chofer» → «Se entregó todo»; la página SÍ permite «Entrega parcial» /
+     «Cerrar con lo entregado» aunque Frisa no acepte parciales.
+  3. Revisión Microsip tiene botón «Ajustar»; el manual dice que nadie ajusta (se reporta a Alfredo). El manual de
+     Manuales «Revisión contra Microsip» enseña a ajustar: se contradicen.
+  4. Semáforo: en Restock los estados son CRÍTICO (rojo), PEDIR (naranja) y CERCA (amarillo), calculados a la llegada del
+     siguiente pedido (taller cada 7 días/tarda 10; compra cada 10/tarda 10). Máximo 42 días y reorden 28 sí coinciden con
+     6 y 4 semanas (Supuestos iniciales); crítico es «mínimo» = 20 días de venta, no «2 entregas».
+  5. La OC en la página para playeras es «Pedido de playera lisa» (pestaña Playera lisa), no un pedido de compra general;
+     la pestaña Pantalón incluye bata y bolsa.
+  6. Recepción de playera lisa por Terminado: SÍ existe (Restock → Playera lisa → «Recibir», permiso fr.recibir_lisa).
+     Recepción de pantalón para tienda: SÍ existe en la página (Restock → Pantalón → «Recibir», fr.recibir_pantalon).
+     Pendiente confirmar si el pantalón también se recibe en Microsip (`TODO confirmar` en FR7).
+  7. Tabla de separación vs catálogo (carga inicial de V155): coincide (Camisa Frisa: corte → costura con reflejante →
+     bordado → terminado; Nuevo Ingreso + impresión; playeras C/REF descosido → reflejante → impresión → terminado; S/REF
+     impresión → terminado). El catálogo se edita en Catálogos → Frisa: no se revisó la base en vivo.
+- **Sin publicar** hasta que Alfredo lo revise (el prompt pedía avisar antes por los manuales que se traslapan).

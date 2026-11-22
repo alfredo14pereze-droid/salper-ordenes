@@ -5862,6 +5862,23 @@ h4 {
 .proc-reportar__caja { font-size: 1.2rem; line-height: 1.2; }
 .proc-reportar__confirmar { color: var(--ds-text-muted, #6b7480); font-size: 0.9rem; font-style: italic; }
 
+/* Explicaciones antes de los pasos (ej. cómo se ve una pantalla) y tablas. */
+.proc-info { margin-bottom: 6px; }
+.proc-info__p { margin: 0 0 8px; font-size: 1.05rem; }
+.proc-info__lista { margin: 0 0 8px; padding-left: 22px; display: grid; gap: 4px; font-size: 1.05rem; }
+.proc-tabla-wrap { overflow-x: auto; margin-bottom: 8px; }
+.proc-tabla { width: 100%; border-collapse: collapse; font-size: 1rem; }
+.proc-tabla th, .proc-tabla td { border: 1px solid var(--ds-divider, #e3e6ea); padding: 8px 10px; text-align: left; vertical-align: top; }
+.proc-tabla th { background: var(--ds-bg, #f3f4f6); font-weight: 700; }
+.proc-tabla td:first-child { font-weight: 700; }
+@media (max-width: 600px) {
+  .proc-tabla thead { display: none; }
+  .proc-tabla, .proc-tabla tbody, .proc-tabla tr, .proc-tabla td { display: block; width: 100%; box-sizing: border-box; }
+  .proc-tabla tr { border: 1px solid var(--ds-divider, #e3e6ea); border-radius: 8px; margin-bottom: 8px; }
+  .proc-tabla td { border: 0; padding: 6px 10px; }
+  .proc-tabla td:not(:first-child)::before { content: attr(data-col) ': '; font-weight: 600; color: var(--ds-text-muted, #6b7480); }
+}
+.proc-manuales-pagina { margin-top: 18px; }
 .proc-externo { margin: 20px 0 0; padding: 10px 14px; border-radius: 8px; background: var(--ds-bg, #f3f4f6); color: var(--ds-text-muted, #6b7480); font-size: 0.98rem; }
 
 @media (max-width: 600px) {
@@ -5882,6 +5899,12 @@ h4 {
   }
   body.imprime-proceso .proc-hoja__acciones,
   body.imprime-proceso .proc-relacionados { display: none; }
+  body.imprime-proceso .proc-tabla { display: table; }
+  body.imprime-proceso .proc-tabla thead { display: table-header-group; }
+  body.imprime-proceso .proc-tabla tbody { display: table-row-group; }
+  body.imprime-proceso .proc-tabla tr { display: table-row; }
+  body.imprime-proceso .proc-tabla td { display: table-cell; border: 1px solid #999; }
+  body.imprime-proceso .proc-tabla td::before { content: none; }
   body.imprime-proceso .proc-hoja__titulo { font-size: 22pt; }
   body.imprime-proceso .proc-paso,
   body.imprime-proceso .proc-bif,

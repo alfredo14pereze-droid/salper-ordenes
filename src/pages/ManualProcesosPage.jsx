@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { EmptyState } from '../components/common/States'
 import AyudaModulo from '../components/common/AyudaModulo'
-import { MANUALES_PROCESOS, SECCIONES_PROCESOS, manualProceso } from '../data/manualesProcesos'
+import { MANUALES_PROCESOS, SECCIONES_PROCESOS, MANUALES_PAGINA, MANUALES_PAGINA_POR_SECCION, manualProceso } from '../data/manualesProcesos'
+import { fetchClavesManuales } from '../services/manualesService'
 
 // Manual de Procesos — cómo se hace cada proceso, igual para todos.
 // Aparte del módulo "Manuales" (V196, en la base): este es solo lectura y su
@@ -32,6 +33,37 @@ function minusculaInicial(t) {
 function sinCuando(t) {
   const s = (t || '').replace(/^cuando\s+/i, '')
   return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+// Ligas a manuales del módulo Manuales (en la base) por su clave. Si todavía no
+// carga la lista de claves (o no existe esa clave), la liga va a /manuales.
+function useClavesManuales(activo) {
+  const [claves, setClaves] = useState(null)
+  useEffect(() => {
+    if (!activo) return undefined
+    let vivo = true
+    fetchClavesManuales().then((m) => { if (vivo) setClaves(m) }).catch(() => {})
+    return () => { vivo = false }
+  }, [activo])
+  return (clave) => {
+    const id = claves?.get(String(clave).toLowerCase())
+    return id ? `/manuales/ver/${id}` : '/manuales'
+  }
+}
+
+function LigasManuales({ claves, titulo }) {
+  const ruta = useClavesManuales(claves.length > 0)
+  if (!claves.length) return null
+  return (
+    <div className="proc-relacionados proc-manuales-pagina">
+      <h2 className="proc-subtitulo">{titulo}</h2>
+      <ul>
+        {claves.map((c) => (
+          <li key={c}><Link to={ruta(c)}>📘 {MANUALES_PAGINA[c] || c}</Link></li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 function Chips({ sistemas }) {
@@ -114,6 +146,13 @@ function Lista() {
           ))}
         </div>
       )}
+
+      {!q && (
+        <LigasManuales
+          claves={MANUALES_PAGINA_POR_SECCION[seccion] || []}
+          titulo={`También en Manuales (${seccion})`}
+        />
+      )}
     </div>
   )
 }
@@ -142,6 +181,26 @@ function VerManual({ id }) {
     window.addEventListener('afterprint', quitar)
     window.print()
   }
+
+  const reportar = m.reportar?.length > 0 && (
+          <div className="proc-reportar">
+            <div className="proc-reportar__titulo">{m.reportarTitulo || 'Al terminar, reporta:'}</div>
+            <ul>
+              {m.reportar.map((r) => {
+                const texto = typeof r === 'string' ? r : r.texto
+                return (
+                  <li key={texto}>
+                    <span className="proc-reportar__caja" aria-hidden="true">☐</span>
+                    <span>
+                      {texto}
+                      {r.porConfirmar && <span className="proc-reportar__confirmar"> (por confirmar)</span>}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+  )
 
   const relacionados = (m.relacionados || []).map(manualProceso).filter(Boolean)
 
@@ -188,6 +247,29 @@ function VerManual({ id }) {
           <Chips sistemas={m.dondeSeHace} />
         </div>
 
+        {(m.bloques || []).map((b, i) => (
+          <div key={i} className="proc-info">
+            {b.titulo && <h2 className="proc-subtitulo">{b.titulo}</h2>}
+            {(b.parrafos || []).map((t) => <p key={t} className="proc-info__p">{t}</p>)}
+            {b.items?.length > 0 && <ul className="proc-info__lista">{b.items.map((t) => <li key={t}>{t}</li>)}</ul>}
+            {b.tabla && (
+              <div className="proc-tabla-wrap">
+                <table className="proc-tabla">
+                  <thead><tr>{b.tabla.columnas.map((c) => <th key={c}>{c}</th>)}</tr></thead>
+                  <tbody>
+                    {b.tabla.filas.map((f) => (
+                      <tr key={f[0]}>{f.map((c, j) => <td key={j} data-col={b.tabla.columnas[j]}>{c}</td>)}</tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {m.reportarAntes && reportar}
+
+
         <h2 className="proc-subtitulo">Pasos</h2>
         <ol className="proc-pasos">
           {m.pasos.map((p, i) => {
@@ -209,25 +291,7 @@ function VerManual({ id }) {
           })}
         </ol>
 
-        {m.reportar?.length > 0 && (
-          <div className="proc-reportar">
-            <div className="proc-reportar__titulo">{m.reportarTitulo || 'Al terminar, reporta:'}</div>
-            <ul>
-              {m.reportar.map((r) => {
-                const texto = typeof r === 'string' ? r : r.texto
-                return (
-                  <li key={texto}>
-                    <span className="proc-reportar__caja" aria-hidden="true">☐</span>
-                    <span>
-                      {texto}
-                      {r.porConfirmar && <span className="proc-reportar__confirmar"> (por confirmar)</span>}
-                    </span>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        )}
+        {!m.reportarAntes && reportar}
 
         {m.nunca?.length > 0 && (
           <div className="proc-nunca">
@@ -271,6 +335,8 @@ function VerManual({ id }) {
             </ul>
           </div>
         )}
+
+        <LigasManuales claves={m.manualesPagina || []} titulo="En Manuales" />
 
         {m.manualExterno && (
           <p className="proc-externo">

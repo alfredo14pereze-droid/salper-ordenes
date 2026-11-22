@@ -23,7 +23,12 @@
 //   reportar      — (opcional) qué se captura al terminar (checklist). Cada renglón es texto o
 //                   { texto, porConfirmar: true } (sale "(por confirmar)").
 //   reportarTitulo — (opcional) título de esa caja; si no, "Al terminar, reporta:"
+//   reportarAntes — (opcional) true: esa caja sale antes de los pasos (ej. "Antes de salir, checa…")
 //   manualExterno — (opcional) manual que existe fuera de la página (sale como nota gris)
+//   bloques       — (opcional) explicaciones antes de los pasos: [{ titulo, parrafos?: [], items?: [],
+//                   tabla?: { columnas: [], filas: [[]] } }]
+//   manualesPagina — (opcional) claves de manuales del módulo Manuales (ej. 'frisa-surtido');
+//                   salen como ligas "En Manuales" (MANUALES_PAGINA da su título)
 
 export const SECCIONES_PROCESOS = ['Tienda', 'Fábrica', 'Frisa']
 
@@ -451,7 +456,282 @@ export const MANUALES_PROCESOS = [
     manualExterno: 'Recepción de mercancía en Microsip (manual de fábrica)',
     moduloLink: '/',
   },
+  // ---------------------------------------------------------------------
+  // Frisa (Parte 3). Orden de la lista: FR1 … FR7. Nombres de pantallas y
+  // botones tomados de la página (Frisa → Órdenes de surtido, Restock,
+  // Revisión Microsip) el 2026-11-22. Los manuales que ya existían de Frisa
+  // viven en Manuales (base) y se ligan con `manualesPagina`.
+  // ---------------------------------------------------------------------
+  {
+    // FR1 — manual principal de Frisa (va primero).
+    id: 'frisa-ciclo',
+    seccion: 'Frisa',
+    titulo: 'Ciclo completo de Frisa',
+    resumen: 'Desde que llega la orden de compra de Frisa hasta que se repone el inventario.',
+    dondeSeHace: ['Página', 'Microsip'],
+    pasos: [
+      'Llega la OC por correo → se sube a la página y se captura en Microsip (ver "Llega una orden de compra de Frisa").',
+      'Se surten las órdenes en Frisa → Órdenes de surtido. El chofer surte las órdenes de surtido.',
+      'Se hacen las remisiones en Microsip, con base en lo surtido en la página (ver "Hacer las remisiones en Microsip").',
+      'Con órdenes surtidas, OC impresas y remisiones, se va a entregar. Al volver se confirma la entrega en la página (ver "Salir a entregar y confirmar la entrega").',
+      'Antes de comprar, se revisa el inventario de Microsip contra el de la página en Frisa → Revisión Microsip.',
+      'Sin diferencias, se hace la recompra en Frisa → Restock: pedidos de compra y órdenes de taller al mismo tiempo.',
+      'Llega lo comprado: el pantalón lo recibe la tienda y las playeras lisas las recibe Terminado en la página. La fábrica produce, hace la recepción en Microsip y sube a bodega en la página.',
+    ],
+    nunca: [
+      'Hagas algo solo en la página o solo en Microsip. Todo se hace en los dos; si no, los inventarios dejan de cuadrar.',
+      'Ajustes tú las diferencias entre Microsip y la página: se reportan a Alfredo, nadie más las ajusta.',
+    ],
+    relacionados: ['frisa-llega-oc', 'frisa-remisiones', 'frisa-entrega', 'frisa-revision-microsip', 'frisa-recompra', 'frisa-recepcion-bodega'],
+    manualesPagina: ['frisa-niveles'],
+    moduloLink: '/frisa',
+  },
+  {
+    // FR2
+    id: 'frisa-llega-oc',
+    seccion: 'Frisa',
+    titulo: 'Llega una orden de compra de Frisa',
+    resumen: 'Subir la OC a la página y capturarla en Microsip.',
+    cuandoAplica: 'Llega por correo una OC de cualquier planta de Frisa.',
+    dondeSeHace: ['Página', 'Microsip'],
+    pasos: [
+      'Descarga el PDF de la OC del correo.',
+      'En la página entra a Frisa → Órdenes de surtido y dale + Subir orden de compra.',
+      {
+        texto: 'En "Subir orden de compra de Frisa":',
+        sub: [
+          'Sube el PDF de la orden de compra. La página lo lee sola ("Leyendo el PDF…").',
+          'Revisa Planta, Número de OC, Fecha de la OC y Fecha límite.',
+          'Revisa cada renglón: producto y cantidad. Los que dicen "Sugerida por parecido: revísala" hay que checarlos.',
+          'Dale Crear orden de surtido.',
+        ],
+      },
+      'Captura la OC en Microsip como pedido en la empresa Frisa.',
+      'Revisa que planta, productos, tallas y cantidades sean iguales en la página, en Microsip y en el PDF.',
+    ],
+    nunca: [
+      'Captures una OC solo en uno de los dos sistemas.',
+    ],
+    relacionados: ['frisa-ciclo', 'frisa-remisiones'],
+    manualesPagina: ['frisa-surtido'],
+    moduloLink: '/frisa',
+  },
+  {
+    // FR3
+    id: 'frisa-remisiones',
+    seccion: 'Frisa',
+    titulo: 'Hacer las remisiones en Microsip',
+    resumen: 'La remisión se hace con lo surtido en la página, no con la OC.',
+    cuandoAplica: 'Ya se surtieron las órdenes en la página y se va a preparar la entrega.',
+    dondeSeHace: ['Microsip', 'Página'],
+    pasos: [
+      'En la página abre Frisa → Órdenes de surtido y la orden de cada planta: ahí está lo surtido, renglón por renglón (Producto y piezas).',
+      'Haz la remisión en Microsip con base en lo surtido en la página, no en la OC.',
+      'Captúrala en el mismo orden que aparece en la página, renglón por renglón (producto y talla).',
+      'Al terminar, compara la remisión contra la página: mismas cantidades en cada renglón.',
+    ],
+    nunca: [
+      'Hagas la remisión con lo que pidió la OC si se surtió diferente. Así es como aparecen diferencias en los faltantes.',
+    ],
+    bifurcaciones: [
+      {
+        si: 'la remisión no cuadra con lo surtido en la página.',
+        entonces: 'Corrige la remisión antes de salir. No se sale a entregar con diferencias.',
+      },
+    ],
+    relacionados: ['frisa-entrega'],
+    manualesPagina: ['frisa-surtido'],
+    moduloLink: '/frisa',
+  },
+  {
+    // FR4
+    id: 'frisa-entrega',
+    seccion: 'Frisa',
+    titulo: 'Salir a entregar y confirmar la entrega',
+    resumen: 'Entregar en cada planta y confirmar en la página que se entregó todo.',
+    dondeSeHace: ['Página'],
+    reportarTitulo: 'Antes de salir, checa que llevas:',
+    reportarAntes: true,
+    reportar: [
+      'Órdenes surtidas',
+      'Órdenes de compra impresas (en la orden: Ver PDF de la orden de compra)',
+      'Remisiones de Microsip',
+    ],
+    pasos: [
+      'Entrega en cada planta.',
+      'Confirma que se entregó todo correctamente.',
+      'En la página, abre la orden en Frisa → Órdenes de surtido y dale Ya entregó el chofer.',
+      'Elige Se entregó todo, pon la Fecha de entrega y el Folio de remisión, y guarda.',
+      'Con esto, el inventario de la página queda actualizado.',
+    ],
+    nunca: [
+      'Confirmes la entrega en la página sin haber verificado que se entregó completa. Frisa no acepta entregas parciales.',
+    ],
+    bifurcaciones: [
+      {
+        si: 'el chofer entregó varias órdenes.',
+        entonces: 'Usa Confirmar entregas de Leo para confirmarlas de una vez. Si alguna no se entregó completa, márcala como Parcial o No se entregó.',
+      },
+    ],
+    relacionados: ['frisa-remisiones'],
+    manualesPagina: ['frisa-surtido', 'chofer'],
+    moduloLink: '/frisa',
+  },
+  {
+    // FR5
+    id: 'frisa-revision-microsip',
+    seccion: 'Frisa',
+    titulo: 'Revisión de inventario Microsip vs página (antes de comprar)',
+    resumen: 'Antes de cualquier recompra, el inventario de Microsip y el de la página tienen que cuadrar.',
+    cuandoAplica: 'Siempre, antes de hacer cualquier recompra.',
+    dondeSeHace: ['Microsip', 'Página'],
+    pasos: [
+      'Saca de Microsip el reporte "Existencia y valor del inventario" (línea FRISA).',
+      'En la página entra a Frisa → Revisión Microsip y sube el archivo tal cual (Excel de Microsip .xlsx o CSV).',
+      'Dale Ver diferencias y revisa las diferencias entre la página y Microsip.',
+      'Si dice Todo cuadró (sin diferencias), ya puedes hacer la recompra.',
+    ],
+    nunca: [
+      'Hagas pedidos de compra ni órdenes de taller con diferencias sin resolver.',
+      'Corrijas ni ajustes tú las diferencias: no piques Ajustar.',
+    ],
+    bifurcaciones: [
+      {
+        si: 'hay diferencias.',
+        entonces: 'Repórtalas a Alfredo. Él revisa todos los movimientos para encontrar qué está causando la diferencia. No se compra hasta que él lo resuelva y la revisión salga sin diferencias.',
+      },
+    ],
+    relacionados: ['frisa-recompra'],
+    manualesPagina: ['frisa-microsip'],
+    moduloLink: '/frisa',
+  },
+  {
+    // FR6
+    id: 'frisa-recompra',
+    seccion: 'Frisa',
+    titulo: 'Recompra: pedidos de compra y órdenes de taller',
+    resumen: 'Qué pedir, cómo separarlo por producto y hacerlo todo al mismo tiempo.',
+    cuandoAplica: 'Ya pasó la revisión de Microsip sin diferencias.',
+    dondeSeHace: ['Página', 'Microsip'],
+    bloques: [
+      {
+        titulo: 'Cómo se ve la pantalla (Frisa → Restock)',
+        parrafos: [
+          'Tiene tres pestañas: Órdenes de taller, Pantalón y Playera lisa. Cada una empieza con la tabla "Lo que no alcanza…" con las columnas Producto, Hay, Viene, Alcanza para, Estado y Pedir.',
+          'La página calcula lo que habrá cuando llegue el siguiente pedido: lo de taller se pide cada 7 días y tarda 10; lo que se compra hecho, cada 10 días y tarda 10.',
+          'La cantidad sugerida sale en la columna Pedir y ya viene escrita, por talla, en cada recuadro "Orden de taller: …" y en el "Pedido de compra". Puedes cambiarla.',
+          'Los niveles salen de los Supuestos (Frisa → Niveles de inventario): máximo 6 semanas de venta (42 días), reorden 4 semanas (28 días) y crítico 20 días.',
+        ],
+        items: [
+          'CRÍTICO (rojo): no alcanza ni para el mínimo cuando llegue el siguiente pedido.',
+          'PEDIR (naranja): llega al reorden.',
+          'CERCA (amarillo): está a punto de llegar al reorden.',
+          'Lo que alcanza no sale; para verlo, palomea Ver todas.',
+        ],
+      },
+      {
+        titulo: 'Cómo separarlo según el producto',
+        tabla: {
+          columnas: ['Producto', 'Qué se hace', 'Procesos en fábrica'],
+          filas: [
+            ['Pantalón (y bata, bolsa)', 'Solo pedido de compra al proveedor (pestaña Pantalón)', 'Ninguno: llega terminado y lo recibe la tienda'],
+            ['Camisa', 'Solo orden de taller', 'Corte → Costura (con reflejante) → Bordado → Terminado. Nuevo Ingreso lleva además Impresión'],
+            ['Playera con reflejante', 'Pedido de playera lisa + orden de taller', 'Descosido → Reflejante → Impresión → Terminado'],
+            ['Playera sin reflejante', 'Pedido de playera lisa + orden de taller', 'Solo Impresión → Terminado (no se descose)'],
+          ],
+        },
+      },
+    ],
+    pasos: [
+      'Pide lo que la pantalla marca, empezando por lo CRÍTICO y luego lo de PEDIR, con la cantidad sugerida por producto y talla.',
+      'Haz el pedido al proveedor.',
+      'En ese mismo momento, haz el pedido en la página: pestaña Pantalón → Crear pedido de compra, o pestaña Playera lisa → Crear pedido de playera lisa (con su Proveedor).',
+      'Al mismo tiempo, haz las órdenes de taller: en la pestaña Órdenes de taller, en cada recuadro "Orden de taller: …" revisa las piezas por talla y la fecha de Entrega, y dale Crear orden de taller. De cada playera que compraste, la misma cantidad por talla; y de cada camisa.',
+      'Revisa que cada playera comprada tenga su orden de taller con la misma cantidad por talla.',
+    ],
+    nunca: [
+      'Hagas un pedido al proveedor sin su pedido de compra en la página.',
+      'Compres playeras sin hacer su orden de taller al mismo tiempo.',
+    ],
+    relacionados: ['frisa-revision-microsip', 'frisa-recepcion-bodega'],
+    manualesPagina: ['frisa-restock', 'frisa-niveles'],
+    moduloLink: '/frisa',
+  },
+  {
+    // FR7
+    id: 'frisa-recepcion-bodega',
+    seccion: 'Frisa',
+    titulo: 'Recepción de compras, producción y subida a bodega',
+    resumen: 'Quién recibe lo que llega y cómo se sube a bodega lo que termina el taller.',
+    cuandoAplica: 'Llega mercancía del proveedor o termina una orden de taller de Frisa.',
+    dondeSeHace: ['Microsip', 'Página'],
+    bloques: [
+      {
+        titulo: 'Quién recibe lo que llega del proveedor',
+        items: [
+          'Pantalón → lo recibe la tienda. Llega terminado, no pasa por fábrica.',
+          'Playeras lisas → las recibe en la página el personal de Terminado en fábrica.',
+        ],
+      },
+    ],
+    pasos: [
+      {
+        texto: 'Playeras lisas (Terminado):',
+        sub: [
+          'Entra a Frisa → Restock → Playera lisa. En "Por recibir: pedidos de playera lisa que no han llegado", dale Recibir.',
+          'Escribe lo que llegó de verdad por talla y revisa que sea lo de la orden de compra. Dale Recibir: se suma al inventario.',
+        ],
+      },
+      'La orden de taller pasa por todos sus procesos en la página, igual que cualquier orden (ver manuales de Fábrica: Inicio y Terminado de cada etapa).',
+      {
+        texto: 'Subir a bodega (cuando la orden ya está terminada):',
+        sub: [
+          'La orden sale en Frisa → Restock → Órdenes de taller, en "Por entrar: terminadas, falta subirlas a bodega", con el botón Subir a bodega.',
+          'Sube físicamente la mercancía a bodega.',
+          'Haz la recepción de mercancía en Microsip.',
+          'Ahora sí, dale Subir a bodega. Corrige si subieron menos (merma, defectos) y dale Confirmar: subir … pzas.',
+        ],
+      },
+      {
+        texto: 'Pantalón (tienda):',
+        sub: [
+          'Entra a Frisa → Restock → Pantalón. En "Por recibir: pedidos de pantalón que no han llegado", dale Recibir.',
+          'Escribe lo que llegó de verdad por talla y revisa que sea lo de la orden de compra. Dale Recibir: se suma al inventario.',
+          // TODO confirmar con Alfredo: si la recepción del pantalón también se hace en Microsip.
+          'Haz la recepción de mercancía en Microsip.',
+        ],
+      },
+    ],
+    nunca: [
+      'Des Confirmar: subir … pzas si la mercancía no está físicamente en bodega y la recepción no está hecha en Microsip.',
+    ],
+    bifurcaciones: [
+      {
+        si: 'lo que llega del proveedor no coincide con la orden de compra (faltan piezas o tallas).',
+        entonces: 'Al dar Recibir escribe lo que llegó de verdad y avísale a Alfredo.',
+      },
+    ],
+    relacionados: ['frisa-recompra', 'fabrica-corte', 'fabrica-costura', 'fabrica-bordado', 'fabrica-sublimado', 'fabrica-terminado'],
+    manualesPagina: ['frisa-restock'],
+    manualExterno: 'Recepción de mercancía en Microsip (manual de fábrica)',
+    moduloLink: '/frisa',
+  },
 ]
+
+// Manuales del módulo Manuales (en la base) que se ligan desde aquí, por su clave.
+// En la pestaña Frisa salen después de los procesos.
+export const MANUALES_PAGINA = {
+  'frisa-surtido': 'Cómo surtir una orden',
+  'frisa-restock': 'Cómo hacer el restock: crear una orden de taller FR',
+  'frisa-niveles': 'Cómo se mantiene el inventario',
+  'frisa-microsip': 'Revisión contra Microsip (cada 10 días)',
+  'frisa-plantas': 'Plantas Frisa: subir remisiones y facturas',
+  'frisa-reportes': 'Reportes de Frisa',
+  chofer: 'Inicio del chofer',
+}
+export const MANUALES_PAGINA_POR_SECCION = {
+  Frisa: ['frisa-surtido', 'frisa-restock', 'frisa-niveles', 'frisa-microsip', 'frisa-plantas', 'frisa-reportes'],
+}
 
 const POR_ID = Object.fromEntries(MANUALES_PROCESOS.map((m) => [m.id, m]))
 
