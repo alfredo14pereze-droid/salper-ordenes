@@ -8490,3 +8490,6 @@ abajo (contraseña nueva).
 - **Confirmado por Alfredo (2026-11-22):** la bifurcación del manual 6 (Entrega en tienda de pedidos de fábrica) «Si el
   cliente va a pagar después → ver Venta a crédito con remisión» se queda así.
 - **Publicado** en `main`/producción el 2026-11-22 (commit 716b5da, Vercel por git).
+- **Su manual en Manuales** (regla V214): `supabase/manuales/administracion/5_procesos.md` (clave `procesos`, sección
+  Administración, orden 5) → `supabase/datos_2026-11-22_manuales_procesos.sql` (solo inserta). Con eso el botón
+  «¿Cómo se usa?» de /procesos muestra «Ver manual completo →». SQL entregado a Alfredo, SIN aplicar todavía.
