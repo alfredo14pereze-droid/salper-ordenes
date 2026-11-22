@@ -8492,4 +8492,4 @@ abajo (contraseña nueva).
 - **Publicado** en `main`/producción el 2026-11-22 (commit 716b5da, Vercel por git).
 - **Su manual en Manuales** (regla V214): `supabase/manuales/administracion/5_procesos.md` (clave `procesos`, sección
   Administración, orden 5) → `supabase/datos_2026-11-22_manuales_procesos.sql` (solo inserta). Con eso el botón
-  «¿Cómo se usa?» de /procesos muestra «Ver manual completo →». SQL entregado a Alfredo, SIN aplicar todavía.
+  «¿Cómo se usa?» de /procesos muestra «Ver manual completo →». SQL APLICADO por Alfredo el 2026-11-22 (verificado: 1 fila, 3295 caracteres).
