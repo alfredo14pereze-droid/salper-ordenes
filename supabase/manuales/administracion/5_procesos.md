@@ -55,7 +55,8 @@ titulo: Manual Procesos
 ## Si eres de…
 
 - **Tienda (ventas, mostrador)**: revisa la pestaña **Tienda**: ventas, remisiones, pendientes, salidas de almacén, entregas y pedidos nuevos.
-- **Fábrica o Frisa**: sus procesos van a salir en sus pestañas cuando estén listos.
+- **Fábrica**: revisa la pestaña **Fábrica**: el flujo de una orden, cada etapa (cuándo dar Inicio y Terminado) y la entrega.
+- **Frisa**: sus procesos van a salir en su pestaña cuando estén listos.
 - **Administración general**: si un proceso cambia, pide que se actualice (se cambia en el código de la página, no desde la pantalla).
 
 ## Problemas comunes

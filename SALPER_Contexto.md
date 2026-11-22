@@ -8518,3 +8518,6 @@ abajo (contraseña nueva).
   ve en cuanto Costura o Bordado dan Inicio (coincide con «puede empezar mientras costura trabaja»), PERO en órdenes de
   Frisa la regla es estricta: Terminado espera a que Costura termine. Pausar solo existe en Bordado y Terminado (coincide).
   El diseño lo «confirma» (autoriza) Ventas / Admin fábrica, no Sublimado.
+- **Publicado** en `main`/producción el 2026-11-22 (commit 33b7dd5). Su manual en Manuales (clave `procesos`) se corrige con
+  `supabase/datos_2026-11-22_manuales_procesos_fabrica.sql` (UPDATE de una sola línea: «Fábrica o Frisa» → Fábrica ya
+  tiene procesos); SQL entregado a Alfredo, SIN aplicar todavía.
