@@ -37,6 +37,7 @@ import TallerosPage from './pages/TallerosPage'
 import NotasTiendaPage from './pages/NotasTiendaPage'
 import TareasPage from './pages/TareasPage'
 import ManualesPage from './pages/ManualesPage'
+import ManualProcesosPage from './pages/ManualProcesosPage'
 import AtrPage from './pages/AtrPage'
 import AtrCargaPage from './pages/AtrCargaPage'
 import CrmPage from './pages/CrmPage'
@@ -178,6 +179,9 @@ function AuthGate() {
           <Route path="/manuales/ver/:manualId" element={<ManualesPage vista="ver" />} />
           <Route path="/manuales/editar/:manualId" element={<ManualesPage vista="editar" />} />
           <Route path="/manuales/nuevo/:seccionId" element={<ManualesPage vista="nuevo" />} />
+          {/* Manual de Procesos (todos leen; contenido en src/data/manualesProcesos.js, sin base). */}
+          <Route path="/procesos" element={<ManualProcesosPage />} />
+          <Route path="/procesos/:id" element={<ManualProcesosPage />} />
           {/* V209 — Inventario de batas de ATR (atr.ver; carga inicial: atr.cargar). */}
           <Route path="/atr" element={<AtrPage />} />
           <Route path="/atr/carga" element={<AtrCargaPage />} />

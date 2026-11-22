@@ -8469,3 +8469,23 @@ abajo (contraseña nueva).
 - **Manuales:** `datos_2026-11-22_manuales_correcciones.sql` actualiza el contenido de `usuarios` e `inventario` solo si no
   se editaron en la app (`actualizado_por_nombre = 'Carga inicial'`).
 
+
+### 2026-11-22 — Módulo «Manual Procesos» (sin base de datos) (rama `manual-procesos`)
+
+- **Qué es:** módulo nuevo, **aparte de «Manuales»** (V196/V214, que vive en la base y es por módulo de la página).
+  Este dice cómo se hace cada **proceso** para que todos lo hagan igual: cuándo aplica, dónde se hace (chips
+  Microsip / Página / Papelito Salper), pasos numerados, caja roja «Nunca», tarjetas «Si pasa esto → haz esto»,
+  botón «Ir al módulo», manuales relacionados e **Imprimir** (hoja limpia sin menú ni botones, `body.imprime-proceso`).
+- **Sin base de datos:** el contenido vive en **`src/data/manualesProcesos.js`** (se edita ahí y se publica).
+  Pantalla `src/pages/ManualProcesosPage.jsx`, rutas **`/procesos`** (pestañas Tienda / Fábrica / Frisa + buscador por
+  título; sección vacía = «Próximamente») y **`/procesos/:id`**. Estilos `.procesos*` / `.proc-*` en `index.css`.
+- **Menú:** «📖 Manual Procesos» para todos los roles, solo lectura (también en el shell de estación, chofer y
+  captura: `RUTAS_CHOFER`, `RUTAS_CAPTURA`). Ayuda `procesos` en `ayudaModulos.js`.
+- **Contenido (sección Tienda, 7):** Venta por Microsip, Venta por fuera, Venta a crédito con remisión, Crear un pendiente
+  nuevo, Salida de almacén (bodega → tienda), Entrega en tienda de pedidos de fábrica, Tomar un pedido nuevo.
+  Fábrica y Frisa: «Próximamente».
+- **moduloLink:** Venta por fuera → `/inventario` (artículos por fuera de Microsip), Crear pendiente → `/pendientes`,
+  Entrega de pedidos de fábrica → `/` (Dashboard: ahí se abre la orden con saldo, pagos y entrega), Tomar pedido →
+  `/nueva`. Sin módulo (se hacen en Microsip): Venta por Microsip, Venta a crédito con remisión, Salida de almacén.
+- **PENDIENTE DE CONFIRMAR (Alfredo):** la bifurcación del manual 6 (Entrega en tienda de pedidos de fábrica) «Si el
+  cliente va a pagar después → ver Venta a crédito con remisión» (`// TODO confirmar` en el archivo de datos).

@@ -824,7 +824,7 @@ export function esChofer(role) {
   return role === 'chofer'
 }
 // V185 — + /frisa (surtido de órdenes de Frisa).
-export const RUTAS_CHOFER = ['/', '/tareas', '/pendientes', '/frisa', '/manuales']
+export const RUTAS_CHOFER = ['/', '/tareas', '/pendientes', '/frisa', '/manuales', '/procesos']
 
 // V158 — Notas de tienda. Permisos editables en "Roles y permisos"
 // (nt.ver / nt.escribir / nt.resolver); el fallback reproduce la siembra

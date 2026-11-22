@@ -5774,3 +5774,98 @@ h4 {
 .tareas-persona__tabla tbody tr { cursor: pointer; }
 .tareas-persona__tabla tbody tr:hover, .tareas-persona__tabla tbody tr:focus { background: var(--color-surface-alt, rgba(0,0,0,0.04)); outline: none; }
 .tareas-persona__tabla td:not(:first-child), .tareas-persona__tabla th:not(:first-child) { text-align: right; }
+
+/* =====================================================================
+   Manual de Procesos (/procesos) — letra grande, para gente no técnica.
+   ===================================================================== */
+.procesos { font-size: 1.05rem; }
+.procesos-intro { color: var(--ds-text-muted, #6b7480); margin: -4px 0 14px; font-size: 1.05rem; }
+.procesos-buscador { width: 100%; font-size: 1.05rem; padding: 12px 14px; margin-bottom: 14px; box-sizing: border-box; }
+.procesos-pestanas { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.procesos-pestana {
+  font: inherit; font-weight: 600; font-size: 1rem; padding: 10px 18px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--ds-border, #c9ced4); background: var(--ds-surface, #fff); color: var(--ds-text, #1c2127);
+}
+.procesos-pestana--activa { background: var(--ds-text, #1c2127); border-color: var(--ds-text, #1c2127); color: #fff; }
+.procesos-cuenta { font-size: 0.9rem; color: var(--ds-text-muted, #6b7480); margin-bottom: 8px; }
+.procesos-tarjetas { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.procesos-tarjeta {
+  display: flex; flex-direction: column; gap: 6px; padding: 16px; text-decoration: none; color: inherit;
+  background: var(--ds-surface, #fff); border: 1px solid var(--ds-divider, #e3e6ea); border-radius: 10px;
+}
+.procesos-tarjeta:hover { border-color: var(--ds-border, #c9ced4); background: var(--ds-bg, #f3f4f6); }
+.procesos-tarjeta__seccion { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ds-text-muted, #6b7480); }
+.procesos-tarjeta__titulo { font-weight: 700; font-size: 1.15rem; }
+.procesos-tarjeta__resumen { color: var(--ds-text-muted, #6b7480); line-height: 1.4; }
+.procesos-regresar { display: inline-block; margin-bottom: 10px; color: var(--ds-text-muted, #6b7480); text-decoration: none; padding: 6px 0; }
+.procesos-regresar:hover { color: var(--ds-text, #1c2127); }
+.procesos-regresar-abajo { margin-top: 24px; display: inline-flex; text-decoration: none; }
+
+.proc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.proc-chip { display: inline-block; font-size: 0.88rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; border: 1px solid transparent; }
+.proc-chip--microsip { background: var(--ds-blue-bg, #dbeafe); color: var(--ds-blue-text, #1d4ed8); border-color: #93c5fd; }
+.proc-chip--pagina { background: var(--ds-green-bg, #dcfce7); color: var(--ds-green-text, #15803d); border-color: #86efac; }
+.proc-chip--papelito { background: var(--ds-yellow-bg, #fef3c7); color: var(--ds-yellow-text, #a16207); border-color: #fcd34d; }
+
+.proc-hoja {
+  background: var(--ds-surface, #fff); border: 1px solid var(--ds-divider, #e3e6ea); border-radius: 12px;
+  padding: 22px; line-height: 1.5;
+}
+.proc-hoja__seccion { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ds-text-muted, #6b7480); }
+.proc-hoja__titulo { font-size: 1.7rem; margin: 2px 0 12px; line-height: 1.2; }
+.proc-hoja__acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.proc-hoja__acciones .btn { text-decoration: none; display: inline-flex; align-items: center; }
+.proc-bloque { margin-bottom: 14px; }
+.proc-bloque__etiqueta { font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ds-text-muted, #6b7480); margin-bottom: 4px; }
+.proc-bloque__texto { margin: 0; font-size: 1.12rem; }
+.proc-subtitulo { font-size: 1.25rem; margin: 22px 0 10px; }
+
+.proc-pasos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.proc-paso { display: flex; gap: 14px; align-items: flex-start; font-size: 1.15rem; }
+.proc-paso__num {
+  flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%; background: var(--ds-text, #1c2127); color: #fff;
+  display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.05rem;
+}
+.proc-paso__cuerpo { padding-top: 5px; }
+.proc-paso__sub { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 4px; }
+
+.proc-nunca {
+  margin-top: 22px; padding: 14px 18px; border-radius: 10px;
+  background: var(--ds-red-bg, #fee2e2); color: var(--ds-red-text, #b91c1c); border: 2px solid #f87171;
+}
+.proc-nunca__titulo { font-weight: 800; font-size: 1.15rem; margin-bottom: 6px; }
+.proc-nunca ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 1.1rem; font-weight: 600; }
+
+.proc-bifs { display: grid; gap: 10px; }
+.proc-bif { border: 1px solid #fcd34d; border-left: 6px solid #f59e0b; background: #fffbeb; border-radius: 10px; padding: 12px 16px; }
+.proc-bif__si { font-size: 1.08rem; margin-bottom: 4px; }
+.proc-bif__entonces { font-size: 1.08rem; font-weight: 600; }
+.proc-relacionados ul { margin: 0; padding-left: 20px; font-size: 1.08rem; }
+
+@media (max-width: 600px) {
+  .proc-hoja { padding: 16px; }
+  .proc-hoja__titulo { font-size: 1.45rem; }
+  .proc-hoja__acciones .btn { flex: 1 1 auto; justify-content: center; }
+}
+
+/* Imprimir un manual de procesos: solo la hoja, sin menú ni botones. */
+@media print {
+  body.imprime-proceso * { visibility: hidden; }
+  body.imprime-proceso .proc-hoja,
+  body.imprime-proceso .proc-hoja * { visibility: visible; }
+  body.imprime-proceso .proc-hoja {
+    position: absolute; inset: 0 auto auto 0; width: 100%; box-sizing: border-box;
+    border: 0; border-radius: 0; padding: 0; background: #fff; color: #000; font-size: 13pt;
+  }
+  body.imprime-proceso .proc-hoja__acciones,
+  body.imprime-proceso .proc-relacionados { display: none; }
+  body.imprime-proceso .proc-hoja__titulo { font-size: 22pt; }
+  body.imprime-proceso .proc-paso,
+  body.imprime-proceso .proc-bif,
+  body.imprime-proceso .proc-nunca { break-inside: avoid; }
+  body.imprime-proceso .proc-chip,
+  body.imprime-proceso .proc-nunca,
+  body.imprime-proceso .proc-bif,
+  body.imprime-proceso .proc-paso__num { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body.imprime-proceso .proc-hoja a { color: #000; text-decoration: none; }
+}

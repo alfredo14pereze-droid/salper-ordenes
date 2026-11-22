@@ -796,6 +796,19 @@ export const AYUDA_MODULOS = [
     ],
     roles: ['Todos'],
   },
+  {
+    id: 'procesos',
+    titulo: 'Manual Procesos',
+    queEs: 'Cómo se hace cada proceso de tienda, fábrica y Frisa, para que todos lo hagan igual.',
+    paraQueSirve: 'Saber cuándo aplica, en dónde se hace (Microsip, la página o el papelito) y qué nunca hacer.',
+    pasos: [
+      'Escoge la pestaña: Tienda, Fábrica o Frisa. O busca por nombre.',
+      'Dale clic al proceso para ver los pasos.',
+      'Lee la caja roja "Nunca" y los "Si pasa esto → haz esto".',
+      'Con "Imprimir" sale una hoja limpia para pegarla en tienda.',
+    ],
+    roles: ['Todos'],
+  },
 ]
 
 const POR_ID = Object.fromEntries(AYUDA_MODULOS.map((a) => [a.id, a]))

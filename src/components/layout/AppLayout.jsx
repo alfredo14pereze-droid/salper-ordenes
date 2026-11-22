@@ -117,7 +117,7 @@ export default function AppLayout({ children }) {
   // Anuncios (solo lectura), Control rápido, e Inventario de tela (solo
   // entradas). Nada más en el menú.
   const soloCaptura = isCapturaProduccion(role)
-  const RUTAS_CAPTURA = ['/', '/anuncios', '/control-rapido', '/inventario-tela', '/manuales']
+  const RUTAS_CAPTURA = ['/', '/anuncios', '/control-rapido', '/inventario-tela', '/manuales', '/procesos']
   // V96 — los 5 roles de etapa de fábrica (o admin_fabrica "viendo como"
   // uno de ellos) no llevan sidebar ni chat — vista de estación, mínima
   // de verdad. Usa `role` (el efectivo), no `trueRole`, a propósito: así
@@ -153,6 +153,8 @@ export default function AppLayout({ children }) {
     { to: '/cotizaciones-web', label: 'Cotizaciones web', show: canVerCotizacionesWeb(role), contador: cotizacionesNuevas },
     // V196 — manuales de cada proceso: todos los roles los leen.
     { to: '/manuales', label: 'Manuales', show: true },
+    // Manual de Procesos (solo lectura, todos los roles). Contenido en src/data/manualesProcesos.js.
+    { to: '/procesos', label: 'Manual Procesos', icono: '📖', show: true },
     // Entrega masiva: marcar varias órdenes como entregadas a la vez (permiso orden.entregar).
     { to: '/entregas', label: 'Entrega masiva', show: canDeliverOrder(role) },
     // V176 — pedidos de clientes (varias órdenes, un anticipo, abonos y factura).
@@ -238,6 +240,7 @@ export default function AppLayout({ children }) {
           // V185 — Leo surte las órdenes de Frisa (solo si su rol puede ver Frisa).
           ...(canViewSeccionFrisa(role) ? [{ to: '/frisa', label: 'Surtido Frisa' }] : []),
           { to: '/manuales', label: 'Manuales' },
+          { to: '/procesos', label: '📖 Procesos' },
         ]
       : [
           { to: '/', label: 'Órdenes', end: true },
@@ -249,6 +252,7 @@ export default function AppLayout({ children }) {
           // V200 — costura consulta las hojas de operaciones impresas.
           ...(esCosturaConsultaHojas(role) ? [{ to: '/hojas-impresas', label: 'Hojas impresas' }] : []),
           { to: '/manuales', label: 'Manuales' },
+          { to: '/procesos', label: '📖 Procesos' },
         ]
     const rutaPermitida = !chofer || RUTAS_CHOFER.some((r) => location.pathname === r || (r !== '/' && location.pathname.startsWith(r + '/')))
     return (
@@ -319,6 +323,7 @@ export default function AppLayout({ children }) {
                 onClick={closeSidebar}
                 className={({ isActive }) => 'app-nav__link' + (isActive ? ' app-nav__link--active' : '')}
               >
+                {item.icono && <span className="app-nav__icono" aria-hidden="true">{item.icono} </span>}
                 {item.label}
                 {item.contador > 0 && (
                   <span className="app-nav__contador" aria-label={`${item.contador} pendientes`}>
