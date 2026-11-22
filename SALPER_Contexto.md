@@ -8532,3 +8532,7 @@ abajo (contraseña nueva).
   solo Admin tienda/Admin fábrica/Administración general. Corte sin campo para faltantes → avisar a Admin fábrica y
   Terminado lo captura como Parcial. Frisa: Terminado espera a que Costura termine. (Corrige la nota de arriba: la
   impresión SÍ tiene «Iniciar» al abrir la orden; lo que no lo tiene es «Marcar impresas» por lote.)
+- **Manual en Manuales actualizado (clave `procesos`):** `5_procesos.md` explica las cajas de Inicio/Terminado con su botón, la
+  lista de lo que se captura, el chip Calendario y la nota de manual físico →
+  `supabase/datos_2026-11-22_manuales_procesos_v2.sql` (reemplaza el contenido solo si sigue en 'Carga inicial').
+  SQL entregado a Alfredo, SIN aplicar todavía.

@@ -25,17 +25,20 @@ titulo: Manual Procesos
 
 ### Cómo leer un proceso
 
-1. Arriba dice **Cuándo aplica** y **Dónde se hace**. Cada sistema tiene su color: **Microsip** azul, **Página** verde, **Papelito Salper** amarillo.
-2. En **Pasos** está todo en orden. Hazlos en ese orden.
-3. La caja roja **⛔ Nunca** son las reglas que no se rompen.
-4. En **Si pasa esto → haz esto** está qué hacer cuando algo sale distinto.
-5. Abajo, **Manuales relacionados** te lleva a otros procesos.
+1. En las etapas de fábrica (Corte, Sublimado, Bordado, Costura, Terminado), hasta arriba salen dos cajas: **▶ Se da Inicio cuando…** y **■ Se da Terminado cuando…**, con el **Botón** que hay que apretar en la página (ej. **Iniciar** y **Cortado**). Es lo más importante de cada etapa.
+2. Luego dice **Cuándo aplica** y **Dónde se hace**. Cada sistema tiene su color: **Microsip** azul, **Página** verde, **Papelito Salper** amarillo, **Calendario** morado.
+3. En **Pasos** está todo en orden. Hazlos en ese orden.
+4. Si la etapa captura un reporte, sale una lista para palomear (ej. **Al dar Cortado, captura:**) con lo que pide la página.
+5. La caja roja **⛔ Nunca** son las reglas que no se rompen.
+6. En **Si pasa esto → haz esto** está qué hacer cuando algo sale distinto.
+7. Abajo, **Manuales relacionados** te lleva a otros procesos, aunque sean de otra sección (ej. de Fábrica a Tienda).
+8. Si sale **Ver también: … (manual físico, no está en la página)**, ese manual está en papel (ej. Recepción de mercancía en Microsip).
 
 ### Cómo ir a la pantalla del proceso
 
 1. Si el proceso se hace en la página, arriba sale **Ir al módulo →**.
 2. Dale clic y te lleva a esa pantalla (ej. Inventario, Pendientes, Nueva orden).
-3. Si el proceso se hace en Microsip, no sale el botón.
+3. Si el proceso se hace en Microsip o en papel, no sale el botón.
 
 ### Cómo imprimir un proceso para pegarlo en tienda
 
@@ -48,6 +51,11 @@ titulo: Manual Procesos
 - **Microsip** (azul): se hace en Microsip.
 - **Página** (verde): se hace en la página de Salper.
 - **Papelito Salper** (amarillo): se anota en el papelito de Salper.
+- **Calendario** (morado): se ve en el Calendario de producción.
+- Caja **verde ▶**: cuándo se da Inicio a la etapa y con qué botón.
+- Caja **azul ■**: cuándo se da Terminado a la etapa y con qué botón.
+- Lista con **☐**: lo que se captura al terminar.
+- Nota **gris** "Ver también": un manual en papel, fuera de la página.
 - Caja **roja**: lo que nunca se debe hacer.
 - Tarjeta **amarilla**: "Si pasa esto → haz esto".
 - **Próximamente**: esa sección todavía no tiene procesos.
