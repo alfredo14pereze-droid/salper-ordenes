@@ -8569,4 +8569,4 @@ abajo (contraseña nueva).
   7. Tabla de separación vs catálogo (carga inicial de V155): coincide (Camisa Frisa: corte → costura con reflejante →
      bordado → terminado; Nuevo Ingreso + impresión; playeras C/REF descosido → reflejante → impresión → terminado; S/REF
      impresión → terminado). El catálogo se edita en Catálogos → Frisa: no se revisó la base en vivo.
-- **Sin publicar** hasta que Alfredo lo revise (el prompt pedía avisar antes por los manuales que se traslapan).
+- **Publicado** en `main`/producción el 2026-11-22 (Alfredo lo aprobó). Las diferencias de arriba siguen pendientes.
