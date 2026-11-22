@@ -8487,5 +8487,6 @@ abajo (contraseña nueva).
 - **moduloLink:** Venta por fuera → `/inventario` (artículos por fuera de Microsip), Crear pendiente → `/pendientes`,
   Entrega de pedidos de fábrica → `/` (Dashboard: ahí se abre la orden con saldo, pagos y entrega), Tomar pedido →
   `/nueva`. Sin módulo (se hacen en Microsip): Venta por Microsip, Venta a crédito con remisión, Salida de almacén.
-- **PENDIENTE DE CONFIRMAR (Alfredo):** la bifurcación del manual 6 (Entrega en tienda de pedidos de fábrica) «Si el
-  cliente va a pagar después → ver Venta a crédito con remisión» (`// TODO confirmar` en el archivo de datos).
+- **Confirmado por Alfredo (2026-11-22):** la bifurcación del manual 6 (Entrega en tienda de pedidos de fábrica) «Si el
+  cliente va a pagar después → ver Venta a crédito con remisión» se queda así.
+- **Publicado** en `main`/producción el 2026-11-22 (commit 716b5da, Vercel por git).

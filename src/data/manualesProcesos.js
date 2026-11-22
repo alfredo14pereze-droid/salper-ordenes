@@ -131,7 +131,7 @@ export const MANUALES_PROCESOS = [
       'Confirmes la entrega si no está todo pagado y registrado.',
     ],
     bifurcaciones: [
-      // TODO confirmar — pendiente de confirmar por Alfredo.
+      // Confirmado por Alfredo el 2026-11-22.
       {
         si: 'el cliente va a pagar después.',
         entonces: 'Ver manual "Venta a crédito con remisión".',
