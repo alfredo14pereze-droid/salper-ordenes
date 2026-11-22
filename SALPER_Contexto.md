@@ -8493,3 +8493,28 @@ abajo (contraseña nueva).
 - **Su manual en Manuales** (regla V214): `supabase/manuales/administracion/5_procesos.md` (clave `procesos`, sección
   Administración, orden 5) → `supabase/datos_2026-11-22_manuales_procesos.sql` (solo inserta). Con eso el botón
   «¿Cómo se usa?» de /procesos muestra «Ver manual completo →». SQL APLICADO por Alfredo el 2026-11-22 (verificado: 1 fila, 3295 caracteres).
+
+### 2026-11-22 — Manual Procesos, Parte 2: sección Fábrica (sin base de datos) (rama `manual-procesos`)
+
+- **8 procesos de Fábrica** en `src/data/manualesProcesos.js`, en este orden: Flujo completo de una orden (principal),
+  Recibir/confirmar/programar, Corte, Sublimado (diseño → impresión → sublimado), Bordado, Costura, Terminado, Entrega
+  de la orden. Ids `fabrica-*`. «Ir al módulo» → `/` (la lista de la estación / Dashboard) en todos menos el Flujo.
+- **Campos nuevos opcionales** del formato: `inicioYFin` ({ inicio, fin, etapa? }: dos cajas hasta arriba, ▶ Inicio /
+  ■ Terminado; la vista quita el «cuando» inicial porque el título ya lo dice), `reportar` (checklist «Al terminar,
+  reporta:»; cada renglón texto o `{ texto, porConfirmar: true }` → sale «(por confirmar)»; título propio con
+  `reportarTitulo`) y `manualExterno` (nota gris «manual físico, no está en la página»). `cuandoAplica` ahora es opcional.
+  Chip nuevo **Calendario** (morado). Bifurcación con `manual` = su texto + «Ver manual …».
+- Ligas Tienda ↔ Fábrica: Entrega de la orden → «Entrega en tienda de pedidos de fábrica» (bifurcación y relacionados),
+  y ese manual de Tienda ahora lista «Entrega de la orden» en relacionados.
+- **PENDIENTE DE CONFIRMAR (Alfredo), marcados `TODO confirmar`:** todo el reporte de Corte (propuesta) y, de la
+  impresión, papel usado y reimpresiones/merma (los litros de tinta sí están confirmados).
+- **Lo que el manual pide y la app no tiene hoy** (no se creó nada): Corte — piezas cortadas por talla, diferencias contra
+  lo pedido, merma/retazo, fallas de la tela (la app pide largo de trazo, piezas por trazo, hojas y tela; quién cortó =
+  quien da Cortado). Impresión — no hay «Inicio» (solo «Impresa» por lote), la tinta es en mL por color y por lote (no
+  litros por orden), no hay reimpresiones/merma (solo Notas). Calendario — es solo de consulta; «programar» hoy es el
+  Tiempo estimado de producción al confirmar. Entrega — no existe «recibida en tienda» para órdenes; confirmar entrega
+  solo lo hacen Admin tienda / Admin fábrica / Administración general (ni Ventas ni el chofer).
+- **Choques con las vistas por rol:** Costura y Bordado ven la orden hasta que Corte da Terminado (coincide). Terminado la
+  ve en cuanto Costura o Bordado dan Inicio (coincide con «puede empezar mientras costura trabaja»), PERO en órdenes de
+  Frisa la regla es estricta: Terminado espera a que Costura termine. Pausar solo existe en Bordado y Terminado (coincide).
+  El diseño lo «confirma» (autoriza) Ventas / Admin fábrica, no Sublimado.

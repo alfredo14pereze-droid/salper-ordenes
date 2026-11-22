@@ -14,6 +14,7 @@ const CLASE_SISTEMA = {
   Microsip: 'proc-chip--microsip',
   'Página': 'proc-chip--pagina',
   'Papelito Salper': 'proc-chip--papelito',
+  Calendario: 'proc-chip--calendario',
 }
 
 // Sin acentos ni mayúsculas, para que "credito" encuentre "crédito".
@@ -24,6 +25,13 @@ function normalizar(t) {
 // "Nunca" y "Si" ya van antes del texto: "Subas…" → "Nunca subas…".
 function minusculaInicial(t) {
   return t ? t.charAt(0).toLowerCase() + t.slice(1) : t
+}
+
+// El título de la caja ya dice "…cuando…": "cuando se pone la primera pieza." →
+// "Se pone la primera pieza."
+function sinCuando(t) {
+  const s = (t || '').replace(/^cuando\s+/i, '')
+  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 function Chips({ sistemas }) {
@@ -150,10 +158,28 @@ function VerManual({ id }) {
           <button type="button" className="btn btn--secondary" onClick={imprimir}>🖨 Imprimir</button>
         </div>
 
-        <div className="proc-bloque">
-          <div className="proc-bloque__etiqueta">Cuándo aplica</div>
-          <p className="proc-bloque__texto">{m.cuandoAplica}</p>
-        </div>
+        {m.inicioYFin && (
+          <div className="proc-iyf">
+            {m.inicioYFin.etapa && <div className="proc-iyf__etapa">{m.inicioYFin.etapa}</div>}
+            <div className="proc-iyf__cajas">
+              <div className="proc-iyf__caja proc-iyf__caja--inicio">
+                <div className="proc-iyf__titulo">▶ Se da Inicio cuando…</div>
+                <p>{sinCuando(m.inicioYFin.inicio)}</p>
+              </div>
+              <div className="proc-iyf__caja proc-iyf__caja--fin">
+                <div className="proc-iyf__titulo">■ Se da Terminado cuando…</div>
+                <p>{sinCuando(m.inicioYFin.fin)}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {m.cuandoAplica && (
+          <div className="proc-bloque">
+            <div className="proc-bloque__etiqueta">Cuándo aplica</div>
+            <p className="proc-bloque__texto">{m.cuandoAplica}</p>
+          </div>
+        )}
 
         <div className="proc-bloque">
           <div className="proc-bloque__etiqueta">Dónde se hace</div>
@@ -181,6 +207,26 @@ function VerManual({ id }) {
           })}
         </ol>
 
+        {m.reportar?.length > 0 && (
+          <div className="proc-reportar">
+            <div className="proc-reportar__titulo">{m.reportarTitulo || 'Al terminar, reporta:'}</div>
+            <ul>
+              {m.reportar.map((r) => {
+                const texto = typeof r === 'string' ? r : r.texto
+                return (
+                  <li key={texto}>
+                    <span className="proc-reportar__caja" aria-hidden="true">☐</span>
+                    <span>
+                      {texto}
+                      {r.porConfirmar && <span className="proc-reportar__confirmar"> (por confirmar)</span>}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
+
         {m.nunca?.length > 0 && (
           <div className="proc-nunca">
             <div className="proc-nunca__titulo">⛔ Nunca</div>
@@ -201,9 +247,10 @@ function VerManual({ id }) {
                     <div className="proc-bif__si"><strong>Si</strong> {b.si}</div>
                     <div className="proc-bif__entonces">
                       <span aria-hidden="true">→ </span>
-                      {destino ? (
-                        <>Ver manual <Link to={`/procesos/${destino.id}`}>"{destino.titulo}"</Link>.</>
-                      ) : b.entonces}
+                      {b.entonces}
+                      {destino && (
+                        <>{b.entonces ? ' ' : ''}Ver manual <Link to={`/procesos/${destino.id}`}>"{destino.titulo}"</Link>.</>
+                      )}
                     </div>
                   </div>
                 )
@@ -221,6 +268,12 @@ function VerManual({ id }) {
               ))}
             </ul>
           </div>
+        )}
+
+        {m.manualExterno && (
+          <p className="proc-externo">
+            Ver también: <strong>{m.manualExterno}</strong> (manual físico, no está en la página).
+          </p>
         )}
       </article>
 

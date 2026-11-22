@@ -5841,11 +5841,33 @@ h4 {
 .proc-bif__si { font-size: 1.08rem; margin-bottom: 4px; }
 .proc-bif__entonces { font-size: 1.08rem; font-weight: 600; }
 .proc-relacionados ul { margin: 0; padding-left: 20px; font-size: 1.08rem; }
+.proc-chip--calendario { background: var(--ds-purple-bg, #ede9fe); color: var(--ds-purple-text, #6d28d9); border-color: #c4b5fd; }
+
+/* Inicio / Terminado de la etapa: lo más importante, hasta arriba. */
+.proc-iyf { margin-bottom: 18px; }
+.proc-iyf__etapa { font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ds-text-muted, #6b7480); margin-bottom: 6px; }
+.proc-iyf__cajas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.proc-iyf__caja { border-radius: 10px; padding: 12px 16px; border: 2px solid; }
+.proc-iyf__caja p { margin: 4px 0 0; font-size: 1.12rem; font-weight: 600; }
+.proc-iyf__titulo { font-weight: 800; font-size: 1rem; }
+.proc-iyf__caja--inicio { background: var(--ds-green-bg, #dcfce7); border-color: #4ade80; color: #14532d; }
+.proc-iyf__caja--fin { background: var(--ds-blue-bg, #dbeafe); border-color: #60a5fa; color: #1e3a8a; }
+
+/* Qué se reporta al terminar (checklist). */
+.proc-reportar { margin-top: 20px; padding: 14px 18px; border-radius: 10px; border: 2px dashed var(--ds-border, #c9ced4); background: var(--ds-bg, #f3f4f6); }
+.proc-reportar__titulo { font-weight: 800; font-size: 1.1rem; margin-bottom: 8px; }
+.proc-reportar ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 1.08rem; }
+.proc-reportar li { display: flex; gap: 10px; align-items: flex-start; }
+.proc-reportar__caja { font-size: 1.2rem; line-height: 1.2; }
+.proc-reportar__confirmar { color: var(--ds-text-muted, #6b7480); font-size: 0.9rem; font-style: italic; }
+
+.proc-externo { margin: 20px 0 0; padding: 10px 14px; border-radius: 8px; background: var(--ds-bg, #f3f4f6); color: var(--ds-text-muted, #6b7480); font-size: 0.98rem; }
 
 @media (max-width: 600px) {
   .proc-hoja { padding: 16px; }
   .proc-hoja__titulo { font-size: 1.45rem; }
   .proc-hoja__acciones .btn { flex: 1 1 auto; justify-content: center; }
+  .proc-iyf__cajas { grid-template-columns: 1fr; }
 }
 
 /* Imprimir un manual de procesos: solo la hoja, sin menú ni botones. */
@@ -5862,10 +5884,15 @@ h4 {
   body.imprime-proceso .proc-hoja__titulo { font-size: 22pt; }
   body.imprime-proceso .proc-paso,
   body.imprime-proceso .proc-bif,
-  body.imprime-proceso .proc-nunca { break-inside: avoid; }
+  body.imprime-proceso .proc-nunca,
+  body.imprime-proceso .proc-iyf,
+  body.imprime-proceso .proc-reportar { break-inside: avoid; }
+  body.imprime-proceso .proc-iyf__cajas { grid-template-columns: 1fr 1fr; }
   body.imprime-proceso .proc-chip,
   body.imprime-proceso .proc-nunca,
   body.imprime-proceso .proc-bif,
+  body.imprime-proceso .proc-iyf__caja,
+  body.imprime-proceso .proc-reportar,
   body.imprime-proceso .proc-paso__num { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body.imprime-proceso .proc-hoja a { color: #000; text-decoration: none; }
 }
