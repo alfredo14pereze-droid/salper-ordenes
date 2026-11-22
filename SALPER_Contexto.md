@@ -8535,4 +8535,4 @@ abajo (contraseña nueva).
 - **Manual en Manuales actualizado (clave `procesos`):** `5_procesos.md` explica las cajas de Inicio/Terminado con su botón, la
   lista de lo que se captura, el chip Calendario y la nota de manual físico →
   `supabase/datos_2026-11-22_manuales_procesos_v2.sql` (reemplaza el contenido solo si sigue en 'Carga inicial').
-  SQL entregado a Alfredo, SIN aplicar todavía.
+  SQL APLICADO por Alfredo el 2026-11-22 (verificado: tiene_fabrica = true, 4369 caracteres).
