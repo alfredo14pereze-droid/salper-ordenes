@@ -165,10 +165,12 @@ function VerManual({ id }) {
               <div className="proc-iyf__caja proc-iyf__caja--inicio">
                 <div className="proc-iyf__titulo">▶ Se da Inicio cuando…</div>
                 <p>{sinCuando(m.inicioYFin.inicio)}</p>
+                {m.inicioYFin.botonInicio && <div className="proc-iyf__boton">Botón: <strong>{m.inicioYFin.botonInicio}</strong></div>}
               </div>
               <div className="proc-iyf__caja proc-iyf__caja--fin">
                 <div className="proc-iyf__titulo">■ Se da Terminado cuando…</div>
                 <p>{sinCuando(m.inicioYFin.fin)}</p>
+                {m.inicioYFin.botonFin && <div className="proc-iyf__boton">Botón: <strong>{m.inicioYFin.botonFin}</strong></div>}
               </div>
             </div>
           </div>

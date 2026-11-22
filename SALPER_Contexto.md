@@ -8521,3 +8521,14 @@ abajo (contraseña nueva).
 - **Publicado** en `main`/producción el 2026-11-22 (commit 33b7dd5). Su manual en Manuales (clave `procesos`) se corrige con
   `supabase/datos_2026-11-22_manuales_procesos_fabrica.sql` (UPDATE de una sola línea: «Fábrica o Frisa» → Fábrica ya
   tiene procesos); SQL APLICADO por Alfredo el 2026-11-22 (verificado: ya_corregido = true, 3409 caracteres).
+- **2026-11-22 — Fábrica ajustada a cómo funciona la página hoy** (Alfredo: «no quiero que cambien nada, toma cómo
+  funciona la página ahorita y ponlo en el manual»). Sin cambios a la app ni a la base. Se quitaron todos los «por
+  confirmar» y los `TODO confirmar`: Corte reporta lo que pide «Cortado» (largo del trazo, piezas por trazo, hojas, tela,
+  otro corte); Impresión, lo que pide «Impresa» (largo total del trazo en m, tinta en mL por color, notas); Terminado,
+  Correcta/Parcial por talla + comentario. Botones reales en pasos y en las cajas (`inicioYFin.botonInicio/botonFin`, sale
+  «Botón: …»): Iniciar / Cortado / Impresa / Sublimada / Terminar / Confirmar y generar reporte, Pausar/Reanudar solo
+  Bordado y Terminado. Programar = Tiempo estimado de producción al confirmar (el Calendario solo se consulta). Diseño lo
+  autoriza Ventas/Admin fábrica («Diseño autorizado»). Entrega: no hay «recibida en tienda»; «Confirmar entrega al cliente»
+  solo Admin tienda/Admin fábrica/Administración general. Corte sin campo para faltantes → avisar a Admin fábrica y
+  Terminado lo captura como Parcial. Frisa: Terminado espera a que Costura termine. (Corrige la nota de arriba: la
+  impresión SÍ tiene «Iniciar» al abrir la orden; lo que no lo tiene es «Marcar impresas» por lote.)

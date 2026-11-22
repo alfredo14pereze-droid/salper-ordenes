@@ -17,8 +17,9 @@
 //                   Con manual: 'id' agrega la liga "Ver manual …" al final del texto.
 //   relacionados  — (opcional) ids de otros manuales de este archivo (de cualquier sección)
 //   moduloLink    — (opcional) ruta del módulo de la página ("Ir al módulo")
-//   inicioYFin    — (opcional) { inicio: '...', fin: '...', etapa?: 'Impresión' }: cuándo se da
-//                   Inicio y cuándo Terminado a la etapa. Sale hasta arriba en dos cajas.
+//   inicioYFin    — (opcional) { inicio, fin, etapa?, botonInicio?, botonFin? }: cuándo se da
+//                   Inicio y cuándo Terminado a la etapa, y el botón de la página para cada uno.
+//                   Sale hasta arriba en dos cajas.
 //   reportar      — (opcional) qué se captura al terminar (checklist). Cada renglón es texto o
 //                   { texto, porConfirmar: true } (sale "(por confirmar)").
 //   reportarTitulo — (opcional) título de esa caja; si no, "Al terminar, reporta:"
@@ -181,6 +182,8 @@ export const MANUALES_PROCESOS = [
 
   // ---------------------------------------------------------------------
   // Fábrica (Parte 2). Orden de la lista: F1, F2, F3, F6, F5, F4, F7, F8.
+  // 2026-11-22: ajustado a cómo funciona la página hoy (botones y campos
+  // reales; Alfredo: "toma cómo funciona la página y ponlo en el manual").
   // ---------------------------------------------------------------------
   {
     // F1 — manual principal de Fábrica (va primero).
@@ -190,10 +193,10 @@ export const MANUALES_PROCESOS = [
     resumen: 'De que llega la orden hasta que el cliente la tiene en la mano.',
     dondeSeHace: ['Página', 'Calendario', 'Microsip'],
     pasos: [
-      'Llega la orden → se confirma de recibido en la página.',
-      'Se programa en el calendario de producción.',
-      'Pasa por sus etapas. Cada etapa se marca con Inicio y Terminado en la página (corte, sublimado, bordado, costura, terminado, según la orden).',
-      'Cuando termina la última etapa, la orden queda lista.',
+      'Llega la orden en "Por Confirmar" → fábrica la confirma en la página y pone el Tiempo estimado de producción.',
+      'Con la fecha de entrega y el tiempo estimado, la orden sale sola en el Calendario.',
+      'Pasa por sus etapas (corte, sublimado, bordado, costura, terminado, según la orden). En cada una, la estación da Iniciar al empezar y su botón de terminar al acabar.',
+      'Cuando termina la última etapa, la orden queda "Lista para entregar".',
       'Se entrega (ver manual "Entrega de la orden").',
       'Todo se registra en la página y en Microsip. En Microsip, la mercancía siempre va con recepción de mercancía hecha en la fábrica.',
     ],
@@ -208,16 +211,22 @@ export const MANUALES_PROCESOS = [
     id: 'fabrica-recibir-programar',
     seccion: 'Fábrica',
     titulo: 'Recibir, confirmar y programar una orden',
-    resumen: 'Llega una orden nueva: se confirma y se programa.',
-    cuandoAplica: 'Llega una orden nueva a fábrica.',
+    resumen: 'Llega una orden nueva: se confirma y se le pone su tiempo de producción.',
+    cuandoAplica: 'Llega una orden nueva a fábrica (sale en "Por Confirmar").',
     dondeSeHace: ['Página', 'Calendario'],
     pasos: [
-      'Revisa la orden en la página.',
-      'Confirma de recibido.',
-      'Prográmala en el calendario de producción.',
+      'Abre la orden y revísala: prendas, tallas, fotos y fecha de entrega.',
+      'Dale Confirmar (en la pantalla de tu estación) o Confirmar pedido (en "Estado de la orden").',
+      'Pon el Tiempo estimado de producción en días y dale Guardar. Con eso la orden sale en el Calendario.',
     ],
     nunca: [
-      'Empieces a trabajar una orden que no está confirmada ni programada.',
+      'Empieces a trabajar una orden que siga en "Por Confirmar".',
+    ],
+    bifurcaciones: [
+      {
+        si: 'tienda cambió algo después de que fábrica confirmó.',
+        entonces: 'Arriba de la orden sale el aviso de cambios. Revisa qué cambió y dale ✓ Aceptar cambios.',
+      },
     ],
     moduloLink: '/',
   },
@@ -230,29 +239,44 @@ export const MANUALES_PROCESOS = [
     dondeSeHace: ['Página'],
     inicioYFin: {
       inicio: 'cuando se empieza a hacer el trazo.',
+      botonInicio: 'Iniciar',
       fin: 'cuando se termina de cortar todo.',
+      botonFin: 'Cortado',
     },
     pasos: [
-      'Al empezar el trazo, da Inicio a Corte en la página.',
+      'Al empezar el trazo, abre la orden y dale Iniciar.',
       'Corta todo.',
-      'Al terminar de cortar todo, da Terminado y captura el reporte.',
+      {
+        texto: 'Al terminar de cortar todo, llena por cada tela:',
+        sub: [
+          'Largo del trazo',
+          'Piezas por trazo',
+          'Número de hojas',
+          'Tela, si la prenda no tiene tela asignada',
+        ],
+      },
+      'Si usaste otra tela (ej. vivos), dale + Agregar otro corte y escribe ¿Qué corte es?.',
+      'Dale Cortado.',
     ],
-    // TODO confirmar con Alfredo — el reporte de corte es PROPUESTA.
+    reportarTitulo: 'Al dar Cortado, captura:',
     reportar: [
-      { texto: 'Piezas cortadas por talla', porConfirmar: true },
-      { texto: 'Diferencias contra lo pedido (faltantes o sobrantes)', porConfirmar: true },
-      { texto: 'Tela usada (metros o kilos) y tipo de tela', porConfirmar: true },
-      { texto: 'Merma o retazo', porConfirmar: true },
-      { texto: 'Fallas en la tela o problemas', porConfirmar: true },
-      { texto: 'Quién cortó', porConfirmar: true },
+      'Largo del trazo',
+      'Piezas por trazo',
+      'Número de hojas',
+      'Tela (si la prenda no tiene tela asignada)',
+      'Otro corte, si usaste otra tela (ej. vivos)',
     ],
     nunca: [
-      'Des Terminado si falta algo por cortar.',
+      'Des Cortado si falta algo por cortar.',
     ],
     bifurcaciones: [
       {
+        si: 'no puedes registrar la tela en ese momento.',
+        entonces: 'Usa Marcar cortada sin registrar la tela y confirma. Después, en la orden, dale Registrar el corte.',
+      },
+      {
         si: 'salen menos piezas de las pedidas (no alcanzó la tela, la tela venía con fallas).',
-        entonces: 'Anótalo en el reporte antes de dar Terminado, para que tienda y terminado lo sepan.',
+        entonces: 'El corte no tiene dónde anotarlo en la página: avísale a Admin fábrica antes de dar Cortado. Terminado lo captura como Parcial, con su comentario.',
       },
     ],
     moduloLink: '/',
@@ -262,32 +286,42 @@ export const MANUALES_PROCESOS = [
     id: 'fabrica-sublimado',
     seccion: 'Fábrica',
     titulo: 'Sublimado (diseño → impresión → sublimado)',
-    resumen: 'Diseño confirmado, impresión y sublimado.',
+    resumen: 'Diseño autorizado, impresión y sublimado.',
     dondeSeHace: ['Página'],
     inicioYFin: {
       etapa: 'Impresión',
       inicio: 'cuando empieza a imprimirse.',
+      botonInicio: 'Iniciar',
       fin: 'cuando termina de imprimirse todo.',
+      botonFin: 'Impresa',
     },
     pasos: [
-      'Diseño: sube las propuestas de diseño a la página. Sigue subiendo propuestas hasta que el diseño esté confirmado.',
-      'Impresión: ya con el diseño confirmado, da Inicio a la impresión. Al terminar, da Terminado y reporta.',
-      'Sublimado: registra cuándo empezó y cuándo terminó el sublimado.',
+      'Diseño: en Pendientes de diseño abre la orden. En Diseños sube cada propuesta como Propuesta. Cuando quede, súbelo como Diseño final.',
+      'Ventas (o Admin fábrica) revisa el Diseño final y da Diseño autorizado. Sin eso, la impresión no te toca.',
+      'Impresión: al empezar a imprimir, abre la orden y dale Iniciar. Al terminar de imprimir todo, dale Impresa y captura el reporte.',
+      'Sublimado: en Pendientes de sublimado abre la orden. Dale Iniciar al empezar y Sublimada al terminar.',
     ],
-    reportarTitulo: 'Al terminar la impresión, reporta:',
-    // Litros de tinta: confirmado. Lo demás es PROPUESTA — TODO confirmar con Alfredo.
+    reportarTitulo: 'Al dar Impresa, captura:',
     reportar: [
-      'Litros de tinta usados',
-      { texto: 'Papel usado (metros)', porConfirmar: true },
-      { texto: 'Reimpresiones o merma', porConfirmar: true },
+      'Largo total del trazo (metros)',
+      'Tinta en mL de cada color: Azul, Magenta, Amarillo y Negro',
+      'Notas (opcional)',
     ],
     nunca: [
-      'Mandes a impresión un diseño que no esté confirmado.',
+      'Mandes a impresión un diseño que no esté autorizado.',
     ],
     bifurcaciones: [
       {
         si: 'el cliente pide cambios al diseño.',
-        entonces: 'Sube una nueva propuesta. No se imprime hasta que quede confirmada.',
+        entonces: 'Sube una nueva Propuesta. Si ya estaba autorizado, Ventas da Quitar autorización (solo mientras no se haya impreso). No se imprime hasta que vuelva a quedar autorizado.',
+      },
+      {
+        si: 'imprimes varias órdenes juntas.',
+        entonces: 'En Pendientes de impresión palomea las órdenes y dale Marcar impresas. Capturas el trazo y la tinta del lote una sola vez.',
+      },
+      {
+        si: 'capturaste mal la tinta o los metros.',
+        entonces: 'En la pestaña Lotes, dale Corregir números y Guardar corrección.',
       },
     ],
     moduloLink: '/',
@@ -302,13 +336,21 @@ export const MANUALES_PROCESOS = [
     dondeSeHace: ['Página'],
     inicioYFin: {
       inicio: 'cuando se pone la primera pieza.',
+      botonInicio: 'Iniciar',
       fin: 'cuando sale la última pieza.',
+      botonFin: 'Terminar',
     },
     pasos: [
-      'Revisa en la orden dónde va cada bordado (ubicaciones y fotos).',
-      'Al poner la primera pieza, da Inicio.',
-      'Si se para el trabajo, usa Pausar y después Reanudar.',
-      'Cuando sale la última pieza, da Terminado.',
+      'Abre la orden y revisa dónde va cada bordado en las Fotos de bordado.',
+      'Al poner la primera pieza, dale Iniciar.',
+      'Si se para el trabajo, dale ⏸ Pausar y después ▶ Reanudar.',
+      'Cuando sale la última pieza, dale Terminar.',
+    ],
+    bifurcaciones: [
+      {
+        si: 'no ves la orden en tu lista.',
+        entonces: 'Todavía no termina Corte. Te aparece en cuanto Corte da Cortado. Mientras, la encuentras con el buscador.',
+      },
     ],
     moduloLink: '/',
   },
@@ -321,14 +363,22 @@ export const MANUALES_PROCESOS = [
     dondeSeHace: ['Página'],
     inicioYFin: {
       inicio: 'cuando la orden se mete a la línea.',
+      botonInicio: 'Iniciar',
       fin: 'cuando sale la última pieza de la línea.',
+      botonFin: 'Terminar',
     },
     pasos: [
-      'Cuando la orden entra a la línea, da Inicio a Costura.',
-      'Cuando sale la última pieza de la línea, da Terminado.',
+      'Cuando la orden entra a la línea, ábrela y dale Iniciar.',
+      'Cuando sale la última pieza de la línea, dale Terminar.',
     ],
     nunca: [
-      'Des Terminado mientras quede alguna pieza en la línea.',
+      'Des Terminar mientras quede alguna pieza en la línea.',
+    ],
+    bifurcaciones: [
+      {
+        si: 'no ves la orden en tu lista.',
+        entonces: 'Todavía no termina Corte. Te aparece en cuanto Corte da Cortado. Mientras, la encuentras con el buscador.',
+      },
     ],
     moduloLink: '/',
   },
@@ -341,13 +391,30 @@ export const MANUALES_PROCESOS = [
     dondeSeHace: ['Página'],
     inicioYFin: {
       inicio: 'cuando sale la primera pieza de la línea.',
+      botonInicio: 'Iniciar',
       fin: 'cuando se dobla la última pieza y la orden está lista para que se la lleven.',
+      botonFin: 'Confirmar y generar reporte',
     },
     pasos: [
-      'Cuando sale la primera pieza de la línea, da Inicio a Terminado. Puede empezar mientras costura sigue trabajando.',
-      'Si se para el trabajo, usa Pausar y después Reanudar.',
-      'Captura las cantidades surtidas reales por partida (con comentarios si hay diferencias).',
-      'Cuando se dobla la última pieza, da Terminado. La orden queda lista.',
+      'Cuando sale la primera pieza de la línea, dale Iniciar. Puede empezar mientras costura sigue trabajando: la orden te aparece en cuanto Costura o Bordado dan Iniciar.',
+      'Si se para el trabajo, dale ⏸ Pausar y después ▶ Reanudar.',
+      'En cada talla marca Correcta si salieron las piezas pedidas, o Parcial con la Cantidad real y un Comentario.',
+      'Cuando se dobla la última pieza, dale Confirmar y generar reporte. La orden queda lista.',
+    ],
+    reportarTitulo: 'Al dar Confirmar y generar reporte, captura:',
+    reportar: [
+      'Por cada talla: Correcta, o Parcial con la Cantidad real',
+      'Comentario si hay diferencia (opcional)',
+    ],
+    bifurcaciones: [
+      {
+        si: 'es una orden de Frisa.',
+        entonces: 'Te aparece hasta que Costura da Terminar (en Frisa cada etapa espera a que acabe la anterior).',
+      },
+      {
+        si: 'la orden lleva impresión en prenda.',
+        entonces: 'Dale Impresa cuando esté impresa.',
+      },
     ],
     moduloLink: '/',
   },
@@ -357,24 +424,26 @@ export const MANUALES_PROCESOS = [
     seccion: 'Fábrica',
     titulo: 'Entrega de la orden',
     resumen: 'La orden está lista: recepción en Microsip y entrega.',
-    cuandoAplica: 'La orden está lista.',
+    cuandoAplica: 'La orden está "Lista para entregar".',
     dondeSeHace: ['Página', 'Microsip'],
     pasos: [
       'Haz la recepción de mercancía en Microsip (según el manual de fábrica).',
+      'La orden sale como "Lista para entregar" (y al chofer en "Listas para entregar").',
+      'Cuando el cliente la recibe, en la orden se da Confirmar entrega al cliente. Ese botón solo lo tienen Admin tienda, Admin fábrica y Administración general.',
       'Según cómo se entregue: ver abajo "Si pasa esto → haz esto".',
     ],
     nunca: [
       'Entregues sin recepción en Microsip.',
-      'Dejes una orden entregada sin marcarla en la página.',
+      'Dejes una orden entregada sin Confirmar entrega al cliente en la página.',
     ],
     bifurcaciones: [
       {
         si: 'se entrega directo al chofer para llevarla a la empresa o al cliente.',
-        entonces: 'Se marca en la página como entregado al cliente.',
+        entonces: 'El chofer la lleva. Cuando el cliente la recibe, Admin tienda, Admin fábrica o Administración general da Confirmar entrega al cliente (el chofer no tiene ese botón).',
       },
       {
         si: 'se entrega a la tienda.',
-        entonces: 'La encargada de tienda la recibe y la marca como recibida en la página. Cuando el cliente la recoge en tienda, ella la marca como entregado al cliente (checar saldo y registrar pago antes de entregar).',
+        entonces: 'La orden se queda en "Lista para entregar" mientras está en tienda (la página no tiene un paso de "recibida en tienda"). Cuando el cliente la recoge: checar saldo, registrar el pago y Admin tienda da Confirmar entrega al cliente.',
         manual: 'entrega-pedidos-fabrica',
       },
     ],
