@@ -8570,3 +8570,72 @@ abajo (contraseña nueva).
      bordado → terminado; Nuevo Ingreso + impresión; playeras C/REF descosido → reflejante → impresión → terminado; S/REF
      impresión → terminado). El catálogo se edita en Catálogos → Frisa: no se revisó la base en vivo.
 - **Publicado** en `main`/producción el 2026-11-22 (Alfredo lo aprobó). Las diferencias de arriba siguen pendientes.
+
+### 2026-11-23 — ATR: órdenes de compra, surtido, "Qué nos falta" y orden de taller (V215, V216) (rama `atr-oc`)
+
+Sigue al inventario de batas de ATR (V209–V211). Flujo completo: **llega la OC de ATR → se sube (PDF + lectura con
+Claude) → "Qué nos falta" dice qué hay que producir → se surte desde la OC (descuenta inventario, hoja de surtido en
+PDF) → orden de taller por lo que falta → al completar Terminado entra sola al inventario (V211) → se surte el resto**.
+Ambos SQL APLICADOS por Alfredo el 2026-11-23 (V215: 3·2·4·11·1·0·false; V216: true·2·true·true·true·false; anon 401).
+
+**V215 — tablas y funciones** (`schema_v215_atr_ordenes_compra.sql`)
+- `atr_ordenes_compra` (numero_oc único entre no canceladas, fecha_oc, fecha_entrega, pdf_url = ruta en el bucket
+  `orden-documentos/atr-oc/…`, leido_pdf, estado `abierta | parcial | surtida | cancelada`, cancelación con motivo),
+  `atr_oc_lineas` (oc + producto_id + talla únicos, cantidad_pedida, texto_pdf), `atr_oc_alias` (descripción del PDF →
+  bata, se aprende al guardar). Sin columna color: cada bata de ATR ya es un producto por color (V209).
+- `atr_movimientos` + columnas `oc_linea_id`, `surtido_id` y tipos `salida_surtido` (−) / `reversa_surtido` (+). Se
+  rehicieron 3 CHECK más amplios (tipo, signo, revierte) + `atr_mov_surtido_ck`. `salida_entrega` se queda (salida suelta).
+- **Lo surtido NO se guarda**: = −Σ movimientos de la `oc_linea_id`. El **estado se recalcula solo** (trigger
+  `atr_mov_oc_trg` → `atr_oc_recalcular`): nada surtido = abierta, algo = parcial, todo = surtida; cancelada es manual.
+- Cada surtido lleva `surtido_id` (uuid): agrupa sus líneas para la hoja de surtido y para deshacerlo completo
+  (`atr_deshacer_surtido`: marca `revertido_en` + movimientos de signo contrario; un surtido se deshace una sola vez).
+- **Faltante** (`atr_faltantes()`, por bata + talla, solo OC abiertas/parciales):
+  `max(0, pendiente − max(0, existencia) − en_taller)`; en taller = lo pedido en órdenes de ATR sin eliminar cuya etapa
+  Terminado no está completada (solo batas del catálogo de ATR, mismo criterio que V211); trae los folios.
+- RPC: `atr_oc_guardar` (OC_REPETIDA:), `atr_oc_cancelar` (regresa lo surtido, que NO se revierte), `atr_surtir_oc`
+  (no más que lo pendiente; NEGATIVO: si alguna talla queda < 0 sin confirmación), `atr_deshacer_surtido`,
+  `atr_oc_lista`, `atr_oc_detalle`, `atr_faltantes`, `atr_oc_alias_buscar`.
+- Permisos: `atr.oc` (subir/cancelar OC) y `atr.taller` (orden de taller) = admin_general, admin_fabrica. Surtir usa
+  `atr.entregar` (+ terminado); deshacer surtido usa `atr.cargar`.
+
+**V216 — orden de taller de ATR para inventario** (`schema_v216_atr_orden_taller.sql`). Decisiones de Alfredo:
+admin_fabrica y contabilidad **solo crean órdenes de ATR** (quién crea las demás no cambia: ventas, admin_tienda,
+admin_general); las órdenes de ATR para inventario van **sin precio** (lo que se cobra es la OC).
+- `orders.atr_inventario` (boolean). `atr_crear_orden_taller(descr, fecha, items, folios, created_at)`: pide
+  `atr.taller`, cliente ATR y tipo industrial fijos, solo batas del catálogo de ATR, sin líneas de precio.
+- `create_order` se parchó sobre su **texto vivo** (guarda: el texto esperado debe aparecer exactamente 1 vez): su
+  revisión de rol deja pasar si `current_setting('salper.atr_taller') = 'si'`, que solo pone `atr_crear_orden_taller`
+  (local a la transacción) y quita al terminar.
+- `orders_lineas_precio_guard` (V212) no exige precio si `atr_inventario`. Todo lo demás sigue exigiéndolo.
+- contabilidad recibe `atr.ver` y `atr.taller`.
+- **Tipo de orden**: no existe tipo "ATR"; se usa **industrial** (el de siempre para ATR).
+
+**Frontend**
+- `/atr` con pestañas **Inventario | Órdenes de compra (`?tab=oc`) | Qué nos falta (`?tab=faltan`)**.
+- `/atr/oc/nueva` (`AtrOcNuevaPage`): PDF → modo nuevo **`atr_oc`** de `api/document-ocr.js` (número, fechas,
+  renglones; los demás modos no cambian) → revisión obligatoria (rojos: asignar o "Dar de alta bata nueva"; casilla
+  "Revisé cada renglón contra el PDF") → guardar. PDF visible a un lado.
+- `/atr/oc/:id` (`AtrOcDetallePage`): pedido/surtido/pendiente/existencia, PDF, **Surtir** (`AtrSurtirModal`,
+  propuesta = min(pendiente, existencia), parcial permitido), hoja de surtido en PDF con vista previa
+  (`AtrSurtidoPdf.jsx`, `generateAtrPdf.jsx`), lista de surtidos con "Hoja de surtido" y "Deshacer", "Cancelar OC".
+- **Qué nos falta** (`AtrFaltantes`): rojo = falta producir, amarillo = alcanza solo con lo que está en taller; "Solo
+  con faltante"; CSV/PDF; casillas (por defecto las que tienen faltante) → **Crear orden de taller** abre `/nueva`
+  con `location.state.atrPrefill` (tipo, cliente, batas, tallas = faltante). En ese modo Nueva orden no lleva precio,
+  mostrador, pedido ni lector de PDF; tipo y cliente fijos; guarda con `atr_crear_orden_taller`; no pisa el borrador.
+- Historial de una línea: el folio de la OC en los surtidos. Lógica pura en `utils/atrOc.js` (+ `atrOc.test.js`).
+- Ayuda `atr` en `ayudaModulos.js` y manual `supabase/manuales/fabrica/4_atr.md` actualizados
+  (`datos_2026-11-23_manual_atr_oc.sql`).
+- Ejemplo local `salper-atr-oc-harness` (puerto 5182, `.claude/harness-atr-oc/` sin commit): PGlite con el SQL real de
+  V209–V216 + `create_order` de V42; `?rol=admin_fabrica|contabilidad|terminado|admin_tienda|admin_general`.
+
+**Probado**: PGlite V209–V215 (27 comprobaciones = los 9 casos del prompt: carga, faltante, surtido parcial, orden en
+taller → faltante 0 amarillo, Terminado suma una vez y revierte al reabrir, surtir el resto, deshacer, otro cliente no
+toca, borrar datos de prueba) y V216 (13: fábrica/contabilidad crean solo ATR, terminado no, precio sigue obligatorio
+en las demás, catálogo/cantidades, etapas). Pantallas en el ejemplo local, escritorio y celular. NO se crearon órdenes
+en producción (gastan folio).
+
+**Pendiente**
+- La lectura de un PDF real de ATR solo funciona en Vercel: probar con la primera OC real.
+- La primera orden de taller real de ATR es la prueba en vivo de V216 (folio real).
+- Las órdenes `atr_inventario` pueden salir como "falta precio" en listados/entrega (no se entregan a cliente:
+  entran al inventario al completar Terminado). Si estorba, esconder la etiqueta cuando `atr_inventario`.

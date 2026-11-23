@@ -624,19 +624,21 @@ export const AYUDA_MODULOS = [
   {
     id: 'atr',
     titulo: 'Inventario ATR',
-    queEs: 'El inventario de batas de ATR, por producto, talla y color.',
-    paraQueSirve: 'Saber cuántas batas hay para ATR y registrar lo que se les entrega.',
+    queEs: 'Todo lo de ATR: inventario de batas, sus órdenes de compra, el surtido y qué nos falta producir.',
+    paraQueSirve: 'Surtir las OC de ATR con lo que hay y mandar a producir solo lo que falta.',
     pasos: [
-      'Busca por color o talla, o filtra por producto.',
-      'Al entregar, dale "Registrar entrega a ATR", agrega las batas y una nota (ej. remisión).',
-      'Toca una línea para ver su historial.',
-      'Si un conteo no cuadra, el administrador usa Ajuste con su nota.',
+      'En "Órdenes de compra" dale "+ Nueva OC", sube el PDF, revisa los renglones en rojo y guarda.',
+      'En "Qué nos falta" ves por bata y talla lo pendiente, la existencia, lo que está en taller y el faltante.',
+      'Dale "Crear orden de taller" para producir lo que falta (va sin precio, cliente ATR).',
+      'Abre la OC y dale "Surtir": se descuenta del inventario y sale la hoja de surtido en PDF.',
+      'Toca una línea del inventario para ver su historial.',
     ],
     tips: [
-      'Lo surtido en las órdenes de ATR se suma solo al completar Terminado.',
-      'Ajuste y Carga inicial solo los usan Admin fábrica y Administración general.',
+      'Lo producido en las órdenes de ATR entra solo al completar Terminado.',
+      'Se puede surtir parcial; la OC queda "Parcial" hasta completar.',
+      'Deshacer un surtido, cancelar una OC, Ajuste y Carga inicial: solo Admin fábrica y Administración general.',
     ],
-    roles: [R.admin_general, R.admin_fabrica, R.admin_tienda, R.terminado, R.admin_fabrica_lectura],
+    roles: [R.admin_general, R.admin_fabrica, R.admin_tienda, R.terminado, R.admin_fabrica_lectura, R.contabilidad],
   },
 
   // ──────────────────────────── Frisa (por pestaña) ────────────────────────
