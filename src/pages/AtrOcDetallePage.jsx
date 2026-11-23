@@ -5,15 +5,19 @@ import { ErrorState, Loading } from '../components/common/States'
 import AyudaModulo from '../components/common/AyudaModulo'
 import Modal from '../components/talleros/Modal'
 import { useAuth } from '../contexts/AuthContext'
-import { canOcAtr, canVerAtr } from '../utils/permissions'
-import { cancelarAtrOc, fetchAtrOcDetalle, fetchAtrOcLista, urlPdfOcAtr } from '../services/atrService'
-import { ESTADOS_OC, pctSurtido, urgenciaEntrega } from '../utils/atrOc'
+import { canCargarAtr, canEntregarAtr, canOcAtr, canVerAtr } from '../utils/permissions'
+import { cancelarAtrOc, deshacerSurtidoAtr, fetchAtrOcDetalle, fetchAtrOcLista, fetchAtrSurtidosOc, urlPdfOcAtr } from '../services/atrService'
+import AtrSurtirModal from '../components/atr/AtrSurtirModal'
+import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
+import { atrHojaSurtidoFileName, buildAtrHojaSurtidoBlob } from '../utils/generateAtrPdf'
+import { ESTADOS_OC, agruparSurtidos, pctSurtido, urgenciaEntrega } from '../utils/atrOc'
 import { daysUntil, formatDate, formatDateTime } from '../utils/dates'
 import '../components/atr/atr.css'
 
 // V215 — Detalle de una OC de ATR: datos, PDF en vista previa y líneas con
 // pedido / surtido / pendiente / existencia actual. Cancelar pide motivo y
-// avisa que lo ya surtido NO se revierte solo.
+// avisa que lo ya surtido NO se revierte solo. Surtir (parcial o total),
+// hoja de surtido en PDF y deshacer un surtido (signo contrario, sin borrar).
 export default function AtrOcDetallePage() {
   return (
     <RequireRole allow={canVerAtr}>
@@ -34,14 +38,43 @@ function AtrOcDetalle() {
   const [verPdf, setVerPdf] = useState(false)
   const [errPdf, setErrPdf] = useState(null)
   const [cancelar, setCancelar] = useState(false)
+  const [surtidos, setSurtidos] = useState([])
+  const [surtir, setSurtir] = useState(false)
+  const [hoja, setHoja] = useState(null) // { blob, fileName }
+  const [deshacer, setDeshacer] = useState(null) // surtido
+  const [aviso, setAviso] = useState(null)
 
   const cargar = useCallback(async () => {
     setError(null)
     const [l, d] = await Promise.all([fetchAtrOcLista(), fetchAtrOcDetalle(Number(id))])
     if (l.error || d.error) return setError(l.error || d.error)
-    setOc((l.data || []).find((x) => String(x.id) === String(id)) || null)
-    setLineas(d.data || [])
+    const laOc = (l.data || []).find((x) => String(x.id) === String(id)) || null
+    const ls = d.data || []
+    const m = await fetchAtrSurtidosOc(ls.map((x) => x.oc_linea_id))
+    if (m.error) return setError(m.error)
+    setOc(laOc)
+    setLineas(ls)
+    const gs = agruparSurtidos(m.data, ls)
+    setSurtidos(gs)
+    return { oc: laOc, surtidos: gs }
   }, [id])
+
+  async function verHoja(oc2, surtido) {
+    setAviso(null)
+    try {
+      const blob = await buildAtrHojaSurtidoBlob(oc2, surtido, { pedido: oc2.pedido, surtido: oc2.surtido })
+      setHoja({ blob, fileName: atrHojaSurtidoFileName(oc2, surtido) })
+    } catch (e) {
+      setAviso('No se pudo generar la hoja de surtido: ' + (e.message || e))
+    }
+  }
+
+  async function surtidoListo(surtidoId) {
+    setSurtir(false)
+    const r = await cargar()
+    const nuevo = r?.surtidos.find((g) => g.surtido_id === surtidoId)
+    if (r?.oc && nuevo) verHoja(r.oc, nuevo)
+  }
 
   useEffect(() => {
     cargar()
@@ -80,6 +113,9 @@ function AtrOcDetalle() {
         <div className="atr-acciones">
           {oc.pdf_url && (
             <button type="button" className="btn btn--ghost btn--small" onClick={abrirPdf}>{verPdf ? 'Ocultar PDF' : 'Ver PDF'}</button>
+          )}
+          {canEntregarAtr(role) && (oc.estado === 'abierta' || oc.estado === 'parcial') && (
+            <button type="button" className="btn btn--primary" onClick={() => setSurtir(true)}>Surtir</button>
           )}
           {canOcAtr(role) && oc.estado !== 'cancelada' && (
             <button type="button" className="btn btn--ghost btn--small atr-btn-peligro" onClick={() => setCancelar(true)}>Cancelar OC</button>
@@ -141,6 +177,44 @@ function AtrOcDetalle() {
         )}
       </div>
 
+      <section className="atr-surtidos">
+        <h3 className="atr-surtidos__titulo">Surtidos de esta OC</h3>
+        {aviso && <p className="form-error">{aviso}</p>}
+        {surtidos.length === 0 ? (
+          <p className="atr-muted">Todavía no se ha surtido nada.</p>
+        ) : (
+          <ul className="atr-surtidos__lista">
+            {surtidos.map((g) => (
+              <li key={g.surtido_id} className={'atr-bloque atr-surtido' + (g.deshecho ? ' atr-surtido--deshecho' : '')}>
+                <div className="atr-surtido__cab">
+                  <span><strong>{formatDateTime(g.fecha)}</strong> · {n(g.piezas)} batas · {g.usuario || '—'}</span>
+                  <span className="atr-acciones">
+                    <button type="button" className="btn btn--ghost btn--small" onClick={() => verHoja(oc, g)}>Hoja de surtido</button>
+                    {!g.deshecho && canCargarAtr(role) && oc.estado !== 'cancelada' && (
+                      <button type="button" className="btn btn--ghost btn--small atr-btn-peligro" onClick={() => setDeshacer(g)}>Deshacer</button>
+                    )}
+                  </span>
+                </div>
+                <div className="atr-muted atr-surtido__lineas">
+                  {g.lineas.map((l) => `${l.producto} ${l.talla}: ${n(l.cantidad)}`).join(' · ')}
+                </div>
+                {g.nota && <div className="atr-muted atr-surtido__lineas">Nota: {g.nota}</div>}
+                {g.deshecho && (
+                  <div className="atr-negativo atr-surtido__lineas">
+                    Deshecho el {formatDateTime(g.deshecho.fecha)} por {g.deshecho.usuario || '—'}: {g.deshecho.motivo}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {surtir && <AtrSurtirModal oc={oc} lineas={lineas} onClose={() => setSurtir(false)} onListo={surtidoListo} />}
+      {hoja && <PdfPreviewModal blob={hoja.blob} fileName={hoja.fileName} onClose={() => setHoja(null)} />}
+      {deshacer && (
+        <DeshacerSurtido oc={oc} surtido={deshacer} onClose={() => setDeshacer(null)} onListo={() => { setDeshacer(null); cargar() }} />
+      )}
       {cancelar && <CancelarOc oc={oc} onClose={() => setCancelar(false)} onListo={() => { setCancelar(false); cargar() }} />}
     </div>
   )
@@ -180,6 +254,42 @@ function CancelarOc({ oc, onClose, onListo }) {
         <button type="button" className="btn btn--ghost" onClick={onClose}>No cancelar</button>
         <button type="button" className="btn btn--primary atr-btn-peligro--lleno" disabled={guardando} onClick={confirmar}>
           {guardando ? 'Cancelando…' : 'Sí, cancelar OC'}
+        </button>
+      </div>
+    </Modal>
+  )
+}
+
+function DeshacerSurtido({ oc, surtido, onClose, onListo }) {
+  const [motivo, setMotivo] = useState('')
+  const [error, setError] = useState(null)
+  const [guardando, setGuardando] = useState(false)
+
+  async function confirmar() {
+    setError(null)
+    if (!motivo.trim()) return setError('Escribe por qué se deshace.')
+    setGuardando(true)
+    const { error: e } = await deshacerSurtidoAtr(surtido.surtido_id, motivo.trim())
+    setGuardando(false)
+    if (e) return setError(e.message)
+    onListo()
+  }
+
+  return (
+    <Modal title={`Deshacer surtido de la OC ${oc.numero_oc}`} onClose={onClose}>
+      <p>
+        Las <strong>{n(surtido.piezas)} batas</strong> de este surtido ({formatDateTime(surtido.fecha)}) regresan al inventario y
+        vuelven a quedar pendientes en la OC. No se borra nada: queda en el historial como movimiento contrario.
+      </p>
+      <p className="atr-muted">{surtido.lineas.map((l) => `${l.producto} ${l.talla}: ${n(l.cantidad)}`).join(' · ')}</p>
+      <label className="atr-campo"><span className="field-label">Motivo</span>
+        <input className="input" value={motivo} onChange={(e) => setMotivo(e.target.value)} autoFocus />
+      </label>
+      {error && <p className="form-error">{error}</p>}
+      <div className="atr-pie">
+        <button type="button" className="btn btn--ghost" onClick={onClose}>No deshacer</button>
+        <button type="button" className="btn btn--primary atr-btn-peligro--lleno" disabled={guardando} onClick={confirmar}>
+          {guardando ? 'Deshaciendo…' : 'Sí, deshacer surtido'}
         </button>
       </div>
     </Modal>

@@ -105,3 +105,81 @@ export function urgenciaEntrega(estado, dias) {
   if (dias <= 7) return { nivel: 'warning', texto }
   return { nivel: null, texto }
 }
+
+// ---------------------------------------------------------------------
+// Parte 4 — "Qué nos falta" y surtido
+// ---------------------------------------------------------------------
+
+// Color de una fila de faltantes (columnas de atr_faltantes):
+//   'rojo'     → falta producir (faltante > 0)
+//   'amarillo' → faltante 0, pero solo porque cuenta lo que está en taller
+//   null       → alcanza con la existencia
+export function nivelFaltante(f) {
+  if (f.faltante > 0) return 'rojo'
+  if (f.en_taller > 0 && f.pendiente > Math.max(0, f.existencia)) return 'amarillo'
+  return null
+}
+
+const csvCelda = (v) => {
+  const t = String(v ?? '')
+  return /[",\n;]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t
+}
+
+export function faltantesCSV(filas) {
+  const enc = ['Bata', 'Talla', 'Pendiente por surtir', 'Existencia', 'En taller', 'Faltante', 'Órdenes en taller']
+  const lineas = filas.map((f) => [
+    f.producto, f.talla, f.pendiente, f.existencia, f.en_taller, f.faltante,
+    (f.en_taller_ordenes || []).map((o) => `${o.order_number || 's/folio'} (${o.cantidad})`).join(' / '),
+  ])
+  return '﻿' + [enc, ...lineas].map((l) => l.map(csvCelda).join(',')).join('\n') + '\n'
+}
+
+// Cantidad que se propone surtir por línea: min(pendiente, existencia ≥ 0).
+export function cantidadPropuesta(l) {
+  return Math.max(0, Math.min(l.pendiente, Math.max(0, l.existencia)))
+}
+
+// Revisa lo capturado para surtir. cant: { [oc_linea_id]: texto }.
+// Regresa { lineas: [{oc_linea_id, cantidad}], errores: [], negativos: [], piezas }.
+export function revisarSurtido(lineasOc, cant) {
+  const out = { lineas: [], errores: [], negativos: [], piezas: 0 }
+  for (const l of lineasOc) {
+    const txt = String(cant[l.oc_linea_id] ?? '').trim()
+    if (txt === '' || txt === '0') continue
+    if (!/^\d+$/.test(txt)) { out.errores.push(`${l.producto} ${l.talla}: cantidad inválida`); continue }
+    const c = Number(txt)
+    if (c > l.pendiente) { out.errores.push(`${l.producto} ${l.talla}: pendiente ${l.pendiente}, capturaste ${c}`); continue }
+    if (l.existencia - c < 0) out.negativos.push(`${l.producto} ${l.talla} (hay ${l.existencia}, salen ${c})`)
+    out.lineas.push({ oc_linea_id: l.oc_linea_id, cantidad: c })
+    out.piezas += c
+  }
+  return out
+}
+
+// Movimientos de una OC (salida_surtido / reversa_surtido) agrupados por
+// surtido. lineasOc da el nombre de la bata y la talla de cada línea.
+export function agruparSurtidos(movs, lineasOc) {
+  const porLinea = Object.fromEntries((lineasOc || []).map((l) => [l.oc_linea_id, l]))
+  const grupos = new Map()
+  for (const m of movs || []) {
+    if (!m.surtido_id) continue
+    if (!grupos.has(m.surtido_id)) {
+      grupos.set(m.surtido_id, { surtido_id: m.surtido_id, fecha: null, usuario: null, nota: null, lineas: [], piezas: 0, deshecho: null })
+    }
+    const g = grupos.get(m.surtido_id)
+    if (m.tipo === 'salida_surtido') {
+      const l = porLinea[m.oc_linea_id] || {}
+      g.fecha = g.fecha && g.fecha < m.creado_en ? g.fecha : m.creado_en
+      g.usuario = g.usuario || m.usuario_nombre
+      g.nota = g.nota || m.nota
+      g.lineas.push({ producto: l.producto || '—', talla: m.talla, cantidad: -m.cantidad })
+      g.piezas += -m.cantidad
+    } else if (m.tipo === 'reversa_surtido') {
+      g.deshecho = { fecha: m.creado_en, usuario: m.usuario_nombre, motivo: m.nota }
+    }
+  }
+  return [...grupos.values()]
+    .filter((g) => g.lineas.length)
+    .map((g) => ({ ...g, lineas: g.lineas.sort((a, b) => a.producto.localeCompare(b.producto, 'es')) }))
+    .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))
+}

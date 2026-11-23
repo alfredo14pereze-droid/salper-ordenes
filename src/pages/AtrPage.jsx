@@ -10,6 +10,7 @@ import AtrHistorialModal from '../components/atr/AtrHistorialModal'
 import AtrEntregaModal from '../components/atr/AtrEntregaModal'
 import AtrAjusteModal from '../components/atr/AtrAjusteModal'
 import AtrOcLista from '../components/atr/AtrOcLista'
+import AtrFaltantes from '../components/atr/AtrFaltantes'
 import '../components/atr/atr.css'
 import AyudaModulo from '../components/common/AyudaModulo'
 
@@ -27,6 +28,7 @@ export default function AtrPage() {
 const PESTANAS = [
   ['inventario', 'Inventario'],
   ['oc', 'Órdenes de compra'],
+  ['faltan', 'Qué nos falta'],
 ]
 
 function AtrPestanas() {
@@ -50,6 +52,13 @@ function AtrPestanas() {
             <h2 className="section-title">Órdenes de compra ATR <AyudaModulo id="atr" /></h2>
           </div>
           <AtrOcLista puedeSubir={canOcAtr(role)} />
+        </>
+      ) : tab === 'faltan' ? (
+        <>
+          <div className="section-header">
+            <h2 className="section-title">Qué nos falta <AyudaModulo id="atr" /></h2>
+          </div>
+          <AtrFaltantes />
         </>
       ) : (
         <Atr />

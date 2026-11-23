@@ -77,7 +77,26 @@ export async function fetchAtrHistorial(productoId, talla) {
     const o = await supabase.from('orders').select('id, order_number').in('id', ids)
     if (!o.error) folios = Object.fromEntries(o.data.map((x) => [x.id, x.order_number]))
   }
-  return { data: r.data.map((m) => ({ ...m, folio: m.order_id ? folios[m.order_id] || null : null })), error: null }
+  // V215 — surtidos: folio de la OC
+  const lineaIds = [...new Set(r.data.map((m) => m.oc_linea_id).filter(Boolean))]
+  let ocDeLinea = {}
+  if (lineaIds.length) {
+    const ls = await supabase.from('atr_oc_lineas').select('id, oc_id').in('id', lineaIds)
+    if (!ls.error && ls.data.length) {
+      const ocIds = [...new Set(ls.data.map((x) => x.oc_id))]
+      const os = await supabase.from('atr_ordenes_compra').select('id, numero_oc').in('id', ocIds)
+      const num = os.error ? {} : Object.fromEntries(os.data.map((x) => [x.id, x.numero_oc]))
+      ocDeLinea = Object.fromEntries(ls.data.map((x) => [x.id, { oc_id: x.oc_id, numero_oc: num[x.oc_id] || null }]))
+    }
+  }
+  return {
+    data: r.data.map((m) => ({
+      ...m,
+      folio: m.order_id ? folios[m.order_id] || null : null,
+      oc: m.oc_linea_id ? ocDeLinea[m.oc_linea_id] || null : null,
+    })),
+    error: null,
+  }
 }
 
 // lineas: [{ producto_id, talla, cantidad }]
@@ -180,4 +199,40 @@ export async function urlPdfOcAtr(path) {
   if (e) return { data: null, error: e }
   const { data, error } = await supabase.storage.from(BUCKET_DOCS).createSignedUrl(path, 600)
   return error ? { data: null, error } : { data: data.signedUrl, error: null }
+}
+
+// V215 — Parte 4: "Qué nos falta", surtir y deshacer surtidos.
+export async function fetchAtrFaltantes() {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_faltantes')
+}
+
+// lineas: [{ oc_linea_id, cantidad }]. Si alguna talla quedaría en negativo
+// la base responde "NEGATIVO: …" y no guarda (se vuelve a mandar con permitir).
+// Regresa el surtido_id.
+export async function surtirAtrOc(ocId, lineas, nota, permitirNegativo = false) {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_surtir_oc', { p_oc_id: ocId, p_lineas: lineas, p_nota: nota || null, p_permitir_negativo: permitirNegativo })
+}
+
+export async function deshacerSurtidoAtr(surtidoId, motivo) {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_deshacer_surtido', { p_surtido_id: surtidoId, p_motivo: motivo })
+}
+
+// Movimientos de surtido de las líneas de una OC (para el historial).
+export async function fetchAtrSurtidosOc(lineaIds) {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  if (!lineaIds?.length) return { data: [], error: null }
+  return todas(() =>
+    supabase
+      .from('atr_movimientos')
+      .select('id, tipo, cantidad, talla, oc_linea_id, surtido_id, nota, usuario_nombre, creado_en')
+      .in('oc_linea_id', lineaIds)
+      .order('creado_en', { ascending: true }),
+  )
 }

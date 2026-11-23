@@ -11,6 +11,8 @@ export const TIPOS_ATR = {
   reversa_produccion: 'Reversa (se reabrió Terminado)',
   salida_entrega: 'Entrega a ATR',
   ajuste: 'Ajuste',
+  salida_surtido: 'Surtido de OC',
+  reversa_surtido: 'Surtido deshecho',
 }
 
 export default function AtrHistorialModal({ fila, onClose, onAjuste }) {
@@ -30,7 +32,7 @@ export default function AtrHistorialModal({ fila, onClose, onAjuste }) {
         <div className="atr-tabla-wrap">
           <table className="simple-table atr-historial">
             <thead>
-              <tr><th>Fecha</th><th>Movimiento</th><th className="atr-num">Cant.</th><th>Orden</th><th>Quién</th><th>Nota</th></tr>
+              <tr><th>Fecha</th><th>Movimiento</th><th className="atr-num">Cant.</th><th>Orden / OC</th><th>Quién</th><th>Nota</th></tr>
             </thead>
             <tbody>
               {movs.map((m) => (
@@ -42,7 +44,10 @@ export default function AtrHistorialModal({ fila, onClose, onAjuste }) {
                     {m.revertido_en ? <span className="atr-muted"> · revertida</span> : null}
                   </td>
                   <td className={'atr-num' + (m.cantidad < 0 ? ' atr-negativo' : '')}>{m.cantidad > 0 ? `+${m.cantidad}` : m.cantidad}</td>
-                  <td>{m.order_id ? <Link to={`/orden/${m.order_id}`}>{m.folio || 'Ver orden'}</Link> : '—'}</td>
+                  <td>
+                    {m.order_id ? <Link to={`/orden/${m.order_id}`}>{m.folio || 'Ver orden'}</Link>
+                      : m.oc ? <Link to={`/atr/oc/${m.oc.oc_id}`}>OC {m.oc.numero_oc || ''}</Link> : '—'}
+                  </td>
                   <td>{m.usuario_nombre || (m.tipo.endsWith('produccion') ? 'Automático' : '—')}</td>
                   <td>{m.nota || ''}</td>
                 </tr>

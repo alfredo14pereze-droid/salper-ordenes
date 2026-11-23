@@ -63,3 +63,48 @@ test('urgencia como en órdenes', () => {
   assert.equal(urgenciaEntrega('surtida', -5).nivel, 'good')
   assert.equal(urgenciaEntrega('abierta', null).texto, 'Sin fecha de entrega')
 })
+
+import { agruparSurtidos, cantidadPropuesta, faltantesCSV, nivelFaltante, revisarSurtido } from './atrOc.js'
+
+test('nivel de faltante: rojo, amarillo por taller, nada', () => {
+  assert.equal(nivelFaltante({ pendiente: 25, existencia: 10, en_taller: 0, faltante: 15 }), 'rojo')
+  assert.equal(nivelFaltante({ pendiente: 25, existencia: 10, en_taller: 15, faltante: 0 }), 'amarillo')
+  assert.equal(nivelFaltante({ pendiente: 5, existencia: 10, en_taller: 15, faltante: 0 }), null)
+  assert.equal(nivelFaltante({ pendiente: 5, existencia: -3, en_taller: 5, faltante: 0 }), 'amarillo')
+})
+
+test('CSV de faltantes con BOM y comillas', () => {
+  const csv = faltantesCSV([{ producto: 'Bata, con "bolsa"', talla: 'M', pendiente: 3, existencia: 1, en_taller: 0, faltante: 2, en_taller_ordenes: [{ order_number: 'IND-1', cantidad: 4 }] }])
+  assert.ok(csv.startsWith('﻿Bata,Talla'))
+  assert.ok(csv.includes('"Bata, con ""bolsa""",M,3,1,0,2,IND-1 (4)'))
+})
+
+test('cantidad propuesta y revisión del surtido', () => {
+  assert.equal(cantidadPropuesta({ pendiente: 25, existencia: 10 }), 10)
+  assert.equal(cantidadPropuesta({ pendiente: 5, existencia: 10 }), 5)
+  assert.equal(cantidadPropuesta({ pendiente: 5, existencia: -2 }), 0)
+  const lineas = [
+    { oc_linea_id: 1, producto: 'A', talla: 'M', pendiente: 10, existencia: 4 },
+    { oc_linea_id: 2, producto: 'B', talla: 'L', pendiente: 3, existencia: 3 },
+    { oc_linea_id: 3, producto: 'C', talla: 'XL', pendiente: 2, existencia: 2 },
+  ]
+  const r = revisarSurtido(lineas, { 1: '6', 2: '4', 3: '' })
+  assert.deepEqual(r.lineas, [{ oc_linea_id: 1, cantidad: 6 }])
+  assert.equal(r.errores.length, 1)
+  assert.deepEqual(r.negativos, ['A M (hay 4, salen 6)'])
+  assert.equal(revisarSurtido(lineas, { 1: 'x' }).errores[0], 'A M: cantidad inválida')
+})
+
+test('agrupar surtidos y marcar deshechos', () => {
+  const lineas = [{ oc_linea_id: 1, producto: 'Bata A' }, { oc_linea_id: 2, producto: 'Bata B' }]
+  const g = agruparSurtidos([
+    { surtido_id: 's1', tipo: 'salida_surtido', oc_linea_id: 1, talla: 'M', cantidad: -5, creado_en: '2026-11-20T10:00', usuario_nombre: 'Ana' },
+    { surtido_id: 's1', tipo: 'salida_surtido', oc_linea_id: 2, talla: 'L', cantidad: -2, creado_en: '2026-11-20T10:00', usuario_nombre: 'Ana' },
+    { surtido_id: 's2', tipo: 'salida_surtido', oc_linea_id: 1, talla: 'M', cantidad: -1, creado_en: '2026-11-21T10:00', usuario_nombre: 'Leo' },
+    { surtido_id: 's1', tipo: 'reversa_surtido', oc_linea_id: 1, talla: 'M', cantidad: 5, creado_en: '2026-11-22T10:00', usuario_nombre: 'Admin', nota: 'error' },
+  ], lineas)
+  assert.deepEqual(g.map((x) => x.surtido_id), ['s2', 's1'])
+  assert.equal(g[1].piezas, 7)
+  assert.equal(g[1].deshecho.motivo, 'error')
+  assert.equal(g[0].deshecho, null)
+})
