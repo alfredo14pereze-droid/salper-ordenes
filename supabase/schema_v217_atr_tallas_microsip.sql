@@ -340,7 +340,8 @@ grant execute on function public.atr_faltantes() to authenticated;
 -- ---------------------------------------------------------------------
 -- 5) Re-sincronizar órdenes de ATR (idempotente; no debe mover nada)
 -- ---------------------------------------------------------------------
-create temp table v217_antes on commit drop as
+drop table if exists pg_temp.v217_antes;
+create temp table v217_antes as
   select count(*) as n from public.atr_movimientos;
 select public.atr_sincronizar_orden(o.id, 'V217: tallas como Microsip')
 from public.orders o
