@@ -138,6 +138,36 @@ const FRISA_OC_TOOL = {
   },
 }
 
+// V215 — orden de compra de ATR (solo batas). Cada renglón: descripción
+// (con o sin bolsa + color, SIN la talla), talla y cantidad.
+const ATR_OC_TOOL = {
+  name: 'registrar_oc_atr',
+  description:
+    'Registra los datos de una orden de compra de ATR que se alcancen a leer con certeza: número de la orden, fechas y los renglones con descripción, talla y cantidad.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      numero: { type: 'string', description: 'Número o folio de la orden de compra. Cadena vacía si no se lee.' },
+      fecha_oc: { type: 'string', description: 'Fecha del documento en YYYY-MM-DD, solo si es explícita. Cadena vacía si no.' },
+      fecha_entrega: { type: 'string', description: 'Fecha de entrega en YYYY-MM-DD, solo si es explícita. Si cada renglón trae su fecha, la más temprana. Cadena vacía si no.' },
+      articulos: {
+        type: 'array',
+        description: 'Un elemento por renglón y talla. Si un renglón trae varias tallas en columnas, un elemento por cada talla con cantidad. Nunca inventes renglones.',
+        items: {
+          type: 'object',
+          properties: {
+            nombre: { type: 'string', description: 'Descripción de la bata SIN la talla, conservando si es con o sin bolsa y el color (p. ej. "Bata con bolsa azul marino"). Misma bata en varias tallas = mismo texto exacto.' },
+            talla: { type: 'string', description: 'Talla (p. ej. "CH", "M", "L", "XL", "2XL"). Cadena vacía si no trae.' },
+            cantidad: { type: 'number', description: 'Cantidad pedida.' },
+          },
+          required: ['nombre', 'cantidad'],
+        },
+      },
+    },
+    required: ['articulos'],
+  },
+}
+
 // V191 — hoja de operaciones impresa desde la página (Cotizador). Cada
 // renglón trae folio, operación y tiempo en segundos, agrupados por parte.
 // El folio es lo que importa: con él se liga al catálogo.
@@ -175,6 +205,8 @@ const PROMPTS = {
     'Este es un pedido a un proveedor (foto o PDF de la nota/remisión). Usa la herramienta disponible para registrar los artículos, cantidades y tallas que se alcancen a leer con certeza. No inventes ni adivines datos que no se vean con claridad — omite ese artículo en vez de inventarlo.',
   frisa_oc:
     'Esta es una orden de compra (PDF) que el cliente Frisa le manda a SALPER, fabricante de uniformes. Usa la herramienta para registrar el número de la orden, la planta de Frisa, la fecha del documento, la fecha de entrega y cada renglón con su descripción (sin la talla), talla y cantidad. No inventes ni adivines nada que no se vea con claridad: deja vacío lo que no se lea.',
+  atr_oc:
+    'Esta es una orden de compra (PDF) que el cliente ATR le manda a SALPER, fabricante de uniformes. ATR solo compra batas (con o sin bolsa, en varios colores y tallas CH a 4XL). Usa la herramienta para registrar el número de la orden, la fecha del documento, la fecha de entrega y cada renglón con su descripción (sin la talla, pero con bolsa/sin bolsa y color), talla y cantidad. No inventes ni adivines nada que no se vea con claridad: deja vacío lo que no se lea.',
   orden:
     'Este es un documento (foto o PDF) con información de una orden de producción para un taller de uniformes/sublimación. Usa la herramienta disponible para registrar el cliente y la fecha de entrega SOLO si aparecen explícitos y sin ambigüedad, más las prendas con cantidad y talla que se alcancen a leer con certeza. Si la misma prenda aparece en varias tallas (renglones separados para M, L, etc.), regístrala como un artículo por cada talla pero con el nombre IDÉNTICO en todos — no repitas la talla dentro del nombre, va en su propio campo. No inventes ni adivines nada que no se vea con claridad — deja cliente/fecha_entrega vacíos y omite cualquier prenda que no puedas leer bien.',
 }
@@ -198,7 +230,7 @@ export default async function handler(req, res) {
   }
 
   const { fileBase64, mediaType, context } = req.body || {}
-  const mode = ['orden', 'frisa_oc', 'hoja_operaciones'].includes(context) ? context : 'pedido_proveedor'
+  const mode = ['orden', 'frisa_oc', 'atr_oc', 'hoja_operaciones'].includes(context) ? context : 'pedido_proveedor'
 
   if (typeof fileBase64 !== 'string' || !fileBase64) {
     res.status(400).json({ error: 'Falta el archivo.' })
@@ -221,7 +253,7 @@ export default async function handler(req, res) {
       ? { type: 'document', source: { type: 'base64', media_type: mediaType, data: fileBase64 } }
       : { type: 'image', source: { type: 'base64', media_type: mediaType, data: fileBase64 } }
 
-  const tool = { orden: ORDEN_TOOL, frisa_oc: FRISA_OC_TOOL, hoja_operaciones: HOJA_OPERACIONES_TOOL }[mode] || PEDIDO_TOOL
+  const tool = { orden: ORDEN_TOOL, frisa_oc: FRISA_OC_TOOL, atr_oc: ATR_OC_TOOL, hoja_operaciones: HOJA_OPERACIONES_TOOL }[mode] || PEDIDO_TOOL
 
   // La extracción de una nota manuscrita, un PDF escaneado o de mala
   // calidad nunca va a ser perfecta — cualquier tropiezo aquí (API
@@ -231,7 +263,7 @@ export default async function handler(req, res) {
   try {
     const response = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: mode === 'frisa_oc' || mode === 'hoja_operaciones' ? 8192 : MAX_TOKENS, // muchos renglones
+      max_tokens: mode === 'frisa_oc' || mode === 'atr_oc' || mode === 'hoja_operaciones' ? 8192 : MAX_TOKENS, // muchos renglones
       tools: [tool],
       tool_choice: { type: 'tool', name: tool.name },
       messages: [
@@ -291,6 +323,22 @@ export default async function handler(req, res) {
       return
     }
 
+    if (mode === 'atr_oc') {
+      const texto = (v) => (typeof v === 'string' && v.trim() ? v.trim() : null)
+      const lineas = articulosRaw
+        .filter((a) => a && typeof a.nombre === 'string' && a.nombre.trim() && Number(a.cantidad) > 0)
+        .map((a) => ({ nombre: a.nombre.trim(), talla: texto(a.talla), cantidad: Math.round(Number(a.cantidad)) }))
+      const out = {
+        numero: texto(raw.numero),
+        fechaOc: isValidIsoDate(raw.fecha_oc) ? raw.fecha_oc : null,
+        fechaEntrega: isValidIsoDate(raw.fecha_entrega) ? raw.fecha_entrega : null,
+        articulos: lineas,
+      }
+      if (!lineas.length && !out.numero) out.warning = 'No se reconoció la orden de compra — llena los campos a mano.'
+      res.status(200).json(out)
+      return
+    }
+
     if (mode === 'orden') {
       const cliente = typeof raw.cliente === 'string' && raw.cliente.trim() ? raw.cliente.trim() : null
       const fechaEntrega = isValidIsoDate(raw.fecha_entrega) ? raw.fecha_entrega : null
@@ -323,6 +371,7 @@ export default async function handler(req, res) {
     const fallback = { articulos: [], warning: 'No se pudo leer el archivo automáticamente — llena los campos a mano.' }
     if (mode === 'frisa_oc') Object.assign(fallback, { numero: null, planta: null, fechaOc: null, fechaLimite: null })
     if (mode === 'hoja_operaciones') Object.assign(fallback, { titulo: null, operaciones: [] })
+    if (mode === 'atr_oc') Object.assign(fallback, { numero: null, fechaOc: null, fechaEntrega: null })
     if (mode === 'orden') {
       fallback.cliente = null
       fallback.fechaEntrega = null

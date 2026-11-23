@@ -938,6 +938,13 @@ export function canEntregarAtr(role) {
 export function canCargarAtr(role) {
   return tiene(role, 'atr.cargar', () => ['admin_general', 'admin_fabrica'].includes(role))
 }
+// V215 — subir/cancelar OC de ATR y crear órdenes de taller desde "Qué nos falta".
+export function canOcAtr(role) {
+  return tiene(role, 'atr.oc', () => ['admin_general', 'admin_fabrica'].includes(role))
+}
+export function canTallerAtr(role) {
+  return tiene(role, 'atr.taller', () => ['admin_general', 'admin_fabrica'].includes(role))
+}
 
 // V213 — Cotizaciones web (formulario de salperdeportes.com). Solo
 // admin_general (el "super_admin" del pedido) y admin_tienda; fijo, sin

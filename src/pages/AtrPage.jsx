@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import RequireRole from '../components/common/RequireRole'
 import { ErrorState, Loading, EmptyState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
-import { canCargarAtr, canEntregarAtr, canVerAtr } from '../utils/permissions'
+import { canCargarAtr, canEntregarAtr, canOcAtr, canVerAtr } from '../utils/permissions'
 import { fetchAtrExistencias, fetchAtrProductos } from '../services/atrService'
 import { normalizar, ordenTalla } from '../utils/atrCarga'
 import AtrHistorialModal from '../components/atr/AtrHistorialModal'
 import AtrEntregaModal from '../components/atr/AtrEntregaModal'
 import AtrAjusteModal from '../components/atr/AtrAjusteModal'
+import AtrOcLista from '../components/atr/AtrOcLista'
 import '../components/atr/atr.css'
 import AyudaModulo from '../components/common/AyudaModulo'
 
@@ -17,8 +18,43 @@ import AyudaModulo from '../components/common/AyudaModulo'
 export default function AtrPage() {
   return (
     <RequireRole allow={canVerAtr}>
-      <Atr />
+      <AtrPestanas />
     </RequireRole>
+  )
+}
+
+// V215 — pestañas: Inventario | Órdenes de compra (?tab=oc)
+const PESTANAS = [
+  ['inventario', 'Inventario'],
+  ['oc', 'Órdenes de compra'],
+]
+
+function AtrPestanas() {
+  const { role } = useAuth()
+  const [params, setParams] = useSearchParams()
+  const tab = PESTANAS.some(([k]) => k === params.get('tab')) ? params.get('tab') : 'inventario'
+  return (
+    <div className="page atr">
+      <div className="atr-pestanas" role="tablist">
+        {PESTANAS.map(([k, t]) => (
+          <button key={k} type="button" role="tab" aria-selected={tab === k}
+            className={'atr-pestana' + (tab === k ? ' is-activa' : '')}
+            onClick={() => setParams(k === 'inventario' ? {} : { tab: k }, { replace: true })}>
+            {t}
+          </button>
+        ))}
+      </div>
+      {tab === 'oc' ? (
+        <>
+          <div className="section-header">
+            <h2 className="section-title">Órdenes de compra ATR <AyudaModulo id="atr" /></h2>
+          </div>
+          <AtrOcLista puedeSubir={canOcAtr(role)} />
+        </>
+      ) : (
+        <Atr />
+      )}
+    </div>
   )
 }
 
@@ -58,8 +94,8 @@ function Atr() {
 
   const total = filas.reduce((s, x) => s + x.existencia, 0)
 
-  if (error) return <div className="page"><ErrorState error={error} onRetry={cargar} /></div>
-  if (!existencias || !productos) return <div className="page"><Loading /></div>
+  if (error) return <ErrorState error={error} onRetry={cargar} />
+  if (!existencias || !productos) return <Loading />
 
   const listo = () => {
     setEntrega(false)
@@ -68,7 +104,7 @@ function Atr() {
   }
 
   return (
-    <div className="page atr">
+    <div>
       <div className="section-header">
         <h2 className="section-title">Inventario ATR <AyudaModulo id="atr" /></h2>
         <div className="atr-acciones">

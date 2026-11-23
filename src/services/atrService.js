@@ -113,3 +113,71 @@ export async function fetchAtrEstadoOrden(orderId) {
   if (error) return { data: null, error }
   return { data: Array.isArray(data) ? data[0] || null : data, error: null }
 }
+
+// ---------------------------------------------------------------------
+// V215 — Órdenes de compra de ATR (schema_v215_atr_ordenes_compra.sql).
+// Lectura por RPC (atr.ver); escritura: atr_oc_guardar / atr_oc_cancelar
+// (atr.oc). El PDF va al bucket privado orden-documentos, carpeta atr-oc/.
+// ---------------------------------------------------------------------
+const BUCKET_DOCS = 'orden-documentos'
+
+export async function fetchAtrOcLista() {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_oc_lista')
+}
+
+export async function fetchAtrOcDetalle(ocId) {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_oc_detalle', { p_oc_id: ocId })
+}
+
+// Lo aprendido en OCs anteriores → { [texto]: producto_id }
+export async function fetchAtrOcAlias(textos) {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  const lista = [...new Set((textos || []).filter(Boolean))]
+  if (!lista.length) return { data: {}, error: null }
+  const { data, error } = await supabase.rpc('atr_oc_alias_buscar', { p_textos: lista })
+  if (error) return { data: null, error }
+  return { data: Object.fromEntries((data || []).map((x) => [String(x.texto).toLowerCase().replace(/\s+/g, ' ').trim(), x.producto_id])), error: null }
+}
+
+// oc: { numero_oc, fecha_oc, fecha_entrega, pdf_url, leido_pdf, notas, lineas: [{producto_id, talla, cantidad, texto_pdf}] }
+export async function guardarAtrOc(oc) {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_oc_guardar', {
+    p_numero_oc: oc.numero_oc,
+    p_fecha_oc: oc.fecha_oc || null,
+    p_fecha_entrega: oc.fecha_entrega || null,
+    p_pdf_url: oc.pdf_url || null,
+    p_leido_pdf: oc.leido_pdf || null,
+    p_notas: oc.notas || null,
+    p_lineas: oc.lineas,
+  })
+}
+
+// Regresa cuántas piezas tenía surtidas (no se revierten).
+export async function cancelarAtrOc(ocId, motivo) {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_oc_cancelar', { p_oc_id: ocId, p_motivo: motivo })
+}
+
+export async function subirPdfOcAtr(file) {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  const limpio = file.name.normalize('NFD').replace(/[^\w.-]+/g, '_').slice(-80)
+  const path = `atr-oc/${Date.now()}-${limpio}`
+  const { error } = await supabase.storage.from(BUCKET_DOCS).upload(path, file, { contentType: file.type || 'application/pdf', upsert: false })
+  return error ? { data: null, error } : { data: path, error: null }
+}
+
+export async function urlPdfOcAtr(path) {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  const { data, error } = await supabase.storage.from(BUCKET_DOCS).createSignedUrl(path, 600)
+  return error ? { data: null, error } : { data: data.signedUrl, error: null }
+}

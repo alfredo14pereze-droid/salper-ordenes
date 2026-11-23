@@ -40,6 +40,8 @@ import ManualesPage from './pages/ManualesPage'
 import ManualProcesosPage from './pages/ManualProcesosPage'
 import AtrPage from './pages/AtrPage'
 import AtrCargaPage from './pages/AtrCargaPage'
+import AtrOcNuevaPage from './pages/AtrOcNuevaPage'
+import AtrOcDetallePage from './pages/AtrOcDetallePage'
 import CrmPage from './pages/CrmPage'
 import CotizacionesWebPage from './pages/CotizacionesWebPage'
 import CrmEmpresaPage from './pages/CrmEmpresaPage'
@@ -185,6 +187,9 @@ function AuthGate() {
           {/* V209 — Inventario de batas de ATR (atr.ver; carga inicial: atr.cargar). */}
           <Route path="/atr" element={<AtrPage />} />
           <Route path="/atr/carga" element={<AtrCargaPage />} />
+          {/* V215 — órdenes de compra de ATR (subir: atr.oc). */}
+          <Route path="/atr/oc/nueva" element={<AtrOcNuevaPage />} />
+          <Route path="/atr/oc/:id" element={<AtrOcDetallePage />} />
           {/* V207 — CRM de prospectos (crm.usar; importar: crm.importar). */}
           <Route path="/crm" element={<CrmPage />} />
           <Route path="/crm/importar" element={<CrmImportarPage />} />
