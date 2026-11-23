@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  agruparSurtidos, cantidadPropuesta, faltantesCSV, nivelFaltante, prendasParaOrden, revisarSurtido, seleccionInicial,
   ocRepetida, ordenarOcs, pctSurtido, problemaRenglon, renglonesDesdePdf, repetidos, sugerirBata, textoAlias, urgenciaEntrega,
 } from './atrOc.js'
 
@@ -64,7 +65,6 @@ test('urgencia como en órdenes', () => {
   assert.equal(urgenciaEntrega('abierta', null).texto, 'Sin fecha de entrega')
 })
 
-import { agruparSurtidos, cantidadPropuesta, faltantesCSV, nivelFaltante, revisarSurtido } from './atrOc.js'
 
 test('nivel de faltante: rojo, amarillo por taller, nada', () => {
   assert.equal(nivelFaltante({ pendiente: 25, existencia: 10, en_taller: 0, faltante: 15 }), 'rojo')
@@ -107,4 +107,19 @@ test('agrupar surtidos y marcar deshechos', () => {
   assert.equal(g[1].piezas, 7)
   assert.equal(g[1].deshecho.motivo, 'error')
   assert.equal(g[0].deshecho, null)
+})
+
+
+test('prendas para la orden de taller: una por bata, tallas en orden, cantidad = faltante', () => {
+  const productos = [{ id: 'a', nombre: 'Bata con bolsa Blanca', garment: 'Bata', color: 'Blanca' }, { id: 'c', nombre: 'Bata con bolsa Azul Marino', garment: 'Bata' }]
+  const filas = [
+    { producto_id: 'a', talla: 'XL', faltante: 4 },
+    { producto_id: 'a', talla: 'M', faltante: 15 },
+    { producto_id: 'c', talla: 'M', faltante: 0 },
+  ]
+  const r = prendasParaOrden(filas, productos)
+  assert.deepEqual(r.map((g) => g.producto.id), ['c', 'a'])
+  assert.deepEqual(r[1].sizes, [{ talla: 'M', cantidad: '15' }, { talla: 'XL', cantidad: '4' }])
+  assert.deepEqual(r[0].sizes, [{ talla: 'M', cantidad: '' }])
+  assert.deepEqual([...seleccionInicial(filas)], ['a|XL', 'a|M'])
 })

@@ -2,7 +2,7 @@
 // renglón leído del PDF, ordenar la lista, % surtido, urgencia de la fecha
 // de entrega). Sin dependencias de React ni de Supabase; pruebas en
 // atrOc.test.js.
-import { emparejar, normalizar, normalizarTalla } from './atrCarga.js'
+import { emparejar, normalizar, normalizarTalla, ordenTalla } from './atrCarga.js'
 
 export const ESTADOS_OC = {
   abierta: 'Abierta',
@@ -183,3 +183,27 @@ export function agruparSurtidos(movs, lineasOc) {
     .map((g) => ({ ...g, lineas: g.lineas.sort((a, b) => a.producto.localeCompare(b.producto, 'es')) }))
     .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))
 }
+
+// ---------------------------------------------------------------------
+// Parte 5 — Orden de taller desde "Qué nos falta"
+// ---------------------------------------------------------------------
+// Filas elegidas → prendas para el formulario normal de Nueva orden: una
+// prenda por bata, con sus tallas; cantidad = faltante (vacía si la fila
+// no tenía faltante: se eligió para producir de más y se captura a mano).
+// productos: batas de ATR (id, nombre, garment, color, especificaciones…).
+// Regresa [{ producto, sizes: [{talla, cantidad}] }] en orden de nombre y talla.
+export function prendasParaOrden(filas, productos) {
+  const porId = Object.fromEntries((productos || []).map((p) => [p.id, p]))
+  const grupos = new Map()
+  for (const f of filas || []) {
+    const producto = porId[f.producto_id] || { id: f.producto_id, nombre: f.producto, garment: 'Bata', color: f.color || '' }
+    if (!grupos.has(producto.id)) grupos.set(producto.id, { producto, sizes: [] })
+    grupos.get(producto.id).sizes.push({ talla: f.talla, cantidad: f.faltante > 0 ? String(f.faltante) : '' })
+  }
+  return [...grupos.values()]
+    .map((g) => ({ ...g, sizes: g.sizes.sort((a, b) => ordenTalla(a.talla) - ordenTalla(b.talla)) }))
+    .sort((a, b) => String(a.producto.nombre).localeCompare(String(b.producto.nombre), 'es'))
+}
+
+// Selección por defecto: todas las filas con faltante.
+export const seleccionInicial = (filas) => new Set((filas || []).filter((f) => f.faltante > 0).map((f) => `${f.producto_id}|${f.talla}`))

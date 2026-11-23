@@ -28,7 +28,7 @@ export async function fetchAtrProductos() {
   if (!cli) return { data: null, error: new Error('No existe el cliente ATR.') }
   const r = await supabase
     .from('productos')
-    .select('id, nombre, color, tallas, especificaciones')
+    .select('id, nombre, garment, color, pantone, tela_id, foto_url, tallas, especificaciones')
     .eq('cliente_id', cli.id)
     .order('nombre')
   if (r.error) return r
@@ -235,4 +235,10 @@ export async function fetchAtrSurtidosOc(lineaIds) {
       .in('oc_linea_id', lineaIds)
       .order('creado_en', { ascending: true }),
   )
+}
+
+export async function fetchAtrClienteId() {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_cliente_id')
 }

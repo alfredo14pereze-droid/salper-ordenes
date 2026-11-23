@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import RequireRole from '../components/common/RequireRole'
 import { ErrorState, Loading, EmptyState } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
-import { canCargarAtr, canEntregarAtr, canOcAtr, canVerAtr } from '../utils/permissions'
+import { canCargarAtr, canEntregarAtr, canOcAtr, canTallerAtr, canVerAtr } from '../utils/permissions'
 import { fetchAtrExistencias, fetchAtrProductos } from '../services/atrService'
 import { normalizar, ordenTalla } from '../utils/atrCarga'
 import AtrHistorialModal from '../components/atr/AtrHistorialModal'
@@ -58,7 +58,7 @@ function AtrPestanas() {
           <div className="section-header">
             <h2 className="section-title">Qué nos falta <AyudaModulo id="atr" /></h2>
           </div>
-          <AtrFaltantes />
+          <AtrFaltantes puedeTaller={canTallerAtr(role)} />
         </>
       ) : (
         <Atr />

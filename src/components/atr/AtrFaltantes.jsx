@@ -1,18 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ErrorState, Loading, EmptyState } from '../common/States'
 import PdfPreviewModal from '../pdf/PdfPreviewModal'
-import { fetchAtrFaltantes } from '../../services/atrService'
-import { faltantesCSV, nivelFaltante } from '../../utils/atrOc'
+import { fetchAtrClienteId, fetchAtrFaltantes, fetchAtrProductos } from '../../services/atrService'
+import { faltantesCSV, nivelFaltante, prendasParaOrden, seleccionInicial } from '../../utils/atrOc'
 import { normalizar } from '../../utils/atrCarga'
 import { atrFaltantesFileName, buildAtrFaltantesBlob } from '../../utils/generateAtrPdf'
 
 // V215 — "Qué nos falta": por bata y talla, solo OC abiertas o parciales.
 // Faltante = max(0, pendiente − existencia − en taller). Rojo = falta
 // producir; amarillo = alcanza solo contando lo que está en taller.
+// Parte 5: se eligen líneas (por defecto las que tienen faltante) y "Crear
+// orden de taller" abre el formulario normal de Nueva orden prellenado.
 const n = (x) => Number(x || 0).toLocaleString('es-MX')
+const clave = (f) => `${f.producto_id}|${f.talla}`
+// Tipo de orden con el que se capturan las órdenes de ATR (no hay tipo "ATR").
+const TIPO_ORDEN_ATR = 'industrial'
 
-export default function AtrFaltantes() {
+export default function AtrFaltantes({ puedeTaller = false }) {
+  const navigate = useNavigate()
+  const [sel, setSel] = useState(null) // Set de claves elegidas
+  const [creando, setCreando] = useState(false)
   const [filas, setFilas] = useState(null)
   const [error, setError] = useState(null)
   const [soloFaltante, setSoloFaltante] = useState(false)
@@ -25,6 +33,7 @@ export default function AtrFaltantes() {
     const { data, error: e } = await fetchAtrFaltantes()
     if (e) return setError(e)
     setFilas(data || [])
+    setSel((x) => x || seleccionInicial(data || []))
   }, [])
 
   useEffect(() => {
@@ -42,6 +51,35 @@ export default function AtrFaltantes() {
     (t, f) => ({ pendiente: t.pendiente + f.pendiente, taller: t.taller + f.en_taller, faltante: t.faltante + f.faltante }),
     { pendiente: 0, taller: 0, faltante: 0 },
   )
+
+  const elegidas = (filas || []).filter((f) => sel?.has(clave(f)))
+  const piezasElegidas = elegidas.reduce((t, f) => t + f.faltante, 0)
+  const toggle = (f) => setSel((x) => { const y = new Set(x); y.has(clave(f)) ? y.delete(clave(f)) : y.add(clave(f)); return y })
+  const todasVisibles = vista.length > 0 && vista.every((f) => sel?.has(clave(f)))
+  const toggleTodas = () => setSel((x) => {
+    const y = new Set(x)
+    for (const f of vista) todasVisibles ? y.delete(clave(f)) : y.add(clave(f))
+    return y
+  })
+
+  async function crearOrden() {
+    setCreando(true)
+    const [p, c] = await Promise.all([fetchAtrProductos(), fetchAtrClienteId()])
+    setCreando(false)
+    if (p.error || c.error) return setError(p.error || c.error)
+    const hoy = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
+    navigate('/nueva', {
+      state: {
+        atrPrefill: {
+          orderTypeKey: TIPO_ORDEN_ATR,
+          clientId: c.data,
+          clientName: 'ATR',
+          description: `Producción para inventario ATR (Qué nos falta del ${hoy}).`,
+          prendas: prendasParaOrden(elegidas, p.data),
+        },
+      },
+    })
+  }
 
   function bajarCsv() {
     const url = URL.createObjectURL(new Blob([faltantesCSV(vista)], { type: 'text/csv;charset=utf-8' }))
@@ -77,6 +115,11 @@ export default function AtrFaltantes() {
           </label>
         </div>
         <div className="atr-acciones">
+          {puedeTaller && (
+            <button type="button" className="btn btn--primary" onClick={crearOrden} disabled={!elegidas.length || creando}>
+              {creando ? 'Abriendo…' : `Crear orden de taller${elegidas.length ? ` (${n(piezasElegidas)} batas)` : ''}`}
+            </button>
+          )}
           <button type="button" className="btn btn--ghost btn--small" onClick={bajarCsv} disabled={!vista.length}>CSV</button>
           <button type="button" className="btn btn--ghost btn--small" onClick={verPdf} disabled={!vista.length || generando}>
             {generando ? 'Generando…' : 'PDF'}
@@ -98,6 +141,11 @@ export default function AtrFaltantes() {
             <table className="simple-table atr-tabla">
               <thead>
                 <tr>
+                  {puedeTaller && (
+                    <th className="atr-falta-sel">
+                      <input type="checkbox" checked={todasVisibles} onChange={toggleTodas} aria-label="Elegir todas" />
+                    </th>
+                  )}
                   <th>Bata</th><th>Talla</th>
                   <th className="atr-num">Pendiente</th><th className="atr-num">Existencia</th>
                   <th className="atr-num">En taller</th><th className="atr-num">Faltante</th>
@@ -108,6 +156,11 @@ export default function AtrFaltantes() {
                   const nivel = nivelFaltante(f)
                   return (
                     <tr key={f.producto_id + f.talla} className={nivel ? `atr-falta--${nivel}` : ''}>
+                      {puedeTaller && (
+                        <td className="atr-falta-sel">
+                          <input type="checkbox" checked={!!sel?.has(clave(f))} onChange={() => toggle(f)} aria-label={`Elegir ${f.producto} ${f.talla}`} />
+                        </td>
+                      )}
                       <td>{f.producto}</td>
                       <td>{f.talla}</td>
                       <td className="atr-num">{n(f.pendiente)}</td>
@@ -136,6 +189,12 @@ export default function AtrFaltantes() {
             <span className="atr-falta-muestra atr-falta-muestra--rojo" /> Falta producir ·{' '}
             <span className="atr-falta-muestra atr-falta-muestra--amarillo" /> Alcanza solo con lo que está en taller
           </p>
+          {puedeTaller && (
+            <p className="atr-muted atr-falta-leyenda">
+              La orden de taller se abre en el formulario normal (tipo Industrial, cliente ATR) con cantidad = faltante; ahí se
+              ajusta. No se liga a una OC: produce para el inventario y, mientras no se termine, cuenta en "En taller".
+            </p>
+          )}
         </>
       )}
 

@@ -54,6 +54,7 @@ import { CAPTURA_FECHA_CREACION_HABILITADA } from '../utils/featureFlags'
 import Miniatura from '../components/common/Miniatura'
 import { ACEPTA_FOTO_O_PDF } from '../utils/archivos'
 import AyudaModulo from '../components/common/AyudaModulo'
+import { prendaDesdeProducto } from '../utils/productoCatalogo'
 
 const initialForm = {
   // Fase 1A — toda la orden es venta de mostrador: sin precio, anticipo ni factura.
@@ -228,7 +229,12 @@ function NewOrderForm() {
 
   // V42: el borrador se lee UNA sola vez (lazy init) — no en cada
   // render, si no reabriría localStorage con cada tecla.
-  const [initialDraft] = useState(() => loadDraft())
+  // V215 — "Crear orden de taller" desde ATR · Qué nos falta: la orden llega
+  // prellenada (tipo, cliente ATR, batas y tallas = faltante) y gana sobre
+  // cualquier borrador guardado. Todo se puede editar antes de crear.
+  const location = useLocation()
+  const [atrPrefill] = useState(() => location.state?.atrPrefill || null)
+  const [initialDraft] = useState(() => (atrPrefill ? null : loadDraft()))
   const hasDraft = !!(
     initialDraft &&
     (initialDraft.form?.clientName?.trim() ||
@@ -238,13 +244,27 @@ function NewOrderForm() {
   const [draftDismissed, setDraftDismissed] = useState(false)
 
   // V176 — "+ Nueva orden" desde un pedido: la orden entra a ese pedido.
-  const pedidoDesdeRuta = useLocation().state?.pedidoId || ''
+  const pedidoDesdeRuta = location.state?.pedidoId || ''
   const [form, setForm] = useState(() => {
+    if (atrPrefill) {
+      return {
+        ...initialForm,
+        orderTypeKey: atrPrefill.orderTypeKey,
+        clientId: atrPrefill.clientId,
+        clientName: atrPrefill.clientName,
+        description: atrPrefill.description || '',
+      }
+    }
     const base = initialDraft?.form ? { ...initialForm, ...initialDraft.form } : initialForm
     return pedidoDesdeRuta ? { ...base, agrupacion: 'existente', pedidoExistenteId: pedidoDesdeRuta } : base
   })
   const { productos, refresh: refreshProductos } = useProductosByCliente(form.clientId)
-  const [items, setItems] = useState(() => (initialDraft?.items?.length > 0 ? initialDraft.items : [emptyItem()]))
+  const [items, setItems] = useState(() => {
+    if (atrPrefill?.prendas?.length) {
+      return atrPrefill.prendas.map((g) => ({ ...emptyItem(), ...prendaDesdeProducto(g.producto), sizes: g.sizes.map((x) => ({ ...x })) }))
+    }
+    return initialDraft?.items?.length > 0 ? initialDraft.items : [emptyItem()]
+  })
   const [photoFiles, setPhotoFiles] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
@@ -280,9 +300,12 @@ function NewOrderForm() {
 
   // Guarda el borrador en cada cambio — barato, y así sobrevive tanto a
   // un cambio de pestaña como a que el celular recargue la página sola.
+  // V215 — la orden prellenada desde ATR no pisa el borrador guardado (si
+  // se recarga, el prellenado vuelve a salir del historial del navegador).
   useEffect(() => {
+    if (atrPrefill) return
     saveDraft({ form, items, anticipoMonto, anticipoMetodo, anticipoRecibidoPor, anticipoNotas, pedidoForm })
-  }, [form, items, anticipoMonto, anticipoMetodo, anticipoRecibidoPor, anticipoNotas, pedidoForm])
+  }, [atrPrefill, form, items, anticipoMonto, anticipoMetodo, anticipoRecibidoPor, anticipoNotas, pedidoForm])
 
   // V136 — "Venta Mostrador": el cliente es siempre Salper (se asigna solo y
   // el selector queda bloqueado). El servidor lo fuerza igual.
@@ -896,6 +919,13 @@ function NewOrderForm() {
       </div>
       {ocrWarning && <p className="pantone-hint">{ocrWarning}</p>}
       {ocrError && <p className="form-error">{ocrError.message}</p>}
+
+      {atrPrefill && (
+        <p className="pantone-hint">
+          Prellenada desde <strong>ATR · Qué nos falta</strong>: {atrPrefill.prendas.length} bata(s), cantidad = faltante.
+          Puedes cambiar cantidades (redondear o producir de más). Falta elegir tela y capturar precio.
+        </p>
+      )}
 
       {hasDraft && !draftDismissed && (
         <p className="pantone-hint" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
