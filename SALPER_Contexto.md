@@ -8603,6 +8603,9 @@ Sigue al inventario de batas de ATR (V209–V211). Flujo completo: **llega la OC
 Claude) → "Qué nos falta" dice qué hay que producir → se surte desde la OC (descuenta inventario, hoja de surtido en
 PDF) → orden de taller por lo que falta → al completar Terminado entra sola al inventario (V211) → se surte el resto**.
 Ambos SQL APLICADOS por Alfredo el 2026-11-23 (V215: 3·2·4·11·1·0·false; V216: true·2·true·true·true·false; anon 401).
+Ojo con el número: el mismo día otra sesión llamó "V215" a dos arreglos de datos (cierre de etapas, costura sin
+órdenes terminadas; archivos `datos_2026-11-23_*`). La migración de esquema V215 es esta (`schema_v215_atr_ordenes_compra.sql`).
+Siguiente migración: V217.
 
 **V215 — tablas y funciones** (`schema_v215_atr_ordenes_compra.sql`)
 - `atr_ordenes_compra` (numero_oc único entre no canceladas, fecha_oc, fecha_entrega, pdf_url = ruta en el bucket
