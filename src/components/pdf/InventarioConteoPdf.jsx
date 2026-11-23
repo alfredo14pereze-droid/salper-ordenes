@@ -97,7 +97,7 @@ export default function InventarioConteoPdf({ seccionNombre, ubicacionNombre, fe
           </View>
         </View>
 
-        <Text style={styles.footnote}>Llenar la columna "Conteo" a mano y capturar después en SALPER</Text>
+        <Text style={styles.footnote} wrap={false}>Llenar la columna "Conteo" a mano y capturar después en SALPER</Text>
       </Page>
     </Document>
   )

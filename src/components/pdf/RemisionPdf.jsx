@@ -173,7 +173,7 @@ export default function RemisionPdf({ order, orderTypeLabel }) {
           )}
         </View>
 
-        <Text style={styles.footnote}>Remisión generada al completar la orden en SALPER</Text>
+        <Text style={styles.footnote} wrap={false}>Remisión generada al completar la orden en SALPER</Text>
       </Page>
     </Document>
   )

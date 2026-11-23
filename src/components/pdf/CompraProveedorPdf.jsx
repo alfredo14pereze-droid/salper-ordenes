@@ -96,7 +96,7 @@ export default function CompraProveedorPdf({ compra, grupos, generado }) {
             <View style={s.totFinal}><Text style={s.bold}>Total</Text><Text style={s.bold}>{peso(subtotal + iva)}</Text></View>
           </View>
         )}
-        {compra.notas && <Text style={s.nota}>Notas: {compra.notas}</Text>}
+        {compra.notas && <Text style={s.nota} wrap={false}>Notas: {compra.notas}</Text>}
 
         <View style={s.pie} fixed>
           <Text>SALPER · Pedido de compra #{compra.folio}</Text>

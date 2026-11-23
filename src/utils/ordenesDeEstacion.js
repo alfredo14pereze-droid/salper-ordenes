@@ -27,13 +27,23 @@ export function etapaAnteriorEnSecuencia(etapa, etapasDeLaOrden = []) {
   )
 }
 
+// V215 — una orden que ya está lista para entregar (status 'terminado') o
+// entregada ('completado') no le sale a ninguna estación, aunque su fila de
+// esa etapa se haya quedado en 'pendiente'/'en_proceso' (entrega masiva,
+// "Corregir estado manualmente", etc.). Tampoco si terminado ya completó:
+// lo de antes de terminado ya no tiene caso.
+export const STATUS_YA_TERMINADA = ['terminado', 'completado']
+
 // 'lista'    → sale en "Siguientes órdenes" de la estación.
 // 'espera'   → es de la estación pero falta el paso anterior.
-// null       → no es de la estación (no tiene la etapa o ya la terminó).
+// null       → no es de la estación (no tiene la etapa, ya la terminó o la
+//              orden ya se terminó por otro lado).
 // `orden` (opcional): con order_type_key 'frisa' aplica la regla estricta.
 export function situacionEnEstacion(etapa, etapasDeLaOrden = [], orden = null) {
   const mia = etapasDeLaOrden.find((e) => e.etapa === etapa)
   if (!mia || (mia.estado !== 'pendiente' && mia.estado !== 'en_proceso')) return null
+  if (STATUS_YA_TERMINADA.includes(orden?.status)) return null
+  if (etapa !== 'terminado' && etapasDeLaOrden.some((e) => e.etapa === 'terminado' && e.estado === 'completado')) return null
   // Lo que ya se empezó nunca se esconde.
   if (mia.estado === 'en_proceso') return 'lista'
   if (orden?.order_type_key === 'frisa') {

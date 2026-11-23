@@ -148,7 +148,7 @@ export function HojaOperadora({ semana, persona }) {
       </View>
       <Text style={[s.bold, { marginTop: 8 }]}>{stats.clasificacion}</Text>
 
-      <Text style={s.nota}>El valor generado mide lo que produjiste esta semana; no es tu sueldo. Con él se calculan los premios.</Text>
+      <Text style={s.nota} wrap={false}>El valor generado mide lo que produjiste esta semana; no es tu sueldo. Con él se calculan los premios.</Text>
     </Page>
   )
 }

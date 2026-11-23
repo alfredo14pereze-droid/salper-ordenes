@@ -114,7 +114,7 @@ export default function InventarioTraspasoPdf({ traspaso, origenNombre, destinoN
           </View>
         </View>
 
-        <Text style={styles.footnote}>Vale generado en SALPER al confirmar el traspaso</Text>
+        <Text style={styles.footnote} wrap={false}>Vale generado en SALPER al confirmar el traspaso</Text>
       </Page>
     </Document>
   )
