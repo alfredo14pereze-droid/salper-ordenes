@@ -8670,7 +8670,7 @@ dedo; empate = no adivina). Sin "con/sin bolsa", solo se sugiere si ese color ex
 (alias) sigue ganando. El lector `atr_oc` toma "Orden de Compra No." (no la requisición), la descripción completa, la
 planta (va a Notas) y las fechas en **MES/DÍA/AÑO** (11/10/2026 = 10-nov). Pruebas en `atrOc.test.js` con los 9 renglones.
 
-**V217 — tallas como Microsip** (`schema_v217_atr_tallas_microsip.sql`, 2026-11-23). Alfredo mandó el reporte de
+**V217 — tallas como Microsip** (`schema_v217_atr_tallas_microsip.sql`, 2026-11-23, SQL APLICADO: 0·0·0·0·1·true). Alfredo mandó el reporte de
 existencias de Microsip ("así los manejamos nosotros realmente"): tallas **XS, S, M, L, XL, 2XL, 3XL, 4XL, 5XL** (S en vez
 de CH) y nombres como "BATA C/BOLSA ATR A.CIELO T-2XL", "V.SUPERVISOR", "V,GRASA", "GRIS" (= Gris Rata). Decisión: el
 sistema usa las tallas de Microsip. `atr_talla()` normaliza (CH/CHICA → S, XXL → 2XL…) y la usan todas las funciones de
