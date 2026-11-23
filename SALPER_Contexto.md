@@ -8584,6 +8584,10 @@ abajo (contraseña nueva).
 - **Limpieza de datos (APLICADA el 2026-11-23 con el OK de Alfredo):** `supabase/datos_2026-11-23_cerrar_etapas_de_ordenes_terminadas.sql` cierra
   esas filas (`completado`, `completado_en` = el de terminado, `iniciado_en` NULL para que Tiempos por etapa las salte).
   Eran 6 filas; comprobación final: 0 abiertas, orders.status sin cambio.
+  2ª parte (mismo día, pedido de Alfredo): `datos_2026-11-23_cerrar_etapas_de_ordenes_canceladas_eliminadas.sql` cerró
+  las etapas abiertas de órdenes canceladas/eliminadas (27 órdenes, 92 filas; ninguna de ATR ni ligada al restock de
+  Frisa; por orden_secuencia para el candado de Frisa). APLICADO: 0 abiertas, orders.status sin cambio. Con eso no
+  queda ninguna etapa abierta en órdenes terminadas, entregadas, canceladas ni eliminadas.
 - **Bug 2 (PDF de la orden):** con la orden "Por Confirmar" y el contenido casi al pie de la hoja, la nota "Orden sujeta
   a confirmación de fábrica" (margen + raya + padding) se partía y @react-pdf creaba una hoja 2 vacía. Ahora el
   footnote lleva `wrap={false}` y el último renglón de Fotos de referencia no tiene margen abajo. Verificado con un
