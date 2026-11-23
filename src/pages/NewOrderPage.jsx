@@ -41,7 +41,8 @@ import { createOrderFrisa, fetchProductosFrisa } from '../services/frisaService'
 import { CLIENTE_FRISA_NOMBRE } from '../lib/constants'
 import RequireRole from '../components/common/RequireRole'
 import FileDropLabel from '../components/common/FileDropLabel'
-import { canCreateOrder } from '../utils/permissions'
+import { canCreateOrder, canTallerAtr } from '../utils/permissions'
+import { crearOrdenTallerAtr } from '../services/atrService'
 import { useAuth } from '../contexts/AuthContext'
 import { Loading, ErrorState } from '../components/common/States'
 import { buildOrderConfirmationPdfBlob, fetchPagosParaPdf, orderConfirmationPdfFileName } from '../utils/generateOrderPdf'
@@ -174,8 +175,11 @@ function agruparArticulosPorPrenda(articulos) {
 }
 
 export default function NewOrderPage() {
+  // V216 — admin_fabrica y contabilidad no crean órdenes, salvo la orden de
+  // taller de ATR que llega desde "Qué nos falta" (atr.taller).
+  const desdeAtr = !!useLocation().state?.atrPrefill
   return (
-    <RequireRole allow={canCreateOrder}>
+    <RequireRole allow={(r) => canCreateOrder(r) || (desdeAtr && canTallerAtr(r))}>
       <NewOrderForm />
     </RequireRole>
   )
@@ -347,7 +351,10 @@ function NewOrderForm() {
   // ("Mismo precio" o "Precios por talla", en `item.precios`) y de ahí sale el
   // precio de cada talla; ni uno ni otro van a orders.items.
   // Frisa y el tipo Venta Mostrador no llevan precio.
-  const llevaPrecio = !!form.orderTypeKey && !esFrisa && tipoLlevaPrecio(form.orderTypeKey)
+  // V216 — la orden de taller de ATR es para inventario: sin precio, sin
+  // pedido ni anticipo, tipo y cliente fijos; se guarda con atr_crear_orden_taller.
+  const esAtrInventario = !!atrPrefill
+  const llevaPrecio = !!form.orderTypeKey && !esFrisa && !esAtrInventario && tipoLlevaPrecio(form.orderTypeKey)
   // Fase 1A — venta de mostrador de toda la orden: no se cobra nada.
   const ventaMostrador = !!form.ventaMostrador
   const cobra = llevaPrecio && !ventaMostrador
@@ -371,7 +378,7 @@ function NewOrderForm() {
   const faltaPrecioAlta = cobra && resumen.sinPrecio.length > 0
   // V176 — pedidos: solo quien edita precios (ventas y administradores de
   // tienda), y no en Frisa (no lleva cliente ni precio).
-  const puedePedidos = canEditFinanzas(role) && !esFrisa
+  const puedePedidos = canEditFinanzas(role) && !esFrisa && !esAtrInventario
   const agrupacion = puedePedidos ? form.agrupacion || 'suelta' : 'suelta'
   const enPedido = agrupacion !== 'suelta'
   const [pedidosLista, setPedidosLista] = useState([])
@@ -669,7 +676,15 @@ function NewOrderForm() {
       }
     }
 
-    const { data, error: createError } = await createOrder({
+    const { data, error: createError } = esAtrInventario
+      ? await crearOrdenTallerAtr({
+          description: form.description.trim(),
+          requestedDeliveryDate: form.requestedDeliveryDate,
+          items: cleanItems,
+          foliosExternos: form.foliosExternos,
+          createdAt: CAPTURA_FECHA_CREACION_HABILITADA ? form.createdAt || null : null,
+        })
+      : await createOrder({
       clientName: form.clientName.trim(),
       clientId: form.clienteIncidental ? null : form.clientId || null,
       clientTelefono: form.clientTelefono.trim(),
@@ -907,23 +922,26 @@ function NewOrderForm() {
     <div className="page page--narrow">
       <div className="new-order-header">
         <h2 className="section-title">Nueva orden <AyudaModulo id="nueva-orden" /></h2>
-        <FileDropLabel
-          className="btn btn--ghost btn--small"
-          style={{ display: 'inline-flex' }}
-          accept="image/*,application/pdf"
-          disabled={ocrLoading}
-          onFiles={handleOcrFiles}
-        >
-          {ocrLoading ? 'Leyendo…' : 'Prellenar con foto o PDF'}
-        </FileDropLabel>
+        {!esAtrInventario && (
+          <FileDropLabel
+            className="btn btn--ghost btn--small"
+            style={{ display: 'inline-flex' }}
+            accept="image/*,application/pdf"
+            disabled={ocrLoading}
+            onFiles={handleOcrFiles}
+          >
+            {ocrLoading ? 'Leyendo…' : 'Prellenar con foto o PDF'}
+          </FileDropLabel>
+        )}
       </div>
       {ocrWarning && <p className="pantone-hint">{ocrWarning}</p>}
       {ocrError && <p className="form-error">{ocrError.message}</p>}
 
       {atrPrefill && (
         <p className="pantone-hint">
-          Prellenada desde <strong>ATR · Qué nos falta</strong>: {atrPrefill.prendas.length} bata(s), cantidad = faltante.
-          Puedes cambiar cantidades (redondear o producir de más). Falta elegir tela y capturar precio.
+          Orden de taller para <strong>inventario ATR</strong> (desde Qué nos falta): {atrPrefill.prendas.length} bata(s),
+          cantidad = faltante. Puedes cambiar cantidades (redondear o producir de más). Va sin precio; falta la fecha de
+          entrega y la tela.
         </p>
       )}
 
@@ -938,6 +956,7 @@ function NewOrderForm() {
 
       <form className="order-form" onSubmit={handleSubmit}>
         {/* Fase 1A — primer paso: ¿toda la orden es venta de mostrador? */}
+        {!esAtrInventario && (
         <VentaMostradorToggle
           checked={ventaMostrador}
           onChange={(v) => updateField('ventaMostrador', v)}
@@ -952,6 +971,7 @@ function NewOrderForm() {
                   : null
           }
         />
+        )}
 
         {/* V176 — ¿la orden va sola o en un pedido? */}
         {puedePedidos && (
@@ -1005,19 +1025,29 @@ function NewOrderForm() {
             Tipo de orden *
           </span>
           {/* 2026-11-09: las órdenes de Frisa ya no se crean aquí, solo desde Frisa → Restock. */}
+          {esAtrInventario ? (
+            <p className="pantone-hint" style={{ margin: 0 }}>
+              <b>{orderTypes.find((t) => t.key === form.orderTypeKey)?.label || form.orderTypeKey}</b> — fijo para la orden de taller de ATR.
+            </p>
+          ) : (
           <OrderTypeSelect
             orderTypes={orderTypes.filter((t) => !esOrdenFrisa(t.key))}
             value={form.orderTypeKey}
             onChange={handleTypeChange}
             onTypeCreated={refresh}
           />
+          )}
         </div>
 
         <div>
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
             Cliente *
           </span>
-          {esFrisa ? (
+          {esAtrInventario ? (
+            <p className="pantone-hint" style={{ margin: 0 }}>
+              <b>{form.clientName}</b> — producción para su inventario (no se liga a una OC).
+            </p>
+          ) : esFrisa ? (
             <p className="pantone-hint" style={{ margin: 0 }}>
               <b>{CLIENTE_FRISA_NOMBRE}</b> — las órdenes de Frisa no usan el catálogo de clientes.
             </p>

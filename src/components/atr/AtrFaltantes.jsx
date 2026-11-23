@@ -17,6 +17,9 @@ const clave = (f) => `${f.producto_id}|${f.talla}`
 // Tipo de orden con el que se capturan las órdenes de ATR (no hay tipo "ATR").
 const TIPO_ORDEN_ATR = 'industrial'
 
+// puedeTaller = atr.taller (admin_general, admin_fabrica, contabilidad): la
+// orden se crea con atr_crear_orden_taller (V216) aunque su rol no cree
+// órdenes normales.
 export default function AtrFaltantes({ puedeTaller = false }) {
   const navigate = useNavigate()
   const [sel, setSel] = useState(null) // Set de claves elegidas
@@ -191,8 +194,9 @@ export default function AtrFaltantes({ puedeTaller = false }) {
           </p>
           {puedeTaller && (
             <p className="atr-muted atr-falta-leyenda">
-              La orden de taller se abre en el formulario normal (tipo Industrial, cliente ATR) con cantidad = faltante; ahí se
-              ajusta. No se liga a una OC: produce para el inventario y, mientras no se termine, cuenta en "En taller".
+              La orden de taller se abre en el formulario normal (tipo Industrial, cliente ATR, sin precio) con cantidad =
+              faltante; ahí se ajusta. No se liga a una OC: produce para el inventario y, mientras no se termine, cuenta en
+              "En taller".
             </p>
           )}
         </>

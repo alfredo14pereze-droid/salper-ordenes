@@ -930,7 +930,7 @@ export function canVerMovimientosFrisa(role) {
 // schema_v209_atr_inventario.sql (se cambia en "Roles y permisos").
 export function canVerAtr(role) {
   return tiene(role, 'atr.ver', () =>
-    ['admin_general', 'admin_fabrica', 'admin_tienda', 'terminado', 'admin_fabrica_lectura'].includes(role))
+    ['admin_general', 'admin_fabrica', 'admin_tienda', 'terminado', 'admin_fabrica_lectura', 'contabilidad'].includes(role))
 }
 export function canEntregarAtr(role) {
   return tiene(role, 'atr.entregar', () => ['admin_general', 'admin_fabrica', 'terminado'].includes(role))
@@ -942,8 +942,10 @@ export function canCargarAtr(role) {
 export function canOcAtr(role) {
   return tiene(role, 'atr.oc', () => ['admin_general', 'admin_fabrica'].includes(role))
 }
+// V216 — también contabilidad; quien la tiene crea la orden de taller de ATR
+// aunque su rol no cree órdenes normales (atr_crear_orden_taller).
 export function canTallerAtr(role) {
-  return tiene(role, 'atr.taller', () => ['admin_general', 'admin_fabrica'].includes(role))
+  return tiene(role, 'atr.taller', () => ['admin_general', 'admin_fabrica', 'contabilidad'].includes(role))
 }
 
 // V213 — Cotizaciones web (formulario de salperdeportes.com). Solo

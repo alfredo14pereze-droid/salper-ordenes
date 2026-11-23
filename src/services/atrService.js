@@ -242,3 +242,17 @@ export async function fetchAtrClienteId() {
   if (e) return { data: null, error: e }
   return supabase.rpc('atr_cliente_id')
 }
+
+// V216 — orden de taller para inventario ATR (sin precio). La pueden crear
+// quienes tienen atr.taller aunque su rol no cree órdenes normales.
+export async function crearOrdenTallerAtr({ description, requestedDeliveryDate, items, foliosExternos, createdAt }) {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_crear_orden_taller', {
+    p_description: description || null,
+    p_requested_delivery_date: requestedDeliveryDate,
+    p_items: items,
+    p_folios_externos: foliosExternos || [],
+    p_created_at: createdAt || null,
+  })
+}
