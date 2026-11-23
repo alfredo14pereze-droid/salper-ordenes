@@ -123,7 +123,7 @@ export default function InventarioReportePdf({ seccionNombre, subtitulo, fecha, 
           </View>
         </View>
 
-        <Text style={styles.footnote}>Reporte generado en SALPER</Text>
+        <Text style={styles.footnote} wrap={false}>Reporte generado en SALPER</Text>
       </Page>
     </Document>
   )

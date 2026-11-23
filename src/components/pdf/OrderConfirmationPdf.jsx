@@ -286,7 +286,9 @@ function FotosReferencia({ fotos }) {
         // que nunca quede solo al pie de una hoja.
         <View key={r} wrap={false} style={r === 0 ? { marginTop: 11 } : null}>
           {r === 0 && <Text style={styles.sectionTitle}>Fotos de referencia</Text>}
-          <View style={styles.fotosLine}>
+          {/* V215 — sin margen abajo en el último renglón: al pie de la hoja
+              ese margen podía pasar solo a una hoja nueva en blanco. */}
+          <View style={[styles.fotosLine, r === renglones.length - 1 && { marginBottom: 0 }]}>
             {Array.from({ length: porRenglon }, (_, c) => {
               const f = renglon[c]
               const margen = c > 0 ? { marginLeft: 6 } : null
@@ -542,7 +544,9 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 
             fotos pueden ir grandes (si no caben, pasan completas a otra hoja). */}
         {fotos.length > 0 && <FotosReferencia fotos={fotos} />}
 
-        {pending && <Text style={styles.footnote}>Orden sujeta a confirmación de fábrica</Text>}
+        {/* V215 — wrap={false}: si la nota (margen + raya + texto) se partía
+            entre hojas, @react-pdf creaba una 2ª hoja en blanco. */}
+        {pending && <Text style={styles.footnote} wrap={false}>Orden sujeta a confirmación de fábrica</Text>}
       </Page>
       {isInternal && hojasOperaciones.map((h, i) => <HojaOperaciones key={i} order={order} hoja={h} />)}
     </Document>

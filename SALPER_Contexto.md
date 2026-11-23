@@ -8571,6 +8571,32 @@ abajo (contraseña nueva).
      impresión → terminado). El catálogo se edita en Catálogos → Frisa: no se revisó la base en vivo.
 - **Publicado** en `main`/producción el 2026-11-22 (Alfredo lo aprobó). Las diferencias de arriba siguen pendientes.
 
+### V215 — Costura ya no ve órdenes terminadas + PDF de la orden sin hoja 2 en blanco (2026-11-23, solo frontend, sin esquema) (rama `costura-viejas-pdf-blanco`)
+- **Bug 1 (Siguientes órdenes):** a Costura le salían como pendientes órdenes ya entregadas. Consulta en la base (solo
+  lectura): VEN-005, ESC-035 y ESC-052 están `completado` (Entregada) con terminado `completado`, pero su fila
+  `produccion` se quedó en `pendiente` (costura nunca la marcó; la orden avanzó por terminado/entrega). Igual IND-054
+  (completado) y SUB-059 (terminado, con `produccion` y `sublimado` pendientes). SUB-058 NO era el bug: está
+  `en_produccion` y costura la tiene `en_proceso` (la empezaron el 2026-11-23); sigue saliendo, como debe.
+  `situacionEnEstacion()` solo miraba la fila de su etapa. Ahora regresa `null` si `orden.status` es `terminado` o
+  `completado` (`STATUS_YA_TERMINADA`), aunque la etapa esté `en_proceso`, y si la etapa `terminado` ya está
+  `completado` y la evaluada no es terminado. ETAPAS_PREVIAS (V140) y la secuencia de Frisa (V155) sin cambio. Tests
+  nuevos en `src/utils/ordenesDeEstacion.test.js` (211 tests en total pasan). Lo usa también `estacionVeCambios`.
+- **Limpieza de datos (APLICADA el 2026-11-23 con el OK de Alfredo):** `supabase/datos_2026-11-23_cerrar_etapas_de_ordenes_terminadas.sql` cierra
+  esas filas (`completado`, `completado_en` = el de terminado, `iniciado_en` NULL para que Tiempos por etapa las salte).
+  Eran 6 filas; comprobación final: 0 abiertas, orders.status sin cambio.
+  2ª parte (mismo día, pedido de Alfredo): `datos_2026-11-23_cerrar_etapas_de_ordenes_canceladas_eliminadas.sql` cerró
+  las etapas abiertas de órdenes canceladas/eliminadas (27 órdenes, 92 filas; ninguna de ATR ni ligada al restock de
+  Frisa; por orden_secuencia para el candado de Frisa). APLICADO: 0 abiertas, orders.status sin cambio. Con eso no
+  queda ninguna etapa abierta en órdenes terminadas, entregadas, canceladas ni eliminadas.
+- **Bug 2 (PDF de la orden):** con la orden "Por Confirmar" y el contenido casi al pie de la hoja, la nota "Orden sujeta
+  a confirmación de fábrica" (margen + raya + padding) se partía y @react-pdf creaba una hoja 2 vacía. Ahora el
+  footnote lleva `wrap={false}` y el último renglón de Fotos de referencia no tiene margen abajo. Verificado con un
+  script temporal (esbuild + renderToFile + pypdf, ya borrado): ~5,900 combinaciones (interno/cliente, por
+  confirmar/confirmada, 0–3 fotos, 1–3 prendas, sin extra/historial/pagos, descripción 0–400 caracteres): antes 136
+  PDFs con hoja sin texto (todas por confirmar), después 0.
+- Mismo `wrap={false}` en las notas de pie de RemisionPdf, InventarioConteoPdf, InventarioReportePdf,
+  InventarioTraspasoPdf, CompraProveedorPdf (Notas) y ProduccionPdf (nota del valor generado). PedidoColegioPdf no tiene nota de pie.
+
 ### 2026-11-23 — ATR: órdenes de compra, surtido, "Qué nos falta" y orden de taller (V215, V216) (rama `atr-oc`)
 
 Sigue al inventario de batas de ATR (V209–V211). Flujo completo: **llega la OC de ATR → se sube (PDF + lectura con
