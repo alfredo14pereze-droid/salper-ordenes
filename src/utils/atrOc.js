@@ -17,26 +17,96 @@ export function textoAlias(t) {
   return String(t ?? '').toLowerCase().replace(/\s+/g, ' ').trim()
 }
 
-// Bata sugerida para un renglón del PDF.
-// alias: { [textoAlias]: producto_id } (lo aprendido en OCs anteriores).
-// Regresa { producto_id, como } con como = 'aprendido' | 'parecido' | null.
-export function sugerirBata(texto, productos, alias = {}) {
-  const t = textoAlias(texto)
-  if (!t) return { producto_id: '', como: null }
-  const aprendido = alias[t]
-  if (aprendido && productos.some((p) => p.id === aprendido)) return { producto_id: aprendido, como: 'aprendido' }
-  const p = emparejar(texto, '', productos)
-  return p ? { producto_id: p.id, como: 'parecido' } : { producto_id: '', como: null }
+// ---------------------------------------------------------------------
+// Leer una descripción de OC de ATR. Cada planta de ATR usa sus propios
+// números de parte y su propia redacción ("BATA AZUL CIELO TALLA GRANDE SIN
+// BOLSAS", "batas azul cielo sin bolsas talla XL", "BATABLNCATALLACHICA…"),
+// así que la bata se reconoce SOLO por la descripción: color + talla + con o
+// sin bolsa. Nunca por el número de parte.
+// ---------------------------------------------------------------------
+const PALABRAS = /(batas?|talla|bolsas?|sin|con)/g
+const TALLA_TXT = /\btalla\s+(extra\s*grande|chica|chico|mediana|mediano|grande|xxxxl|xxxl|xxl|[2-4]\s*xl|xl|xg|ch|m|l|s|g)\b/
+const TALLA_SUELTA = /\b(extra\s*grande|xxxxl|xxxl|xxl|[2-4]\s*xl|xl|xg)\b/
+
+function distancia(a, b) {
+  const m = a.length
+  const n = b.length
+  const d = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)])
+  for (let j = 1; j <= n; j++) d[0][j] = j
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
+    }
+  }
+  return d[m][n]
 }
 
-// Renglones del lector de PDF → renglones de la revisión.
+// { bolsa: true|false|null, talla: 'M'|''…, color: texto que quedó }
+export function leerDescripcionAtr(texto) {
+  let t = normalizar(texto).replace(/c\s*\/\s*/g, ' con ').replace(/s\s*\/\s*/g, ' sin ')
+  // Texto pegado (algunos PDF no traen espacios): separa las palabras clave.
+  t = t.replace(PALABRAS, ' $1 ').replace(/\s+/g, ' ').trim()
+  let bolsa = null
+  const mb = t.match(/\b(con|sin)\s+bolsas?\b/)
+  if (mb) bolsa = mb[1] === 'con'
+  let talla = ''
+  const mt = t.match(TALLA_TXT) || t.match(TALLA_SUELTA)
+  if (mt) talla = normalizarTalla(mt[1])
+  const color = t
+    .replace(/\b(con|sin)\s+bolsas?\b/g, ' ')
+    .replace(TALLA_TXT, ' ')
+    .replace(TALLA_SUELTA, ' ')
+    .replace(/\b(batas?|talla|de|color|pza|pzas|piezas?)\b/g, ' ')
+    .replace(/[^a-z ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return { bolsa, talla, color }
+}
+
+// Color del catálogo más parecido (tolera errores de dedo: "blnca" → Blanca).
+export function colorDelCatalogo(color, productos) {
+  const c = normalizar(color).replace(/\s+/g, '')
+  if (!c) return null
+  const colores = [...new Set((productos || []).map((p) => normalizar(p.color)).filter(Boolean))]
+  const exacto = colores.find((x) => x.replace(/\s+/g, '') === c)
+  if (exacto) return exacto
+  const tope = Math.max(1, Math.floor(c.length * 0.25))
+  const cerca = colores
+    .map((x) => ({ x, d: distancia(x.replace(/\s+/g, ''), c) }))
+    .filter((r) => r.d <= tope)
+    .sort((a, b) => a.d - b.d)
+  if (!cerca.length) return null
+  if (cerca.length > 1 && cerca[1].d === cerca[0].d) return null // empate: que lo elija una persona
+  return cerca[0].x
+}
+
+// Bata sugerida para un renglón del PDF.
+// alias: { [textoAlias]: producto_id } (lo aprendido en OCs anteriores).
+// Regresa { producto_id, como, talla } con como = 'aprendido' | 'descripcion' | null.
+export function sugerirBata(texto, productos, alias = {}) {
+  const t = textoAlias(texto)
+  const leido = leerDescripcionAtr(texto)
+  if (!t) return { producto_id: '', como: null, talla: '' }
+  const aprendido = alias[t]
+  if (aprendido && productos.some((p) => p.id === aprendido)) return { producto_id: aprendido, como: 'aprendido', talla: leido.talla }
+  const color = colorDelCatalogo(leido.color, productos)
+  if (color) {
+    const delColor = productos.filter((p) => normalizar(p.color) === color)
+    const p = leido.bolsa === null ? (delColor.length === 1 ? delColor[0] : null) : delColor.find((x) => !!x.con_bolsa === leido.bolsa)
+    if (p) return { producto_id: p.id, como: 'descripcion', talla: leido.talla }
+  }
+  return { producto_id: '', como: null, talla: leido.talla }
+}
+
+// Renglones del lector de PDF → renglones de la revisión. La talla sale de
+// lo que leyó el PDF o, si no la separó, de la descripción.
 export function renglonesDesdePdf(articulos, productos, alias) {
   return (articulos || []).map((a) => {
     const s = sugerirBata(a.nombre, productos, alias)
     return {
       texto_pdf: a.nombre || '',
       talla_pdf: a.talla || '',
-      talla: a.talla ? normalizarTalla(a.talla) : '',
+      talla: a.talla ? normalizarTalla(a.talla) : s.talla,
       cantidad: a.cantidad ? String(a.cantidad) : '',
       producto_id: s.producto_id,
       como: s.como,

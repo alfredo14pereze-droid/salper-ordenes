@@ -13,7 +13,10 @@ export function normalizar(s) {
     .trim()
 }
 
-const ALIAS_TALLA = { s: 'CH', chica: 'CH', ch: 'CH', mediana: 'M', grande: 'L', xxl: '2XL', xxxl: '3XL', xxxxl: '4XL' }
+const ALIAS_TALLA = {
+  s: 'CH', chica: 'CH', chico: 'CH', ch: 'CH', mediana: 'M', mediano: 'M', grande: 'L', g: 'L',
+  extragrande: 'XL', xg: 'XL', xxl: '2XL', xxxl: '3XL', xxxxl: '4XL',
+}
 
 export function normalizarTalla(t) {
   const n = normalizar(t).replace(/[\s.-]/g, '')

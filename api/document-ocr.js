@@ -138,27 +138,30 @@ const FRISA_OC_TOOL = {
   },
 }
 
-// V215 — orden de compra de ATR (solo batas). Cada renglón: descripción
-// (con o sin bolsa + color, SIN la talla), talla y cantidad.
+// V215 — orden de compra de ATR (Autosistemas de Torreón, varias plantas; solo
+// batas). Cada planta usa sus propios números de parte y su propia redacción,
+// así que la bata se reconoce en la app por la DESCRIPCIÓN (color + talla +
+// con/sin bolsa), nunca por el número de parte. Las fechas vienen MM/DD/AAAA.
 const ATR_OC_TOOL = {
   name: 'registrar_oc_atr',
   description:
-    'Registra los datos de una orden de compra de ATR que se alcancen a leer con certeza: número de la orden, fechas y los renglones con descripción, talla y cantidad.',
+    'Registra los datos de una orden de compra de ATR que se alcancen a leer con certeza: número de la orden, fechas, planta y los renglones con su descripción completa, talla y cantidad.',
   input_schema: {
     type: 'object',
     properties: {
-      numero: { type: 'string', description: 'Número o folio de la orden de compra. Cadena vacía si no se lee.' },
-      fecha_oc: { type: 'string', description: 'Fecha del documento en YYYY-MM-DD, solo si es explícita. Cadena vacía si no.' },
-      fecha_entrega: { type: 'string', description: 'Fecha de entrega en YYYY-MM-DD, solo si es explícita. Si cada renglón trae su fecha, la más temprana. Cadena vacía si no.' },
+      numero: { type: 'string', description: 'El número de "Orden de Compra No." (p. ej. "C19536"). NO uses el número de requisición. Cadena vacía si no se lee.' },
+      fecha_oc: { type: 'string', description: 'La "Fecha de la Orden" en YYYY-MM-DD. OJO: en estas órdenes las fechas vienen en formato MES/DÍA/AÑO (11/10/2026 = 10 de noviembre de 2026). Cadena vacía si no se lee.' },
+      fecha_entrega: { type: 'string', description: 'La "Fecha de Entrega" en YYYY-MM-DD, también viene en MES/DÍA/AÑO (debe cuadrar con "Días para entregar" a partir de la fecha de la orden). Cadena vacía si no viene.' },
+      planta: { type: 'string', description: 'La planta de ATR (campo "Planta", p. ej. "ATR Rio Grande"). Cadena vacía si no se lee.' },
       articulos: {
         type: 'array',
-        description: 'Un elemento por renglón y talla. Si un renglón trae varias tallas en columnas, un elemento por cada talla con cantidad. Nunca inventes renglones.',
+        description: 'Un elemento por renglón de la tabla. Nunca inventes renglones.',
         items: {
           type: 'object',
           properties: {
-            nombre: { type: 'string', description: 'Descripción de la bata SIN la talla, conservando si es con o sin bolsa y el color (p. ej. "Bata con bolsa azul marino"). Misma bata en varias tallas = mismo texto exacto.' },
-            talla: { type: 'string', description: 'Talla (p. ej. "CH", "M", "L", "XL", "2XL"). Cadena vacía si no trae.' },
-            cantidad: { type: 'number', description: 'Cantidad pedida.' },
+            nombre: { type: 'string', description: 'La columna "Descripción" COMPLETA, tal cual aparece (con color, talla y con/sin bolsa, aunque tenga errores de dedo). No pongas el número de parte.' },
+            talla: { type: 'string', description: 'La talla de ese renglón en forma corta: CH (chica), M (mediana), L (grande), XL (extra grande), 2XL, 3XL o 4XL. Cadena vacía si no se lee.' },
+            cantidad: { type: 'number', description: 'Cantidad pedida (piezas).' },
           },
           required: ['nombre', 'cantidad'],
         },
@@ -206,7 +209,7 @@ const PROMPTS = {
   frisa_oc:
     'Esta es una orden de compra (PDF) que el cliente Frisa le manda a SALPER, fabricante de uniformes. Usa la herramienta para registrar el número de la orden, la planta de Frisa, la fecha del documento, la fecha de entrega y cada renglón con su descripción (sin la talla), talla y cantidad. No inventes ni adivines nada que no se vea con claridad: deja vacío lo que no se lea.',
   atr_oc:
-    'Esta es una orden de compra (PDF) que el cliente ATR le manda a SALPER, fabricante de uniformes. ATR solo compra batas (con o sin bolsa, en varios colores y tallas CH a 4XL). Usa la herramienta para registrar el número de la orden, la fecha del documento, la fecha de entrega y cada renglón con su descripción (sin la talla, pero con bolsa/sin bolsa y color), talla y cantidad. No inventes ni adivines nada que no se vea con claridad: deja vacío lo que no se lea.',
+    'Esta es una orden de compra (PDF) que ATR (Autosistemas de Torreón) le manda a SALPER, fabricante de uniformes. ATR solo compra batas (con o sin bolsa, en varios colores, tallas CH a 4XL). Usa la herramienta para registrar el número de "Orden de Compra No." (no la requisición), la fecha de la orden y la de entrega (vienen en MES/DÍA/AÑO), la planta y cada renglón de la tabla con su descripción COMPLETA tal cual, su talla en forma corta y su cantidad. Ignora el número de parte, el precio y los impuestos. No inventes ni adivines nada que no se vea con claridad: deja vacío lo que no se lea.',
   orden:
     'Este es un documento (foto o PDF) con información de una orden de producción para un taller de uniformes/sublimación. Usa la herramienta disponible para registrar el cliente y la fecha de entrega SOLO si aparecen explícitos y sin ambigüedad, más las prendas con cantidad y talla que se alcancen a leer con certeza. Si la misma prenda aparece en varias tallas (renglones separados para M, L, etc.), regístrala como un artículo por cada talla pero con el nombre IDÉNTICO en todos — no repitas la talla dentro del nombre, va en su propio campo. No inventes ni adivines nada que no se vea con claridad — deja cliente/fecha_entrega vacíos y omite cualquier prenda que no puedas leer bien.',
 }
@@ -332,6 +335,7 @@ export default async function handler(req, res) {
         numero: texto(raw.numero),
         fechaOc: isValidIsoDate(raw.fecha_oc) ? raw.fecha_oc : null,
         fechaEntrega: isValidIsoDate(raw.fecha_entrega) ? raw.fecha_entrega : null,
+        planta: texto(raw.planta),
         articulos: lineas,
       }
       if (!lineas.length && !out.numero) out.warning = 'No se reconoció la orden de compra — llena los campos a mano.'
@@ -371,7 +375,7 @@ export default async function handler(req, res) {
     const fallback = { articulos: [], warning: 'No se pudo leer el archivo automáticamente — llena los campos a mano.' }
     if (mode === 'frisa_oc') Object.assign(fallback, { numero: null, planta: null, fechaOc: null, fechaLimite: null })
     if (mode === 'hoja_operaciones') Object.assign(fallback, { titulo: null, operaciones: [] })
-    if (mode === 'atr_oc') Object.assign(fallback, { numero: null, fechaOc: null, fechaEntrega: null })
+    if (mode === 'atr_oc') Object.assign(fallback, { numero: null, fechaOc: null, fechaEntrega: null, planta: null })
     if (mode === 'orden') {
       fallback.cliente = null
       fallback.fechaEntrega = null

@@ -11,13 +11,60 @@ const productos = [
   { id: 'c', nombre: 'Bata con bolsa Azul Marino', color: 'Azul Marino', con_bolsa: true, tallas: ['CH', 'M', 'L'] },
 ]
 
-test('sugerir bata: aprendido gana, luego parecido', () => {
-  assert.deepEqual(sugerirBata('BATA AZUL MARINO C/BOLSA', productos), { producto_id: 'c', como: 'parecido' })
-  assert.deepEqual(sugerirBata('Bata sin bolsa blanca', productos), { producto_id: 'b', como: 'parecido' })
-  assert.deepEqual(sugerirBata('Bata blanca', productos), { producto_id: '', como: null }) // sin con/sin bolsa
-  assert.deepEqual(sugerirBata('Bata  blanca', productos, { 'bata blanca': 'a' }), { producto_id: 'a', como: 'aprendido' })
-  assert.deepEqual(sugerirBata('Bata blanca', productos, { 'bata blanca': 'zzz' }), { producto_id: '', como: null }) // alias a producto que ya no está
+test('sugerir bata: aprendido gana, luego la descripción', () => {
+  assert.deepEqual(sugerirBata('BATA AZUL MARINO C/BOLSA', productos), { producto_id: 'c', como: 'descripcion', talla: '' })
+  assert.deepEqual(sugerirBata('Bata sin bolsa blanca', productos), { producto_id: 'b', como: 'descripcion', talla: '' })
+  assert.deepEqual(sugerirBata('Bata blanca', productos), { producto_id: '', como: null, talla: '' }) // blanca hay con y sin bolsa
+  assert.deepEqual(sugerirBata('Bata  blanca', productos, { 'bata blanca': 'a' }), { producto_id: 'a', como: 'aprendido', talla: '' })
+  assert.equal(sugerirBata('Bata blanca', productos, { 'bata blanca': 'zzz' }).producto_id, '') // alias a producto que ya no está
   assert.equal(textoAlias('  BATA   Lila '), 'bata lila')
+})
+
+// Catálogo real de ATR (V209, Verde Jade → Verde Supervisor)
+const CATALOGO = [
+  ...['Blanca', 'Café', 'Gris Rata', 'Negra', 'Azul Rey', 'Verde Supervisor', 'Azul Marino', 'Guinda', 'Azul Cielo'].map((c) => ({ id: `con-${c}`, color: c, con_bolsa: true })),
+  ...['Negra', 'Naranja', 'Lila', 'Verde Bandera', 'Guinda', 'Verde Fosfo', 'Beige', 'Amarillo', 'Paja', 'Gris Rata', 'Verde Grasa', 'Café', 'Azul Cielo', 'Blanca'].map((c) => ({ id: `sin-${c}`, color: c, con_bolsa: false })),
+]
+
+test('OC real de ATR (C19536, planta Río Grande): color + talla + bolsa por la descripción', () => {
+  const casos = [
+    ['BATA AZUL CIELO TALLA GRANDE SIN BOLSAS', 'sin-Azul Cielo', 'L'],
+    ['BATA AZUL CIELO TALLA 2XL SIN BOLSAS', 'sin-Azul Cielo', '2XL'],
+    ['BATA NARANJA TALLA CHICA SIN BOLSAS', 'sin-Naranja', 'CH'],
+    ['BATA NARANJA TALLA MEDIANA SIN BOLSAS', 'sin-Naranja', 'M'],
+    ['BATA NARANJA TALLA GRANDE SIN BOLSAS', 'sin-Naranja', 'L'],
+    ['BATA BLNCA TALLA CHICA SIN BOLSAS', 'sin-Blanca', 'CH'], // error de dedo en la OC
+    ['BATA BLANCA TALLA MEDIANA SIN BOLSAS', 'sin-Blanca', 'M'],
+    ['BATA BLANCA TALLA GRANDE SIN BOLSAS', 'sin-Blanca', 'L'],
+    ['batas azul cielo sin bolsas talla XL', 'sin-Azul Cielo', 'XL'],
+    // Igual, pero como sale el texto pegado del PDF
+    ['BATAAZUL CIELOTALLAGRANDESINBOLSAS', 'sin-Azul Cielo', 'L'],
+    ['BATABLNCATALLACHICASINBOLSAS', 'sin-Blanca', 'CH'],
+    ['BATANARANJATALLAMEDIANASINBOLSAS', 'sin-Naranja', 'M'],
+    // Otras redacciones
+    ['Bata con bolsa Verde Supervisor talla extra grande', 'con-Verde Supervisor', 'XL'],
+    ['BATA C/BOLSA GRIS RATA T-3XL', 'con-Gris Rata', '3XL'],
+    ['Bata lila talla M', 'sin-Lila', 'M'], // lila solo existe sin bolsa
+  ]
+  for (const [txt, id, talla] of casos) {
+    const s = sugerirBata(txt, CATALOGO)
+    assert.equal(s.producto_id, id, txt)
+    assert.equal(s.talla, talla, txt)
+  }
+  // Sin decir bolsa y el color existe con y sin bolsa: no adivina
+  assert.equal(sugerirBata('BATA AZUL CIELO TALLA M', CATALOGO).producto_id, '')
+  // Color que no existe: no adivina
+  assert.equal(sugerirBata('BATA MORADA SIN BOLSA TALLA M', CATALOGO).producto_id, '')
+})
+
+test('la talla del PDF gana; si no viene, sale de la descripción', () => {
+  const r = renglonesDesdePdf([
+    { nombre: 'BATA NARANJA TALLA GRANDE SIN BOLSAS', talla: null, cantidad: 6 },
+    { nombre: 'BATA NARANJA TALLA GRANDE SIN BOLSAS', talla: 'xl', cantidad: 6 },
+  ], CATALOGO, {})
+  assert.equal(r[0].talla, 'L')
+  assert.equal(r[1].talla, 'XL')
+  assert.equal(r[0].producto_id, 'sin-Naranja')
 })
 
 test('renglones desde el PDF normalizan talla', () => {

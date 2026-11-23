@@ -8663,6 +8663,14 @@ toca, borrar datos de prueba) y V216 (13: fábrica/contabilidad crean solo ATR, 
 en las demás, catálogo/cantidades, etapas). Pantallas en el ejemplo local, escritorio y celular. NO se crearon órdenes
 en producción (gastan folio).
 
+**Reconocimiento por descripción (2026-11-23, con la OC real C19536 de planta Río Grande).** Cada planta de ATR usa
+sus propios números de parte y su propia redacción ("BATA AZUL CIELO TALLA GRANDE SIN BOLSAS", "batas azul cielo sin
+bolsas talla XL", errores como "BLNCA"), así que la bata se reconoce SOLO por la descripción: `leerDescripcionAtr`
+(color + talla en palabras o corta + con/sin bolsa(s), aguanta texto pegado) y `colorDelCatalogo` (tolera errores de
+dedo; empate = no adivina). Sin "con/sin bolsa", solo se sugiere si ese color existe en una sola versión. Lo aprendido
+(alias) sigue ganando. El lector `atr_oc` toma "Orden de Compra No." (no la requisición), la descripción completa, la
+planta (va a Notas) y las fechas en **MES/DÍA/AÑO** (11/10/2026 = 10-nov). Pruebas en `atrOc.test.js` con los 9 renglones.
+
 **Pendiente**
 - La lectura de un PDF real de ATR solo funciona en Vercel: probar con la primera OC real.
 - La primera orden de taller real de ATR es la prueba en vivo de V216 (folio real).

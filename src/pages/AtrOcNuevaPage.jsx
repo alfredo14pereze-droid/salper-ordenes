@@ -88,6 +88,7 @@ function AtrOcNueva() {
       numero_oc: d.numero || x.numero_oc,
       fecha_oc: d.fechaOc || x.fecha_oc,
       fecha_entrega: d.fechaEntrega || x.fecha_entrega,
+      notas: x.notas || (d.planta ? `Planta: ${d.planta}` : ''),
     }))
     const nuevos = renglonesDesdePdf(d.articulos, productos, al.data || {}).map((r) => renglon(r))
     setRenglones(nuevos)
@@ -172,6 +173,9 @@ function AtrOcNueva() {
               <input className="input" type="date" value={f.fecha_entrega || ''} onChange={(e) => setF({ ...f, fecha_entrega: e.target.value })} />
             </label>
           </div>
+          {pdf?.leido && (
+            <p className="atr-muted atr-oc-meta">Las OC de ATR traen las fechas en mes/día/año (11/10/2026 = 10 de noviembre): revisa que cuadren.</p>
+          )}
           {yaSubida && (
             <p className="form-error">
               Esta OC ya está subida ({ESTADOS_OC[yaSubida.estado]}). <Link to={`/atr/oc/${yaSubida.id}`}>Ver la OC {yaSubida.numero_oc}</Link>
@@ -198,7 +202,7 @@ function AtrOcNueva() {
                   <button type="button" className="atr-quitar" onClick={() => quitar(r.key)} aria-label="Quitar renglón">×</button>
                 </div>
                 {r.como === 'aprendido' && <span className="atr-ok">✓ como la vez pasada</span>}
-                {r.como === 'parecido' && <span className="atr-muted">Sugerida por parecido: revísala</span>}
+                {r.como === 'descripcion' && <span className="atr-muted">Leída de la descripción (color, talla y bolsa): revísala</span>}
                 {problemas[i] && <span className="atr-negativo">{problemas[i]}</span>}
                 {reps.has(`${r.producto_id}|${r.talla}`) && <span className="atr-muted">Bata y talla repetidas: se sumarán en una línea.</span>}
                 {!r.producto_id && canCargarAtr(role) && alta?.key !== r.key && (
