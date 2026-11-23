@@ -160,7 +160,7 @@ const ATR_OC_TOOL = {
           type: 'object',
           properties: {
             nombre: { type: 'string', description: 'La columna "Descripción" COMPLETA, tal cual aparece (con color, talla y con/sin bolsa, aunque tenga errores de dedo). No pongas el número de parte.' },
-            talla: { type: 'string', description: 'La talla de ese renglón en forma corta: CH (chica), M (mediana), L (grande), XL (extra grande), 2XL, 3XL o 4XL. Cadena vacía si no se lee.' },
+            talla: { type: 'string', description: 'La talla de ese renglón en forma corta: XS (extra chica), S (chica), M (mediana), L (grande), XL (extra grande), 2XL, 3XL, 4XL o 5XL. Cadena vacía si no se lee.' },
             cantidad: { type: 'number', description: 'Cantidad pedida (piezas).' },
           },
           required: ['nombre', 'cantidad'],
@@ -209,7 +209,7 @@ const PROMPTS = {
   frisa_oc:
     'Esta es una orden de compra (PDF) que el cliente Frisa le manda a SALPER, fabricante de uniformes. Usa la herramienta para registrar el número de la orden, la planta de Frisa, la fecha del documento, la fecha de entrega y cada renglón con su descripción (sin la talla), talla y cantidad. No inventes ni adivines nada que no se vea con claridad: deja vacío lo que no se lea.',
   atr_oc:
-    'Esta es una orden de compra (PDF) que ATR (Autosistemas de Torreón) le manda a SALPER, fabricante de uniformes. ATR solo compra batas (con o sin bolsa, en varios colores, tallas CH a 4XL). Usa la herramienta para registrar el número de "Orden de Compra No." (no la requisición), la fecha de la orden y la de entrega (vienen en MES/DÍA/AÑO), la planta y cada renglón de la tabla con su descripción COMPLETA tal cual, su talla en forma corta y su cantidad. Ignora el número de parte, el precio y los impuestos. No inventes ni adivines nada que no se vea con claridad: deja vacío lo que no se lea.',
+    'Esta es una orden de compra (PDF) que ATR (Autosistemas de Torreón) le manda a SALPER, fabricante de uniformes. ATR solo compra batas (con o sin bolsa, en varios colores, tallas XS a 5XL). Usa la herramienta para registrar el número de "Orden de Compra No." (no la requisición), la fecha de la orden y la de entrega (vienen en MES/DÍA/AÑO), la planta y cada renglón de la tabla con su descripción COMPLETA tal cual, su talla en forma corta y su cantidad. Ignora el número de parte, el precio y los impuestos. No inventes ni adivines nada que no se vea con claridad: deja vacío lo que no se lea.',
   orden:
     'Este es un documento (foto o PDF) con información de una orden de producción para un taller de uniformes/sublimación. Usa la herramienta disponible para registrar el cliente y la fecha de entrega SOLO si aparecen explícitos y sin ambigüedad, más las prendas con cantidad y talla que se alcancen a leer con certeza. Si la misma prenda aparece en varias tallas (renglones separados para M, L, etc.), regístrala como un artículo por cada talla pero con el nombre IDÉNTICO en todos — no repitas la talla dentro del nombre, va en su propio campo. No inventes ni adivines nada que no se vea con claridad — deja cliente/fecha_entrega vacíos y omite cualquier prenda que no puedas leer bien.',
 }

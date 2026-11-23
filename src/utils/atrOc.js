@@ -2,7 +2,9 @@
 // renglón leído del PDF, ordenar la lista, % surtido, urgencia de la fecha
 // de entrega). Sin dependencias de React ni de Supabase; pruebas en
 // atrOc.test.js.
-import { emparejar, normalizar, normalizarTalla, ordenTalla } from './atrCarga.js'
+import { colorDelCatalogo, leerDescripcionAtr, normalizar, normalizarTalla, ordenTalla } from './atrCarga.js'
+
+export { colorDelCatalogo, leerDescripcionAtr }
 
 export const ESTADOS_OC = {
   abierta: 'Abierta',
@@ -15,69 +17,6 @@ export const ESTADOS_OC = {
 // Se usa para buscar lo aprendido; la base hace lo mismo al guardar.
 export function textoAlias(t) {
   return String(t ?? '').toLowerCase().replace(/\s+/g, ' ').trim()
-}
-
-// ---------------------------------------------------------------------
-// Leer una descripción de OC de ATR. Cada planta de ATR usa sus propios
-// números de parte y su propia redacción ("BATA AZUL CIELO TALLA GRANDE SIN
-// BOLSAS", "batas azul cielo sin bolsas talla XL", "BATABLNCATALLACHICA…"),
-// así que la bata se reconoce SOLO por la descripción: color + talla + con o
-// sin bolsa. Nunca por el número de parte.
-// ---------------------------------------------------------------------
-const PALABRAS = /(batas?|talla|bolsas?|sin|con)/g
-const TALLA_TXT = /\btalla\s+(extra\s*grande|chica|chico|mediana|mediano|grande|xxxxl|xxxl|xxl|[2-4]\s*xl|xl|xg|ch|m|l|s|g)\b/
-const TALLA_SUELTA = /\b(extra\s*grande|xxxxl|xxxl|xxl|[2-4]\s*xl|xl|xg)\b/
-
-function distancia(a, b) {
-  const m = a.length
-  const n = b.length
-  const d = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)])
-  for (let j = 1; j <= n; j++) d[0][j] = j
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
-    }
-  }
-  return d[m][n]
-}
-
-// { bolsa: true|false|null, talla: 'M'|''…, color: texto que quedó }
-export function leerDescripcionAtr(texto) {
-  let t = normalizar(texto).replace(/c\s*\/\s*/g, ' con ').replace(/s\s*\/\s*/g, ' sin ')
-  // Texto pegado (algunos PDF no traen espacios): separa las palabras clave.
-  t = t.replace(PALABRAS, ' $1 ').replace(/\s+/g, ' ').trim()
-  let bolsa = null
-  const mb = t.match(/\b(con|sin)\s+bolsas?\b/)
-  if (mb) bolsa = mb[1] === 'con'
-  let talla = ''
-  const mt = t.match(TALLA_TXT) || t.match(TALLA_SUELTA)
-  if (mt) talla = normalizarTalla(mt[1])
-  const color = t
-    .replace(/\b(con|sin)\s+bolsas?\b/g, ' ')
-    .replace(TALLA_TXT, ' ')
-    .replace(TALLA_SUELTA, ' ')
-    .replace(/\b(batas?|talla|de|color|pza|pzas|piezas?)\b/g, ' ')
-    .replace(/[^a-z ]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-  return { bolsa, talla, color }
-}
-
-// Color del catálogo más parecido (tolera errores de dedo: "blnca" → Blanca).
-export function colorDelCatalogo(color, productos) {
-  const c = normalizar(color).replace(/\s+/g, '')
-  if (!c) return null
-  const colores = [...new Set((productos || []).map((p) => normalizar(p.color)).filter(Boolean))]
-  const exacto = colores.find((x) => x.replace(/\s+/g, '') === c)
-  if (exacto) return exacto
-  const tope = Math.max(1, Math.floor(c.length * 0.25))
-  const cerca = colores
-    .map((x) => ({ x, d: distancia(x.replace(/\s+/g, ''), c) }))
-    .filter((r) => r.d <= tope)
-    .sort((a, b) => a.d - b.d)
-  if (!cerca.length) return null
-  if (cerca.length > 1 && cerca[1].d === cerca[0].d) return null // empate: que lo elija una persona
-  return cerca[0].x
 }
 
 // Bata sugerida para un renglón del PDF.

@@ -30,21 +30,29 @@ test('OC real de ATR (C19536, planta Río Grande): color + talla + bolsa por la 
   const casos = [
     ['BATA AZUL CIELO TALLA GRANDE SIN BOLSAS', 'sin-Azul Cielo', 'L'],
     ['BATA AZUL CIELO TALLA 2XL SIN BOLSAS', 'sin-Azul Cielo', '2XL'],
-    ['BATA NARANJA TALLA CHICA SIN BOLSAS', 'sin-Naranja', 'CH'],
+    ['BATA NARANJA TALLA CHICA SIN BOLSAS', 'sin-Naranja', 'S'],
     ['BATA NARANJA TALLA MEDIANA SIN BOLSAS', 'sin-Naranja', 'M'],
     ['BATA NARANJA TALLA GRANDE SIN BOLSAS', 'sin-Naranja', 'L'],
-    ['BATA BLNCA TALLA CHICA SIN BOLSAS', 'sin-Blanca', 'CH'], // error de dedo en la OC
+    ['BATA BLNCA TALLA CHICA SIN BOLSAS', 'sin-Blanca', 'S'], // error de dedo en la OC
     ['BATA BLANCA TALLA MEDIANA SIN BOLSAS', 'sin-Blanca', 'M'],
     ['BATA BLANCA TALLA GRANDE SIN BOLSAS', 'sin-Blanca', 'L'],
     ['batas azul cielo sin bolsas talla XL', 'sin-Azul Cielo', 'XL'],
     // Igual, pero como sale el texto pegado del PDF
     ['BATAAZUL CIELOTALLAGRANDESINBOLSAS', 'sin-Azul Cielo', 'L'],
-    ['BATABLNCATALLACHICASINBOLSAS', 'sin-Blanca', 'CH'],
+    ['BATABLNCATALLACHICASINBOLSAS', 'sin-Blanca', 'S'],
     ['BATANARANJATALLAMEDIANASINBOLSAS', 'sin-Naranja', 'M'],
     // Otras redacciones
     ['Bata con bolsa Verde Supervisor talla extra grande', 'con-Verde Supervisor', 'XL'],
     ['BATA C/BOLSA GRIS RATA T-3XL', 'con-Gris Rata', '3XL'],
     ['Bata lila talla M', 'sin-Lila', 'M'], // lila solo existe sin bolsa
+    // Nombres de Microsip
+    ['BATA C/BOLSA ATR AZUL CIELO T-2XL', 'con-Azul Cielo', '2XL'],
+    ['BATA S/BOLSA ATR BLANCA T-S', 'sin-Blanca', 'S'],
+    ['BATA S/BOLSA ATR GRIS T-XL', 'sin-Gris Rata', 'XL'],
+    ['BATA C/BOLSA ATR V.SUPERVISOR T-M', 'con-Verde Supervisor', 'M'],
+    ['BATA S/BOLSA ATR V,GRASA T-3XL', 'sin-Verde Grasa', '3XL'],
+    ['BATA C/BOLSA ATR A.REY T-5XL', 'con-Azul Rey', '5XL'],
+    ['BATA S/BOLSA ATR NARANJA T-XS', 'sin-Naranja', 'XS'],
   ]
   for (const [txt, id, talla] of casos) {
     const s = sugerirBata(txt, CATALOGO)

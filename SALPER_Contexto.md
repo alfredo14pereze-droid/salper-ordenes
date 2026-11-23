@@ -8605,7 +8605,6 @@ PDF) → orden de taller por lo que falta → al completar Terminado entra sola 
 Ambos SQL APLICADOS por Alfredo el 2026-11-23 (V215: 3·2·4·11·1·0·false; V216: true·2·true·true·true·false; anon 401).
 Ojo con el número: el mismo día otra sesión llamó "V215" a dos arreglos de datos (cierre de etapas, costura sin
 órdenes terminadas; archivos `datos_2026-11-23_*`). La migración de esquema V215 es esta (`schema_v215_atr_ordenes_compra.sql`).
-Siguiente migración: V217.
 
 **V215 — tablas y funciones** (`schema_v215_atr_ordenes_compra.sql`)
 - `atr_ordenes_compra` (numero_oc único entre no canceladas, fecha_oc, fecha_entrega, pdf_url = ruta en el bucket
@@ -8670,6 +8669,16 @@ bolsas talla XL", errores como "BLNCA"), así que la bata se reconoce SOLO por l
 dedo; empate = no adivina). Sin "con/sin bolsa", solo se sugiere si ese color existe en una sola versión. Lo aprendido
 (alias) sigue ganando. El lector `atr_oc` toma "Orden de Compra No." (no la requisición), la descripción completa, la
 planta (va a Notas) y las fechas en **MES/DÍA/AÑO** (11/10/2026 = 10-nov). Pruebas en `atrOc.test.js` con los 9 renglones.
+
+**V217 — tallas como Microsip** (`schema_v217_atr_tallas_microsip.sql`, 2026-11-23). Alfredo mandó el reporte de
+existencias de Microsip ("así los manejamos nosotros realmente"): tallas **XS, S, M, L, XL, 2XL, 3XL, 4XL, 5XL** (S en vez
+de CH) y nombres como "BATA C/BOLSA ATR A.CIELO T-2XL", "V.SUPERVISOR", "V,GRASA", "GRIS" (= Gris Rata). Decisión: el
+sistema usa las tallas de Microsip. `atr_talla()` normaliza (CH/CHICA → S, XXL → 2XL…) y la usan todas las funciones de
+ATR, así que **las órdenes no se tocaron** (una orden con "CH" cuenta como S; cambiar orders.items habría disparado los
+triggers de historial/tela/etapas). Datos: CH → S en `atr_movimientos` y `atr_oc_lineas` (solo el nombre de la talla) y
+catálogo de batas con las 9 tallas. Frontend: `TALLAS_ATR` y `normalizarTalla` (ch → S); el lector de descripción entiende
+las abreviaturas de Microsip (A. = azul, V. = verde, T-S, C/BOLSA, S/BOLSA, "GRIS" = primera palabra de un solo color) y
+la carga inicial (`emparejar`) también. Siguiente migración: V218.
 
 **Pendiente**
 - La lectura de un PDF real de ATR solo funciona en Vercel: probar con la primera OC real.
