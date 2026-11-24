@@ -8689,7 +8689,7 @@ y cuántas hay para surtir parcial). El inventario se reparte de la que vence pr
 el mismo aviso (esa OC sola contra la existencia). Manual: `datos_2026-11-23_manual_atr_avisos.sql`.
 
 **V219 — catálogo igual que Microsip + inventario con ayuda visual** (`schema_v219_atr_catalogo_microsip.sql`,
-2026-11-24). Microsip tiene 23 batas (116 artículos): 10 con bolsa y 13 sin bolsa. Faltaba **"Bata con bolsa Naranja"**
+2026-11-24, SQL APLICADO: 10·14·0·1·true). Microsip tiene 23 batas (116 artículos): 10 con bolsa y 13 sin bolsa. Faltaba **"Bata con bolsa Naranja"**
 (se agrega) y "Gris Rata" pasa a **"Gris"** (como Microsip). "Bata sin bolsa Guinda" no existe en Microsip y se dejó.
 Alfredo no veía la Blanca porque Inventario solo listaba batas con movimientos. Ahora **Inventario es una matriz**: una
 fila por bata (todas las del catálogo, aunque estén en 0) y **las tallas en columnas** (S–3XL siempre; XS, 4XL, 5XL si
