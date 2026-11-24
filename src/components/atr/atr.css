@@ -181,3 +181,17 @@
   .atr-inv-filtros { grid-template-columns: 1fr; }
   .atr-inv-color-sel select { flex: 1; min-width: 0; }
 }
+
+/* V220 — apartado por facturar */
+.atr-apartado { color: var(--color-orange-strong); font-weight: 700; }
+.atr-matriz__ap { display: block; font-size: 11px; font-weight: 700; color: var(--color-orange-strong); line-height: 1.1; }
+.atr-surtido__bt { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.atr-surtido__linea { display: inline-flex; align-items: center; gap: 4px; }
+.atr-surtido--cancelado { opacity: 0.7; }
+.atr-confirmar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.atr-confirmar .input { width: 180px; }
+.atr-facturar-lista { display: grid; gap: 10px; }
+.atr-micro-resumen { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 6px 0 10px; font-size: 14px; }
+.atr-dif--mas { color: var(--color-orange-strong); font-weight: 700; }
+.atr-dif--menos { color: var(--color-danger); font-weight: 700; }
+.atr-dif--ok { color: var(--color-good); }

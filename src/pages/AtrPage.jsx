@@ -3,8 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom'
 import RequireRole from '../components/common/RequireRole'
 import { ErrorState, Loading } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
-import { canCargarAtr, canEntregarAtr, canOcAtr, canTallerAtr, canVerAtr } from '../utils/permissions'
-import { fetchAtrExistencias, fetchAtrProductos } from '../services/atrService'
+import { canCargarAtr, canEntregarAtr, canFacturarAtr, canOcAtr, canTallerAtr, canVerAtr } from '../utils/permissions'
+import { fetchAtrApartadosBt, fetchAtrExistencias, fetchAtrProductos } from '../services/atrService'
 import { TALLAS_ATR, normalizar } from '../utils/atrCarga'
 import { coloresDe, matrizInventario } from '../utils/atrColores'
 import AtrBata, { AtrColor } from '../components/atr/AtrBata'
@@ -13,6 +13,8 @@ import AtrEntregaModal from '../components/atr/AtrEntregaModal'
 import AtrAjusteModal from '../components/atr/AtrAjusteModal'
 import AtrOcLista from '../components/atr/AtrOcLista'
 import AtrFaltantes from '../components/atr/AtrFaltantes'
+import AtrPorFacturar from '../components/atr/AtrPorFacturar'
+import AtrRevisionMicrosip from '../components/atr/AtrRevisionMicrosip'
 import '../components/atr/atr.css'
 import AyudaModulo from '../components/common/AyudaModulo'
 
@@ -31,6 +33,8 @@ const PESTANAS = [
   ['inventario', 'Inventario'],
   ['oc', 'Órdenes de compra'],
   ['faltan', 'Qué nos falta'],
+  ['facturar', 'Por facturar'],
+  ['microsip', 'Revisión Microsip'],
 ]
 
 function AtrPestanas() {
@@ -55,6 +59,20 @@ function AtrPestanas() {
           </div>
           <AtrOcLista puedeSubir={canOcAtr(role)} />
         </>
+      ) : tab === 'facturar' ? (
+        <>
+          <div className="section-header">
+            <h2 className="section-title">Por facturar <AyudaModulo id="atr" /></h2>
+          </div>
+          <AtrPorFacturar puedeConfirmar={canFacturarAtr(role)} />
+        </>
+      ) : tab === 'microsip' ? (
+        <>
+          <div className="section-header">
+            <h2 className="section-title">Revisión Microsip <AyudaModulo id="atr" /></h2>
+          </div>
+          <AtrRevisionMicrosip />
+        </>
       ) : tab === 'faltan' ? (
         <>
           <div className="section-header">
@@ -73,6 +91,7 @@ function Atr() {
   const { role } = useAuth()
   const [productos, setProductos] = useState(null)
   const [existencias, setExistencias] = useState(null)
+  const [apartados, setApartados] = useState({}) // `${producto_id}|${talla}` → apartado por facturar
   const [error, setError] = useState(null)
   const [busca, setBusca] = useState('')
   const [fColor, setFColor] = useState('')
@@ -84,10 +103,11 @@ function Atr() {
 
   const cargar = useCallback(async () => {
     setError(null)
-    const [p, e] = await Promise.all([fetchAtrProductos(), fetchAtrExistencias()])
-    if (p.error || e.error) return setError(p.error || e.error)
+    const [p, e, a] = await Promise.all([fetchAtrProductos(), fetchAtrExistencias(), fetchAtrApartadosBt()])
+    if (p.error || e.error || a.error) return setError(p.error || e.error || a.error)
     setProductos(p.data)
     setExistencias(e.data)
+    setApartados(Object.fromEntries((a.data || []).map((x) => [`${x.producto_id}|${x.talla}`, x.apartado])))
   }, [])
 
   useEffect(() => {
@@ -114,6 +134,7 @@ function Atr() {
   if (!existencias || !productos) return <Loading />
 
   const totalTalla = (t) => vista.reduce((s, f) => s + (f.porTalla[t] || 0), 0)
+  const apartadoTotal = Object.values(apartados).reduce((s, v) => s + v, 0)
   const total = vista.reduce((s, f) => s + f.total, 0)
   const abrir = (f, talla) =>
     setHistorial({ producto_id: f.producto.id, producto: f.producto.nombre, color: f.producto.color, talla, existencia: f.porTalla[talla] || 0 })
@@ -168,7 +189,11 @@ function Atr() {
         </p>
       )}
 
-      <p className="atr-muted atr-conteo">{vista.length} batas · <strong>{total.toLocaleString('es-MX')}</strong> piezas. Toca un número para ver su historial.</p>
+      <p className="atr-muted atr-conteo">
+        {vista.length} batas · <strong>{total.toLocaleString('es-MX')}</strong> piezas en existencia (la que cuadra con Microsip).
+        {apartadoTotal > 0 && <> <span className="atr-apartado">{apartadoTotal.toLocaleString('es-MX')} apartadas</span> por facturar (ya surtidas, todavía en existencia).</>}
+        {' '}Toca un número para ver su historial.
+      </p>
       <div className="atr-tabla-wrap">
         <table className="simple-table atr-tabla atr-matriz">
           <thead>
@@ -184,11 +209,13 @@ function Atr() {
                 <td className="atr-matriz__bata"><AtrBata producto={f.producto.nombre} color={f.producto.color} conBolsa={!!f.producto.con_bolsa} /></td>
                 {tallas.map((t) => {
                   const v = f.porTalla[t] || 0
+                  const ap = apartados[`${f.producto.id}|${t}`] || 0
                   return (
                     <td key={t} className="atr-num atr-matriz__celda">
                       <button type="button" className={'atr-matriz__num' + (v === 0 ? ' is-cero' : v < 0 ? ' atr-negativo' : '')}
-                        onClick={() => abrir(f, t)} aria-label={`${f.producto.nombre} ${t}: ${v}`}>
+                        onClick={() => abrir(f, t)} aria-label={`${f.producto.nombre} ${t}: ${v}${ap ? `, ${ap} apartadas` : ''}`}>
                         {v === 0 ? '·' : v.toLocaleString('es-MX')}
+                        {ap > 0 && <span className="atr-matriz__ap">ap. {ap}</span>}
                       </button>
                     </td>
                   )

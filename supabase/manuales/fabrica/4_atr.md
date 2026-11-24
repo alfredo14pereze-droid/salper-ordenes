@@ -6,13 +6,13 @@ titulo: Inventario ATR
 
 **Inventario ATR** lleva todo lo de ATR, cliente al que solo le hacemos batas: el **inventario** por bata y talla, las **órdenes de compra (OC)** que nos manda, el **surtido** de cada OC y **qué nos falta** producir. Lo que se surte se descuenta del inventario; lo que se produce en las órdenes de taller de ATR **entra solo** al completar Terminado.
 
-El flujo es: llega la OC → se sube → se revisa qué falta → se surte lo que hay → se hace la orden de taller por lo que falta → al terminarla entra al inventario → se surte el resto.
+El flujo es: llega la OC → se sube → se revisa qué falta → **Terminado surte** lo que hay (las batas quedan **apartadas**) → **contabilidad confirma la entrega con la factura** (ahí se descuentan del inventario) → se hace la orden de taller por lo que falta → al terminarla entra al inventario → se surte el resto. Con **Revisión Microsip** se compara el inventario contra Microsip.
 
 ## ¿Quién lo usa?
 
 - **Admin fábrica** y **Administración general**: suben y cancelan OC, surten, hacen órdenes de taller, ajustes, carga inicial y deshacen surtidos.
-- **Terminado**: surte las OC y registra entregas.
-- **Contabilidad**: consulta y hace órdenes de taller de ATR (solo de ATR).
+- **Terminado**: surte las OC (aparta las batas) y registra entregas.
+- **Contabilidad**: confirma las entregas con la factura (pestaña **Por facturar**), consulta y hace órdenes de taller de ATR (solo de ATR).
 - **Admin tienda** y **Consulta fábrica**: solo consultan.
 
 ## Antes de empezar
@@ -63,9 +63,25 @@ El flujo es: llega la OC → se sube → se revisa qué falta → se surte lo qu
 1. Abre la OC y dale **Surtir**.
 2. En cada línea ya viene lo que alcanza con la existencia. Cámbialo si hace falta, o usa **Lo que alcanza**, **Todo lo pendiente** o **Borrar**.
 3. Si quieres, pon una **Nota (opcional)**.
-4. Dale **Surtir y ver hoja**. Se abre la **hoja de surtido** en PDF: dale **Descargar** para imprimirla.
+4. Dale **Apartar y ver hoja**. Se abre la **hoja de surtido** en PDF: dale **Descargar** para imprimirla.
+5. Las batas quedan **apartadas** ("Apartado · por facturar"): siguen en la existencia, pero ya no están **disponibles** para otra OC. Se descuentan cuando contabilidad confirma la entrega con la factura.
 
-> Se puede surtir parcial: la OC queda **Parcial** hasta completar. No deja surtir más de lo pendiente. Si alguna talla quedaría en negativo, pide marcar "Sí, sí salen" antes de guardar.
+> Se puede surtir parcial: la OC queda **Parcial** hasta completar. No deja surtir más de lo pendiente ni más de lo disponible sin confirmar ("Sí, sí salen").
+
+### Cómo confirmar una entrega con la factura (contabilidad)
+
+1. Entra a la pestaña **Por facturar**. Salen los surtidos apartados de todas las OC, con sus batas y quién surtió.
+2. Cuando ya se hizo la factura, escribe el **Número de factura** y dale **Confirmar entrega**.
+3. Ahí esas batas **salen del inventario** y el surtido queda "Entregado · Factura …". También se puede confirmar desde el detalle de la OC.
+
+### Cómo revisar el inventario contra Microsip
+
+1. En Microsip saca el reporte **Existencia y valor del inventario** (línea ATR) en Excel.
+2. Entra a la pestaña **Revisión Microsip** y súbelo.
+3. Ves por bata y talla **Microsip**, **Página** y **Diferencia** (página − Microsip). Arriba: cuántas cuadran y cuántas tienen diferencia. Marca o quita **Solo con diferencia**.
+4. Si el Excel trae varias hojas, se toma la de "Existencia y valor"; puedes cambiarla en **Hoja**.
+
+> Solo revisa: no cambia nada. Lo apartado por facturar cuenta en la existencia (igual que en Microsip, que lo descuenta al facturar).
 
 ### Cómo hacer la orden de taller de lo que falta
 
@@ -87,14 +103,14 @@ El flujo es: llega la OC → se sube → se revisa qué falta → se surte lo qu
 
 1. Abre la OC. Abajo, en **Surtidos de esta OC**, busca el surtido.
 2. Dale **Deshacer**, escribe el motivo y dale **Sí, deshacer surtido**.
-3. Las batas regresan al inventario y la OC vuelve a **Parcial** o **Abierta**. El surtido queda tachado con quién y por qué.
+3. Si estaba **apartado**, las batas se liberan. Si ya estaba **entregado** (con factura), regresan al inventario. La OC vuelve a **Parcial** o **Abierta** y el surtido queda como deshecho, con quién y por qué.
 
 ### Cómo cancelar una OC (administradores)
 
 1. Abre la OC y dale **Cancelar OC**.
 2. Escribe el motivo y dale **Sí, cancelar OC**.
 
-> Lo que ya se surtió **no** regresa solo al inventario. Si debe regresar, deshaz el surtido antes de cancelar.
+> Lo **apartado** se libera solo. Lo ya **entregado** (con factura) **no** regresa al inventario: si debe regresar, deshaz ese surtido antes de cancelar.
 
 ### Otros (administradores)
 
@@ -118,12 +134,15 @@ El flujo es: llega la OC → se sube → se revisa qué falta → se surte lo qu
 | Fila **amarilla** en Qué nos falta | Alcanza, pero solo contando lo que está en taller. |
 | **Existencia** en rojo | Hay menos de cero. Revisa con un conteo. |
 | **Sumado al inventario ATR ✓** | Lo producido en esa orden ya entró al inventario. |
+| **Apartado · por facturar** (amarillo) | Terminado ya surtió; falta que contabilidad confirme con la factura. Sigue en existencia, no está disponible. |
+| **Entregado · Factura …** (verde) | Contabilidad confirmó: ya salió del inventario. |
+| **ap. N** en el inventario | De esa existencia, N batas están apartadas por facturar. |
 
 ## Si eres de…
 
 - **Admin fábrica / Administración general**: subes las OC, revisas qué falta, haces las órdenes de taller y surtes.
-- **Terminado**: surtes las OC y entregas la hoja de surtido.
-- **Contabilidad**: consultas y haces órdenes de taller de ATR.
+- **Terminado**: surtes las OC (apartas) y entregas la hoja de surtido.
+- **Contabilidad**: confirmas en **Por facturar** cada entrega con su factura, revisas contra Microsip y haces órdenes de taller de ATR.
 - **Admin tienda / Consulta fábrica**: solo consultas.
 
 ## Problemas comunes

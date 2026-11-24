@@ -949,6 +949,10 @@ export function canCargarAtr(role) {
 export function canOcAtr(role) {
   return tiene(role, 'atr.oc', () => ['admin_general', 'admin_fabrica'].includes(role))
 }
+// V220 — contabilidad confirma con la factura la entrega de un surtido de ATR.
+export function canFacturarAtr(role) {
+  return tiene(role, 'atr.facturar', () => ['contabilidad', 'admin_general'].includes(role))
+}
 // V216 — también contabilidad; quien la tiene crea la orden de taller de ATR
 // aunque su rol no cree órdenes normales (atr_crear_orden_taller).
 export function canTallerAtr(role) {

@@ -11,7 +11,8 @@ import AtrBata from './AtrBata'
 const n = (x) => Number(x || 0).toLocaleString('es-MX')
 
 export default function AtrSurtirModal({ oc, lineas, onClose, onListo }) {
-  const pendientes = lineas.filter((l) => l.pendiente > 0)
+  // V220: lo que se puede surtir es lo disponible (existencia − apartado por facturar).
+  const pendientes = lineas.filter((l) => l.pendiente > 0).map((l) => ({ ...l, existencia: l.disponible ?? l.existencia }))
   const [cant, setCant] = useState(() => Object.fromEntries(pendientes.map((l) => [l.oc_linea_id, String(cantidadPropuesta(l))])))
   const [nota, setNota] = useState('')
   const [error, setError] = useState(null)
@@ -45,7 +46,8 @@ export default function AtrSurtirModal({ oc, lineas, onClose, onListo }) {
     <Modal title={`Surtir OC ${oc.numero_oc}`} onClose={onClose}>
       <div className="atr-surtir">
         <p className="atr-muted">
-          Se propone lo que alcanza con la existencia. Puedes surtir parcial: la OC queda "Parcial" hasta completar.
+          Se propone lo que alcanza con lo disponible. Puedes surtir parcial: la OC queda "Parcial" hasta completar.
+          Las batas quedan <strong>apartadas</strong>; se descuentan del inventario cuando contabilidad confirme la entrega con la factura.
         </p>
         <div className="atr-acciones atr-surtir-llenar">
           <button type="button" className="btn btn--ghost btn--small" onClick={() => llenar('propuesta')}>Lo que alcanza</button>
@@ -57,7 +59,7 @@ export default function AtrSurtirModal({ oc, lineas, onClose, onListo }) {
             <thead>
               <tr>
                 <th>Bata</th><th>Talla</th><th className="atr-num atr-surtir-opc">Pedido</th><th className="atr-num atr-surtir-opc">Surtido</th>
-                <th className="atr-num"><span className="atr-largo">Pendiente</span><span className="atr-corto">Pend.</span></th><th className="atr-num"><span className="atr-largo">Existencia</span><span className="atr-corto">Exist.</span></th><th className="atr-num">Surtir</th>
+                <th className="atr-num"><span className="atr-largo">Pendiente</span><span className="atr-corto">Pend.</span></th><th className="atr-num"><span className="atr-largo">Disponible</span><span className="atr-corto">Disp.</span></th><th className="atr-num">Surtir</th>
               </tr>
             </thead>
             <tbody>
@@ -110,7 +112,7 @@ export default function AtrSurtirModal({ oc, lineas, onClose, onListo }) {
         <div className="atr-pie">
           <button type="button" className="btn btn--ghost" onClick={onClose}>Cancelar</button>
           <button type="button" className="btn btn--primary" disabled={guardando || !r.lineas.length || r.errores.length > 0 || (r.negativos.length > 0 && !confirmarNegativo)} onClick={guardar}>
-            {guardando ? 'Guardando…' : 'Surtir y ver hoja'}
+            {guardando ? 'Guardando…' : 'Apartar y ver hoja'}
           </button>
         </div>
       </div>

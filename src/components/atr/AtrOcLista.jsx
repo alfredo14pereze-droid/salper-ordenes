@@ -159,6 +159,7 @@ export default function AtrOcLista({ puedeSubir }) {
                 {o.notas && <span className="atr-muted">{o.notas}</span>}
                 <span className="atr-muted atr-oc-tarjeta-sub">
                   {formatDate(o.fecha_oc)} · {n(o.surtido)} de {n(o.pedido)} batas surtidas ({pctSurtido(o)}%)
+                  {o.apartado > 0 && <> · <span className="atr-apartado">{n(o.apartado)} por facturar</span></>}
                   {o.fecha_entrega ? <> · Entrega {formatDate(o.fecha_entrega)}</> : null}
                   {esActiva(o) && <> · <span className={urg.nivel === 'overdue' ? 'frisa__falta' : urg.nivel === 'warning' ? 'atr-oc-urg--warning' : ''}>{urg.texto}</span></>}
                 </span>

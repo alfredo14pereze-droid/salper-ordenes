@@ -5,13 +5,13 @@ import { ErrorState, Loading } from '../components/common/States'
 import AyudaModulo from '../components/common/AyudaModulo'
 import Modal from '../components/talleros/Modal'
 import { useAuth } from '../contexts/AuthContext'
-import { canCargarAtr, canEntregarAtr, canOcAtr, canVerAtr } from '../utils/permissions'
-import { cancelarAtrOc, deshacerSurtidoAtr, fetchAtrOcDetalle, fetchAtrOcLista, fetchAtrSurtidosOc, urlPdfOcAtr } from '../services/atrService'
+import { canCargarAtr, canEntregarAtr, canFacturarAtr, canOcAtr, canVerAtr } from '../utils/permissions'
+import { cancelarAtrOc, confirmarEntregaAtr, deshacerSurtidoAtr, fetchAtrOcDetalle, fetchAtrOcLista, fetchAtrSurtidosOc, urlPdfOcAtr } from '../services/atrService'
 import AtrSurtirModal from '../components/atr/AtrSurtirModal'
 import AtrBata from '../components/atr/AtrBata'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import { atrHojaSurtidoFileName, buildAtrHojaSurtidoBlob } from '../utils/generateAtrPdf'
-import { ESTADOS_OC, agruparSurtidos, pctSurtido, urgenciaEntrega } from '../utils/atrOc'
+import { ESTADOS_OC, pctSurtido, surtidoDesdeRpc, urgenciaEntrega } from '../utils/atrOc'
 import { daysUntil, formatDate, formatDateTime } from '../utils/dates'
 import '../components/atr/atr.css'
 
@@ -44,6 +44,7 @@ function AtrOcDetalle() {
   const [hoja, setHoja] = useState(null) // { blob, fileName }
   const [deshacer, setDeshacer] = useState(null) // surtido
   const [aviso, setAviso] = useState(null)
+  const [okMsg, setOkMsg] = useState(null)
 
   const cargar = useCallback(async () => {
     setError(null)
@@ -51,11 +52,11 @@ function AtrOcDetalle() {
     if (l.error || d.error) return setError(l.error || d.error)
     const laOc = (l.data || []).find((x) => String(x.id) === String(id)) || null
     const ls = d.data || []
-    const m = await fetchAtrSurtidosOc(ls.map((x) => x.oc_linea_id))
+    const m = await fetchAtrSurtidosOc(Number(id))
     if (m.error) return setError(m.error)
     setOc(laOc)
     setLineas(ls)
-    const gs = agruparSurtidos(m.data, ls)
+    const gs = (m.data || []).map(surtidoDesdeRpc)
     setSurtidos(gs)
     return { oc: laOc, surtidos: gs }
   }, [id])
@@ -136,15 +137,16 @@ function AtrOcDetalle() {
         {oc.notas ? <> · Notas: {oc.notas}</> : null}
       </p>
       {(oc.estado === 'abierta' || oc.estado === 'parcial') && (() => {
-        // Esta OC sola contra la existencia de hoy (como el detalle de Frisa).
-        const faltan = lineas.filter((l) => l.pendiente > Math.max(0, l.existencia))
-        const hay = lineas.reduce((t, l) => t + Math.min(l.pendiente, Math.max(0, l.existencia)), 0)
+        // Esta OC sola contra lo disponible hoy (existencia − apartado por facturar).
+        const disp = (l) => Math.max(0, l.disponible ?? l.existencia)
+        const faltan = lineas.filter((l) => l.pendiente > disp(l))
+        const hay = lineas.reduce((t, l) => t + Math.min(l.pendiente, disp(l)), 0)
         return faltan.length === 0 ? (
           <p className="atr-oc-aviso atr-oc-aviso--ok"><span className="frisa-nivel frisa-nivel--verde">Se puede surtir</span> Hay inventario para surtir todo lo pendiente ({n(pend)} batas).</p>
         ) : (
           <p className="atr-oc-aviso atr-oc-aviso--falta">
             <span className="frisa-nivel frisa-nivel--rojo">Faltan piezas</span>{' '}
-            Falta: {faltan.map((l) => `${l.producto} ${l.talla} (${n(l.pendiente - Math.max(0, l.existencia))})`).join(', ')}.
+            Falta: {faltan.map((l) => `${l.producto} ${l.talla} (${n(l.pendiente - disp(l))})`).join(', ')}.
             {hay > 0 ? ` Hay ${n(hay)} de ${n(pend)} batas para surtir parcial.` : ''}
           </p>
         )
@@ -160,19 +162,23 @@ function AtrOcDetalle() {
             <thead>
               <tr>
                 <th>Bata</th><th>Talla</th>
-                <th className="atr-num">Pedido</th><th className="atr-num">Surtido</th>
-                <th className="atr-num">Pendiente</th><th className="atr-num">Existencia</th>
+                <th className="atr-num">Pedido</th><th className="atr-num">Entregado</th><th className="atr-num">Apartado</th>
+                <th className="atr-num">Pendiente</th><th className="atr-num">Disponible</th>
               </tr>
             </thead>
             <tbody>
               {lineas.map((l) => (
-                <tr key={l.oc_linea_id} className={l.pendiente > 0 && l.existencia < l.pendiente && oc.estado !== 'cancelada' ? 'atr-oc-fila--falta' : ''}>
+                <tr key={l.oc_linea_id} className={l.pendiente > 0 && (l.disponible ?? l.existencia) < l.pendiente && oc.estado !== 'cancelada' ? 'atr-oc-fila--falta' : ''}>
                   <td><AtrBata producto={l.producto} color={l.color} conBolsa={l.con_bolsa} />{l.texto_pdf ? <div className="atr-muted atr-oc-pdf-txt">PDF: {l.texto_pdf}</div> : null}</td>
                   <td>{l.talla}</td>
                   <td className="atr-num">{n(l.pedido)}</td>
-                  <td className="atr-num">{n(l.surtido)}</td>
+                  <td className="atr-num">{n(l.entregado ?? l.surtido)}</td>
+                  <td className="atr-num">{l.apartado ? <span className="atr-apartado">{n(l.apartado)}</span> : '·'}</td>
                   <td className="atr-num"><strong>{n(l.pendiente)}</strong></td>
-                  <td className={'atr-num' + (l.existencia < 0 ? ' atr-negativo' : '')}>{n(l.existencia)}</td>
+                  <td className={'atr-num' + ((l.disponible ?? l.existencia) < 0 ? ' atr-negativo' : '')}>
+                    {n(l.disponible ?? l.existencia)}
+                    {l.apartado > 0 && <div className="atr-muted atr-oc-pdf-txt">de {n(l.existencia)} en existencia</div>}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -180,7 +186,8 @@ function AtrOcDetalle() {
               <tr>
                 <td colSpan={2}><strong>Total</strong></td>
                 <td className="atr-num"><strong>{n(oc.pedido)}</strong></td>
-                <td className="atr-num"><strong>{n(oc.surtido)}</strong></td>
+                <td className="atr-num"><strong>{n(oc.entregado ?? oc.surtido)}</strong></td>
+                <td className="atr-num"><strong>{n(oc.apartado || 0)}</strong></td>
                 <td className="atr-num"><strong>{n(pend)}</strong></td>
                 <td />
               </tr>
@@ -194,26 +201,39 @@ function AtrOcDetalle() {
 
       <section className="atr-surtidos">
         <h3 className="atr-surtidos__titulo">Surtidos de esta OC</h3>
+        <p className="atr-muted atr-oc-meta">Al surtir, las batas quedan <strong>apartadas</strong>; se descuentan del inventario cuando contabilidad confirma la entrega con la factura.</p>
         {aviso && <p className="form-error">{aviso}</p>}
+        {okMsg && <p className="atr-ok">{okMsg}</p>}
         {surtidos.length === 0 ? (
           <p className="atr-muted">Todavía no se ha surtido nada.</p>
         ) : (
           <ul className="atr-surtidos__lista">
             {surtidos.map((g) => (
-              <li key={g.surtido_id} className={'atr-bloque atr-surtido' + (g.deshecho ? ' atr-surtido--deshecho' : '')}>
+              <li key={g.surtido_id} className={'atr-bloque atr-surtido atr-surtido--' + g.estado}>
                 <div className="atr-surtido__cab">
-                  <span><strong>{formatDateTime(g.fecha)}</strong> · {n(g.piezas)} batas · {g.usuario || '—'}</span>
+                  <span>
+                    <EstadoSurtido g={g} />{' '}
+                    <strong>{formatDateTime(g.fecha)}</strong> · {n(g.piezas)} batas · surtió {g.usuario || '—'}
+                  </span>
                   <span className="atr-acciones">
                     <button type="button" className="btn btn--ghost btn--small" onClick={() => verHoja(oc, g)}>Hoja de surtido</button>
-                    {!g.deshecho && canCargarAtr(role) && oc.estado !== 'cancelada' && (
+                    {g.estado !== 'cancelado' && canCargarAtr(role) && oc.estado !== 'cancelada' && (
                       <button type="button" className="btn btn--ghost btn--small atr-btn-peligro" onClick={() => setDeshacer(g)}>Deshacer</button>
                     )}
                   </span>
                 </div>
-                <div className="atr-muted atr-surtido__lineas">
-                  {g.lineas.map((l) => `${l.producto} ${l.talla}: ${n(l.cantidad)}`).join(' · ')}
+                <div className="atr-surtido__lineas atr-surtido__bt">
+                  {g.lineas.map((l, i) => (
+                    <span key={i} className="atr-surtido__linea"><AtrBata producto={l.producto} color={l.color} conBolsa={l.con_bolsa} /> {l.talla}: <strong>{n(l.cantidad)}</strong></span>
+                  ))}
                 </div>
                 {g.nota && <div className="atr-muted atr-surtido__lineas">Nota: {g.nota}</div>}
+                {g.estado === 'entregado' && g.confirmado && (
+                  <div className="atr-muted atr-surtido__lineas">Confirmó {g.confirmado.usuario || '—'} el {formatDateTime(g.confirmado.fecha)}</div>
+                )}
+                {g.estado === 'apartado' && canFacturarAtr(role) && (
+                  <ConfirmarEntrega surtido={g} onListo={(msg) => { setAviso(null); setOkMsg(msg); cargar() }} />
+                )}
                 {g.deshecho && (
                   <div className="atr-negativo atr-surtido__lineas">
                     Deshecho el {formatDateTime(g.deshecho.fecha)} por {g.deshecho.usuario || '—'}: {g.deshecho.motivo}
@@ -293,8 +313,13 @@ function DeshacerSurtido({ oc, surtido, onClose, onListo }) {
   return (
     <Modal title={`Deshacer surtido de la OC ${oc.numero_oc}`} onClose={onClose}>
       <p>
-        Las <strong>{n(surtido.piezas)} batas</strong> de este surtido ({formatDateTime(surtido.fecha)}) regresan al inventario y
-        vuelven a quedar pendientes en la OC. No se borra nada: queda en el historial como movimiento contrario.
+        {surtido.estado === 'apartado' ? (
+          <>Las <strong>{n(surtido.piezas)} batas</strong> apartadas en este surtido ({formatDateTime(surtido.fecha)}) se liberan y
+          vuelven a quedar pendientes en la OC. Todavía no se habían descontado del inventario.</>
+        ) : (
+          <>Las <strong>{n(surtido.piezas)} batas</strong> de este surtido ({formatDateTime(surtido.fecha)}) regresan al inventario y
+          vuelven a quedar pendientes en la OC. No se borra nada: queda en el historial como movimiento contrario.</>
+        )}
       </p>
       <p className="atr-muted">{surtido.lineas.map((l) => `${l.producto} ${l.talla}: ${n(l.cantidad)}`).join(' · ')}</p>
       <label className="atr-campo"><span className="field-label">Motivo</span>
@@ -308,5 +333,40 @@ function DeshacerSurtido({ oc, surtido, onClose, onListo }) {
         </button>
       </div>
     </Modal>
+  )
+}
+
+function EstadoSurtido({ g }) {
+  if (g.estado === 'apartado') return <span className="frisa-nivel frisa-nivel--amarillo">Apartado · por facturar</span>
+  if (g.estado === 'entregado') {
+    return <span className="frisa-nivel frisa-nivel--verde">{g.factura ? `Entregado · Factura ${g.factura}` : 'Entregado'}</span>
+  }
+  return <span className="frisa-nivel frisa-nivel--neutro">Deshecho</span>
+}
+
+// V220 — Contabilidad confirma la entrega de un surtido con la factura.
+export function ConfirmarEntrega({ surtido, onListo }) {
+  const [factura, setFactura] = useState('')
+  const [error, setError] = useState(null)
+  const [guardando, setGuardando] = useState(false)
+
+  async function confirmar() {
+    setError(null)
+    if (!factura.trim()) return setError('Escribe el número de factura.')
+    setGuardando(true)
+    const { error: e } = await confirmarEntregaAtr(surtido.surtido_id, factura.trim())
+    setGuardando(false)
+    if (e) return setError(e.message)
+    onListo(`Se confirmó la entrega con la factura ${factura.trim()}: ${n(surtido.piezas)} batas salieron del inventario.`)
+  }
+
+  return (
+    <div className="atr-confirmar">
+      <input className="input" placeholder="Número de factura" value={factura} onChange={(e) => setFactura(e.target.value)} aria-label="Número de factura" />
+      <button type="button" className="btn btn--primary btn--small" disabled={guardando} onClick={confirmar}>
+        {guardando ? 'Confirmando…' : 'Confirmar entrega'}
+      </button>
+      {error && <span className="form-error">{error}</span>}
+    </div>
   )
 }

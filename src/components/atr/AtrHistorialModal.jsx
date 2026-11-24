@@ -12,8 +12,8 @@ export const TIPOS_ATR = {
   reversa_produccion: 'Reversa (se reabrió Terminado)',
   salida_entrega: 'Entrega a ATR',
   ajuste: 'Ajuste',
-  salida_surtido: 'Surtido de OC',
-  reversa_surtido: 'Surtido deshecho',
+  salida_surtido: 'Entregado a ATR (factura)',
+  reversa_surtido: 'Entrega deshecha',
 }
 
 export default function AtrHistorialModal({ fila, onClose, onAjuste }) {

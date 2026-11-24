@@ -8711,6 +8711,21 @@ muestra las fechas como venían en el PDF para compararlas.
 talla aunque no se complete, y la siguiente se queda con lo que sobra. Misma fecha de entrega → primero la de fecha de OC
 más vieja y luego la que se subió antes. Manual: `datos_2026-11-24_manual_atr_reparto_por_fecha.sql`.
 
+**V220 — surtir aparta, contabilidad confirma con factura + Revisión Microsip** (`schema_v220_atr_apartado_facturacion.sql`,
+2026-11-24). Decisiones de Alfredo: en ATR surte **Terminado** (no el chofer); lo surtido queda **apartado** (hoja de surtido,
+sigue en existencia pero no disponible) y **contabilidad confirma la entrega por surtido con el número de factura**: ahí se
+descuenta (movimientos `salida_surtido`). Tablas `atr_surtidos` (apartado | entregado | cancelado, factura, quién surtió y
+confirmó) y `atr_apartados` (líneas). Los surtidos de antes se registraron como entregados (`antes_de_v220`). Permiso
+`atr.facturar` (contabilidad, admin_general). RPC `atr_confirmar_entrega`, `atr_por_facturar`, `atr_surtidos_oc`,
+`atr_apartados_bt`; `atr_surtir_oc` ahora aparta (valida contra disponible); `atr_deshacer_surtido` libera un apartado o
+revierte una entrega; `atr_oc_cancelar` libera apartados. `atr_oc_detalle`/`atr_faltantes`/`atr_oc_lista` traen entregado,
+apartado y disponible (faltante usa disponible). Pantallas: pestaña **Por facturar** (confirmar con factura), detalle de OC
+con Entregado/Apartado/Disponible y estado de cada surtido, matriz de inventario con "ap. N", Surtir dice "Apartar y ver
+hoja". **Revisión Microsip** (sin base): sube el reporte "Existencia y valor del inventario" (.xlsx), `utils/atrMicrosip.js`
+toma el primer artículo de cada renglón y su existencia, liga por descripción y compara por bata y talla (prefiere la hoja de
+"Existencia y valor", nunca la de "Pendientes de surtir"); con el Excel real: 96 artículos, 1,741 batas, 0 sin ligar.
+Desempate de OC con la misma fecha de entrega: número de OC menor primero.
+
 **Pendiente**
 - La lectura de un PDF real de ATR solo funciona en Vercel: probar con la primera OC real.
 - La primera orden de taller real de ATR es la prueba en vivo de V216 (folio real).

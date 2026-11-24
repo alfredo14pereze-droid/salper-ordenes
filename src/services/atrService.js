@@ -223,18 +223,32 @@ export async function deshacerSurtidoAtr(surtidoId, motivo) {
   return supabase.rpc('atr_deshacer_surtido', { p_surtido_id: surtidoId, p_motivo: motivo })
 }
 
-// Movimientos de surtido de las líneas de una OC (para el historial).
-export async function fetchAtrSurtidosOc(lineaIds) {
+// V220 — Surtidos de una OC (apartados, entregados con factura y cancelados) con sus líneas.
+export async function fetchAtrSurtidosOc(ocId) {
   const e = sinCliente()
   if (e) return { data: null, error: e }
-  if (!lineaIds?.length) return { data: [], error: null }
-  return todas(() =>
-    supabase
-      .from('atr_movimientos')
-      .select('id, tipo, cantidad, talla, oc_linea_id, surtido_id, nota, usuario_nombre, creado_en')
-      .in('oc_linea_id', lineaIds)
-      .order('creado_en', { ascending: true }),
-  )
+  return supabase.rpc('atr_surtidos_oc', { p_oc_id: ocId })
+}
+
+// V220 — Contabilidad: surtidos apartados que faltan de confirmar con factura.
+export async function fetchAtrPorFacturar() {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_por_facturar')
+}
+
+// V220 — Confirma la entrega (factura): ahí se descuenta del inventario.
+export async function confirmarEntregaAtr(surtidoId, factura) {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_confirmar_entrega', { p_surtido_id: surtidoId, p_factura: factura })
+}
+
+// V220 — Apartado (surtido sin facturar) por bata y talla, para el inventario.
+export async function fetchAtrApartadosBt() {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_apartados_bt')
 }
 
 export async function fetchAtrClienteId() {
