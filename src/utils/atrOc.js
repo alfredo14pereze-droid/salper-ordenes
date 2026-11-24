@@ -83,6 +83,11 @@ export function pctSurtido(oc) {
   return Math.min(100, Math.round((oc.surtido / oc.pedido) * 100))
 }
 
+const numeroOc = (t) => {
+  const m = String(t || '').match(/\d+/g)
+  return m ? Number(m.join('')) : null
+}
+
 // Abiertas y parciales primero (por fecha de entrega, sin fecha al final);
 // luego surtidas y canceladas, más recientes primero.
 const PESO = { abierta: 0, parcial: 0, surtida: 1, cancelada: 2 }
@@ -95,7 +100,12 @@ export function ordenarOcs(lista) {
       if (a.fecha_entrega && b.fecha_entrega && a.fecha_entrega !== b.fecha_entrega) return a.fecha_entrega < b.fecha_entrega ? -1 : 1
       if (a.fecha_entrega && !b.fecha_entrega) return -1
       if (!a.fecha_entrega && b.fecha_entrega) return 1
-      // Misma fecha de entrega: primero la orden más vieja (fecha de la OC y luego la que se subió antes).
+      // Misma fecha de entrega: primero la orden más vieja = número de OC menor
+      // (C19503 antes que C19536; decisión de Alfredo 2026-11-24). Si el número
+      // no trae dígitos, la fecha de la OC y luego la que se subió antes.
+      const na = numeroOc(a.numero_oc)
+      const nb = numeroOc(b.numero_oc)
+      if (na !== null && nb !== null && na !== nb) return na - nb
       const fo = String(a.fecha_oc || '').localeCompare(String(b.fecha_oc || ''))
       if (fo) return fo
       return String(a.creado_en || '').localeCompare(String(b.creado_en || ''))

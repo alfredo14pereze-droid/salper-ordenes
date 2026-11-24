@@ -229,11 +229,12 @@ test('estricto por fecha: la que vence antes toma lo que hay aunque no se comple
   assert.deepEqual(r.porId.B.faltantes, [{ producto: 'Blanca', talla: 'M', falta: 5 }])
 })
 
-test('misma fecha de entrega: primero la orden más vieja', () => {
+test('misma fecha de entrega: primero el número de OC menor (C19503 antes que C19536)', () => {
   const l = ordenarOcs([
-    { id: 2, estado: 'abierta', fecha_entrega: '2026-12-01', fecha_oc: '2026-11-15', creado_en: '2026-11-20' },
-    { id: 1, estado: 'abierta', fecha_entrega: '2026-12-01', fecha_oc: '2026-11-01', creado_en: '2026-11-22' },
-    { id: 3, estado: 'parcial', fecha_entrega: '2026-12-01', fecha_oc: '2026-11-15', creado_en: '2026-11-21' },
+    { id: 'C19536', numero_oc: 'C19536', estado: 'abierta', fecha_entrega: '2026-12-10', fecha_oc: '2026-11-10', creado_en: '2026-11-20' },
+    { id: 'C19503', numero_oc: 'C19503', estado: 'abierta', fecha_entrega: '2026-12-10', fecha_oc: '2026-11-10', creado_en: '2026-11-23' },
+    { id: 'C19336', numero_oc: 'C19336', estado: 'abierta', fecha_entrega: '2026-12-06', fecha_oc: '2026-11-06' },
+    { id: 'C18348', numero_oc: 'C18348', estado: 'abierta', fecha_entrega: '2026-11-05', fecha_oc: '2026-10-06' },
   ])
-  assert.deepEqual(l.map((x) => x.id), [1, 2, 3])
+  assert.deepEqual(l.map((x) => x.id), ['C18348', 'C19336', 'C19503', 'C19536'])
 })
