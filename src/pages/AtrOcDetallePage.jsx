@@ -134,6 +134,20 @@ function AtrOcDetalle() {
         Subida por {oc.creado_por_nombre || '—'} el {formatDateTime(oc.creado_en)}
         {oc.notas ? <> · Notas: {oc.notas}</> : null}
       </p>
+      {(oc.estado === 'abierta' || oc.estado === 'parcial') && (() => {
+        // Esta OC sola contra la existencia de hoy (como el detalle de Frisa).
+        const faltan = lineas.filter((l) => l.pendiente > Math.max(0, l.existencia))
+        const hay = lineas.reduce((t, l) => t + Math.min(l.pendiente, Math.max(0, l.existencia)), 0)
+        return faltan.length === 0 ? (
+          <p className="atr-oc-aviso atr-oc-aviso--ok"><span className="frisa-nivel frisa-nivel--verde">Se puede surtir</span> Hay inventario para surtir todo lo pendiente ({n(pend)} batas).</p>
+        ) : (
+          <p className="atr-oc-aviso atr-oc-aviso--falta">
+            <span className="frisa-nivel frisa-nivel--rojo">Faltan piezas</span>{' '}
+            Falta: {faltan.map((l) => `${l.producto} ${l.talla} (${n(l.pendiente - Math.max(0, l.existencia))})`).join(', ')}.
+            {hay > 0 ? ` Hay ${n(hay)} de ${n(pend)} batas para surtir parcial.` : ''}
+          </p>
+        )
+      })()}
       {oc.estado === 'cancelada' && (
         <p className="atr-aviso">Cancelada el {formatDateTime(oc.cancelada_en)}. Motivo: {oc.motivo_cancelacion}</p>
       )}

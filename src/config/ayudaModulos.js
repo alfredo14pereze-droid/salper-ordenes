@@ -635,6 +635,7 @@ export const AYUDA_MODULOS = [
     ],
     tips: [
       'Lo producido en las órdenes de ATR entra solo al completar Terminado.',
+      'En Órdenes de compra cada OC dice en verde "Se puede surtir" o en rojo "Faltan piezas"; arriba sale el resumen de lo que falta.',
       'Se puede surtir parcial; la OC queda "Parcial" hasta completar.',
       'Deshacer un surtido, cancelar una OC, Ajuste y Carga inicial: solo Admin fábrica y Administración general.',
     ],

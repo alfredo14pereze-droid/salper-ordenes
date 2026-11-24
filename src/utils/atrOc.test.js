@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  agruparSurtidos, cantidadPropuesta, faltantesCSV, nivelFaltante, prendasParaOrden, revisarSurtido, seleccionInicial,
+  agruparSurtidos, calcularSurtibles, cantidadPropuesta, faltantesCSV, nivelFaltante, prendasParaOrden, revisarSurtido, seleccionInicial,
   ocRepetida, ordenarOcs, pctSurtido, problemaRenglon, renglonesDesdePdf, repetidos, sugerirBata, textoAlias, urgenciaEntrega,
 } from './atrOc.js'
 
@@ -177,4 +177,37 @@ test('prendas para la orden de taller: una por bata, tallas en orden, cantidad =
   assert.deepEqual(r[1].sizes, [{ talla: 'M', cantidad: '15' }, { talla: 'XL', cantidad: '4' }])
   assert.deepEqual(r[0].sizes, [{ talla: 'M', cantidad: '' }])
   assert.deepEqual([...seleccionInicial(filas)], ['a|XL', 'a|M'])
+})
+
+
+test('se puede surtir / alcanza pero la ocupa otra / faltan piezas (como Frisa)', () => {
+  const ocs = [
+    { id: 1, numero_oc: 'C1', estado: 'abierta', fecha_entrega: '2026-12-01' },
+    { id: 2, numero_oc: 'C2', estado: 'parcial', fecha_entrega: '2026-12-05' },
+    { id: 3, numero_oc: 'C3', estado: 'abierta', fecha_entrega: '2026-12-10' },
+    { id: 4, numero_oc: 'C4', estado: 'surtida', fecha_entrega: '2026-11-01' },
+  ]
+  const L = (oc, p, talla, pendiente, existencia) => ({ oc_linea_id: `${oc}${p}${talla}`, producto_id: p, producto: `Bata ${p}`, talla, pendiente, existencia })
+  const lineas = {
+    1: [L(1, 'A', 'S', 10, 15)],                       // alcanza: queda 5 de A-S
+    2: [L(2, 'A', 'S', 8, 15), L(2, 'B', 'M', 0, 0)],  // sola alcanza (15), pero C1 ocupó 10 → naranja
+    3: [L(3, 'B', 'L', 4, 1), L(3, 'A', 'M', 2, 2)],   // falta 3 de B-L → rojo; alcanzan 1+2
+    4: [L(4, 'A', 'S', 0, 15)],
+  }
+  const r = calcularSurtibles(ocs, lineas)
+  assert.deepEqual(r.ordenes.map((o) => o.oc.numero_oc), ['C1', 'C2', 'C3'])
+  assert.equal(r.porId[1].completa, true)
+  assert.equal(r.porId[2].completa, false)
+  assert.equal(r.porId[2].alcanzaSola, true)
+  assert.deepEqual(r.porId[2].compiteCon, ['C1'])
+  assert.deepEqual(r.porId[2].faltantes, [{ producto: 'Bata A', talla: 'S', falta: 3 }])
+  assert.equal(r.porId[2].alcanzan, 5)
+  assert.equal(r.porId[3].alcanzaSola, false)
+  assert.deepEqual(r.porId[3].faltantes, [{ producto: 'Bata B', talla: 'L', falta: 3 }])
+  assert.equal(r.porId[3].alcanzan, 3)
+  assert.equal(r.porId[3].piezas, 6)
+  // Resumen por bata y talla: A-S piden 18, hay 15 → faltan 3; B-L faltan 3
+  const as = r.porBata.find((x) => x.producto_id === 'A' && x.talla === 'S')
+  assert.deepEqual([as.pendiente, as.existencia, as.falta], [18, 15, 3])
+  assert.equal(r.piezasFaltantes, 6)
 })

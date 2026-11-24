@@ -42,8 +42,12 @@ El flujo es: llega la OC → se sube → se revisa qué falta → se surte lo qu
 ### Cómo ver las órdenes de compra
 
 1. En **Órdenes de compra** salen primero las **abiertas y parciales**, por fecha de entrega.
-2. Filtra por estado o busca el folio.
-3. Toca una OC para ver su detalle: por bata y talla, **Pedido**, **Surtido**, **Pendiente** y **Existencia**. Dale **Ver PDF** para verla junto.
+2. Arriba ves el resumen: cuántas OC están **pendientes**, cuántas **sí se pueden surtir** y cuántas **no se pueden surtir** (con las batas que faltan en total), y la tabla **Lo que falta por bata y talla**.
+3. Cada OC dice en **verde "Se puede surtir"**, en **naranja "Alcanza, pero la ocupa OC…"** (otra que vence antes se lleva esas batas) o en **rojo "Faltan piezas"** con lo que falta y cuántas hay para surtir parcial.
+4. Filtra por estado o busca el folio.
+5. Toca una OC para ver su detalle: por bata y talla, **Pedido**, **Surtido**, **Pendiente** y **Existencia**. Dale **Ver PDF** para verla junto.
+
+> El inventario se reparte de la OC que vence primero a la última, igual que en Frisa.
 
 ### Cómo saber qué nos falta
 
@@ -104,6 +108,9 @@ El flujo es: llega la OC → se sube → se revisa qué falta → se surte lo qu
 | **Parcial** (amarillo) | Se surtió una parte. |
 | **Surtida** (verde) | Ya se surtió todo. |
 | **Cancelada** (tachada) | Se canceló; ya no cuenta en Qué nos falta. |
+| **Se puede surtir** (verde) | Hay batas para surtir todo lo pendiente de esa OC. |
+| **Alcanza, pero la ocupa OC…** (naranja) | Sola alcanzaría, pero otra OC que vence antes se lleva esas batas. |
+| **Faltan piezas** (rojo) | No alcanza: dice qué falta y cuántas hay para surtir parcial. |
 | "Entrega en N días" en rojo / ámbar | Igual que en las órdenes: vence en 3 días o menos / en 7 días o menos. |
 | Fila **roja** en Qué nos falta | Falta producir. |
 | Fila **amarilla** en Qué nos falta | Alcanza, pero solo contando lo que está en taller. |

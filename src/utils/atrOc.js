@@ -216,3 +216,61 @@ export function prendasParaOrden(filas, productos) {
 
 // Selección por defecto: todas las filas con faltante.
 export const seleccionInicial = (filas) => new Set((filas || []).filter((f) => f.faltante > 0).map((f) => `${f.producto_id}|${f.talla}`))
+
+// ---------------------------------------------------------------------
+// ¿Se puede surtir? (igual que las órdenes de surtido de Frisa)
+// El inventario se reparte de la OC que vence primero a la última (sin fecha
+// al final). Por OC activa (abierta/parcial):
+//   completa    → todo lo pendiente alcanza con lo que queda después de las
+//                 que vencen antes (verde "Se puede surtir")
+//   alcanzaSola → sola sí alcanzaría, pero otra que vence antes ocupa las
+//                 piezas (naranja; compiteCon = esas OCs)
+//   si no       → rojo "Faltan piezas" (faltantes por bata y talla)
+//   alcanzan    → piezas que sí hay para surtir parcial
+// lineasPorOc: { [oc_id]: filas de atr_oc_detalle }
+// ---------------------------------------------------------------------
+const claveBT = (l) => `${l.producto_id}|${l.talla}`
+
+export function calcularSurtibles(ocs, lineasPorOc) {
+  const activas = ordenarOcs((ocs || []).filter((o) => o.estado === 'abierta' || o.estado === 'parcial'))
+  const existencia = new Map()
+  for (const o of activas) for (const l of lineasPorOc[o.id] || []) existencia.set(claveBT(l), Math.max(0, l.existencia))
+  const restante = new Map(existencia)
+  const usadoPor = new Map()
+  const porBT = new Map()
+  const ordenes = []
+  for (const oc of activas) {
+    const ls = (lineasPorOc[oc.id] || []).filter((l) => l.pendiente > 0)
+    const faltantes = []
+    let alcanzan = 0
+    for (const l of ls) {
+      const k = claveBT(l)
+      const hay = restante.get(k) ?? 0
+      alcanzan += Math.min(hay, l.pendiente)
+      if (hay < l.pendiente) faltantes.push({ producto: l.producto, talla: l.talla, falta: l.pendiente - hay })
+      const t = porBT.get(k) || { producto_id: l.producto_id, producto: l.producto, talla: l.talla, pendiente: 0, existencia: existencia.get(k) ?? 0 }
+      t.pendiente += l.pendiente
+      porBT.set(k, t)
+    }
+    const completa = ls.length > 0 && faltantes.length === 0
+    if (completa) for (const l of ls) {
+      const k = claveBT(l)
+      restante.set(k, restante.get(k) - l.pendiente)
+      if (!usadoPor.has(k)) usadoPor.set(k, [])
+      usadoPor.get(k).push(oc.numero_oc)
+    }
+    const alcanzaSola = ls.length > 0 && ls.every((l) => l.pendiente <= (existencia.get(claveBT(l)) ?? 0))
+    const compiteCon = completa ? [] : [...new Set(ls.filter((l) => (restante.get(claveBT(l)) ?? 0) < l.pendiente).flatMap((l) => usadoPor.get(claveBT(l)) || []))]
+    const piezas = ls.reduce((t, l) => t + l.pendiente, 0)
+    ordenes.push({ oc, completa, alcanzaSola: !completa && alcanzaSola, compiteCon, faltantes, piezas, alcanzan })
+  }
+  const porBata = [...porBT.values()]
+    .map((t) => ({ ...t, falta: Math.max(0, t.pendiente - t.existencia) }))
+    .sort((a, b) => b.falta - a.falta || a.producto.localeCompare(b.producto, 'es') || ordenTalla(a.talla) - ordenTalla(b.talla))
+  return {
+    ordenes,
+    porId: Object.fromEntries(ordenes.map((o) => [o.oc.id, o])),
+    porBata,
+    piezasFaltantes: porBata.reduce((t, x) => t + x.falta, 0),
+  }
+}

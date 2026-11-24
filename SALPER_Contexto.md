@@ -8680,6 +8680,14 @@ catálogo de batas con las 9 tallas. Frontend: `TALLAS_ATR` y `normalizarTalla` 
 las abreviaturas de Microsip (A. = azul, V. = verde, T-S, C/BOLSA, S/BOLSA, "GRIS" = primera palabra de un solo color) y
 la carga inicial (`emparejar`) también. Siguiente migración: V218.
 
+**Órdenes de compra como las órdenes de surtido de Frisa (2026-11-23, sin SQL).** Pedido de Alfredo: "tal cual como
+Frisa". La pestaña Órdenes de compra muestra arriba el resumen (Pendientes · Sí se pueden surtir · Alcanzan solas · No se
+pueden surtir con las batas que faltan) y la tabla "Lo que falta por bata y talla"; cada OC es una tarjeta (mismas clases
+de Frisa) con "Se puede surtir" (verde), "Alcanza, pero la ocupa OC…" (naranja) o "Faltan piezas" (rojo, con lo que falta
+y cuántas hay para surtir parcial). El inventario se reparte de la que vence primero a la última (`calcularSurtibles` en
+`utils/atrOc.js`, mismo criterio que `calcularUrgente` de Frisa; ATR sí acepta surtido parcial). El detalle de la OC trae
+el mismo aviso (esa OC sola contra la existencia). Manual: `datos_2026-11-23_manual_atr_avisos.sql`.
+
 **Pendiente**
 - La lectura de un PDF real de ATR solo funciona en Vercel: probar con la primera OC real.
 - La primera orden de taller real de ATR es la prueba en vivo de V216 (folio real).

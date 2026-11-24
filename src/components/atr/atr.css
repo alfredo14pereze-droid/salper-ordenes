@@ -137,3 +137,11 @@
 }
 @media (min-width: 721px) { .atr-corto { display: none; } }
 .atr-falta-sel { width: 32px; text-align: center; }
+
+/* Órdenes de compra como las órdenes de surtido de Frisa */
+.atr-oc-faltan { margin: 4px 0 14px; }
+.atr-oc-tarjeta-sub { font-size: 13px; }
+.atr-oc-urg--warning { color: var(--color-orange-strong); font-weight: 600; }
+.atr-oc-aviso { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 10px 12px; border-radius: 8px; font-size: 14px; margin: 6px 0 12px; }
+.atr-oc-aviso--ok { background: var(--color-good-soft); }
+.atr-oc-aviso--falta { background: var(--color-danger-soft); }
