@@ -1,4 +1,4 @@
-import { esOrdenBordado, normalizarItemsBordado, validarItemsBordado } from '../../utils/bordadoOrden'
+import { esOrdenSimple, procesoDeOrden, normalizarItemsBordado, validarItemsBordado } from '../../utils/bordadoOrden'
 import { esComprada } from '../../utils/prendaComprada'
 import { limpiarRoster } from '../../utils/roster'
 import { useState } from 'react'
@@ -216,7 +216,7 @@ export default function OrderItemsCard({ order, onUpdated }) {
   async function handleSave() {
     // V154 — mientras la orden no se haya cortado, sus prendas necesitan tela
     // (una orden ya cortada se puede seguir corrigiendo sin pedirla).
-    if (!esOrdenBordado(order.order_type_key) && order.order_type_key !== 'maquila' && !esOrdenFrisa(order.order_type_key)) {
+    if (!esOrdenSimple(order.order_type_key) && order.order_type_key !== 'maquila' && !esOrdenFrisa(order.order_type_key)) {
       const { data: etapas } = await fetchOrdenEtapas(order.id)
       const corte = (etapas || []).find((e) => e.etapa === 'corte')
       const sinTela = corte && corte.estado !== 'completado' ? faltaTela(items) : null
@@ -225,8 +225,8 @@ export default function OrderItemsCard({ order, onUpdated }) {
         return
       }
     }
-    if (esOrdenBordado(order.order_type_key)) {
-      const bordadoError = validarItemsBordado(items)
+    if (esOrdenSimple(order.order_type_key)) {
+      const bordadoError = validarItemsBordado(items, procesoDeOrden(order.order_type_key))
       if (bordadoError) {
         setError(new Error(bordadoError))
         return
@@ -242,7 +242,7 @@ export default function OrderItemsCard({ order, onUpdated }) {
           .filter((s) => String(s.talla).trim() && Number(s.cantidad) > 0)
           .map((s) => ({ talla: String(s.talla).trim(), cantidad: Number(s.cantidad) })),
       }))
-    const cleanItems = esOrdenBordado(order.order_type_key) ? normalizarItemsBordado(cleanItemsBase) : fijarPrendasOperaciones(cleanItemsBase, order.client_name, prendasOps)
+    const cleanItems = esOrdenSimple(order.order_type_key) ? normalizarItemsBordado(cleanItemsBase, procesoDeOrden(order.order_type_key)) : fijarPrendasOperaciones(cleanItemsBase, order.client_name, prendasOps)
 
     const { error: saveError } = await setOrderItems(order.id, cleanItems)
 

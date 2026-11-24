@@ -6,7 +6,7 @@ import ProductoAutocomplete from './ProductoAutocomplete'
 import OrderTelaResumen from './OrderTelaResumen'
 import BordadosPrenda from './BordadosPrenda'
 import BordadoItemsEditor from './BordadoItemsEditor'
-import { esOrdenBordado } from '../../utils/bordadoOrden'
+import { esOrdenSimple, procesoDeOrden } from '../../utils/bordadoOrden'
 import { FILA_ROSTER_VACIA, filaRosterConDatos } from '../../utils/roster'
 import { usePrendasOperaciones } from '../../hooks/usePrendasOperaciones'
 import { esHoja, prendaOperacionesDe } from '../../utils/operacionesOrden'
@@ -706,8 +706,11 @@ function OrderItemsEditorGeneral({
 }
 
 // V132 — las órdenes de tipo bordado usan un editor mucho más simple (prenda,
-// tallas y bordados con foto). El resto de los tipos sigue igual.
+// tallas y bordados con foto). V220 — las de tipo impresión, el mismo editor
+// con impresiones. El resto de los tipos sigue igual.
 export default function OrderItemsEditor(props) {
-  if (esOrdenBordado(props.orderTypeKey)) return <BordadoItemsEditor items={props.items} onChange={props.onChange} />
+  if (esOrdenSimple(props.orderTypeKey)) {
+    return <BordadoItemsEditor items={props.items} onChange={props.onChange} proceso={procesoDeOrden(props.orderTypeKey)} />
+  }
   return <OrderItemsEditorGeneral {...props} />
 }

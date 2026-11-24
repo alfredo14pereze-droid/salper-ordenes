@@ -9,6 +9,21 @@ export const OTRA_PRENDA = '__otra__'
 
 export const esOrdenBordado = (orderTypeKey) => orderTypeKey === ORDER_TYPE_BORDADO
 
+// V220 — órdenes de tipo "impresión": igual que bordado (prenda + tallas +
+// sus impresiones con foto y dónde va), pero pasan por impresión
+// ('impresion_prenda', la hace terminado) y terminado. Sin bordado.
+export const ORDER_TYPE_IMPRESION = 'impresion'
+export const esOrdenImpresion = (orderTypeKey) => orderTypeKey === ORDER_TYPE_IMPRESION
+// "Orden simple": las que usan el editor corto (bordado o impresión).
+export const esOrdenSimple = (orderTypeKey) => esOrdenBordado(orderTypeKey) || esOrdenImpresion(orderTypeKey)
+
+// Qué campo y qué bandera usa cada tipo de orden simple.
+export const PROCESO_SIMPLE = {
+  bordado: { campo: 'bordados', bandera: 'lleva_bordado', nombre: 'bordado', plural: 'bordados' },
+  impresion: { campo: 'impresiones', bandera: 'lleva_impresion', nombre: 'impresión', plural: 'impresiones' },
+}
+export const procesoDeOrden = (orderTypeKey) => (esOrdenImpresion(orderTypeKey) ? 'impresion' : 'bordado')
+
 // Una cachucha solo pide la foto del bordado (no "dónde va").
 export function esCachucha(garment) {
   const g = String(garment || '').trim().toLowerCase()
@@ -22,39 +37,46 @@ export function nuevoBordado(extra = {}) {
   return { id: crypto.randomUUID(), ubicacion: '', foto_url: '', foto_path: '', ...extra }
 }
 
-export function nuevaPrendaBordado() {
+export function nuevaPrendaBordado(proceso = 'bordado') {
+  const { campo, bandera } = PROCESO_SIMPLE[proceso]
   return {
     id: crypto.randomUUID(),
     garment: '',
-    lleva_bordado: true,
-    bordados: [],
+    [bandera]: true,
+    [campo]: [],
     sizes: [{ talla: '', cantidad: '' }],
   }
 }
 
 // En órdenes de bordado toda prenda lleva bordado (así se crea la etapa
 // 'bordado' en el servidor) y se descartan las fotos/ubicaciones vacías.
-export function normalizarItemsBordado(items) {
+// V220 — `proceso` = 'bordado' | 'impresion' (en impresión, lleva_impresion
+// crea la etapa 'impresion_prenda' en el servidor).
+export function normalizarItemsBordado(items, proceso = 'bordado') {
+  const { campo, bandera } = PROCESO_SIMPLE[proceso]
   return items.map((item) => ({
     ...item,
-    lleva_bordado: true,
-    bordados: (item.bordados || [])
+    [bandera]: true,
+    [campo]: (item[campo] || [])
       .filter((b) => b.foto_url || String(b.ubicacion || '').trim())
       .map((b) => ({ ...b, ubicacion: esCachucha(item.garment) ? '' : String(b.ubicacion || '').trim() })),
   }))
 }
 
 // Mensaje de error (o null) antes de guardar una orden de bordado.
-export function validarItemsBordado(items) {
+export function validarItemsBordado(items, proceso = 'bordado') {
+  const { campo, nombre: proc, plural } = PROCESO_SIMPLE[proceso]
+  const art = proceso === 'impresion' ? 'la' : 'el'
+  const una = proceso === 'impresion' ? 'una' : 'un'
   const llenas = items.filter((i) => String(i.garment || '').trim() || i.sizes?.some((s) => String(s.talla).trim()))
   if (llenas.length === 0) return 'Agrega al menos una prenda.'
   for (const [n, item] of llenas.entries()) {
     const nombre = item.garment || `Prenda ${n + 1}`
-    const borda = (item.bordados || []).filter((b) => b.foto_url || String(b.ubicacion || '').trim())
-    if (borda.length === 0) return `${nombre}: agrega la foto del bordado.`
-    for (const b of borda) {
-      if (!b.foto_url) return `${nombre}: falta la foto de un bordado.`
-      if (!esCachucha(item.garment) && !String(b.ubicacion || '').trim()) return `${nombre}: falta indicar dónde va uno de los bordados.`
+    const lista = (item[campo] || []).filter((b) => b.foto_url || String(b.ubicacion || '').trim())
+    if (lista.length === 0) return `${nombre}: agrega la foto de${art === 'el' ? 'l' : ' la'} ${proc}.`
+    for (const b of lista) {
+      if (!b.foto_url) return `${nombre}: falta la foto de ${una} ${proc}.`
+      if (!esCachucha(item.garment) && !String(b.ubicacion || '').trim()) return `${nombre}: falta indicar dónde va ${proceso === 'impresion' ? 'una de las' : 'uno de los'} ${plural}.`
     }
   }
   return null

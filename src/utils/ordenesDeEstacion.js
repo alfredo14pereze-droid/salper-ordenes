@@ -50,7 +50,11 @@ export function situacionEnEstacion(etapa, etapasDeLaOrden = [], orden = null) {
     const anterior = etapaAnteriorEnSecuencia(etapa, etapasDeLaOrden)
     return !anterior || anterior.estado === 'completado' ? 'lista' : 'espera'
   }
-  const regla = ETAPAS_PREVIAS[etapa]
+  // V220 — orden de tipo Impresión (impresión → terminado): terminado le toca
+  // cuando la impresión ya empezó, igual que con costura o bordado.
+  const regla = orden?.order_type_key === 'impresion' && etapa === 'terminado'
+    ? { etapas: ['impresion_prenda'], estados: ['en_proceso', 'completado'] }
+    : ETAPAS_PREVIAS[etapa]
   if (!regla) return 'lista'
   const previas = etapasDeLaOrden.filter((e) => regla.etapas.includes(e.etapa))
   if (previas.length === 0) return 'lista'
