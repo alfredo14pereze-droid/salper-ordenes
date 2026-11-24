@@ -22,3 +22,14 @@ end $$;
 select numero_oc, fecha_oc, fecha_entrega, estado, notas, creado_por_nombre
 from public.atr_ordenes_compra
 where numero_oc ilike '%18348%';
+
+-- ---------------------------------------------------------------------
+-- 2) (corrido después) La fecha de la OC también se leyó al revés:
+--    quedó 2026-06-10 y el PDF dice 10/06/2026 = 6 de octubre (6-oct + 30
+--    días = 5-nov, la entrega). Solo si sigue en 2026-06-10.
+-- ---------------------------------------------------------------------
+update public.atr_ordenes_compra set fecha_oc = date '2026-10-06'
+ where numero_oc = 'C18348' and estado <> 'cancelada' and fecha_oc = date '2026-06-10';
+
+select numero_oc, fecha_oc, fecha_entrega, fecha_entrega - fecha_oc as dias
+from public.atr_ordenes_compra where numero_oc = 'C18348';
