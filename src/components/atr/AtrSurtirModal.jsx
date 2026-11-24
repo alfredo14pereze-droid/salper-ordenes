@@ -11,7 +11,7 @@ import AtrBata from './AtrBata'
 const n = (x) => Number(x || 0).toLocaleString('es-MX')
 
 export default function AtrSurtirModal({ oc, lineas, onClose, onListo }) {
-  // V220: lo que se puede surtir es lo disponible (existencia − apartado por facturar).
+  // V221: lo que se puede surtir es lo disponible (existencia − apartado por facturar).
   const pendientes = lineas.filter((l) => l.pendiente > 0).map((l) => ({ ...l, existencia: l.disponible ?? l.existencia }))
   const [cant, setCant] = useState(() => Object.fromEntries(pendientes.map((l) => [l.oc_linea_id, String(cantidadPropuesta(l))])))
   const [nota, setNota] = useState('')

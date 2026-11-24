@@ -1,5 +1,5 @@
 -- =====================================================================
--- V220 — ATR: surtir APARTA; contabilidad confirma la entrega al facturar
+-- V221 — ATR: surtir APARTA; contabilidad confirma la entrega al facturar
 --
 -- Requiere V209–V219. Se puede correr dos veces. Aditivo: 2 tablas nuevas,
 -- 1 permiso nuevo y funciones de ATR nuevas o rehechas (mismo nombre).
@@ -16,7 +16,7 @@
 --   1) atr_surtidos: un renglón por surtido (estado apartado | entregado |
 --      cancelado, factura, quién surtió, quién confirmó).
 --      atr_apartados: las líneas de cada surtido (bata, talla, cantidad).
---   2) Los surtidos que ya existían (antes de V220 ya descontaban) se pasan
+--   2) Los surtidos que ya existían (antes de V221 ya descontaban) se pasan
 --      como "entregado" (o "cancelado" si se deshicieron). No cambia ningún
 --      movimiento ni ninguna existencia.
 --   3) Permiso atr.facturar (confirmar entrega): contabilidad y
@@ -37,7 +37,7 @@ do $$
 begin
   if to_regprocedure('public.atr_talla(text)') is null
      or to_regprocedure('public.atr_surtir_oc(bigint, jsonb, text, boolean)') is null then
-    raise exception 'V220: falta V215/V217. No se aplicó nada.';
+    raise exception 'V221: falta V215/V217. No se aplicó nada.';
   end if;
 end $$;
 
@@ -59,8 +59,8 @@ create table if not exists public.atr_surtidos (
   cancelado_por_nombre  text,
   cancelado_en          timestamptz,
   motivo_cancelacion    text,
-  antes_de_v220         boolean not null default false,
-  constraint atr_surtido_factura_ck check (estado <> 'entregado' or antes_de_v220 or coalesce(btrim(factura), '') <> '')
+  antes_de_v221         boolean not null default false,
+  constraint atr_surtido_factura_ck check (estado <> 'entregado' or antes_de_v221 or coalesce(btrim(factura), '') <> '')
 );
 create index if not exists atr_surtidos_oc_idx on public.atr_surtidos (oc_id, creado_en);
 create index if not exists atr_surtidos_estado_idx on public.atr_surtidos (estado) where estado = 'apartado';
@@ -89,7 +89,7 @@ grant select on public.atr_surtidos, public.atr_apartados to authenticated;
 -- 2) Surtidos que ya existían → entregado / cancelado (no mueve nada)
 -- ---------------------------------------------------------------------
 insert into public.atr_surtidos (id, oc_id, estado, nota, surtido_por, surtido_por_nombre, creado_en,
-                                 cancelado_en, cancelado_por_nombre, motivo_cancelacion, antes_de_v220)
+                                 cancelado_en, cancelado_por_nombre, motivo_cancelacion, antes_de_v221)
 select m.surtido_id, min(l.oc_id),
        case when bool_and(m.revertido_en is not null) then 'cancelado' else 'entregado' end,
        min(m.nota), (array_agg(m.usuario_id order by m.creado_en))[1], min(m.usuario_nombre), min(m.creado_en),
@@ -520,12 +520,12 @@ returns table (
   surtido_id uuid, estado text, creado_en timestamptz, surtido_por_nombre text, nota text,
   factura text, confirmado_por_nombre text, confirmado_en timestamptz,
   cancelado_por_nombre text, cancelado_en timestamptz, motivo_cancelacion text,
-  antes_de_v220 boolean, piezas integer, lineas jsonb
+  antes_de_v221 boolean, piezas integer, lineas jsonb
 )
 language sql stable security definer set search_path = public as $$
   select s.id, s.estado, s.creado_en, s.surtido_por_nombre, s.nota,
          s.factura, s.confirmado_por_nombre, s.confirmado_en,
-         s.cancelado_por_nombre, s.cancelado_en, s.motivo_cancelacion, s.antes_de_v220,
+         s.cancelado_por_nombre, s.cancelado_en, s.motivo_cancelacion, s.antes_de_v221,
          coalesce(sum(q.cantidad), 0)::integer,
          coalesce(jsonb_agg(jsonb_build_object('producto', p.nombre, 'color', p.color,
                     'con_bolsa', coalesce((p.especificaciones->>'bolsa')::boolean, false),
@@ -534,11 +534,11 @@ language sql stable security definer set search_path = public as $$
                   filter (where q.cantidad is not null), '[]'::jsonb)
   from public.atr_surtidos s
   left join lateral (
-    -- Surtidos de V220: sus apartados. Los de antes: sus salidas.
+    -- Surtidos de V221: sus apartados. Los de antes: sus salidas.
     select a.producto_id, a.talla, a.cantidad from public.atr_apartados a where a.surtido_id = s.id
     union all
     select m.producto_id, m.talla, -m.cantidad from public.atr_movimientos m
-    where m.surtido_id = s.id and m.tipo = 'salida_surtido' and s.antes_de_v220
+    where m.surtido_id = s.id and m.tipo = 'salida_surtido' and s.antes_de_v221
   ) q on true
   left join public.productos p on p.id = q.producto_id
   where s.oc_id = p_oc_id and public.tiene_permiso('atr.ver')

@@ -7,7 +7,7 @@ import { ordenBatas } from '../../utils/atrColores'
 import { ordenTalla } from '../../utils/atrCarga'
 import AtrBata from './AtrBata'
 
-// V220 — Revisión Microsip: subes el reporte "Existencia y valor del
+// V221 — Revisión Microsip: subes el reporte "Existencia y valor del
 // inventario" de Microsip (Excel) y se compara contra la existencia de la
 // página por bata y talla, para ver que todo cuadre. Solo lee: no cambia nada.
 const n = (x) => Number(x || 0).toLocaleString('es-MX')

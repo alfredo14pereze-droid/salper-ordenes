@@ -9,7 +9,7 @@ import { atrHojaSurtidoFileName, buildAtrHojaSurtidoBlob } from '../../utils/gen
 import { ConfirmarEntrega } from '../../pages/AtrOcDetallePage'
 import AtrBata from './AtrBata'
 
-// V220 — "Por facturar": los surtidos que Terminado ya apartó y que
+// V221 — "Por facturar": los surtidos que Terminado ya apartó y que
 // contabilidad confirma con el número de factura. Al confirmar, esas batas
 // salen del inventario.
 const n = (x) => Number(x || 0).toLocaleString('es-MX')

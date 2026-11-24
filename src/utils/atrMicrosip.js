@@ -1,4 +1,4 @@
-// V220 — Revisión Microsip: lee el reporte "Existencia y valor del inventario"
+// V221 — Revisión Microsip: lee el reporte "Existencia y valor del inventario"
 // de Microsip (un artículo por renglón: "BATA C/BOLSA ATR AZUL CIELO T-2XL",
 // unidad, existencia…) y lo compara contra la existencia de la página por
 // bata y talla. Sin dependencias; pruebas en atrMicrosip.test.js.

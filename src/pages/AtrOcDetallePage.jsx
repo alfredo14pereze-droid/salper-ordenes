@@ -344,7 +344,7 @@ function EstadoSurtido({ g }) {
   return <span className="frisa-nivel frisa-nivel--neutro">Deshecho</span>
 }
 
-// V220 — Contabilidad confirma la entrega de un surtido con la factura.
+// V221 — Contabilidad confirma la entrega de un surtido con la factura.
 export function ConfirmarEntrega({ surtido, onListo }) {
   const [factura, setFactura] = useState('')
   const [error, setError] = useState(null)

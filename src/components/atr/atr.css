@@ -182,7 +182,7 @@
   .atr-inv-color-sel select { flex: 1; min-width: 0; }
 }
 
-/* V220 — apartado por facturar */
+/* V221 — apartado por facturar */
 .atr-apartado { color: var(--color-orange-strong); font-weight: 700; }
 .atr-matriz__ap { display: block; font-size: 11px; font-weight: 700; color: var(--color-orange-strong); line-height: 1.1; }
 .atr-surtido__bt { display: flex; flex-wrap: wrap; gap: 6px 14px; }

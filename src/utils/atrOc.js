@@ -250,7 +250,7 @@ const claveBT = (l) => `${l.producto_id}|${l.talla}`
 export function calcularSurtibles(ocs, lineasPorOc) {
   const activas = ordenarOcs((ocs || []).filter((o) => o.estado === 'abierta' || o.estado === 'parcial'))
   const existencia = new Map()
-  // V220: lo que se puede repartir es lo DISPONIBLE (existencia − apartado por facturar).
+  // V221: lo que se puede repartir es lo DISPONIBLE (existencia − apartado por facturar).
   for (const o of activas) for (const l of lineasPorOc[o.id] || []) existencia.set(claveBT(l), Math.max(0, l.disponible ?? l.existencia))
   const restante = new Map(existencia)
   const usadoPor = new Map()
@@ -296,7 +296,7 @@ export function calcularSurtibles(ocs, lineasPorOc) {
   }
 }
 
-// V220 — Un renglón de atr_surtidos_oc / atr_por_facturar → lo que usan la
+// V221 — Un renglón de atr_surtidos_oc / atr_por_facturar → lo que usan la
 // lista de surtidos y la hoja de surtido.
 export function surtidoDesdeRpc(r) {
   const lineas = (r.lineas || []).map((l) => ({ producto: l.producto, color: l.color, con_bolsa: l.con_bolsa, talla: l.talla, cantidad: l.cantidad }))
@@ -309,7 +309,7 @@ export function surtidoDesdeRpc(r) {
     factura: r.factura || null,
     confirmado: r.confirmado_en ? { fecha: r.confirmado_en, usuario: r.confirmado_por_nombre } : null,
     deshecho: r.estado === 'cancelado' ? { fecha: r.cancelado_en, usuario: r.cancelado_por_nombre, motivo: r.motivo_cancelacion } : null,
-    antesDeV220: !!r.antes_de_v220,
+    antesDeV221: !!r.antes_de_v221,
     lineas,
     piezas: r.piezas ?? lineas.reduce((t, l) => t + l.cantidad, 0),
   }

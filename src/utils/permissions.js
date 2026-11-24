@@ -949,7 +949,7 @@ export function canCargarAtr(role) {
 export function canOcAtr(role) {
   return tiene(role, 'atr.oc', () => ['admin_general', 'admin_fabrica'].includes(role))
 }
-// V220 — contabilidad confirma con la factura la entrega de un surtido de ATR.
+// V221 — contabilidad confirma con la factura la entrega de un surtido de ATR.
 export function canFacturarAtr(role) {
   return tiene(role, 'atr.facturar', () => ['contabilidad', 'admin_general'].includes(role))
 }
