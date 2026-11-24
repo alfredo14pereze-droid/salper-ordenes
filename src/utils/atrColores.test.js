@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { colorHex, coloresDe, matrizInventario, textoSobre } from './atrColores.js'
+import { colorHex, coloresDe, matrizInventario, ordenBatas, textoSobre } from './atrColores.js'
 import { TALLAS_ATR } from './atrCarga.js'
 
 test('colores conocidos y texto legible', () => {
@@ -25,9 +25,22 @@ test('matriz: todas las batas (aunque estén en 0), tallas en columnas', () => {
   ]
   const { filas, tallas } = matrizInventario(productos, ex, TALLAS_ATR)
   assert.deepEqual(tallas, ['S', 'M', 'L', 'XL', '2XL', '3XL', '5XL']) // XS y 4XL solo si traen algo
-  assert.equal(filas[0].producto.id, 'a') // con bolsa primero
+  assert.equal(filas[0].producto.id, 'a') // Azul Cielo antes que Blanca
   assert.deepEqual(filas[0].porTalla, { S: 5, M: 4, L: 10, '5XL': 1 })
   assert.equal(filas[0].total, 20)
   assert.equal(filas[1].producto.id, 'b') // la blanca sale aunque no tenga nada
   assert.equal(filas[1].total, 0)
+})
+
+test('orden: por color, con bolsa y luego sin bolsa; primero los colores con las dos versiones', () => {
+  const P = (id, color, con) => ({ id, color, con_bolsa: con })
+  const productos = [
+    P('amarillo', 'Amarillo', false), P('blanca-sin', 'Blanca', false), P('rey', 'Azul Rey', true),
+    P('cielo-sin', 'Azul Cielo', false), P('blanca-con', 'Blanca', true), P('cielo-con', 'Azul Cielo', true),
+  ]
+  const orden = ordenBatas(productos)
+  assert.deepEqual([...productos].sort((a, b) => orden(a) - orden(b)).map((p) => p.id),
+    ['cielo-con', 'cielo-sin', 'blanca-con', 'blanca-sin', 'amarillo', 'rey'])
+  const { filas } = matrizInventario(productos, [], ['S'])
+  assert.deepEqual(filas.slice(0, 4).map((f) => f.producto.id), ['cielo-con', 'cielo-sin', 'blanca-con', 'blanca-sin'])
 })

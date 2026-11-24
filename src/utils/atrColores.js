@@ -66,7 +66,24 @@ export function matrizInventario(productos, existencias, tallasTodas) {
     const total = Object.values(porTalla).reduce((s, v) => s + v, 0)
     return { producto: p, porTalla, total }
   })
-  filas.sort((a, b) => Number(!!b.producto.con_bolsa) - Number(!!a.producto.con_bolsa)
-    || String(a.producto.color).localeCompare(String(b.producto.color), 'es'))
+  const orden = ordenBatas(productos)
+  filas.sort((a, b) => orden(a.producto) - orden(b.producto))
   return { filas, tallas }
+}
+
+// Orden de las batas (pedido de Alfredo): por color, cada color con bolsa y
+// luego sin bolsa. Primero los colores que hay en las dos versiones (Azul
+// Cielo, Blanca, Café…), luego los que solo hay en una; dentro, alfabético.
+// Regresa una función producto → posición. productos: [{id, color, con_bolsa}]
+export function ordenBatas(productos) {
+  const versiones = new Map()
+  for (const p of productos || []) {
+    const c = normalizar(p.color)
+    if (!versiones.has(c)) versiones.set(c, new Set())
+    versiones.get(c).add(!!p.con_bolsa)
+  }
+  const colores = [...versiones.keys()].sort((a, b) =>
+    (versiones.get(b).size - versiones.get(a).size) || a.localeCompare(b, 'es'))
+  const pos = new Map(colores.map((c, i) => [c, i]))
+  return (p) => (pos.get(normalizar(p.color)) ?? 999) * 2 + (p.con_bolsa ? 0 : 1)
 }

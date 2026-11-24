@@ -4,7 +4,8 @@ import { ErrorState, Loading, EmptyState } from '../common/States'
 import PdfPreviewModal from '../pdf/PdfPreviewModal'
 import { fetchAtrClienteId, fetchAtrFaltantes, fetchAtrProductos } from '../../services/atrService'
 import { faltantesCSV, nivelFaltante, prendasParaOrden, seleccionInicial } from '../../utils/atrOc'
-import { normalizar } from '../../utils/atrCarga'
+import { normalizar, ordenTalla } from '../../utils/atrCarga'
+import { ordenBatas } from '../../utils/atrColores'
 import { atrFaltantesFileName, buildAtrFaltantesBlob } from '../../utils/generateAtrPdf'
 import AtrBata from './AtrBata'
 
@@ -46,9 +47,12 @@ export default function AtrFaltantes({ puedeTaller = false }) {
 
   const vista = useMemo(() => {
     const q = normalizar(busca)
+    // Mismo orden que el inventario: por color, con bolsa y luego sin bolsa.
+    const orden = ordenBatas(filas || [])
     return (filas || [])
       .filter((f) => !soloFaltante || f.faltante > 0)
       .filter((f) => !q || normalizar(`${f.producto} ${f.talla}`).includes(q))
+      .sort((a, b) => orden(a) - orden(b) || ordenTalla(a.talla) - ordenTalla(b.talla))
   }, [filas, soloFaltante, busca])
 
   const tot = vista.reduce(
