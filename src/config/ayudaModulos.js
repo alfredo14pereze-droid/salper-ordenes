@@ -686,7 +686,11 @@ export const AYUDA_MODULOS = [
       'Cuando una orden FR se termine, dale "Subir a bodega".',
       'Para lo que se compra hecho, arma el Pedido de compra; al llegar, dale Recibir y pon lo que llegó de verdad.',
     ],
-    tips: ['Proyectado = disponible + en proceso + por entrar.'],
+    tips: [
+      'Proyectado = disponible + en proceso + por entrar.',
+      'Folio externo (opcional) = el folio de nuestro control interno; se captura al crear la orden de taller o después en el detalle de la orden.',
+      'Arriba, "Buscar orden de taller" encuentra una orden por su folio FR o por su folio externo.',
+    ],
     roles: [...ADMINS, R.terminado],
   },
   {

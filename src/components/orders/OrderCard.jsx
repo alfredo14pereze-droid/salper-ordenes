@@ -98,6 +98,7 @@ export default function OrderCard({ order, orderType, onUpdated }) {
         {order.equipo && <p className="order-card__prendas">Equipo: <b>{order.equipo}</b></p>}
         {order.numero_corte && <p className="order-card__prendas">Corte: <b>{order.numero_corte}</b></p>}
         {codigoFrisa && <p className="order-card__prendas">Producto: <b>{codigoFrisa}</b></p>}
+        {codigoFrisa && order.folio_externo && <p className="order-card__prendas">Folio externo: <b>{order.folio_externo}</b></p>}
         {secuenciaFrisa && <p className="order-card__prendas">{secuenciaFrisa}</p>}
         {prendas && <p className="order-card__prendas">{prendas}</p>}
         {needsReconfirm && <p className="order-card__reconfirm-notice">✎ Se modificó después de confirmarse</p>}
@@ -133,6 +134,7 @@ export default function OrderCard({ order, orderType, onUpdated }) {
           {order.equipo && <span className="order-card__compact-prendas">Equipo: {order.equipo}</span>}
           {order.numero_corte && <span className="order-card__compact-prendas">Corte: {order.numero_corte}</span>}
           {codigoFrisa && <span className="order-card__compact-prendas">{codigoFrisa} · {secuenciaFrisa}</span>}
+          {codigoFrisa && order.folio_externo && <span className="order-card__compact-prendas">Folio externo: {order.folio_externo}</span>}
           {prendas && <span className="order-card__compact-prendas">{prendas}</span>}
         </div>
         {order.cancelled_at ? <span className="badge badge--danger">Cancelada</span> : <StatusBadge status={order.status} />}

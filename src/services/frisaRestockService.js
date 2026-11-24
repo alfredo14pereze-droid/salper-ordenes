@@ -36,7 +36,7 @@ export async function fetchRestockTodo() {
   let etapas = []
   if (ids.length) {
     const [o, e] = await Promise.all([
-      supabase.from('orders').select('id, order_number, status, items, producto_frisa_id, frisa_producto, requested_delivery_date, cancelled_at, eliminada_en, created_at').in('id', ids),
+      supabase.from('orders').select('id, order_number, folio_externo, status, items, producto_frisa_id, frisa_producto, requested_delivery_date, cancelled_at, eliminada_en, created_at').in('id', ids),
       supabase.from('orden_etapas').select('order_id, etapa, estado').in('order_id', ids),
     ])
     if (o.error || e.error) return { data: null, error: o.error || e.error }

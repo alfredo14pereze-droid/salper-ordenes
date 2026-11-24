@@ -8704,3 +8704,54 @@ ver cuántas batas hay"). Otra sesión usó V218 (folio externo de Frisa); sigui
 - La primera orden de taller real de ATR es la prueba en vivo de V216 (folio real).
 - Las órdenes `atr_inventario` pueden salir como "falta precio" en listados/entrega (no se entregan a cliente:
   entran al inventario al completar Terminado). Si estorba, esconder la etiqueta cuando `atr_inventario`.
+
+### 2026-11-23 — Auditoría: órdenes de taller Frisa borradas por error (FR-020, FR-024) + V218 "Folio externo" (rama `frisa-folio-externo`)
+
+**Auditoría (solo lectura, `supabase db query --read-only`).** El 23-nov por la tarde se crearon por error y se
+eliminaron FR-020 (Alfredo, 14:24 → 14:32, Playera C/REF A. Marino M/C, M 200 · L 200 · XL 50 · 2XL 10) y FR-024
+(Giss, 14:27 → 14:29, Playera S/REF Roja M/C, mismas tallas). Ninguna otra orden se eliminó en 12:00–19:00 MTY.
+- **Resultado: ✅ no quedó nada descontado.** FR-020: −460 de lisa marino M/C al crearla, +460 al "Quitar del
+  restock" (14:32:17), luego cancelada y eliminada (el trigger ya no regresó nada: no estaba en el restock → sin doble
+  devolución). FR-024: −460 de lisa roja M/C, +460 al cancelarla (trigger V205). Neto 0 en las dos. Ningún movimiento en
+  `frisa_inv_movimientos` (bodega de claves). Las 30 lisas cuadran stock = suma de movimientos; marino M/C, marino M/L y
+  roja M/C quedaron en 0 (real: las compras #2 y #4 ya se consumieron en FR-016/021/022/023/025). No hubo SQL de corrección.
+- FR-025 (Giss, 14:31) es igual a FR-020 (la reposición). FR-024 dejó la roja en −460 dos minutos: el sistema permite
+  crear la orden sin lisa (negativo = señal de compra/conteo faltante, por diseño V187).
+
+**Cómo se mueve el inventario de Frisa con las órdenes de taller (para no volver a investigarlo):**
+- La **playera lisa** se descuenta al **crear la orden de taller desde Restock** (`create_order_frisa` + `frisa_restock_ligar`,
+  ambas desde el front, `FrisaRestock.jsx`): movimiento `consumo` en `frisa_lisa_movimientos` → trigger a
+  `frisa_lisas.stock`. No se descuenta al iniciar/terminar etapas. Una orden FR creada desde "Nueva orden" NO descuenta
+  lisa hasta que se liga en Restock.
+- La **bodega de claves** (`frisa_inv_movimientos`) solo cambia con "Subir a bodega" (`ingreso_bodega`), entregas de
+  surtido, ajustes y compras. Crear/borrar una orden de taller no la toca.
+- **Eliminar (soft-delete, `eliminada_en`) o cancelar** una orden FR ligada y no subida a bodega **sí revierte**: trigger
+  `orders_frisa_baja_lisa_trg` (V205) → `frisa_restock_soltar_orden` (movimiento `devolucion` + la quita del restock).
+  "Quitar del restock" hace lo mismo. Si ya se subió a bodega, no se revierte nada (las piezas existen; se corrige con conteo).
+- Hueco conocido (no causó nada): **restaurar** una orden borrada o **reactivar** una cancelada no vuelve a descontar la
+  lisa ni la regresa al restock; hay que ligarla otra vez a mano en Restock ("Ligar una orden FR que ya existe").
+
+**V218 — Folio externo en órdenes de taller Frisa.** Pedido de Alfredo: capturar el folio de nuestro control interno
+de órdenes (cualquier formato, opcional) al crear o editar una orden Frisa.
+- **Columna:** se reusa `orders.folio_externo` (text, NULL, sin default), que existía desde V32 y nadie usaba desde V42
+  (V42 pasó el "folio del control anterior" ORD+4 dígitos a `folios_externos text[]`, que sigue igual para las demás
+  órdenes). Solo cuenta en órdenes **Frisa**; SUB-001/SUB-002 traen un valor viejo de V32 que la app no muestra.
+- **SQL APLICADO por Alfredo el 2026-11-23** (comprobación 1 · true · false · 2; verificado: una sola versión, anon 401). `supabase/schema_v218_frisa_folio_externo.sql` (100% aditivo: no toca tablas ni create_order/create_order_frisa/
+  update_order_details): función nueva `frisa_set_folio_externo(order_id, folio)` — ventas/admin_tienda/admin_general
+  (= create_order_frisa) o `fr.ordenes`; solo Frisa no eliminadas; `btrim`, vacío = NULL, máx. 60; nota en
+  `order_status_history` ("Folio externo: X" / "Se quitó el folio externo."); revoke public/anon. El trigger
+  `orders_cambios_trg` (V178) no la registra (solo mira update_order_details/set_order_items). Probado en PGlite (14).
+- **Frontend:** `utils/folioExterno.js` (+ pruebas), `components/frisa/FolioExternoFrisa.jsx` (campo con aviso, tarjeta
+  del detalle con "+ Agregar"/"Editar"), `components/frisa/BuscarOrdenesFrisa.jsx`. Nueva orden (Frisa): "Folio externo"
+  en lugar de "Folios del control anterior"; Restock → "Crear orden de taller" también lo pide; se guarda después de
+  crear (si falla, la orden queda y se avisa). Visible en: encabezado y tarjeta del detalle, tarjetas del Dashboard,
+  Restock (por entrar / en proceso; el folio FR ahora abre la orden) y el PDF de la orden (bajo el folio). Búsqueda:
+  Restock → "Buscar orden de taller" (folio FR o externo, todas las FR no eliminadas) y la búsqueda general
+  (`ordenesBusqueda.js`, solo Frisa). **Aviso:** si el texto parece folio SALPER (IND-054, ind 54, FR020…) y existe esa
+  orden, sale "Ese folio es de una orden de SALPER: IND-054 · cliente" con liga; no bloquea. Permiso en el front:
+  `canEditFolioExternoFrisa`. Ayuda de Restock actualizada.
+- **Probado:** 230 pruebas, build, PDF en Node (Frisa sí lo muestra, otra orden no; 1 hoja) y ejemplo local
+  (`salper-folio-externo-harness`, puerto 5181, `.claude/harness-folio/` sin commit, PGlite con el SQL real; `?rol=`):
+  buscar "ord 3310" → FR-023, aviso con "ind 54" → IND-054, guardar "  ORD3320  " → "ORD3320" + nota, chofer y
+  admin_fabrica sin botón. **No probado** con sesión real ni las pantallas completas de Nueva orden/Restock (necesitan
+  muchas tablas). Siguiente migración: V219.

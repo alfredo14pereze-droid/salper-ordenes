@@ -37,7 +37,9 @@ import MaquilaItemsEditor from '../components/orders/MaquilaItemsEditor'
 import { esOrdenMaquila, etiquetaProcesos, fotosDeProducto, nuevaPrendaMaquila, prendaMaquila, procesosDeLaOrden, productoBorda, validarOrdenMaquila } from '../utils/maquila'
 import FoliosExternosField from '../components/orders/FoliosExternosField'
 import { admiteBordadoPorOrden, esOrdenFrisa, etiquetaSecuencia, expandirTallas, prendaFrisa, procesosDeLaOrdenFrisa, validarOrdenFrisa } from '../utils/frisa'
-import { createOrderFrisa, fetchProductosFrisa } from '../services/frisaService'
+import { createOrderFrisa, fetchProductosFrisa, setFolioExternoFrisa } from '../services/frisaService'
+import { FolioExternoInput } from '../components/frisa/FolioExternoFrisa'
+import { limpiarFolioExterno } from '../utils/folioExterno'
 import { CLIENTE_FRISA_NOMBRE } from '../lib/constants'
 import RequireRole from '../components/common/RequireRole'
 import FileDropLabel from '../components/common/FileDropLabel'
@@ -83,6 +85,7 @@ const initialForm = {
   // V155 — solo órdenes de Frisa: producto, cantidades por talla y bordado por orden.
   productoFrisaId: '',
   cantidadesFrisa: {},
+  folioExternoFrisa: '',
   bordadoFrisa: false,
 }
 
@@ -792,7 +795,7 @@ function NewOrderForm() {
       requestedDeliveryDate: form.requestedDeliveryDate,
       items: [prendaFrisa(productoFrisa, form.cantidadesFrisa)],
       description: form.description.trim(),
-      foliosExternos: form.foliosExternos,
+      foliosExternos: [],
       llevaBordado: bordadoFrisa,
     })
     if (createError) {
@@ -838,6 +841,15 @@ function NewOrderForm() {
       const { data: conEquipo, error: eqErr } = await setOrdenEquipo(data.id, form.equipo.trim())
       if (eqErr) equipoError = eqErr.message
       else data = { ...data, equipo: conEquipo.equipo }
+    }
+
+    // V218 — folio externo de Frisa: se guarda aparte (no cambia create_order_frisa).
+    // Si falla, la orden ya existe: se avisa y se captura desde el detalle.
+    let folioExternoError = null
+    if (esOrdenFrisa(data.order_type_key) && limpiarFolioExterno(form.folioExternoFrisa)) {
+      const { data: conFolio, error: fErr } = await setFolioExternoFrisa(data.id, form.folioExternoFrisa)
+      if (fErr) folioExternoError = fErr.message
+      else data = { ...data, folio_externo: conFolio?.folio_externo ?? null }
     }
 
     if (photoFiles.length > 0) {
@@ -901,7 +913,7 @@ function NewOrderForm() {
       console.error('No se pudo generar el PDF de confirmación:', pdfErr)
     }
 
-    navigate(`/orden/${data.id}`, { state: { photoUploadError: photoError, documentError, anticipoError, equipoError, pedidoError, pdfPreview } })
+    navigate(`/orden/${data.id}`, { state: { photoUploadError: photoError, documentError, anticipoError, equipoError, folioExternoError, pedidoError, pdfPreview } })
   }
 
   if (loading) return <Loading label="Cargando tipos de orden…" />
@@ -1228,12 +1240,17 @@ function NewOrderForm() {
           </p>
         )}
 
+        {esFrisa ? (
+          // V218 — en Frisa: un folio externo de texto libre (folio de nuestro control interno).
+          <FolioExternoInput value={form.folioExternoFrisa || ''} onChange={(v) => updateField('folioExternoFrisa', v)} />
+        ) : (
         <div>
           <span className="field-label" style={{ marginBottom: 6, display: 'block' }}>
             Folios del control anterior
           </span>
           <FoliosExternosField value={form.foliosExternos} onChange={(v) => updateField('foliosExternos', v)} />
         </div>
+        )}
 
         {!esFrisa && (
         <div>

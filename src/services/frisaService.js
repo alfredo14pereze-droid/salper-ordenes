@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient'
+import { limpiarFolioExterno, leerFolioSalper, variantesFolioSalper } from '../utils/folioExterno'
 
 // V155 — catálogo de productos de Frisa y órdenes Frisa (ver
 // schema_v155_frisa_productos.sql). Lectura directa; escritura solo por RPC.
@@ -69,4 +70,39 @@ export async function createOrderFrisa({ productoId, requestedDeliveryDate, item
       p_lleva_bordado: !!llevaBordado,
     })
     .single()
+}
+
+// V218 — folio externo (folio de nuestro control interno) de una orden Frisa.
+// Vacío lo quita. Se guarda sin espacios al inicio ni al final.
+export async function setFolioExternoFrisa(orderId, folio) {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase.rpc('frisa_set_folio_externo', { p_order_id: orderId, p_folio: limpiarFolioExterno(folio) }).single()
+}
+
+// ¿El folio capturado es el folio de una orden de SALPER? (solo avisa).
+export async function buscarOrdenSalperPorFolio(texto, excluirId = null) {
+  const cand = leerFolioSalper(texto)
+  if (!cand || !supabase) return { data: null, error: null }
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id, order_number, client_name, eliminada_en, cancelled_at')
+    .in('order_number', variantesFolioSalper(cand))
+    .limit(5)
+  if (error) return { data: null, error }
+  return { data: (data || []).find((o) => o.id !== excluirId) || null, error: null }
+}
+
+// V218 — órdenes Frisa para buscar por folio FR o folio externo (módulo Frisa).
+// Son pocas (decenas): se traen todas las no eliminadas y se filtra en pantalla.
+export async function fetchOrdenesFrisaParaBuscar() {
+  const { error: cfgError } = ensureClient()
+  if (cfgError) return { data: null, error: cfgError }
+  return supabase
+    .from('orders')
+    .select('id, order_number, folio_externo, status, items, frisa_producto, requested_delivery_date, cancelled_at, created_at')
+    .eq('order_type_key', 'frisa')
+    .is('eliminada_en', null)
+    .order('created_at', { ascending: false })
+    .range(0, 1999)
 }

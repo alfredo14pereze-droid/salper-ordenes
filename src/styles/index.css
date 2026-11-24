@@ -5529,6 +5529,13 @@ h4 {
 .frisa-restock__tallas { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
 .frisa-restock__tallas label { display: grid; gap: 4px; }
 .frisa-restock__orden, .frisa-restock__compra { cursor: default; }
+/* V218 — buscador de órdenes de taller por folio FR / folio externo */
+.frisa-buscar-ot__campo { display: block; max-width: 420px; margin-bottom: 10px; }
+.frisa-buscar-ot .frisa-buscar-ot__res { cursor: pointer; text-decoration: none; color: inherit; }
+.frisa-buscar-ot .frisa-buscar-ot__res:hover { border-color: var(--color-black); }
+a.frisa-oc__num { color: inherit; text-decoration: underline; }
+.folio-externo { max-width: 420px; }
+.folio-externo__aviso { margin-top: 6px; }
 .frisa-reportes__lista { display: grid; gap: 8px; }
 .frisa-reportes__item { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; }
 .frisa-reportes__item .section-title, .frisa-reportes__item p { margin: 0; }
