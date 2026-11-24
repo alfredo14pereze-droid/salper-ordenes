@@ -4,6 +4,7 @@ import Modal from '../talleros/Modal'
 import { ErrorState, Loading } from '../common/States'
 import { fetchAtrHistorial } from '../../services/atrService'
 import { formatDateTime, formatDate } from '../../utils/dates'
+import AtrBata from './AtrBata'
 
 export const TIPOS_ATR = {
   carga_inicial: 'Carga inicial',
@@ -25,7 +26,7 @@ export default function AtrHistorialModal({ fila, onClose, onAjuste }) {
 
   return (
     <Modal title={`${fila.producto} · ${fila.talla}`} onClose={onClose}>
-      <p className="atr-muted">Existencia: <strong>{fila.existencia}</strong></p>
+      <p className="atr-muted atr-historial-cab"><AtrBata producto={fila.producto} color={fila.color} /> Talla <strong>{fila.talla}</strong> · Existencia: <strong>{fila.existencia}</strong></p>
       {error && <ErrorState error={error} />}
       {!movs && !error && <Loading />}
       {movs && (

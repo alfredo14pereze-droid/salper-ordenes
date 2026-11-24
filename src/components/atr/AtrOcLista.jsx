@@ -5,6 +5,7 @@ import { fetchAtrOcDetalle, fetchAtrOcLista } from '../../services/atrService'
 import { ESTADOS_OC, calcularSurtibles, ordenarOcs, pctSurtido, urgenciaEntrega } from '../../utils/atrOc'
 import { normalizar } from '../../utils/atrCarga'
 import { daysUntil, formatDate } from '../../utils/dates'
+import AtrBata from './AtrBata'
 
 // V215 — Órdenes de compra de ATR, con el mismo formato que las órdenes de
 // surtido de Frisa: arriba el resumen (cuántas se pueden surtir y cuántas
@@ -100,7 +101,7 @@ export default function AtrOcLista({ puedeSubir }) {
                   <tbody>
                     {faltan.map((x) => (
                       <tr key={x.producto_id + x.talla} className="frisa-niveles__fila--critico">
-                        <td>{x.producto}</td>
+                        <td><AtrBata producto={x.producto} color={x.color} conBolsa={x.con_bolsa} /></td>
                         <td>{x.talla}</td>
                         <td className="atr-num">{n(x.pendiente)}</td>
                         <td className="atr-num">{n(x.existencia)}</td>

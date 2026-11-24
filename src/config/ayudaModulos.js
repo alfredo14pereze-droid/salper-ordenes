@@ -631,7 +631,8 @@ export const AYUDA_MODULOS = [
       'En "Qué nos falta" ves por bata y talla lo pendiente, la existencia, lo que está en taller y el faltante.',
       'Dale "Crear orden de taller" para producir lo que falta (va sin precio, cliente ATR).',
       'Abre la OC y dale "Surtir": se descuenta del inventario y sale la hoja de surtido en PDF.',
-      'Toca una línea del inventario para ver su historial.',
+      'En Inventario cada bata sale con su color y "● Con bolsa" u "○ Sin bolsa"; las tallas son columnas. Filtra por color y por con/sin bolsa.',
+      'Toca un número del inventario para ver su historial.',
     ],
     tips: [
       'Lo producido en las órdenes de ATR entra solo al completar Terminado.',

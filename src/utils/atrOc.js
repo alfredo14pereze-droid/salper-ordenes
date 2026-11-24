@@ -248,7 +248,7 @@ export function calcularSurtibles(ocs, lineasPorOc) {
       const hay = restante.get(k) ?? 0
       alcanzan += Math.min(hay, l.pendiente)
       if (hay < l.pendiente) faltantes.push({ producto: l.producto, talla: l.talla, falta: l.pendiente - hay })
-      const t = porBT.get(k) || { producto_id: l.producto_id, producto: l.producto, talla: l.talla, pendiente: 0, existencia: existencia.get(k) ?? 0 }
+      const t = porBT.get(k) || { producto_id: l.producto_id, producto: l.producto, color: l.color, con_bolsa: l.con_bolsa, talla: l.talla, pendiente: 0, existencia: existencia.get(k) ?? 0 }
       t.pendiente += l.pendiente
       porBT.set(k, t)
     }

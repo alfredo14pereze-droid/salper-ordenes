@@ -8688,6 +8688,17 @@ y cuántas hay para surtir parcial). El inventario se reparte de la que vence pr
 `utils/atrOc.js`, mismo criterio que `calcularUrgente` de Frisa; ATR sí acepta surtido parcial). El detalle de la OC trae
 el mismo aviso (esa OC sola contra la existencia). Manual: `datos_2026-11-23_manual_atr_avisos.sql`.
 
+**V219 — catálogo igual que Microsip + inventario con ayuda visual** (`schema_v219_atr_catalogo_microsip.sql`,
+2026-11-24). Microsip tiene 23 batas (116 artículos): 10 con bolsa y 13 sin bolsa. Faltaba **"Bata con bolsa Naranja"**
+(se agrega) y "Gris Rata" pasa a **"Gris"** (como Microsip). "Bata sin bolsa Guinda" no existe en Microsip y se dejó.
+Alfredo no veía la Blanca porque Inventario solo listaba batas con movimientos. Ahora **Inventario es una matriz**: una
+fila por bata (todas las del catálogo, aunque estén en 0) y **las tallas en columnas** (S–3XL siempre; XS, 4XL, 5XL si
+tienen algo) + Total por bata y por talla; tocar un número abre el historial. **Ayuda visual** (`AtrBata.jsx`,
+`utils/atrColores.js`): etiqueta del color de la bata (fondo de ese color, texto legible) y "● Con bolsa" (negra) /
+"○ Sin bolsa" (punteada), también en Qué nos falta, OC, Surtir e historial. **Filtros**: Todas / Con bolsa / Sin bolsa
+y por color (botones con su color), buscador y "Solo con existencia". La misma SQL actualiza el manual (sección "Cómo
+ver cuántas batas hay"). Otra sesión usó V218 (folio externo de Frisa); siguiente migración: V220.
+
 **Pendiente**
 - La lectura de un PDF real de ATR solo funciona en Vercel: probar con la primera OC real.
 - La primera orden de taller real de ATR es la prueba en vivo de V216 (folio real).

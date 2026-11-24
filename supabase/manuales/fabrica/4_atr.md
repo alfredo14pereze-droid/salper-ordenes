@@ -26,8 +26,10 @@ El flujo es: llega la OC → se sube → se revisa qué falta → se surte lo qu
 ### Cómo ver cuántas batas hay
 
 1. En el menú, entra a **Inventario ATR** (pestaña **Inventario**).
-2. Busca en **Buscar color, talla…** o filtra por producto.
-3. Cada línea dice **Producto**, **Talla**, **Color** y **Existencia**. Toca una línea para ver su historial (con la orden o la OC de cada movimiento).
+2. Cada renglón es una bata: su **color** (la etiqueta viene del mismo color) y si es **● Con bolsa** (negra) u **○ Sin bolsa** (punteada). Salen todas las batas del catálogo, aunque estén en 0.
+3. Las **tallas son columnas** (S, M, L, XL, 2XL, 3XL; XS, 4XL y 5XL salen si tienen algo) y al final el **Total**. Abajo, el total por talla.
+4. Filtra con **Todas / ● Con bolsa / ○ Sin bolsa** y tocando un **color**; también puedes buscar o marcar **Solo con existencia**.
+5. Toca un número para ver el historial de esa bata y talla (con la orden o la OC de cada movimiento).
 
 ### Cómo subir una orden de compra
 

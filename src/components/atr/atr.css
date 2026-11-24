@@ -145,3 +145,32 @@
 .atr-oc-aviso { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 10px 12px; border-radius: 8px; font-size: 14px; margin: 6px 0 12px; }
 .atr-oc-aviso--ok { background: var(--color-good-soft); }
 .atr-oc-aviso--falta { background: var(--color-danger-soft); }
+
+/* V219 — ayuda visual: color de la bata, con/sin bolsa, inventario en matriz */
+.atr-bata { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.atr-color { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; border: 1px solid transparent; white-space: nowrap; line-height: 1.5; }
+.atr-color--sin { background: var(--color-bg); border-color: var(--color-border); color: var(--color-text-muted); }
+.atr-bolsa { display: inline-block; padding: 1px 8px; border-radius: 6px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.atr-bolsa--con { background: var(--color-black); color: #fff; }
+.atr-bolsa--sin { border: 1.5px dashed var(--color-text-muted); color: var(--color-text-muted); }
+.atr-historial-cab { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.atr-inv-filtros { display: grid; gap: 8px; margin-bottom: 8px; }
+.atr-inv-colores { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.atr-inv-color-btn { border: 2px solid transparent; background: none; padding: 1px; border-radius: 999px; cursor: pointer; }
+.atr-inv-color-btn.is-activo { border-color: var(--color-black); }
+.atr-inv-color-btn:not(.is-activo) .atr-color { opacity: 0.85; }
+
+.atr-matriz th, .atr-matriz td { white-space: nowrap; }
+.atr-matriz__talla { min-width: 48px; }
+.atr-matriz__bata { min-width: 200px; }
+.atr-matriz__celda { padding: 0 !important; }
+.atr-matriz__num { width: 100%; min-height: 36px; padding: 6px 10px; border: 0; background: none; font: inherit; font-variant-numeric: tabular-nums; text-align: right; cursor: pointer; font-weight: 600; }
+.atr-matriz__num:hover { background: color-mix(in srgb, var(--color-amber) 25%, transparent); }
+.atr-matriz__num.is-cero { color: var(--color-text-muted); font-weight: 400; }
+.atr-matriz tfoot td { border-top: 2px solid var(--color-black); }
+.atr-matriz td:first-child, .atr-matriz th:first-child { position: sticky; left: 0; background: var(--color-surface); z-index: 1; }
+@media (max-width: 720px) {
+  .atr-matriz__bata { min-width: 120px; white-space: normal !important; }
+  .atr-matriz__talla { min-width: 40px; }
+}

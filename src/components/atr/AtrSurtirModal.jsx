@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Modal from '../talleros/Modal'
 import { surtirAtrOc } from '../../services/atrService'
 import { cantidadPropuesta, revisarSurtido } from '../../utils/atrOc'
+import AtrBata from './AtrBata'
 
 // V215 — Surtir una OC de ATR (parcial o total). Por línea: pedido, ya
 // surtido, pendiente y existencia; la cantidad propuesta es
@@ -67,7 +68,7 @@ export default function AtrSurtirModal({ oc, lineas, onClose, onListo }) {
                 const neg = !mal && num > 0 && l.existencia - num < 0
                 return (
                   <tr key={l.oc_linea_id}>
-                    <td>{l.producto}</td>
+                    <td><AtrBata producto={l.producto} color={l.color} conBolsa={l.con_bolsa} /></td>
                     <td>{l.talla}</td>
                     <td className="atr-num atr-surtir-opc">{n(l.pedido)}</td>
                     <td className="atr-num atr-surtir-opc">{n(l.surtido)}</td>

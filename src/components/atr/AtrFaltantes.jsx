@@ -6,6 +6,7 @@ import { fetchAtrClienteId, fetchAtrFaltantes, fetchAtrProductos } from '../../s
 import { faltantesCSV, nivelFaltante, prendasParaOrden, seleccionInicial } from '../../utils/atrOc'
 import { normalizar } from '../../utils/atrCarga'
 import { atrFaltantesFileName, buildAtrFaltantesBlob } from '../../utils/generateAtrPdf'
+import AtrBata from './AtrBata'
 
 // V215 — "Qué nos falta": por bata y talla, solo OC abiertas o parciales.
 // Faltante = max(0, pendiente − existencia − en taller). Rojo = falta
@@ -164,7 +165,7 @@ export default function AtrFaltantes({ puedeTaller = false }) {
                           <input type="checkbox" checked={!!sel?.has(clave(f))} onChange={() => toggle(f)} aria-label={`Elegir ${f.producto} ${f.talla}`} />
                         </td>
                       )}
-                      <td>{f.producto}</td>
+                      <td><AtrBata producto={f.producto} color={f.color} conBolsa={f.con_bolsa} /></td>
                       <td>{f.talla}</td>
                       <td className="atr-num">{n(f.pendiente)}</td>
                       <td className={'atr-num' + (f.existencia < 0 ? ' atr-negativo' : '')}>{n(f.existencia)}</td>

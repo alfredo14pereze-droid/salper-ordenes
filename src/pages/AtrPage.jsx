@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import RequireRole from '../components/common/RequireRole'
-import { ErrorState, Loading, EmptyState } from '../components/common/States'
+import { ErrorState, Loading } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
 import { canCargarAtr, canEntregarAtr, canOcAtr, canTallerAtr, canVerAtr } from '../utils/permissions'
 import { fetchAtrExistencias, fetchAtrProductos } from '../services/atrService'
-import { normalizar, ordenTalla } from '../utils/atrCarga'
+import { TALLAS_ATR, normalizar } from '../utils/atrCarga'
+import { coloresDe, matrizInventario } from '../utils/atrColores'
+import AtrBata, { AtrColor } from '../components/atr/AtrBata'
 import AtrHistorialModal from '../components/atr/AtrHistorialModal'
 import AtrEntregaModal from '../components/atr/AtrEntregaModal'
 import AtrAjusteModal from '../components/atr/AtrAjusteModal'
@@ -73,9 +75,10 @@ function Atr() {
   const [existencias, setExistencias] = useState(null)
   const [error, setError] = useState(null)
   const [busca, setBusca] = useState('')
-  const [fProducto, setFProducto] = useState('')
-  const [verCeros, setVerCeros] = useState(false)
-  const [historial, setHistorial] = useState(null) // fila
+  const [fColor, setFColor] = useState('')
+  const [fBolsa, setFBolsa] = useState('') // '' | 'con' | 'sin'
+  const [soloConExistencia, setSoloConExistencia] = useState(false)
+  const [historial, setHistorial] = useState(null) // { producto_id, producto, color, talla, existencia }
   const [entrega, setEntrega] = useState(false)
   const [ajuste, setAjuste] = useState(null) // {} o fila
 
@@ -91,20 +94,29 @@ function Atr() {
     cargar()
   }, [cargar])
 
-  const filas = useMemo(() => {
-    if (!existencias) return []
+  // V219 — matriz: una fila por bata (todas las del catálogo, aunque estén en
+  // 0) y una columna por talla.
+  const { filas, tallas } = useMemo(
+    () => (productos && existencias ? matrizInventario(productos, existencias, TALLAS_ATR) : { filas: [], tallas: [] }),
+    [productos, existencias],
+  )
+  const colores = useMemo(() => coloresDe(productos), [productos])
+  const vista = useMemo(() => {
     const q = normalizar(busca)
-    return existencias
-      .filter((x) => verCeros || x.existencia !== 0)
-      .filter((x) => !fProducto || x.producto_id === fProducto)
-      .filter((x) => !q || normalizar(`${x.producto} ${x.talla} ${x.color}`).includes(q))
-      .sort((a, b) => a.producto.localeCompare(b.producto, 'es') || ordenTalla(a.talla) - ordenTalla(b.talla))
-  }, [existencias, busca, fProducto, verCeros])
-
-  const total = filas.reduce((s, x) => s + x.existencia, 0)
+    return filas
+      .filter((f) => !fColor || normalizar(f.producto.color) === normalizar(fColor))
+      .filter((f) => !fBolsa || (fBolsa === 'con') === !!f.producto.con_bolsa)
+      .filter((f) => !soloConExistencia || Object.values(f.porTalla).some((v) => v !== 0))
+      .filter((f) => !q || normalizar(`${f.producto.nombre} ${f.producto.color}`).includes(q))
+  }, [filas, fColor, fBolsa, soloConExistencia, busca])
 
   if (error) return <ErrorState error={error} onRetry={cargar} />
   if (!existencias || !productos) return <Loading />
+
+  const totalTalla = (t) => vista.reduce((s, f) => s + (f.porTalla[t] || 0), 0)
+  const total = vista.reduce((s, f) => s + f.total, 0)
+  const abrir = (f, talla) =>
+    setHistorial({ producto_id: f.producto.id, producto: f.producto.nombre, color: f.producto.color, talla, existencia: f.porTalla[talla] || 0 })
 
   const listo = () => {
     setEntrega(false)
@@ -129,45 +141,73 @@ function Atr() {
         </div>
       </div>
 
-      <div className="atr-filtros">
-        <input className="input" placeholder="Buscar color, talla…" value={busca} onChange={(e) => setBusca(e.target.value)} />
-        <select className="input" value={fProducto} onChange={(e) => setFProducto(e.target.value)}>
-          <option value="">Todos los productos</option>
-          {productos.map((p) => (
-            <option key={p.id} value={p.id}>{p.nombre}</option>
+      <div className="atr-inv-filtros">
+        <div className="atr-oc-filtros" role="group" aria-label="Con o sin bolsa">
+          {[['', 'Todas'], ['con', '● Con bolsa'], ['sin', '○ Sin bolsa']].map(([k, t]) => (
+            <button key={k} type="button" className={'atr-oc-filtro' + (fBolsa === k ? ' is-activo' : '')} onClick={() => setFBolsa(k)}>{t}</button>
           ))}
-        </select>
-        <label className="atr-check">
-          <input type="checkbox" checked={verCeros} onChange={(e) => setVerCeros(e.target.checked)} /> Ver tallas en 0
-        </label>
+        </div>
+        <div className="atr-inv-colores" role="group" aria-label="Color">
+          <button type="button" className={'atr-oc-filtro' + (!fColor ? ' is-activo' : '')} onClick={() => setFColor('')}>Todos los colores</button>
+          {colores.map((c) => (
+            <button key={c} type="button" className={'atr-inv-color-btn' + (normalizar(fColor) === normalizar(c) ? ' is-activo' : '')}
+              onClick={() => setFColor(normalizar(fColor) === normalizar(c) ? '' : c)} aria-pressed={normalizar(fColor) === normalizar(c)}>
+              <AtrColor color={c} />
+            </button>
+          ))}
+        </div>
+        <div className="atr-acciones">
+          <input className="input atr-oc-busca" placeholder="Buscar…" value={busca} onChange={(e) => setBusca(e.target.value)} />
+          <label className="atr-check">
+            <input type="checkbox" checked={soloConExistencia} onChange={(e) => setSoloConExistencia(e.target.checked)} /> Solo con existencia
+          </label>
+        </div>
       </div>
 
-      {existencias.length === 0 ? (
-        <EmptyState>
-          Todavía no hay inventario de ATR.{canCargarAtr(role) ? <> Empieza con la <Link to="/atr/carga">carga inicial</Link>.</> : null}
-        </EmptyState>
-      ) : (
-        <>
-          <p className="atr-muted atr-conteo">{filas.length} líneas · <strong>{total.toLocaleString('es-MX')}</strong> batas</p>
-          <div className="atr-tabla-wrap">
-            <table className="simple-table atr-tabla">
-              <thead>
-                <tr><th>Producto</th><th>Talla</th><th>Color</th><th className="atr-num">Existencia</th></tr>
-              </thead>
-              <tbody>
-                {filas.map((x) => (
-                  <tr key={x.producto_id + x.talla} className="atr-tabla__fila" onClick={() => setHistorial(x)}>
-                    <td>{x.producto}</td>
-                    <td>{x.talla}</td>
-                    <td>{x.color}</td>
-                    <td className={'atr-num' + (x.existencia < 0 ? ' atr-negativo' : '')}>{x.existencia}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
+      {existencias.length === 0 && (
+        <p className="atr-aviso">
+          <span>Todavía no hay inventario cargado: todas las batas están en 0.{canCargarAtr(role) ? <> Empieza con la <Link to="/atr/carga">carga inicial</Link>.</> : null}</span>
+        </p>
       )}
+
+      <p className="atr-muted atr-conteo">{vista.length} batas · <strong>{total.toLocaleString('es-MX')}</strong> piezas. Toca un número para ver su historial.</p>
+      <div className="atr-tabla-wrap">
+        <table className="simple-table atr-tabla atr-matriz">
+          <thead>
+            <tr>
+              <th>Bata</th>
+              {tallas.map((t) => <th key={t} className="atr-num atr-matriz__talla">{t}</th>)}
+              <th className="atr-num">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {vista.map((f) => (
+              <tr key={f.producto.id}>
+                <td className="atr-matriz__bata"><AtrBata producto={f.producto.nombre} color={f.producto.color} conBolsa={!!f.producto.con_bolsa} /></td>
+                {tallas.map((t) => {
+                  const v = f.porTalla[t] || 0
+                  return (
+                    <td key={t} className="atr-num atr-matriz__celda">
+                      <button type="button" className={'atr-matriz__num' + (v === 0 ? ' is-cero' : v < 0 ? ' atr-negativo' : '')}
+                        onClick={() => abrir(f, t)} aria-label={`${f.producto.nombre} ${t}: ${v}`}>
+                        {v === 0 ? '·' : v.toLocaleString('es-MX')}
+                      </button>
+                    </td>
+                  )
+                })}
+                <td className="atr-num"><strong>{f.total.toLocaleString('es-MX')}</strong></td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td><strong>Total</strong></td>
+              {tallas.map((t) => <td key={t} className="atr-num"><strong>{totalTalla(t).toLocaleString('es-MX')}</strong></td>)}
+              <td className="atr-num"><strong>{total.toLocaleString('es-MX')}</strong></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
 
       {historial && (
         <AtrHistorialModal

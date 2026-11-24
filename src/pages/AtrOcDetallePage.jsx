@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { canCargarAtr, canEntregarAtr, canOcAtr, canVerAtr } from '../utils/permissions'
 import { cancelarAtrOc, deshacerSurtidoAtr, fetchAtrOcDetalle, fetchAtrOcLista, fetchAtrSurtidosOc, urlPdfOcAtr } from '../services/atrService'
 import AtrSurtirModal from '../components/atr/AtrSurtirModal'
+import AtrBata from '../components/atr/AtrBata'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import { atrHojaSurtidoFileName, buildAtrHojaSurtidoBlob } from '../utils/generateAtrPdf'
 import { ESTADOS_OC, agruparSurtidos, pctSurtido, urgenciaEntrega } from '../utils/atrOc'
@@ -166,7 +167,7 @@ function AtrOcDetalle() {
             <tbody>
               {lineas.map((l) => (
                 <tr key={l.oc_linea_id} className={l.pendiente > 0 && l.existencia < l.pendiente && oc.estado !== 'cancelada' ? 'atr-oc-fila--falta' : ''}>
-                  <td>{l.producto}{l.texto_pdf ? <div className="atr-muted atr-oc-pdf-txt">PDF: {l.texto_pdf}</div> : null}</td>
+                  <td><AtrBata producto={l.producto} color={l.color} conBolsa={l.con_bolsa} />{l.texto_pdf ? <div className="atr-muted atr-oc-pdf-txt">PDF: {l.texto_pdf}</div> : null}</td>
                   <td>{l.talla}</td>
                   <td className="atr-num">{n(l.pedido)}</td>
                   <td className="atr-num">{n(l.surtido)}</td>
