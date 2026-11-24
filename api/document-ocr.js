@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { verifyUser } from './_chat/auth.js'
+import { fechasOcAtr } from './_atr/fechas.js'
 
 // POST /api/document-ocr — lee una foto O un PDF y regresa datos
 // sugeridos para PRELLENAR un formulario (nunca guarda nada en la base
@@ -150,8 +151,9 @@ const ATR_OC_TOOL = {
     type: 'object',
     properties: {
       numero: { type: 'string', description: 'El número de "Orden de Compra No." (p. ej. "C19536"). NO uses el número de requisición. Cadena vacía si no se lee.' },
-      fecha_oc: { type: 'string', description: 'La "Fecha de la Orden" en YYYY-MM-DD. OJO: en estas órdenes las fechas vienen en formato MES/DÍA/AÑO (11/10/2026 = 10 de noviembre de 2026). Cadena vacía si no se lee.' },
-      fecha_entrega: { type: 'string', description: 'La "Fecha de Entrega" en YYYY-MM-DD, también viene en MES/DÍA/AÑO (debe cuadrar con "Días para entregar" a partir de la fecha de la orden). Cadena vacía si no viene.' },
+      fecha_oc: { type: 'string', description: 'La "Fecha de la Orden" COPIADA TAL CUAL como aparece en el PDF (p. ej. "11/10/2026"). NO la conviertas ni le cambies el orden: el sistema la interpreta. Cadena vacía si no se lee.' },
+      fecha_entrega: { type: 'string', description: 'La "Fecha de Entrega" COPIADA TAL CUAL como aparece en el PDF (p. ej. "12/10/2026"). NO la conviertas. Cadena vacía si no viene.' },
+      dias_para_entregar: { type: 'number', description: 'El número de "Días para entregar" si aparece (p. ej. 30). 0 si no viene.' },
       planta: { type: 'string', description: 'La planta de ATR (campo "Planta", p. ej. "ATR Rio Grande"). Cadena vacía si no se lee.' },
       articulos: {
         type: 'array',
@@ -209,7 +211,7 @@ const PROMPTS = {
   frisa_oc:
     'Esta es una orden de compra (PDF) que el cliente Frisa le manda a SALPER, fabricante de uniformes. Usa la herramienta para registrar el número de la orden, la planta de Frisa, la fecha del documento, la fecha de entrega y cada renglón con su descripción (sin la talla), talla y cantidad. No inventes ni adivines nada que no se vea con claridad: deja vacío lo que no se lea.',
   atr_oc:
-    'Esta es una orden de compra (PDF) que ATR (Autosistemas de Torreón) le manda a SALPER, fabricante de uniformes. ATR solo compra batas (con o sin bolsa, en varios colores, tallas XS a 5XL). Usa la herramienta para registrar el número de "Orden de Compra No." (no la requisición), la fecha de la orden y la de entrega (vienen en MES/DÍA/AÑO), la planta y cada renglón de la tabla con su descripción COMPLETA tal cual, su talla en forma corta y su cantidad. Ignora el número de parte, el precio y los impuestos. No inventes ni adivines nada que no se vea con claridad: deja vacío lo que no se lea.',
+    'Esta es una orden de compra (PDF) que ATR (Autosistemas de Torreón) le manda a SALPER, fabricante de uniformes. ATR solo compra batas (con o sin bolsa, en varios colores, tallas XS a 5XL). Usa la herramienta para registrar el número de "Orden de Compra No." (no la requisición), la fecha de la orden y la de entrega copiadas tal cual (sin convertirlas), los días para entregar, la planta y cada renglón de la tabla con su descripción COMPLETA tal cual, su talla en forma corta y su cantidad. Ignora el número de parte, el precio y los impuestos. No inventes ni adivines nada que no se vea con claridad: deja vacío lo que no se lea.',
   orden:
     'Este es un documento (foto o PDF) con información de una orden de producción para un taller de uniformes/sublimación. Usa la herramienta disponible para registrar el cliente y la fecha de entrega SOLO si aparecen explícitos y sin ambigüedad, más las prendas con cantidad y talla que se alcancen a leer con certeza. Si la misma prenda aparece en varias tallas (renglones separados para M, L, etc.), regístrala como un artículo por cada talla pero con el nombre IDÉNTICO en todos — no repitas la talla dentro del nombre, va en su propio campo. No inventes ni adivines nada que no se vea con claridad — deja cliente/fecha_entrega vacíos y omite cualquier prenda que no puedas leer bien.',
 }
@@ -333,8 +335,9 @@ export default async function handler(req, res) {
         .map((a) => ({ nombre: a.nombre.trim(), talla: texto(a.talla), cantidad: Math.round(Number(a.cantidad)) }))
       const out = {
         numero: texto(raw.numero),
-        fechaOc: isValidIsoDate(raw.fecha_oc) ? raw.fecha_oc : null,
-        fechaEntrega: isValidIsoDate(raw.fecha_entrega) ? raw.fecha_entrega : null,
+        // Las fechas de ATR vienen MES/DÍA/AÑO: se convierten aquí, no en el modelo.
+        ...fechasOcAtr({ fecha_oc_texto: raw.fecha_oc, fecha_entrega_texto: raw.fecha_entrega, dias_para_entregar: raw.dias_para_entregar }),
+        fechasTexto: { oc: texto(raw.fecha_oc), entrega: texto(raw.fecha_entrega) },
         planta: texto(raw.planta),
         articulos: lineas,
       }

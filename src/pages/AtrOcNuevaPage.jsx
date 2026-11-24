@@ -174,7 +174,12 @@ function AtrOcNueva() {
             </label>
           </div>
           {pdf?.leido && (
-            <p className="atr-muted atr-oc-meta">Las OC de ATR traen las fechas en mes/día/año (11/10/2026 = 10 de noviembre): revisa que cuadren.</p>
+            <p className="atr-muted atr-oc-meta">
+              Las OC de ATR traen las fechas en mes/día/año (11/10/2026 = 10 de noviembre).
+              {pdf.leido.fechasTexto?.oc || pdf.leido.fechasTexto?.entrega
+                ? ` En el PDF: orden ${pdf.leido.fechasTexto.oc || '—'}, entrega ${pdf.leido.fechasTexto.entrega || '—'}.`
+                : ''} Revisa que cuadren.
+            </p>
           )}
           {yaSubida && (
             <p className="form-error">

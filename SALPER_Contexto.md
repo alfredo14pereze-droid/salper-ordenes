@@ -8699,6 +8699,13 @@ tienen algo) + Total por bata y por talla; tocar un número abre el historial. *
 y por color (botones con su color), buscador y "Solo con existencia". La misma SQL actualiza el manual (sección "Cómo
 ver cuántas batas hay"). Otra sesión usó V218 (folio externo de Frisa); siguiente migración: V220.
 
+**Fechas de las OC de ATR (2026-11-24).** Vienen en formato de Estados Unidos, MES/DÍA/AÑO. Antes se le pedía a Claude
+convertirlas y la OC 18348 quedó con entrega 11-may en vez de 5-nov (corregida con
+`datos_2026-11-24_atr_oc_18348_fecha_entrega.sql`). Ahora el lector `atr_oc` solo copia la fecha TAL CUAL y los "Días
+para entregar"; `api/_atr/fechas.js` (`fechaAtr`, `fechasOcAtr`, con pruebas) la convierte siempre como mes/día/año
+(también "Nov 10, 2026", "10 de noviembre de 2026", ISO) y, si falta la de entrega, la calcula con los días. La pantalla
+muestra las fechas como venían en el PDF para compararlas.
+
 **Pendiente**
 - La lectura de un PDF real de ATR solo funciona en Vercel: probar con la primera OC real.
 - La primera orden de taller real de ATR es la prueba en vivo de V216 (folio real).
