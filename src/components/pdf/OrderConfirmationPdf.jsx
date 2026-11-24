@@ -386,6 +386,10 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 
             </View>
             {/* V176 — folio del pedido (solo si quien genera ve dinero). */}
             {pagos?.pedido && <Text style={styles.pedidoFolio}>Pedido {pagos.pedido.folio}</Text>}
+            {/* V218 — folio de nuestro control interno (órdenes Frisa). */}
+            {order.order_type_key === 'frisa' && order.folio_externo && (
+              <Text style={styles.pedidoFolio}>Folio externo: {order.folio_externo}</Text>
+            )}
             <View style={[styles.statusBox, { backgroundColor: currentStatus.color }]}>
               <Text style={[styles.statusLabel, { color: currentStatus.textColor }]}>
                 Estado actual: {currentStatus.label}

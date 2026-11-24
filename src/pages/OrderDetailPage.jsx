@@ -28,6 +28,7 @@ import OrderDisenosCard from '../components/orders/OrderDisenosCard'
 import { DisenoAutorizadoCard } from '../components/orders/DisenoAutorizado'
 import OrderSurtidoCard from '../components/orders/OrderSurtidoCard'
 import AtrEtiquetaOrden from '../components/atr/AtrEtiquetaOrden'
+import { FolioExternoFrisaCard } from '../components/frisa/FolioExternoFrisa'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import { Loading, ErrorState } from '../components/common/States'
 import {
@@ -142,6 +143,8 @@ function OrderDetailContent() {
           {order.equipo && <p className="order-detail__client">Equipo: {order.equipo}</p>}
           {order.numero_corte && <p className="order-detail__client">Corte: {order.numero_corte}</p>}
           {order.frisa_producto?.codigo && <p className="order-detail__client">Producto: {order.frisa_producto.codigo}</p>}
+          {/* V218 — folio de nuestro control interno (solo Frisa). */}
+          {order.order_type_key === 'frisa' && order.folio_externo && <p className="order-detail__client">Folio externo: <strong>{order.folio_externo}</strong></p>}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {order.eliminada_en && <span className="badge badge--danger">Eliminada</span>}
@@ -171,6 +174,9 @@ function OrderDetailContent() {
         </div>
       </div>
       {pdfError && <p className="form-error">No se pudo generar el PDF: {pdfError.message}</p>}
+      {location.state?.folioExternoError && (
+        <p className="form-error">La orden se creó, pero no se guardó el folio externo: {location.state.folioExternoError}. Captúralo abajo en "Folio externo".</p>
+      )}
       {location.state?.equipoError && (
         <p className="form-error">La orden se creó, pero no se guardó el equipo: {location.state.equipoError}. Captúralo en "Editar".</p>
       )}
@@ -193,6 +199,13 @@ function OrderDetailContent() {
         <section className="card">
           <OrderDetailsCard order={order} orderTypes={orderTypes} onUpdated={refresh} />
         </section>
+
+        {/* V218 — folio externo de la orden de taller de Frisa (agregar / editar). */}
+        {order.order_type_key === 'frisa' && (
+          <section className="card">
+            <FolioExternoFrisaCard order={order} onUpdated={refresh} />
+          </section>
+        )}
 
         {/* V51 — bitácora interna, nunca sale en el PDF de cliente ni en
             el interno. Visible para cualquiera con sesión (hasta

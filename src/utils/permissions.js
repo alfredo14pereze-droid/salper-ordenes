@@ -494,6 +494,13 @@ export function canCrearOrdenesRestock(role) {
   return tiene(role, 'fr.ordenes', () => role === 'admin_general')
 }
 
+// V218 — folio externo de una orden Frisa: los que crean órdenes Frisa
+// (create_order_frisa) o quien crea órdenes de taller desde Restock (fr.ordenes).
+// Mismo criterio que frisa_set_folio_externo en el servidor.
+export function canEditFolioExternoFrisa(role) {
+  return ['ventas', 'admin_tienda', 'admin_general'].includes(role) || tiene(role, 'fr.ordenes', () => false)
+}
+
 export function canSubirBodegaFrisa(role) {
   return tiene(role, 'fr.bodega', () => role === 'admin_general')
 }

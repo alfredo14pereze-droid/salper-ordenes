@@ -8,7 +8,11 @@ import { canCrearOrdenesRestock, canSubirBodegaFrisa, canComprasFrisa, canVerTod
 import {
   fetchRestockTodo, buscarOrdenPorFolio, ligarOrden, desligarOrden, subirABodega, crearCompra, recibirCompra, cancelarCompra,
 } from '../../services/frisaRestockService'
-import { createOrderFrisa } from '../../services/frisaService'
+import { Link } from 'react-router-dom'
+import { createOrderFrisa, setFolioExternoFrisa } from '../../services/frisaService'
+import { FolioExternoInput } from '../frisa/FolioExternoFrisa'
+import BuscarOrdenesFrisa from '../frisa/BuscarOrdenesFrisa'
+import { limpiarFolioExterno } from '../../utils/folioExterno'
 import { conInventario } from '../../utils/frisaSurtido'
 import { CONFIG_INICIAL } from '../../utils/frisaNiveles'
 import { calcularRestock, itemsOrdenRestock, propuestaIngreso, CICLO } from '../../utils/frisaRestock'
@@ -101,6 +105,8 @@ export default function FrisaRestock() {
 
       {sub === 'taller' && (
         <>
+          {/* V218 — buscar por folio FR o folio externo. */}
+          <BuscarOrdenesFrisa />
           {planea && <div className="stats-grid frisa-niveles__resumen">
             <div className="stat-card"><span className="stat-card__label">Por pedir al taller</span><span className="stat-card__value">{num(r.talleresPropuestos.reduce((t, g) => t + g.lineas.reduce((a, l) => a + l.cantidad, 0), 0))}</span><span className="stat-card__hint">{r.talleresPropuestos.length} órdenes FR</span></div>
             <div className="stat-card"><span className="stat-card__label">En proceso</span><span className="stat-card__value">{enProceso.length}</span><span className="stat-card__hint">órdenes de taller</span></div>
@@ -240,6 +246,7 @@ function ListaCiclo({ titulo, filas, ciclo, queEs, todas, setTodas }) {
 function PropuestaTaller({ grupo, productoFrisa, puede, onListo, onCerrar }) {
   const [cant, setCant] = useState(() => Object.fromEntries(grupo.lineas.map((l) => [l.producto_id, l.cantidad > 0 ? String(l.cantidad) : ''])))
   const [fecha, setFecha] = useState(masDias(10))
+  const [folioExterno, setFolioExterno] = useState('')
   const [trabajando, setTrabajando] = useState(false)
   const [error, setError] = useState(null)
   const total = grupo.lineas.reduce((t, l) => t + (Number(cant[l.producto_id]) || 0), 0)
@@ -254,9 +261,12 @@ function PropuestaTaller({ grupo, productoFrisa, puede, onListo, onCerrar }) {
     })
     if (e) { setTrabajando(false); return setError(e.message) }
     const { error: e2 } = await ligarOrden(orden.id, 'restock')
+    // V218 — folio externo (opcional), aparte de create_order_frisa.
+    const { error: e3 } = limpiarFolioExterno(folioExterno) ? await setFolioExternoFrisa(orden.id, folioExterno) : { error: null }
     setTrabajando(false)
-    if (e2) return setError(`Se creó la orden ${orden.order_number} pero no se pudo ligar: ${e2.message}. Lígala abajo con su folio.`)
-    onListo(`Se creó la orden de taller ${orden.order_number} (${nombreFrisa(productoFrisa?.nombre)}, ${num(total)} pzas). Ya está en las estaciones.`)
+    const sinFolio = e3 ? ` No se guardó el folio externo (${e3.message}): captúralo en el detalle de la orden.` : ''
+    if (e2) return setError(`Se creó la orden ${orden.order_number} pero no se pudo ligar: ${e2.message}. Lígala abajo con su folio.${sinFolio}`)
+    onListo(`Se creó la orden de taller ${orden.order_number} (${nombreFrisa(productoFrisa?.nombre)}, ${num(total)} pzas). Ya está en las estaciones.${sinFolio}`)
   }
 
   return (
@@ -273,6 +283,7 @@ function PropuestaTaller({ grupo, productoFrisa, puede, onListo, onCerrar }) {
         ))}
         <label><span className="field-label">Entrega</span><input className="input" type="date" value={fecha} disabled={!puede} onChange={(e) => setFecha(e.target.value)} /></label>
       </div>
+      {puede && <FolioExternoInput value={folioExterno} onChange={setFolioExterno} id={`folio-externo-${grupo.producto_frisa_id}`} />}
       {error && <p className="form-error">{error}</p>}
       {puede
         ? <div className="frisa__botones">
@@ -386,10 +397,13 @@ function ListaOrdenes({ filas, pfPorId, puede, onSubir, onListo }) {
         return (
           <div key={f.liga.order_id} className="card frisa-surtido__tarjeta frisa-restock__orden">
             <span className="frisa-surtido__fila1">
-              <span className="frisa-oc__num">{f.order?.order_number || 'Orden'}</span>
+              {f.order?.id
+                ? <Link to={`/orden/${f.order.id}`} className="frisa-oc__num">{f.order.order_number}</Link>
+                : <span className="frisa-oc__num">Orden</span>}
               <span className={'frisa-nivel frisa-nivel--' + clase}>{label}</span>
             </span>
             <span className="frisa-oc__planta">{nombreFrisa(pf?.nombre)}</span>
+            {f.order?.folio_externo && <span className="frisa__sub">Folio externo: <strong>{f.order.folio_externo}</strong></span>}
             <span className="frisa__sub">{num(f.piezas)} pzas{f.order?.requested_delivery_date ? ` · entrega ${fechaCorta(f.order.requested_delivery_date)}` : ''}</span>
             <span className="frisa__botones">
               {f.estado === 'por_entrar' && puede.bodega && <button type="button" className="btn btn--primary btn--small" onClick={() => onSubir(f)}>Subir a bodega</button>}
