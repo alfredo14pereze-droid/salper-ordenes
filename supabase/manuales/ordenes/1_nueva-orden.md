@@ -97,6 +97,18 @@ Un pedido junta varias órdenes del mismo cliente con un solo anticipo, abonos y
 
 > Si el cliente no tiene productos, agrégalos en **Catálogos → Clientes → "Ver catálogo de prendas"**.
 
+### Cómo hacer una orden de impresión
+
+Para prendas que ya vienen hechas y solo hay que imprimirles (no llevan corte, costura ni bordado).
+
+1. Elige el tipo de orden **Impresión**.
+2. Elige el **Cliente**.
+3. En cada prenda elige la **Prenda** y captura las **Tallas y cantidades**.
+4. Dale **+ Agregar foto de la impresión** y escribe **¿Dónde va?** (ej. espalda, pecho izquierdo). Puedes subir varias fotos: cada una es una impresión distinta.
+5. Dale **Crear orden**. Su folio es **IMP-001**, **IMP-002**…
+
+> La orden pasa por **Impresión** y luego **Terminado**; las dos las hacen las personas de Terminado.
+
 ### Cómo adjuntar la cotización y la orden de compra
 
 1. Abre **Cotización y orden de compra (opcional)**.

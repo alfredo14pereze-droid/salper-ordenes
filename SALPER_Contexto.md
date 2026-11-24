@@ -8782,3 +8782,21 @@ de órdenes (cualquier formato, opcional) al crear o editar una orden Frisa.
   buscar "ord 3310" → FR-023, aviso con "ind 54" → IND-054, guardar "  ORD3320  " → "ORD3320" + nota, chofer y
   admin_fabrica sin botón. **No probado** con sesión real ni las pantallas completas de Nueva orden/Restock (necesitan
   muchas tablas). Siguiente migración: V219.
+
+### V220 — Tipo de orden "Impresión" (2026-11-24, rama `tipo-impresion`)
+
+- Pedido de Alfredo: un tipo de orden como "Bordado", pero solo con impresión. Etapas: **impresión** (`impresion_prenda`,
+  la hace terminado) → **terminado**. Sin bordado, corte ni costura. Folio **IMP-001…**, key `impresion`, color `#db2777`.
+- `schema_v220_tipo_impresion.sql`: inserta el tipo (inactivo → plantilla → activo, por el candado de V136), crea
+  `folio_seq_impresion`, plantilla `impresion_prenda 1 / terminado 2`, y parchea una línea de
+  `order_type_guardar_plantilla` para que "Editar etapas" no borre `impresion_prenda` (igual que con `bordado`). Probado
+  en PGlite dos veces con las funciones reales de V136.
+- Frontend: `utils/bordadoOrden.js` ahora cubre las dos "órdenes simples" (`esOrdenSimple`, `procesoDeOrden`,
+  `PROCESO_SIMPLE`); `BordadoItemsEditor` recibe `proceso` ('bordado' | 'impresion': guarda en `impresiones` con
+  `lleva_impresion`). Nueva orden y el detalle validan y normalizan con el proceso del tipo. Terminado de una orden de
+  impresión espera a que la impresión empiece (`ordenesDeEstacion.js`).
+- Clientes: la lista de Nueva orden muestra los clientes con la categoría del tipo; hay que marcar "Impresión" en la
+  categoría de los clientes que la usen (Catálogos → Clientes → Editar categoría) o usar "Otro cliente".
+- Manual "Crear una orden": proceso nuevo "Cómo hacer una orden de impresión"
+  (`datos_2026-11-24_manual_nueva_orden_impresion.sql`).
+

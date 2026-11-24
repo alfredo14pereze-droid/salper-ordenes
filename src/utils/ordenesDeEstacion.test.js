@@ -49,3 +49,16 @@ test('sin cambios: Frisa sigue con su secuencia estricta (V155)', () => {
   assert.equal(situacionEnEstacion('impresion_prenda', et, frisa), 'espera')
   assert.equal(situacionEnEstacion('reflejante', et, { ...frisa, status: 'completado' }), null)
 })
+
+// V220 — orden de tipo Impresión: impresión (la hace terminado) → terminado.
+test('tipo impresión: impresión le toca de inmediato; terminado espera a que empiece la impresión', () => {
+  const orden = { order_type_key: 'impresion', status: 'confirmada' }
+  const etapas = [
+    { etapa: 'impresion_prenda', estado: 'pendiente', orden_secuencia: 1 },
+    { etapa: 'terminado', estado: 'pendiente', orden_secuencia: 2 },
+  ]
+  assert.equal(situacionEnEstacion('impresion_prenda', etapas, orden), 'lista')
+  assert.equal(situacionEnEstacion('terminado', etapas, orden), 'espera')
+  etapas[0].estado = 'en_proceso'
+  assert.equal(situacionEnEstacion('terminado', etapas, orden), 'lista')
+})

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { uploadFotoBordado } from '../../services/bordadosService'
-import { PRENDAS_BORDADO, OTRA_PRENDA, esCachucha, nuevoBordado, nuevaPrendaBordado } from '../../utils/bordadoOrden'
+import { PRENDAS_BORDADO, OTRA_PRENDA, PROCESO_SIMPLE, esCachucha, nuevoBordado, nuevaPrendaBordado } from '../../utils/bordadoOrden'
 import Miniatura from '../../components/common/Miniatura'
 import { ACEPTA_FOTO_O_PDF } from '../../utils/archivos'
 
@@ -8,7 +8,11 @@ import { ACEPTA_FOTO_O_PDF } from '../../utils/archivos'
 // tallas/cantidades y los bordados (foto + dónde va, salvo cachucha, que solo
 // pide la foto). Sin tela, color, cuello, manga ni las demás especificaciones.
 // Misma interfaz controlada que OrderItemsEditor (items + onChange).
-export default function BordadoItemsEditor({ items, onChange }) {
+// V220 — `proceso` = 'impresion' para órdenes de tipo Impresión: mismo editor,
+// pero cada foto va en `impresiones` (en vez de `bordados`).
+export default function BordadoItemsEditor({ items, onChange, proceso = 'bordado' }) {
+  const { campo, nombre: proc } = PROCESO_SIMPLE[proceso]
+  const esImp = proceso === 'impresion'
   const [otraIds, setOtraIds] = useState(() => new Set())
   const [subiendo, setSubiendo] = useState(0)
   const [error, setError] = useState(null)
@@ -29,10 +33,10 @@ export default function BordadoItemsEditor({ items, onChange }) {
   }
 
   function updateBordado(itemIndex, bordadoId, patch) {
-    updateItem(itemIndex, { bordados: (items[itemIndex].bordados || []).map((b) => (b.id === bordadoId ? { ...b, ...patch } : b)) })
+    updateItem(itemIndex, { [campo]: (items[itemIndex][campo] || []).map((b) => (b.id === bordadoId ? { ...b, ...patch } : b)) })
   }
   function removeBordado(itemIndex, bordadoId) {
-    updateItem(itemIndex, { bordados: (items[itemIndex].bordados || []).filter((b) => b.id !== bordadoId) })
+    updateItem(itemIndex, { [campo]: (items[itemIndex][campo] || []).filter((b) => b.id !== bordadoId) })
   }
 
   // Cada foto elegida es un bordado nuevo: se sube de inmediato y su fila aparece
@@ -51,7 +55,7 @@ export default function BordadoItemsEditor({ items, onChange }) {
     }
     if (nuevos.length > 0) {
       // `items` pudo cambiar durante la subida: se vuelve a leer del arreglo actual.
-      onChange((prev) => (prev || items).map((it, i) => (i === itemIndex ? { ...it, bordados: [...(it.bordados || []), ...nuevos] } : it)))
+      onChange((prev) => (prev || items).map((it, i) => (i === itemIndex ? { ...it, [campo]: [...(it[campo] || []), ...nuevos] } : it)))
     }
   }
 
@@ -147,12 +151,12 @@ export default function BordadoItemsEditor({ items, onChange }) {
 
             <div className="bordado-lista">
               <span className="field-label" style={{ display: 'block', marginTop: 12 }}>
-                {cachucha ? 'Foto del bordado' : 'Bordados (foto y dónde va cada uno)'}
+                {cachucha ? `Foto de${esImp ? ' la' : 'l'} ${proc}` : esImp ? 'Impresiones (foto y dónde va cada una)' : 'Bordados (foto y dónde va cada uno)'}
               </span>
-              {(item.bordados || []).map((b) => (
+              {(item[campo] || []).map((b) => (
                 <div key={b.id} className="bordado-fila">
                   <a href={b.foto_url} target="_blank" rel="noreferrer">
-                    <Miniatura src={b.foto_url} alt="Bordado" className="bordado-fila__foto" />
+                    <Miniatura src={b.foto_url} alt={esImp ? 'Impresión' : 'Bordado'} className="bordado-fila__foto" />
                   </a>
                   {!cachucha ? (
                     <input
@@ -161,20 +165,20 @@ export default function BordadoItemsEditor({ items, onChange }) {
                       value={b.ubicacion}
                       onChange={(e) => updateBordado(itemIndex, b.id, { ubicacion: e.target.value })}
                       placeholder="¿Dónde va? Ej. Espalda, manga derecha, pecho izquierdo"
-                      aria-label="Dónde va el bordado"
+                      aria-label={esImp ? 'Dónde va la impresión' : 'Dónde va el bordado'}
                     />
                   ) : (
                     <span className="pantone-hint" style={{ flex: 1 }}>
                       Cachucha
                     </span>
                   )}
-                  <button type="button" className="sizes-row__remove" onClick={() => removeBordado(itemIndex, b.id)} aria-label="Quitar bordado">
+                  <button type="button" className="sizes-row__remove" onClick={() => removeBordado(itemIndex, b.id)} aria-label={esImp ? 'Quitar impresión' : 'Quitar bordado'}>
                     ×
                   </button>
                 </div>
               ))}
               <label className="btn btn--secondary btn--small bordado-subir">
-                {subiendo > 0 ? `Subiendo ${subiendo}…` : (item.bordados || []).length > 0 ? '+ Agregar otro bordado (foto)' : '+ Agregar foto del bordado'}
+                {subiendo > 0 ? `Subiendo ${subiendo}…` : (item[campo] || []).length > 0 ? (esImp ? '+ Agregar otra impresión (foto)' : '+ Agregar otro bordado (foto)') : esImp ? '+ Agregar foto de la impresión' : '+ Agregar foto del bordado'}
                 <input
                   ref={(el) => (inputsRef.current[itemIndex] = el)}
                   type="file"
@@ -187,7 +191,7 @@ export default function BordadoItemsEditor({ items, onChange }) {
                   }}
                 />
               </label>
-              <p className="pantone-hint">Puedes elegir varias fotos a la vez: cada una es un bordado distinto.</p>
+              <p className="pantone-hint">Puedes elegir varias fotos a la vez: cada una es {esImp ? 'una impresión distinta' : 'un bordado distinto'}.</p>
             </div>
 
             <div className="item-block__total">
@@ -197,7 +201,7 @@ export default function BordadoItemsEditor({ items, onChange }) {
         )
       })}
       {error && <p className="form-error">{error.message}</p>}
-      <button type="button" className="add-item-btn" onClick={() => onChange([...items, nuevaPrendaBordado()])}>
+      <button type="button" className="add-item-btn" onClick={() => onChange([...items, nuevaPrendaBordado(proceso)])}>
         + Agregar otra prenda a esta orden
       </button>
       <div className="items-editor__total">

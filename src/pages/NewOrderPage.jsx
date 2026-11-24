@@ -1,4 +1,4 @@
-import { esOrdenBordado, normalizarItemsBordado, validarItemsBordado } from '../utils/bordadoOrden'
+import { esOrdenSimple, procesoDeOrden, normalizarItemsBordado, validarItemsBordado } from '../utils/bordadoOrden'
 import { limpiarRoster } from '../utils/roster'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -623,8 +623,8 @@ function NewOrderForm() {
     // V132/V133 — foto de bordado obligatoria: en una orden de bordado, cada prenda necesita
     // la foto de su bordado (y su "dónde va" si no es cachucha); en las demás, solo las
     // prendas que llevan bordado (sublimación nunca).
-    const faltaFotoBordado = esOrdenBordado(form.orderTypeKey)
-      ? validarItemsBordado(items)
+    const faltaFotoBordado = esOrdenSimple(form.orderTypeKey)
+      ? validarItemsBordado(items, procesoDeOrden(form.orderTypeKey))
       : form.orderTypeKey === 'sublimacion'
         ? null
         : validarFotosBordado(items)
@@ -633,7 +633,7 @@ function NewOrderForm() {
       return
     }
     // V134 — y una que lleva impresión, la foto y el lugar de cada impresión.
-    const faltaImpresion = esOrdenBordado(form.orderTypeKey) || form.orderTypeKey === 'sublimacion' ? null : validarImpresiones(items)
+    const faltaImpresion = esOrdenSimple(form.orderTypeKey) || form.orderTypeKey === 'sublimacion' ? null : validarImpresiones(items)
     if (faltaImpresion) {
       setSubmitError(new Error(faltaImpresion))
       return
@@ -650,7 +650,7 @@ function NewOrderForm() {
           .filter((s) => s.talla.trim() && Number(s.cantidad) > 0)
           .map((s) => ({ talla: s.talla.trim(), cantidad: Number(s.cantidad) })),
       }))
-    const cleanItems = esOrdenBordado(form.orderTypeKey) ? normalizarItemsBordado(cleanItemsBase) : fijarPrendasOperaciones(cleanItemsBase, form.clientName, prendasOps)
+    const cleanItems = esOrdenSimple(form.orderTypeKey) ? normalizarItemsBordado(cleanItemsBase, procesoDeOrden(form.orderTypeKey)) : fijarPrendasOperaciones(cleanItemsBase, form.clientName, prendasOps)
 
     // V136 — si el tipo no tiene etapas, la orden nacería sin orden_etapas y
     // no le aparecería a ninguna estación de fábrica: no se guarda. (El
