@@ -95,6 +95,10 @@ export function ordenarOcs(lista) {
       if (a.fecha_entrega && b.fecha_entrega && a.fecha_entrega !== b.fecha_entrega) return a.fecha_entrega < b.fecha_entrega ? -1 : 1
       if (a.fecha_entrega && !b.fecha_entrega) return -1
       if (!a.fecha_entrega && b.fecha_entrega) return 1
+      // Misma fecha de entrega: primero la orden más vieja (fecha de la OC y luego la que se subió antes).
+      const fo = String(a.fecha_oc || '').localeCompare(String(b.fecha_oc || ''))
+      if (fo) return fo
+      return String(a.creado_en || '').localeCompare(String(b.creado_en || ''))
     }
     return String(b.creado_en || '').localeCompare(String(a.creado_en || ''))
   })
@@ -218,15 +222,17 @@ export function prendasParaOrden(filas, productos) {
 export const seleccionInicial = (filas) => new Set((filas || []).filter((f) => f.faltante > 0).map((f) => `${f.producto_id}|${f.talla}`))
 
 // ---------------------------------------------------------------------
-// ¿Se puede surtir? (igual que las órdenes de surtido de Frisa)
-// El inventario se reparte de la OC que vence primero a la última (sin fecha
-// al final). Por OC activa (abierta/parcial):
-//   completa    → todo lo pendiente alcanza con lo que queda después de las
-//                 que vencen antes (verde "Se puede surtir")
-//   alcanzaSola → sola sí alcanzaría, pero otra que vence antes ocupa las
+// ¿Se puede surtir? (como las órdenes de surtido de Frisa, pero ESTRICTO POR
+// FECHA, decisión de Alfredo 2026-11-24): el inventario se reparte de la OC
+// que vence primero a la última (sin fecha al final; misma fecha → la orden
+// más vieja). Cada OC toma lo que haya de cada bata y talla AUNQUE NO SE
+// COMPLETE (en ATR se surte parcial), y la siguiente se queda con lo que sobra.
+// Por OC activa (abierta/parcial):
+//   completa    → le alcanzó todo lo pendiente (verde "Se puede surtir")
+//   alcanzaSola → sola sí alcanzaría, pero una que vence antes se lleva las
 //                 piezas (naranja; compiteCon = esas OCs)
 //   si no       → rojo "Faltan piezas" (faltantes por bata y talla)
-//   alcanzan    → piezas que sí hay para surtir parcial
+//   alcanzan    → piezas que le tocan para surtir parcial
 // lineasPorOc: { [oc_id]: filas de atr_oc_detalle }
 // ---------------------------------------------------------------------
 const claveBT = (l) => `${l.producto_id}|${l.talla}`
@@ -243,26 +249,30 @@ export function calcularSurtibles(ocs, lineasPorOc) {
     const ls = (lineasPorOc[oc.id] || []).filter((l) => l.pendiente > 0)
     const faltantes = []
     let alcanzan = 0
+    const compiteCon = new Set()
     for (const l of ls) {
       const k = claveBT(l)
       const hay = restante.get(k) ?? 0
-      alcanzan += Math.min(hay, l.pendiente)
-      if (hay < l.pendiente) faltantes.push({ producto: l.producto, talla: l.talla, falta: l.pendiente - hay })
+      const toma = Math.min(hay, l.pendiente)
+      alcanzan += toma
+      if (hay < l.pendiente) {
+        faltantes.push({ producto: l.producto, talla: l.talla, falta: l.pendiente - hay })
+        for (const otra of usadoPor.get(k) || []) compiteCon.add(otra)
+      }
+      // Toma lo que hay, se complete o no: lo que queda es para las que vencen después.
+      restante.set(k, hay - toma)
+      if (toma > 0) {
+        if (!usadoPor.has(k)) usadoPor.set(k, [])
+        usadoPor.get(k).push(oc.numero_oc)
+      }
       const t = porBT.get(k) || { producto_id: l.producto_id, producto: l.producto, color: l.color, con_bolsa: l.con_bolsa, talla: l.talla, pendiente: 0, existencia: existencia.get(k) ?? 0 }
       t.pendiente += l.pendiente
       porBT.set(k, t)
     }
     const completa = ls.length > 0 && faltantes.length === 0
-    if (completa) for (const l of ls) {
-      const k = claveBT(l)
-      restante.set(k, restante.get(k) - l.pendiente)
-      if (!usadoPor.has(k)) usadoPor.set(k, [])
-      usadoPor.get(k).push(oc.numero_oc)
-    }
     const alcanzaSola = ls.length > 0 && ls.every((l) => l.pendiente <= (existencia.get(claveBT(l)) ?? 0))
-    const compiteCon = completa ? [] : [...new Set(ls.filter((l) => (restante.get(claveBT(l)) ?? 0) < l.pendiente).flatMap((l) => usadoPor.get(claveBT(l)) || []))]
     const piezas = ls.reduce((t, l) => t + l.pendiente, 0)
-    ordenes.push({ oc, completa, alcanzaSola: !completa && alcanzaSola, compiteCon, faltantes, piezas, alcanzan })
+    ordenes.push({ oc, completa, alcanzaSola: !completa && alcanzaSola, compiteCon: completa ? [] : [...compiteCon], faltantes, piezas, alcanzan })
   }
   const porBata = [...porBT.values()]
     .map((t) => ({ ...t, falta: Math.max(0, t.pendiente - t.existencia) }))

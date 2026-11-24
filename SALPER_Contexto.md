@@ -8706,6 +8706,11 @@ para entregar"; `api/_atr/fechas.js` (`fechaAtr`, `fechasOcAtr`, con pruebas) la
 (también "Nov 10, 2026", "10 de noviembre de 2026", ISO) y, si falta la de entrega, la calcula con los días. La pantalla
 muestra las fechas como venían en el PDF para compararlas.
 
+**Reparto estrictamente por fecha (2026-11-24, decisión de Alfredo).** `calcularSurtibles` ya no reparte como Frisa
+(donde solo aparta la OC que se completa): cada OC, de la que vence primero a la última, toma lo que haya de cada bata y
+talla aunque no se complete, y la siguiente se queda con lo que sobra. Misma fecha de entrega → primero la de fecha de OC
+más vieja y luego la que se subió antes. Manual: `datos_2026-11-24_manual_atr_reparto_por_fecha.sql`.
+
 **Pendiente**
 - La lectura de un PDF real de ATR solo funciona en Vercel: probar con la primera OC real.
 - La primera orden de taller real de ATR es la prueba en vivo de V216 (folio real).

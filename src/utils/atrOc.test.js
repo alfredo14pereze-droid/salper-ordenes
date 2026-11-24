@@ -211,3 +211,29 @@ test('se puede surtir / alcanza pero la ocupa otra / faltan piezas (como Frisa)'
   assert.deepEqual([as.pendiente, as.existencia, as.falta], [18, 15, 3])
   assert.equal(r.piezasFaltantes, 6)
 })
+
+test('estricto por fecha: la que vence antes toma lo que hay aunque no se complete', () => {
+  const ocs = [
+    { id: 'B', numero_oc: 'B', estado: 'abierta', fecha_entrega: '2026-12-10' },
+    { id: 'A', numero_oc: 'A', estado: 'abierta', fecha_entrega: '2026-12-01' },
+  ]
+  const L = (p, t, pendiente, existencia) => ({ producto_id: p, producto: p, talla: t, pendiente, existencia })
+  const r = calcularSurtibles(ocs, { A: [L('Blanca', 'M', 10, 8)], B: [L('Blanca', 'M', 5, 8)] })
+  assert.equal(r.porId.A.completa, false)
+  assert.equal(r.porId.A.alcanzan, 8) // A se lleva las 8
+  assert.deepEqual(r.porId.A.faltantes, [{ producto: 'Blanca', talla: 'M', falta: 2 }])
+  assert.equal(r.porId.B.completa, false) // antes salía verde usando piezas que A necesita
+  assert.equal(r.porId.B.alcanzan, 0)
+  assert.equal(r.porId.B.alcanzaSola, true) // sola alcanzaría (5 <= 8)
+  assert.deepEqual(r.porId.B.compiteCon, ['A'])
+  assert.deepEqual(r.porId.B.faltantes, [{ producto: 'Blanca', talla: 'M', falta: 5 }])
+})
+
+test('misma fecha de entrega: primero la orden más vieja', () => {
+  const l = ordenarOcs([
+    { id: 2, estado: 'abierta', fecha_entrega: '2026-12-01', fecha_oc: '2026-11-15', creado_en: '2026-11-20' },
+    { id: 1, estado: 'abierta', fecha_entrega: '2026-12-01', fecha_oc: '2026-11-01', creado_en: '2026-11-22' },
+    { id: 3, estado: 'parcial', fecha_entrega: '2026-12-01', fecha_oc: '2026-11-15', creado_en: '2026-11-21' },
+  ])
+  assert.deepEqual(l.map((x) => x.id), [1, 2, 3])
+})

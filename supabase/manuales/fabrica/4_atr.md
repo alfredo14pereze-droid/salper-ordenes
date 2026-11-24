@@ -49,7 +49,7 @@ El flujo es: llega la OC → se sube → se revisa qué falta → se surte lo qu
 4. Filtra por estado o busca el folio.
 5. Toca una OC para ver su detalle: por bata y talla, **Pedido**, **Surtido**, **Pendiente** y **Existencia**. Dale **Ver PDF** para verla junto.
 
-> El inventario se reparte de la OC que vence primero a la última, igual que en Frisa.
+> El inventario se reparte **estrictamente por fecha de entrega**: la OC que vence primero toma lo que haya (aunque no se complete) y la siguiente se queda con lo que sobra. Si dos vencen el mismo día, va primero la orden más vieja.
 
 ### Cómo saber qué nos falta
 

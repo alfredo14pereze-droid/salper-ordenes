@@ -90,7 +90,7 @@ export default function AtrOcLista({ puedeSubir }) {
             <div className="stat-card frisa-niveles__tarjeta--critico"><span className="stat-card__label">No se pueden surtir</span><span className="stat-card__value">{compiten.length + no.length}</span><span className="stat-card__hint">faltan {n(surt.piezasFaltantes)} batas en total</span></div>
           </div>
           <p className="atr-muted atr-oc-meta">
-            El inventario se reparte de la OC que vence primero a la última: las {si.length} en verde se pueden surtir todas al mismo tiempo con lo que hay.
+            El inventario se reparte por fecha de entrega, de la que vence primero a la última: cada OC toma lo que haya aunque no se complete, y la siguiente se queda con lo que sobra. Las {si.length} en verde se pueden surtir completas.
           </p>
           {faltan.length > 0 && (
             <section className="atr-oc-faltan">
