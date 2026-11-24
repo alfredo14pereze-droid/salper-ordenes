@@ -8711,7 +8711,7 @@ muestra las fechas como venían en el PDF para compararlas.
 talla aunque no se complete, y la siguiente se queda con lo que sobra. Misma fecha de entrega → primero la de fecha de OC
 más vieja y luego la que se subió antes. Manual: `datos_2026-11-24_manual_atr_reparto_por_fecha.sql`.
 
-**V221 — surtir aparta, contabilidad confirma con factura + Revisión Microsip** (`schema_v221_atr_apartado_facturacion.sql`,
+**V221 — surtir aparta, contabilidad confirma con factura + Revisión Microsip** — **APLICADO y en producción (2026-11-24, comprobación 2·true·2·0·1·true; main cf9bc93)** (`schema_v221_atr_apartado_facturacion.sql`,
 2026-11-24). Decisiones de Alfredo: en ATR surte **Terminado** (no el chofer); lo surtido queda **apartado** (hoja de surtido,
 sigue en existencia pero no disponible) y **contabilidad confirma la entrega por surtido con el número de factura**: ahí se
 descuenta (movimientos `salida_surtido`). Tablas `atr_surtidos` (apartado | entregado | cancelado, factura, quién surtió y
