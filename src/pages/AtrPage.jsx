@@ -147,14 +147,12 @@ function Atr() {
             <button key={k} type="button" className={'atr-oc-filtro' + (fBolsa === k ? ' is-activo' : '')} onClick={() => setFBolsa(k)}>{t}</button>
           ))}
         </div>
-        <div className="atr-inv-colores" role="group" aria-label="Color">
-          <button type="button" className={'atr-oc-filtro' + (!fColor ? ' is-activo' : '')} onClick={() => setFColor('')}>Todos los colores</button>
-          {colores.map((c) => (
-            <button key={c} type="button" className={'atr-inv-color-btn' + (normalizar(fColor) === normalizar(c) ? ' is-activo' : '')}
-              onClick={() => setFColor(normalizar(fColor) === normalizar(c) ? '' : c)} aria-pressed={normalizar(fColor) === normalizar(c)}>
-              <AtrColor color={c} />
-            </button>
-          ))}
+        <div className="atr-inv-color-sel">
+          <select className="input" value={fColor} onChange={(e) => setFColor(e.target.value)} aria-label="Color">
+            <option value="">Todos los colores</option>
+            {colores.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          {fColor && <AtrColor color={fColor} />}
         </div>
         <div className="atr-acciones">
           <input className="input atr-oc-busca" placeholder="Buscar…" value={busca} onChange={(e) => setBusca(e.target.value)} />

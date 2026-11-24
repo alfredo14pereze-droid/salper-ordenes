@@ -174,3 +174,10 @@
   .atr-matriz__bata { min-width: 120px; white-space: normal !important; }
   .atr-matriz__talla { min-width: 40px; }
 }
+.atr-inv-filtros { grid-template-columns: auto auto 1fr; align-items: center; }
+.atr-inv-color-sel { display: flex; align-items: center; gap: 8px; }
+.atr-inv-color-sel select { min-width: 190px; }
+@media (max-width: 720px) {
+  .atr-inv-filtros { grid-template-columns: 1fr; }
+  .atr-inv-color-sel select { flex: 1; min-width: 0; }
+}
