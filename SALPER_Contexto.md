@@ -8851,7 +8851,7 @@ desde "Nueva orden" que cuenten igual.
   Procesos, Producción, notas/Frisa/CRM, ATR y Pendientes tampoco se parten en renglones: se deslizan. En computadora no
   cambia nada.
 
-### V224 — ATR: "Subir a bodega" como en Frisa (2026-11-26, rama `atr-cantidades-libres`) — **SQL SIN APLICAR**
+### V224 — ATR: "Subir a bodega" como en Frisa (2026-11-26) — **SQL APLICADO 2026-11-26 (true·3·0·true·false; manual true·true)**
 - **Decisión de Alfredo:** igual que Frisa. Al completar Terminado la orden de ATR queda **Por subir** y las batas entran al
   inventario SOLO cuando alguien toca **Subir a bodega** (Terminado, Admin fábrica, Administración general: permiso
   `atr.subir`). Reemplaza la regla de V211 ("entra sola al completar Terminado").
