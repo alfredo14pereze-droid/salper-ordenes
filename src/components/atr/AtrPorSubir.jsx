@@ -4,6 +4,7 @@ import { EmptyState, ErrorState, Loading } from '../common/States'
 import { fetchAtrPorSubir, fetchAtrSubidasRecientes } from '../../services/atrService'
 import { formatDate, formatDateTime } from '../../utils/dates'
 import AtrSubirModal from './AtrSubirModal'
+import { propuestaSubida } from '../../utils/atrOc'
 
 const n = (x) => Number(x || 0).toLocaleString('es-MX')
 
@@ -49,7 +50,9 @@ export default function AtrPorSubir({ puedeSubir = false }) {
                 <span className="atr-subir-tarjeta__estado">Por subir</span>
               </div>
               <span className="atr-muted">
-                {n(f.piezas)} batas surtidas
+                {propuestaSubida(f.lineas).sinSurtido
+                  ? `${n(propuestaSubida(f.lineas).cantidades.reduce((a, b) => a + b, 0))} batas pedidas (sin surtido capturado)`
+                  : `${n(f.piezas)} batas surtidas`}
                 {f.terminado_en ? ` · terminada ${formatDateTime(f.terminado_en)}` : ''}
                 {f.requested_delivery_date ? ` · entrega ${formatDate(f.requested_delivery_date)}` : ''}
               </span>

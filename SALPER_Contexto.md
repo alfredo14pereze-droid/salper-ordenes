@@ -8866,3 +8866,8 @@ desde "Nueva orden" que cuenten igual.
   botón, o "Subido a bodega ✓". El botón de Terminado sigue siendo "Confirmar y generar reporte".
 - Probado en ejemplo local (PGlite con el SQL real): datos previos se conservan, dos veces sin cambios, terminar no suma,
   subir con merma (12→11) suma 17, sin permiso / línea ajena / doble subida rechazados, reabrir revierte y regresa.
+- **2026-11-26 (después de V224, sin SQL):** IND-056 subida por Alfredo y revisada en la base (51 batas: 48 sin bolsa Azul
+  Cielo + 3 con bolsa Café, 6 entradas vigentes). Como la orden solo decía "Bata", ahora `utils/prendaBolsa.js` saca
+  "Con bolsa / Sin bolsa" del `producto_nombre` y se muestra en el detalle, las estaciones, el surtido de Terminado
+  (que ahora dice prenda · color · bolsa) y los PDF de orden y remisión. "Subir a bodega" (`propuestaSubida`): si
+  Terminado no capturó lo surtido, vienen las piezas pedidas con aviso amarillo.

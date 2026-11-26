@@ -335,3 +335,16 @@ export function surtidoDesdeRpc(r) {
     piezas: r.piezas ?? lineas.reduce((t, l) => t + l.cantidad, 0),
   }
 }
+
+// V224 — "Subir a bodega": se proponen las piezas surtidas en Terminado. Si
+// Terminado se completó sin capturar lo surtido (todo en 0), se proponen las
+// pedidas. sinSurtido avisa para mostrarlo en la ventana.
+export function propuestaSubida(lineas) {
+  const ls = lineas || []
+  const sinSurtido = ls.length > 0 && ls.every((l) => !(Number(l.surtida) > 0))
+  return {
+    sinSurtido,
+    cantidades: ls.map((l) => (sinSurtido ? Number(l.pedida) || 0 : Number(l.surtida) || 0)),
+  }
+}
+

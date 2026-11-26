@@ -1,4 +1,5 @@
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
+import { bolsaDePrenda } from '../../utils/prendaBolsa'
 import logo from '../../assets/salper-logo.png'
 import { getStatus } from '../../utils/status'
 import { formatDateTime, parseDate } from '../../utils/dates'
@@ -431,7 +432,7 @@ export default function OrderConfirmationPdf({ order, orderTypeLabel, variant = 
               return (
                 <View key={i} style={styles.itemCard}>
                   <View style={styles.itemHeader}>
-                    <Text style={styles.itemName}>{item.garment || `Prenda ${i + 1}`}{item.comprada === true ? ' (Comprada)' : ''}</Text>
+                    <Text style={styles.itemName}>{item.garment || `Prenda ${i + 1}`}{bolsaDePrenda(item) ? ` · ${bolsaDePrenda(item)}` : ''}{item.comprada === true ? ' (Comprada)' : ''}</Text>
                     <Text style={styles.itemMeta}>
                       {[item.color, item.pantone].filter(Boolean).join(' · ')}
                     </Text>

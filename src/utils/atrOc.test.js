@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  agruparSurtidos, calcularSurtibles, cantidadPropuesta, faltantesCSV, nivelFaltante, prendasParaOrden, revisarSurtido, seleccionInicial, itemsAtrParaGuardar,
+  agruparSurtidos, calcularSurtibles, cantidadPropuesta, faltantesCSV, nivelFaltante, prendasParaOrden, revisarSurtido, seleccionInicial, itemsAtrParaGuardar, propuestaSubida,
   ocRepetida, ordenarOcs, pctSurtido, problemaRenglon, renglonesDesdePdf, repetidos, sugerirBata, textoAlias, urgenciaEntrega,
 } from './atrOc.js'
 
@@ -255,4 +255,10 @@ test('V223 prendasParaOrden lleva el faltante como referencia', () => {
   const r = prendasParaOrden([{ producto_id: 'x', producto: 'Bata', talla: 'M', faltante: 12 }], [])
   assert.equal(r[0].sizes[0].faltan, 12)
   assert.equal(r[0].sizes[0].cantidad, '12')
+})
+
+test('V224 propuestaSubida: surtido si lo hay; si no se capturó, lo pedido', () => {
+  assert.deepEqual(propuestaSubida([{ pedida: 10, surtida: 12 }, { pedida: 4, surtida: 0 }]), { sinSurtido: false, cantidades: [12, 0] })
+  assert.deepEqual(propuestaSubida([{ pedida: 20, surtida: 0 }, { pedida: 3, surtida: null }]), { sinSurtido: true, cantidades: [20, 3] })
+  assert.deepEqual(propuestaSubida([]), { sinSurtido: false, cantidades: [] })
 })

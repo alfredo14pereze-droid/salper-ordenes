@@ -1,4 +1,5 @@
 import { esOrdenSimple, procesoDeOrden, normalizarItemsBordado, validarItemsBordado } from '../../utils/bordadoOrden'
+import { bolsaDePrenda } from '../../utils/prendaBolsa'
 import { esComprada } from '../../utils/prendaComprada'
 import { limpiarRoster } from '../../utils/roster'
 import { useState } from 'react'
@@ -107,6 +108,7 @@ function ItemSummary({ item, index, mostrador }) {
           <dd>
             {item.garment || '—'}
             {item.color ? ` · ${item.color}` : ''}
+            {bolsaDePrenda(item) ? ` · ${bolsaDePrenda(item)}` : ''}
             {esComprada(item) && <span className="badge badge--comprada">Comprada (no se corta)</span>}
           </dd>
         </div>

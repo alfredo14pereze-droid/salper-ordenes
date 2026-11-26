@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { nombrePrendaCompleto } from '../../utils/prendaBolsa'
 import { setItemSurtido } from '../../services/ordersService'
 import { useAuth } from '../../contexts/AuthContext'
 import { canManageSurtido } from '../../utils/permissions'
@@ -101,7 +102,7 @@ export default function OrderSurtidoCard({ order, onUpdated }) {
       <div className="document-list">
         {items.map((item, itemIndex) => (
           <div key={item.id || itemIndex} className="document-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
-            <span className="document-row__label">{item.garment || `Prenda ${itemIndex + 1}`}</span>
+            <span className="document-row__label">{nombrePrendaCompleto(item, `Prenda ${itemIndex + 1}`)}</span>
             {(item.sizes || []).map((size, sizeIndex) => (
               <SizeSurtidoRow
                 key={sizeIndex}

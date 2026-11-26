@@ -1,4 +1,5 @@
 import BordadosMiniaturas from '../components/orders/BordadosMiniaturas'
+import { nombrePrendaCompleto } from '../utils/prendaBolsa'
 import { esComprada, prendasParaCorte } from '../utils/prendaComprada'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
@@ -129,8 +130,7 @@ function PrendaResumen({ item, completa = false }) {
   return (
     <div className="estacion-prenda">
       <p className="estacion-prenda__nombre">
-        {item.garment || '—'}
-        {item.color ? ` · ${item.color}` : ''}
+        {nombrePrendaCompleto(item)}
         {esComprada(item) && <span className="badge badge--comprada">Comprada</span>}
       </p>
       {item.tela_nombre && <p className="estacion-prenda__detalle">Tela: {item.tela_nombre}</p>}
@@ -382,7 +382,7 @@ function EstacionSurtidoTerminado({ order, onConfirmado }) {
     <div className="estacion-surtido">
       {order.items.map((item, itemIndex) => (
         <div key={item.id || itemIndex} style={{ marginBottom: 14 }}>
-          <p className="estacion-prenda__nombre">{item.garment || `Prenda ${itemIndex + 1}`}</p>
+          <p className="estacion-prenda__nombre">{nombrePrendaCompleto(item, `Prenda ${itemIndex + 1}`)}</p>
           {(item.sizes || []).map((size, sizeIndex) => (
             <FilaSurtido
               key={sizeIndex}

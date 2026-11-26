@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Modal from '../talleros/Modal'
 import { subirAtrOrden } from '../../services/atrService'
 import AtrBata from './AtrBata'
+import { propuestaSubida } from '../../utils/atrOc'
 
 const n = (x) => Number(x || 0).toLocaleString('es-MX')
 
@@ -11,7 +12,8 @@ const n = (x) => Number(x || 0).toLocaleString('es-MX')
 // Las piezas vienen con lo surtido en Terminado; se corrigen si subieron menos.
 export default function AtrSubirModal({ orden, onClose, onListo }) {
   const clave = (l) => `${l.item_index}|${l.size_index}`
-  const [cant, setCant] = useState(() => Object.fromEntries(orden.lineas.map((l) => [clave(l), String(l.surtida ?? 0)])))
+  const [propuesta] = useState(() => propuestaSubida(orden.lineas))
+  const [cant, setCant] = useState(() => Object.fromEntries(orden.lineas.map((l, i) => [clave(l), String(propuesta.cantidades[i])])))
   const [notas, setNotas] = useState('')
   const [trabajando, setTrabajando] = useState(false)
   const [error, setError] = useState(null)
@@ -32,7 +34,12 @@ export default function AtrSubirModal({ orden, onClose, onListo }) {
   return (
     <Modal title={`Subir a bodega · ${orden.order_number}`} onClose={onClose}>
       <form className="atr-subir" onSubmit={guardar}>
-        <p className="atr-muted">Vienen con lo surtido en Terminado. Corrige si subieron menos (merma, defectos). Al confirmar entran al inventario de ATR.</p>
+        {propuesta.sinSurtido ? (
+          <p className="atr-aviso"><span>En Terminado no se capturó lo surtido: vienen las piezas <strong>pedidas</strong>. Revisa que sea lo que de verdad subió.</span></p>
+        ) : (
+          <p className="atr-muted">Vienen con lo surtido en Terminado. Corrige si subieron menos (merma, defectos).</p>
+        )}
+        <p className="atr-muted">Al confirmar entran al inventario de ATR.</p>
         <div className="atr-tabla-wrap">
           <table className="simple-table atr-tabla">
             <thead>

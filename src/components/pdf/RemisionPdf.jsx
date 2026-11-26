@@ -1,4 +1,5 @@
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
+import { nombrePrendaCompleto } from '../../utils/prendaBolsa'
 import logo from '../../assets/salper-logo.png'
 
 // Remisión de entrega (V26, Parte 4): compara cantidad pedida vs
@@ -96,7 +97,7 @@ export default function RemisionPdf({ order, orderTypeLabel }) {
   const rows = items.flatMap((item, itemIndex) =>
     (item.sizes || []).map((sz, sizeIndex) => ({
       key: `${itemIndex}-${sizeIndex}`,
-      garment: item.garment || `Prenda ${itemIndex + 1}`,
+      garment: nombrePrendaCompleto(item, `Prenda ${itemIndex + 1}`),
       talla: sz.talla,
       pedida: Number(sz.cantidad) || 0,
       surtida: sz.cantidad_surtida,
