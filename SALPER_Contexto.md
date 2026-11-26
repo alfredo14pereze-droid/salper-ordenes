@@ -8801,7 +8801,7 @@ de órdenes (cualquier formato, opcional) al crear o editar una orden Frisa.
   (`datos_2026-11-24_manual_nueva_orden_impresion.sql`).
 
 
-### V222 — ATR: surtir como Frisa (apartar renglón por renglón, parcial) (2026-11-25, rama `atr-oc`)
+### V222 — ATR: surtir como Frisa (apartar renglón por renglón, parcial) (2026-11-25, rama `atr-oc`) — **SQL APLICADO y en producción (main 86cbb71, bundle confirmado)**
 Pedido de Alfredo: el surtido de ATR igual que el de Frisa; Terminado ve las OC activas como Leo las de Frisa; al abrir la OC
 el módulo para surtir; surtir parcial y seguir surtiendo conforme salgan batas.
 - Terminado entra a ATR directo en **Órdenes de compra** (link "Surtido ATR" en su menú de estación).
