@@ -8817,7 +8817,7 @@ el módulo para surtir; surtir parcial y seguir surtiendo conforme salgan batas.
 - Probado: 33 comprobaciones en PGlite (sobre V221), 243 pruebas, build, ejemplo local como terminado (apartar 5 + palomear
   6 → surtir 11 → hoja; segunda vuelta; celular 375 px).
 
-### V223 — ATR: una orden cuenta por su cliente; cantidades de OT ATR libres (2026-11-26, rama `atr-cantidades-libres`) — **SQL APLICADO 2026-11-26 (true·true·true·true·false; manual true·true·true); código sin publicar**
+### V223 — ATR: una orden cuenta por su cliente; cantidades de OT ATR libres (2026-11-26, rama `atr-cantidades-libres`) — **SQL APLICADO 2026-11-26 (true·true·true·true·false; manual true·true·true) y en producción (main 7ab1560, bundle App-Brqk7qf8.js confirmado)**
 Pedido de Alfredo: en la orden de taller desde "Qué nos falta" no dejaba ajustar cantidades; y poder hacer órdenes de ATR
 desde "Nueva orden" que cuenten igual.
 - **Decisiones:** (1) **una orden cuenta para ATR por su cliente/tipo, no por dónde se creó**; (2) **las cantidades de la
