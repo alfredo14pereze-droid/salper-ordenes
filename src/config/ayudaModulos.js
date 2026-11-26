@@ -113,6 +113,7 @@ export const AYUDA_MODULOS = [
     tips: [
       'Si es venta de mostrador, prende "Venta de mostrador": no lleva anticipo ni factura.',
       'Puedes meter la orden en un Pedido para juntar varias órdenes con un solo anticipo.',
+      'Con cliente ATR la orden va sin precio y cada bata se elige del catálogo de ATR; cuenta para su inventario.',
       'Escribe y presiona Enter para pasar al siguiente campo.',
     ],
     roles: [R.ventas, R.admin_tienda, R.admin_general],
@@ -629,7 +630,7 @@ export const AYUDA_MODULOS = [
     pasos: [
       'En "Órdenes de compra" dale "+ Nueva OC", sube el PDF, revisa los renglones en rojo y guarda.',
       'En "Qué nos falta" ves por bata y talla lo pendiente, la existencia, lo que está en taller y el faltante.',
-      'Dale "Crear orden de taller" para producir lo que falta (va sin precio, cliente ATR).',
+      'Dale "Crear orden de taller" para producir lo que falta (va sin precio, cliente ATR). Las cantidades son sugerencia: cámbialas, ponlas en 0 o agrega batas.',
       'Terminado abre la OC y da "Surtir": las batas quedan apartadas y sale la hoja de surtido en PDF.',
       'Contabilidad, en "Por facturar", captura la factura y confirma: ahí se descuentan del inventario.',
       'En "Revisión Microsip" sube el reporte de existencias de Microsip para ver si cuadra.',
@@ -637,7 +638,8 @@ export const AYUDA_MODULOS = [
       'Toca un número del inventario para ver su historial.',
     ],
     tips: [
-      'Lo producido en las órdenes de ATR entra solo al completar Terminado.',
+      'Lo producido en las órdenes de ATR entra solo al completar Terminado (todo lo surtido, aunque sea de más).',
+      'Una orden con cliente ATR hecha desde Nueva orden también cuenta en "En taller".',
       'En Órdenes de compra cada OC dice en verde "Se puede surtir" o en rojo "Faltan piezas"; arriba sale el resumen de lo que falta.',
       'Se puede surtir parcial; la OC queda "Parcial" hasta completar.',
       'Deshacer un surtido, cancelar una OC, Ajuste y Carga inicial: solo Admin fábrica y Administración general.',

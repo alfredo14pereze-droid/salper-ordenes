@@ -109,6 +109,14 @@ Para prendas que ya vienen hechas y solo hay que imprimirles (no llevan corte, c
 
 > La orden pasa por **Impresión** y luego **Terminado**; las dos las hacen las personas de Terminado.
 
+### Cómo hacer una orden de ATR
+
+1. Elige el tipo de orden **Industrial** y el cliente **ATR**.
+2. En cada prenda elige la bata del **Catálogo de ATR** (no se puede escribir a mano) y la talla de la lista.
+3. Captura las cantidades y la **Tela**, pon la **Fecha de entrega** y dale **Crear orden**.
+
+> Va **sin precio** (lo que se le cobra a ATR es su orden de compra). Cuenta en **Inventario ATR → Qué nos falta** como "En taller" y, al completar Terminado, lo surtido entra solo al inventario de ATR.
+
 ### Cómo adjuntar la cotización y la orden de compra
 
 1. Abre **Cotización y orden de compra (opcional)**.

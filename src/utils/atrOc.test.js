@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  agruparSurtidos, calcularSurtibles, cantidadPropuesta, faltantesCSV, nivelFaltante, prendasParaOrden, revisarSurtido, seleccionInicial,
+  agruparSurtidos, calcularSurtibles, cantidadPropuesta, faltantesCSV, nivelFaltante, prendasParaOrden, revisarSurtido, seleccionInicial, itemsAtrParaGuardar,
   ocRepetida, ordenarOcs, pctSurtido, problemaRenglon, renglonesDesdePdf, repetidos, sugerirBata, textoAlias, urgenciaEntrega,
 } from './atrOc.js'
 
@@ -174,8 +174,8 @@ test('prendas para la orden de taller: una por bata, tallas en orden, cantidad =
   ]
   const r = prendasParaOrden(filas, productos)
   assert.deepEqual(r.map((g) => g.producto.id), ['c', 'a'])
-  assert.deepEqual(r[1].sizes, [{ talla: 'M', cantidad: '15' }, { talla: 'XL', cantidad: '4' }])
-  assert.deepEqual(r[0].sizes, [{ talla: 'M', cantidad: '' }])
+  assert.deepEqual(r[1].sizes, [{ talla: 'M', cantidad: '15', faltan: 15 }, { talla: 'XL', cantidad: '4', faltan: 4 }])
+  assert.deepEqual(r[0].sizes, [{ talla: 'M', cantidad: '', faltan: 0 }])
   assert.deepEqual([...seleccionInicial(filas)], ['a|XL', 'a|M'])
 })
 
@@ -237,4 +237,22 @@ test('misma fecha de entrega: primero el número de OC menor (C19503 antes que C
     { id: 'C18348', numero_oc: 'C18348', estado: 'abierta', fecha_entrega: '2026-11-05', fecha_oc: '2026-10-06' },
   ])
   assert.deepEqual(l.map((x) => x.id), ['C18348', 'C19336', 'C19503', 'C19536'])
+})
+
+test('V223 itemsAtrParaGuardar: cantidades libres, descarta batas sin piezas, exige catálogo ATR', () => {
+  const cat = [{ id: 'p1' }, { id: 'p2' }]
+  const ok = itemsAtrParaGuardar([
+    { producto_id: 'p1', garment: 'Bata', sizes: [{ talla: 'M', cantidad: '40' }, { talla: 'L', cantidad: '0' }] },
+    { producto_id: 'p2', garment: 'Bata', sizes: [{ talla: 'S', cantidad: '0' }, { talla: '', cantidad: '' }] },
+  ], cat)
+  assert.equal(ok.error, undefined)
+  assert.deepEqual(ok.items.map((i) => i.producto_id), ['p1'])
+  assert.match(itemsAtrParaGuardar([{ producto_id: 'p1', sizes: [{ talla: 'M', cantidad: '0' }] }], cat).error, /al menos una talla/)
+  assert.match(itemsAtrParaGuardar([{ garment: 'Bata azul', sizes: [{ talla: 'M', cantidad: '5' }] }], cat).error, /catálogo de ATR.*Bata azul/)
+})
+
+test('V223 prendasParaOrden lleva el faltante como referencia', () => {
+  const r = prendasParaOrden([{ producto_id: 'x', producto: 'Bata', talla: 'M', faltante: 12 }], [])
+  assert.equal(r[0].sizes[0].faltan, 12)
+  assert.equal(r[0].sizes[0].cantidad, '12')
 })

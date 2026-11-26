@@ -43,6 +43,11 @@ function OrderItemsEditorGeneral({
   clienteNombre = '',
   productos = [],
   onProductoCreated,
+  // V223 — ATR: la talla se elige de una lista fija (las de Microsip) y la
+  // cantidad puede ser 0; junto a ella se ve el faltante (size.faltan) como
+  // referencia, sin bloquear nada.
+  tallasFijas = null,
+  cantidadCero = false,
 }) {
   const needsPantone = ORDER_TYPES_REQUIRING_PANTONE.includes(orderTypeKey)
   const isSublimacion = orderTypeKey === 'sublimacion'
@@ -566,6 +571,19 @@ function OrderItemsEditorGeneral({
                 </div>
                 {item.sizes.map((size, sizeIndex) => (
                   <div key={sizeIndex} className="sizes-row">
+                    {tallasFijas ? (
+                      <select
+                        className="input"
+                        value={size.talla}
+                        onChange={(e) => updateSize(itemIndex, sizeIndex, { talla: e.target.value })}
+                        aria-label="Talla"
+                      >
+                        <option value="">Talla…</option>
+                        {(tallasFijas.includes(size.talla) || !size.talla ? tallasFijas : [size.talla, ...tallasFijas]).map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    ) : (
                     <input
                       type="text"
                       className="input"
@@ -573,14 +591,19 @@ function OrderItemsEditorGeneral({
                       value={size.talla}
                       onChange={(e) => updateSize(itemIndex, sizeIndex, { talla: e.target.value })}
                     />
-                    <input
-                      type="number"
-                      min="1"
-                      className="input"
-                      placeholder="0"
-                      value={size.cantidad}
-                      onChange={(e) => updateSize(itemIndex, sizeIndex, { cantidad: e.target.value })}
-                    />
+                    )}
+                    <div className="sizes-row__cantidad">
+                      <input
+                        type="number"
+                        min={cantidadCero ? '0' : '1'}
+                        className="input"
+                        placeholder="0"
+                        value={size.cantidad}
+                        onChange={(e) => updateSize(itemIndex, sizeIndex, { cantidad: e.target.value })}
+                        aria-label="Cantidad"
+                      />
+                      {size.faltan != null && <span className="sizes-row__ref">faltan {Number(size.faltan).toLocaleString('es-MX')}</span>}
+                    </div>
                     {item.sizes.length > 1 && (
                       <button
                         type="button"

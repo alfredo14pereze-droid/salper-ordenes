@@ -87,11 +87,13 @@ El flujo es: llega la OC → se sube → se revisa qué falta → **Terminado su
 
 1. En **Qué nos falta**, ya vienen marcadas las líneas con faltante. Marca o desmarca las que quieras (puedes marcar otras para producir de más).
 2. Dale **Crear orden de taller (N batas)**.
-3. Se abre **Nueva orden** ya llena: tipo **Industrial**, cliente **ATR**, cada bata con cantidad = faltante. Cambia cantidades si hace falta (redondear o producir de más).
+3. Se abre **Nueva orden** ya llena: tipo **Industrial**, cliente **ATR**, cada bata con cantidad = faltante (en gris, junto a la cantidad, dice cuántas faltan). Las cantidades son solo una sugerencia: súbelas, bájalas a 0, quita batas o agrega otras batas o tallas del catálogo de ATR. Basta con una talla con cantidad.
 4. Pon la **Fecha de entrega** y la **Tela** de cada bata.
 5. Dale **Crear orden**.
 
 > Va **sin precio**: es para inventario, lo que se cobra es la OC. No se liga a una OC; mientras no termine, cuenta en **En taller** para no pedir doble. Sigue las etapas normales.
+>
+> Una orden cuenta para ATR por su **cliente**, no por dónde se creó: una orden hecha desde **Nueva orden** con cliente **ATR** también cuenta en **En taller** y entra al inventario al terminar. Si en Terminado salió de más, entra todo lo surtido.
 
 ### Cómo entra al inventario lo que se produce
 

@@ -1786,6 +1786,18 @@ h4 {
   font-variant-numeric: tabular-nums;
 }
 
+/* V223 — ATR: el faltante como referencia debajo de la cantidad. */
+.sizes-row__cantidad {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sizes-row__ref {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
 .sizes-row__remove {
   border: none;
   background: transparent;

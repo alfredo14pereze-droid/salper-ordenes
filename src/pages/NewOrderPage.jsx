@@ -44,7 +44,9 @@ import { CLIENTE_FRISA_NOMBRE } from '../lib/constants'
 import RequireRole from '../components/common/RequireRole'
 import FileDropLabel from '../components/common/FileDropLabel'
 import { canCreateOrder, canTallerAtr } from '../utils/permissions'
-import { crearOrdenTallerAtr } from '../services/atrService'
+import { crearOrdenTallerAtr, fetchAtrClienteId } from '../services/atrService'
+import { itemsAtrParaGuardar } from '../utils/atrOc'
+import { TALLAS_ATR } from '../utils/atrCarga'
 import { useAuth } from '../contexts/AuthContext'
 import { Loading, ErrorState } from '../components/common/States'
 import { buildOrderConfirmationPdfBlob, fetchPagosParaPdf, orderConfirmationPdfFileName } from '../utils/generateOrderPdf'
@@ -357,7 +359,17 @@ function NewOrderForm() {
   // V216 — la orden de taller de ATR es para inventario: sin precio, sin
   // pedido ni anticipo, tipo y cliente fijos; se guarda con atr_crear_orden_taller.
   const esAtrInventario = !!atrPrefill
-  const llevaPrecio = !!form.orderTypeKey && !esFrisa && !esAtrInventario && tipoLlevaPrecio(form.orderTypeKey)
+  // V223 — una orden es de ATR por su cliente, venga de donde venga: con
+  // cliente ATR también desde "Nueva orden" va sin precio, solo con batas del
+  // catálogo de ATR y con cantidades libres (cuenta en "En taller" y entra al
+  // inventario al terminar). atr_inventario solo dice que vino de Qué nos falta.
+  const [atrClienteId, setAtrClienteId] = useState(atrPrefill?.clientId || null)
+  useEffect(() => {
+    if (atrPrefill) return
+    fetchAtrClienteId().then(({ data }) => setAtrClienteId(data || null))
+  }, [atrPrefill])
+  const esClienteAtr = esAtrInventario || (!!atrClienteId && !form.clienteIncidental && form.clientId === atrClienteId)
+  const llevaPrecio = !!form.orderTypeKey && !esFrisa && !esClienteAtr && tipoLlevaPrecio(form.orderTypeKey)
   // Fase 1A — venta de mostrador de toda la orden: no se cobra nada.
   const ventaMostrador = !!form.ventaMostrador
   const cobra = llevaPrecio && !ventaMostrador
@@ -381,7 +393,7 @@ function NewOrderForm() {
   const faltaPrecioAlta = cobra && resumen.sinPrecio.length > 0
   // V176 — pedidos: solo quien edita precios (ventas y administradores de
   // tienda), y no en Frisa (no lleva cliente ni precio).
-  const puedePedidos = canEditFinanzas(role) && !esFrisa && !esAtrInventario
+  const puedePedidos = canEditFinanzas(role) && !esFrisa && !esClienteAtr
   const agrupacion = puedePedidos ? form.agrupacion || 'suelta' : 'suelta'
   const enPedido = agrupacion !== 'suelta'
   const [pedidosLista, setPedidosLista] = useState([])
@@ -611,9 +623,17 @@ function NewOrderForm() {
 
     // Prendas que se guardan (mismo filtro de siempre). Las líneas de precio
     // se cuentan sobre ESTA lista para que sus índices coincidan en la base.
-    const itemsFiltrados = items
+    let itemsFiltrados = items
       .filter((item) => item.garment.trim() || item.sizes.some((s) => s.talla.trim()))
       .map(aplicarPrecios)
+    if (esClienteAtr) {
+      const atr = itemsAtrParaGuardar(itemsFiltrados, productos)
+      if (atr.error) {
+        setSubmitError(new Error(atr.error))
+        return
+      }
+      itemsFiltrados = atr.items
+    }
     const faltaPrecio = cobra ? mensajeFaltanPrecios(filasDeFormulario(itemsFiltrados), form.orderTypeKey) : null
     if (faltaPrecio) {
       setSubmitError(new Error(faltaPrecio))
@@ -951,9 +971,9 @@ function NewOrderForm() {
 
       {atrPrefill && (
         <p className="pantone-hint">
-          Orden de taller para <strong>inventario ATR</strong> (desde Qué nos falta): {atrPrefill.prendas.length} bata(s),
-          cantidad = faltante. Puedes cambiar cantidades (redondear o producir de más). Va sin precio; falta la fecha de
-          entrega y la tela.
+          Orden de taller para <strong>inventario ATR</strong> (desde Qué nos falta): {atrPrefill.prendas.length} bata(s).
+          Las cantidades son una sugerencia (el faltante sale en gris): súbelas, bájalas a 0, quita batas o agrega otras
+          del catálogo de ATR. Va sin precio; falta la fecha de entrega y la tela.
         </p>
       )}
 
@@ -968,7 +988,7 @@ function NewOrderForm() {
 
       <form className="order-form" onSubmit={handleSubmit}>
         {/* Fase 1A — primer paso: ¿toda la orden es venta de mostrador? */}
-        {!esAtrInventario && (
+        {!esClienteAtr && (
         <VentaMostradorToggle
           checked={ventaMostrador}
           onChange={(v) => updateField('ventaMostrador', v)}
@@ -1078,6 +1098,12 @@ function NewOrderForm() {
             bloqueado={esVentaMostrador}
             soloCatalogo={esMaquila}
           />
+          )}
+          {esClienteAtr && !esAtrInventario && (
+            <p className="pantone-hint" style={{ margin: '6px 0 0' }}>
+              Orden de <b>ATR</b>: va sin precio y cuenta para su inventario (En taller y, al terminar, entra lo surtido).
+              Cada bata se elige del catálogo de ATR.
+            </p>
           )}
         </div>
 
@@ -1270,6 +1296,8 @@ function NewOrderForm() {
               clienteNombre={form.clientName}
               productos={productos}
               onProductoCreated={refreshProductos}
+              tallasFijas={esClienteAtr ? TALLAS_ATR : null}
+              cantidadCero={esClienteAtr}
             />
           )}
         </div>

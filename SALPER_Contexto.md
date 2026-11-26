@@ -8816,3 +8816,26 @@ el módulo para surtir; surtir parcial y seguir surtiendo conforme salgan batas.
   (+ listo_en, registrado_por_nombre) y `atr_oc_detalle` (+ apartando). Manual: sección "Cómo surtir una OC".
 - Probado: 33 comprobaciones en PGlite (sobre V221), 243 pruebas, build, ejemplo local como terminado (apartar 5 + palomear
   6 → surtir 11 → hoja; segunda vuelta; celular 375 px).
+
+### V223 — ATR: una orden cuenta por su cliente; cantidades de OT ATR libres (2026-11-26, rama `atr-cantidades-libres`) — **SQL SIN APLICAR**
+Pedido de Alfredo: en la orden de taller desde "Qué nos falta" no dejaba ajustar cantidades; y poder hacer órdenes de ATR
+desde "Nueva orden" que cuenten igual.
+- **Decisiones:** (1) **una orden cuenta para ATR por su cliente/tipo, no por dónde se creó**; (2) **las cantidades de la
+  OT ATR son libres** (el faltante es solo sugerencia); (3) toda orden de ATR va **sin precio**, también desde Nueva orden
+  (Alfredo, 2026-11-26: lo que se le cobra a ATR es la OC).
+- Diagnóstico: subir cantidades ya se podía; lo que bloqueaba era el `min="1"` del campo (0 no dejaba enviar) y que una
+  bata sin piezas llegaba vacía y `atr_crear_orden_taller` (V216) tumbaba la orden ("Cada bata necesita al menos una talla").
+- La regla por cliente **ya existía** en la base: `atr_faltantes` ("En taller") y `atr_lineas_orden` (entrada al terminar,
+  con `cantidad_surtida` real, así que lo producido de más entra completo) filtran por `client_id = atr_cliente_id()` + bata
+  del catálogo ATR. `orders.atr_inventario` queda solo informativo (vino de Qué nos falta). No se tocaron.
+- Front: `OrderItemsEditor` con `tallasFijas` (lista XS…5XL) y `cantidadCero` (min 0) + "faltan N" en gris
+  (`size.faltan`, viene de `prendasParaOrden`; no se guarda). `NewOrderPage`: `esClienteAtr` (prefill o cliente = ATR):
+  sin precio, sin pedido ni venta de mostrador, `itemsAtrParaGuardar` (descarta batas sin piezas, exige ≥1 línea > 0 y
+  bata del catálogo ATR). Ayuda y manuales (atr, nueva-orden) actualizados.
+- SQL `schema_v223_atr_ordenes_por_cliente.sql`: `orders_lineas_precio_guard` exime por cliente ATR; parche al texto vivo
+  de `create_order_con_lineas` (salta `orden_lineas_validar` si el cliente es ATR); trigger nuevo `orders_atr_catalogo_chk`
+  (BEFORE INSERT: orden ATR solo con batas del catálogo); `atr_crear_orden_taller` descarta batas sin piezas.
+  Manual: `datos_2026-11-26_manual_atr_cantidades_libres.sql`.
+- Probado en ejemplo local (PGlite con el SQL real): OT con 40 donde faltaban 3 + talla en 0 + bata vacía → se guarda;
+  Nueva orden cliente ATR (admin_general) → rechaza bata a mano, acepta del catálogo sin precio, baja el faltante; Terminado
+  con 8 de 5 → entra 8 una sola vez; otro cliente sigue pidiendo precio y no toca ATR. Datos de prueba solo en el navegador.

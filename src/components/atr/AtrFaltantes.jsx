@@ -199,9 +199,9 @@ export default function AtrFaltantes({ puedeTaller = false }) {
           </p>
           {puedeTaller && (
             <p className="atr-muted atr-falta-leyenda">
-              La orden de taller se abre en el formulario normal (tipo Industrial, cliente ATR, sin precio) con cantidad =
-              faltante; ahí se ajusta. No se liga a una OC: produce para el inventario y, mientras no se termine, cuenta en
-              "En taller".
+              La orden de taller se abre en el formulario normal (tipo Industrial, cliente ATR, sin precio) con el faltante
+              como sugerencia: ahí cambias cantidades, las pones en 0 o agregas batas. No se liga a una OC: produce para el
+              inventario y, mientras no se termine, cuenta en "En taller" (igual que cualquier orden con cliente ATR).
             </p>
           )}
         </>

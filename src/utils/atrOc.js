@@ -221,11 +221,29 @@ export function prendasParaOrden(filas, productos) {
   for (const f of filas || []) {
     const producto = porId[f.producto_id] || { id: f.producto_id, nombre: f.producto, garment: 'Bata', color: f.color || '' }
     if (!grupos.has(producto.id)) grupos.set(producto.id, { producto, sizes: [] })
-    grupos.get(producto.id).sizes.push({ talla: f.talla, cantidad: f.faltante > 0 ? String(f.faltante) : '' })
+    // V223 — `faltan` es solo referencia en el formulario (no se guarda en la orden).
+    grupos.get(producto.id).sizes.push({ talla: f.talla, cantidad: f.faltante > 0 ? String(f.faltante) : '', faltan: f.faltante })
   }
   return [...grupos.values()]
     .map((g) => ({ ...g, sizes: g.sizes.sort((a, b) => ordenTalla(a.talla) - ordenTalla(b.talla)) }))
     .sort((a, b) => String(a.producto.nombre).localeCompare(String(b.producto.nombre), 'es'))
+}
+
+// V223 — prendas de una orden de ATR (desde "Qué nos falta" o desde "Nueva
+// orden" con cliente ATR). Las cantidades son libres: se quedan las batas con
+// al menos una talla > 0 (las demás se descartan) y cada una debe venir del
+// catálogo de ATR, para que bata/talla cuadren con atr_existencias.
+export function itemsAtrParaGuardar(items, productosAtr) {
+  const ids = new Set((productosAtr || []).map((p) => p.id))
+  const conPiezas = (items || []).filter((it) =>
+    (it.sizes || []).some((s) => String(s.talla ?? '').trim() && Number(s.cantidad) > 0))
+  if (!conPiezas.length) return { error: 'Captura al menos una talla con cantidad mayor a 0.' }
+  const fuera = conPiezas.filter((it) => !ids.has(it.producto_id))
+  if (fuera.length) {
+    const nombres = fuera.map((it) => String(it.garment || '').trim() || 'prenda sin nombre').join(', ')
+    return { error: `En órdenes de ATR cada bata se elige del catálogo de ATR (revisa: ${nombres}).` }
+  }
+  return { items: conPiezas }
 }
 
 // Selección por defecto: todas las filas con faltante.
