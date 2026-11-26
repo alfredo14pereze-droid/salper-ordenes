@@ -310,6 +310,9 @@ export function surtidoDesdeRpc(r) {
     confirmado: r.confirmado_en ? { fecha: r.confirmado_en, usuario: r.confirmado_por_nombre } : null,
     deshecho: r.estado === 'cancelado' ? { fecha: r.cancelado_en, usuario: r.cancelado_por_nombre, motivo: r.motivo_cancelacion } : null,
     antesDeV221: !!r.antes_de_v221,
+    // V222 — Terminado lo está apartando (todavía no va a Por facturar).
+    borrador: (r.estado || 'apartado') === 'apartado' && 'listo_en' in r && !r.listo_en,
+    registradoPor: r.registrado_por_nombre || null,
     lineas,
     piezas: r.piezas ?? lineas.reduce((t, l) => t + l.cantidad, 0),
   }

@@ -60,13 +60,13 @@ El flujo es: llega la OC → se sube → se revisa qué falta → **Terminado su
 
 ### Cómo surtir una OC
 
-1. Abre la OC y dale **Surtir**.
-2. En cada línea ya viene lo que alcanza con la existencia. Cámbialo si hace falta, o usa **Lo que alcanza**, **Todo lo pendiente** o **Borrar**.
-3. Si quieres, pon una **Nota (opcional)**.
-4. Dale **Apartar y ver hoja**. Se abre la **hoja de surtido** en PDF: dale **Descargar** para imprimirla.
-5. Las batas quedan **apartadas** ("Apartado · por facturar"): siguen en la existencia, pero ya no están **disponibles** para otra OC. Se descuentan cuando contabilidad confirma la entrega con la factura.
+1. En **Órdenes de compra** salen todas las OC activas con su aviso (**Se puede surtir** / **Faltan piezas**). Abre la que vas a surtir.
+2. En la tabla **Surtir**, por cada bata y talla escribe en **Apartar** cuántas batas estás juntando (o palomea ✓ para apartar todo lo pendiente). Se guarda al salir del campo. Abajo de cada renglón dice cuántas **hay** o cuántas **faltan**.
+3. **Apartar lo que hay** llena todos los renglones con lo disponible.
+4. Cuando termines, dale **Surtir lo apartado (N batas)**, elige **¿Quién surtió?** y confirma. Se abre la **hoja de surtido** en PDF: dale **Descargar** para imprimirla.
+5. Ese surtido queda "Apartado · por facturar": siguen en la existencia, pero ya no están **disponibles** para otra OC. Se descuentan cuando contabilidad confirma la entrega con la factura.
 
-> Se puede surtir parcial: la OC queda **Parcial** hasta completar. No deja surtir más de lo pendiente ni más de lo disponible sin confirmar ("Sí, sí salen").
+> Se puede surtir **parcial**: la OC queda **Parcial** y cuando salgan más batas se abre otra vez, se aparta lo nuevo y se hace otro surtido, las veces que haga falta. No deja apartar más de lo pendiente ni más de lo disponible.
 
 ### Cómo confirmar una entrega con la factura (contabilidad)
 

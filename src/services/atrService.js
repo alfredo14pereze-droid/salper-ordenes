@@ -270,3 +270,23 @@ export async function crearOrdenTallerAtr({ description, requestedDeliveryDate, 
     p_created_at: createdAt || null,
   })
 }
+
+// V222 — Surtir como Frisa: apartar renglón por renglón (se guarda al
+// momento) y luego "Surtir lo apartado" eligiendo quién surtió.
+export async function apartarRenglonAtr(ocLineaId, cantidad) {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_apartar_renglon', { p_oc_linea_id: ocLineaId, p_cantidad: cantidad })
+}
+
+export async function terminarSurtidoAtr(ocId, { personaId, personaNombre, nota }) {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_surtido_terminar', { p_oc_id: ocId, p_persona_id: personaId || null, p_persona_nombre: personaNombre || null, p_nota: nota || null })
+}
+
+export async function fetchAtrSurtidoPersonas() {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_surtido_personas')
+}

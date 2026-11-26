@@ -8800,3 +8800,19 @@ de órdenes (cualquier formato, opcional) al crear o editar una orden Frisa.
 - Manual "Crear una orden": proceso nuevo "Cómo hacer una orden de impresión"
   (`datos_2026-11-24_manual_nueva_orden_impresion.sql`).
 
+
+### V222 — ATR: surtir como Frisa (apartar renglón por renglón, parcial) (2026-11-25, rama `atr-oc`)
+Pedido de Alfredo: el surtido de ATR igual que el de Frisa; Terminado ve las OC activas como Leo las de Frisa; al abrir la OC
+el módulo para surtir; surtir parcial y seguir surtiendo conforme salgan batas.
+- Terminado entra a ATR directo en **Órdenes de compra** (link "Surtido ATR" en su menú de estación).
+- Detalle de OC activa: tabla **Surtir** (`components/atr/AtrSurtirTabla.jsx`): ✓ (apartar todo lo pendiente), Bata, Talla,
+  Pide, Ya surtido, **Apartar** (se guarda al salir del campo) con "hay N ✓ / hay N · faltan N"; **Apartar lo que hay**;
+  **Surtir lo apartado (N batas)** → ¿Quién surtió? (o otra persona) + nota → hoja de surtido. Aviso naranja "Ojo" si otra
+  OC que vence antes usa esas batas. Se quitó `AtrSurtirModal` (de golpe).
+- SQL `schema_v222_atr_surtir_como_frisa.sql`: `atr_surtidos.listo_en` (null = borrador que Terminado está apartando, uno
+  por OC) y `registrado_por_nombre`; `atr_apartar_renglon(linea, cantidad)`, `atr_surtido_terminar(oc, persona_id,
+  persona_nombre, nota)`, `atr_surtido_personas()`; rehechas `atr_oc_recalcular` (el borrador no cambia el estado),
+  `atr_surtir_oc` (crea listo), `atr_confirmar_entrega` (solo listos), `atr_por_facturar` (solo listos), `atr_surtidos_oc`
+  (+ listo_en, registrado_por_nombre) y `atr_oc_detalle` (+ apartando). Manual: sección "Cómo surtir una OC".
+- Probado: 33 comprobaciones en PGlite (sobre V221), 243 pruebas, build, ejemplo local como terminado (apartar 5 + palomear
+  6 → surtir 11 → hoja; segunda vuelta; celular 375 px).

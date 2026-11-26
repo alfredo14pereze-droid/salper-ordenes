@@ -15,6 +15,7 @@ import AtrOcLista from '../components/atr/AtrOcLista'
 import AtrFaltantes from '../components/atr/AtrFaltantes'
 import AtrPorFacturar from '../components/atr/AtrPorFacturar'
 import AtrRevisionMicrosip from '../components/atr/AtrRevisionMicrosip'
+import { esRolDeEstacion } from '../config/vistasPorRol'
 import '../components/atr/atr.css'
 import AyudaModulo from '../components/common/AyudaModulo'
 
@@ -40,14 +41,16 @@ const PESTANAS = [
 function AtrPestanas() {
   const { role } = useAuth()
   const [params, setParams] = useSearchParams()
-  const tab = PESTANAS.some(([k]) => k === params.get('tab')) ? params.get('tab') : 'inventario'
+  // V222 — Terminado (quien surte) entra directo a las órdenes de compra, como Leo a las de Frisa.
+  const inicio = esRolDeEstacion(role) ? 'oc' : 'inventario'
+  const tab = PESTANAS.some(([k]) => k === params.get('tab')) ? params.get('tab') : inicio
   return (
     <div className="page atr">
       <div className="atr-pestanas" role="tablist">
         {PESTANAS.map(([k, t]) => (
           <button key={k} type="button" role="tab" aria-selected={tab === k}
             className={'atr-pestana' + (tab === k ? ' is-activa' : '')}
-            onClick={() => setParams(k === 'inventario' ? {} : { tab: k }, { replace: true })}>
+            onClick={() => setParams(k === inicio ? {} : { tab: k }, { replace: true })}>
             {t}
           </button>
         ))}

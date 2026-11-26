@@ -7,11 +7,11 @@ import Modal from '../components/talleros/Modal'
 import { useAuth } from '../contexts/AuthContext'
 import { canCargarAtr, canEntregarAtr, canFacturarAtr, canOcAtr, canVerAtr } from '../utils/permissions'
 import { cancelarAtrOc, confirmarEntregaAtr, deshacerSurtidoAtr, fetchAtrOcDetalle, fetchAtrOcLista, fetchAtrSurtidosOc, urlPdfOcAtr } from '../services/atrService'
-import AtrSurtirModal from '../components/atr/AtrSurtirModal'
+import AtrSurtirTabla from '../components/atr/AtrSurtirTabla'
 import AtrBata from '../components/atr/AtrBata'
 import PdfPreviewModal from '../components/pdf/PdfPreviewModal'
 import { atrHojaSurtidoFileName, buildAtrHojaSurtidoBlob } from '../utils/generateAtrPdf'
-import { ESTADOS_OC, pctSurtido, surtidoDesdeRpc, urgenciaEntrega } from '../utils/atrOc'
+import { ESTADOS_OC, calcularSurtibles, pctSurtido, surtidoDesdeRpc, urgenciaEntrega } from '../utils/atrOc'
 import { daysUntil, formatDate, formatDateTime } from '../utils/dates'
 import '../components/atr/atr.css'
 
@@ -40,7 +40,7 @@ function AtrOcDetalle() {
   const [errPdf, setErrPdf] = useState(null)
   const [cancelar, setCancelar] = useState(false)
   const [surtidos, setSurtidos] = useState([])
-  const [surtir, setSurtir] = useState(false)
+  const [reparto, setReparto] = useState(null) // V222: esta OC en el reparto por fecha
   const [hoja, setHoja] = useState(null) // { blob, fileName }
   const [deshacer, setDeshacer] = useState(null) // surtido
   const [aviso, setAviso] = useState(null)
@@ -58,6 +58,14 @@ function AtrOcDetalle() {
     setLineas(ls)
     const gs = (m.data || []).map(surtidoDesdeRpc)
     setSurtidos(gs)
+    // V222 — ¿otra OC que vence antes ocupa estas batas? (mismo cálculo que la lista)
+    const activas = (l.data || []).filter((o) => o.estado === 'abierta' || o.estado === 'parcial')
+    if (laOc && activas.some((o) => o.id === laOc.id)) {
+      const otras = await Promise.all(activas.filter((o) => o.id !== laOc.id).map((o) => fetchAtrOcDetalle(o.id)))
+      const porOc = { [laOc.id]: ls }
+      activas.filter((o) => o.id !== laOc.id).forEach((o, i) => { porOc[o.id] = otras[i].data || [] })
+      setReparto(calcularSurtibles(activas, porOc).ordenes.find((x) => x.oc.id === laOc.id) || null)
+    } else setReparto(null)
     return { oc: laOc, surtidos: gs }
   }, [id])
 
@@ -71,8 +79,9 @@ function AtrOcDetalle() {
     }
   }
 
-  async function surtidoListo(surtidoId) {
-    setSurtir(false)
+  async function surtidoListo(surtidoId, msg) {
+    setAviso(null)
+    setOkMsg(msg)
     const r = await cargar()
     const nuevo = r?.surtidos.find((g) => g.surtido_id === surtidoId)
     if (r?.oc && nuevo) verHoja(r.oc, nuevo)
@@ -116,9 +125,6 @@ function AtrOcDetalle() {
           {oc.pdf_url && (
             <button type="button" className="btn btn--ghost btn--small" onClick={abrirPdf}>{verPdf ? 'Ocultar PDF' : 'Ver PDF'}</button>
           )}
-          {canEntregarAtr(role) && (oc.estado === 'abierta' || oc.estado === 'parcial') && (
-            <button type="button" className="btn btn--primary" onClick={() => setSurtir(true)}>Surtir</button>
-          )}
           {canOcAtr(role) && oc.estado !== 'cancelada' && (
             <button type="button" className="btn btn--ghost btn--small atr-btn-peligro" onClick={() => setCancelar(true)}>Cancelar OC</button>
           )}
@@ -151,69 +157,82 @@ function AtrOcDetalle() {
           </p>
         )
       })()}
+      {reparto && reparto.alcanzaSola && (
+        <p className="atr-oc-aviso atr-oc-aviso--falta">
+          <span className="frisa-nivel frisa-nivel--naranja">Ojo</span>{' '}
+          Sí alcanza para esta OC, pero {reparto.compiteCon.length ? `la OC ${reparto.compiteCon.join(', OC ')} vence antes y usa` : 'otra OC que vence antes usa'} las
+          mismas batas. Si surtes esta primero, a esa le van a faltar.
+        </p>
+      )}
       {oc.estado === 'cancelada' && (
         <p className="atr-aviso">Cancelada el {formatDateTime(oc.cancelada_en)}. Motivo: {oc.motivo_cancelacion}</p>
       )}
       {errPdf && <p className="form-error">{errPdf}</p>}
 
       <div className={'atr-oc-detalle' + (verPdf && pdfUrl ? ' atr-oc-detalle--con-pdf' : '')}>
-        <div className="atr-tabla-wrap">
-          <table className="simple-table atr-tabla">
-            <thead>
-              <tr>
-                <th>Bata</th><th>Talla</th>
-                <th className="atr-num">Pedido</th><th className="atr-num">Entregado</th><th className="atr-num">Apartado</th>
-                <th className="atr-num">Pendiente</th><th className="atr-num">Disponible</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lineas.map((l) => (
-                <tr key={l.oc_linea_id} className={l.pendiente > 0 && (l.disponible ?? l.existencia) < l.pendiente && oc.estado !== 'cancelada' ? 'atr-oc-fila--falta' : ''}>
-                  <td><AtrBata producto={l.producto} color={l.color} conBolsa={l.con_bolsa} />{l.texto_pdf ? <div className="atr-muted atr-oc-pdf-txt">PDF: {l.texto_pdf}</div> : null}</td>
-                  <td>{l.talla}</td>
-                  <td className="atr-num">{n(l.pedido)}</td>
-                  <td className="atr-num">{n(l.entregado ?? l.surtido)}</td>
-                  <td className="atr-num">{l.apartado ? <span className="atr-apartado">{n(l.apartado)}</span> : '·'}</td>
-                  <td className="atr-num"><strong>{n(l.pendiente)}</strong></td>
-                  <td className={'atr-num' + ((l.disponible ?? l.existencia) < 0 ? ' atr-negativo' : '')}>
-                    {n(l.disponible ?? l.existencia)}
-                    {l.apartado > 0 && <div className="atr-muted atr-oc-pdf-txt">de {n(l.existencia)} en existencia</div>}
-                  </td>
+        {oc.estado === 'abierta' || oc.estado === 'parcial' ? (
+          <AtrSurtirTabla oc={oc} lineas={lineas} puedeSurtir={canEntregarAtr(role)}
+            onCambio={(msg) => { setAviso(null); setOkMsg(msg); cargar() }} onSurtido={surtidoListo} />
+        ) : (
+          <div className="atr-tabla-wrap">
+            <table className="simple-table atr-tabla">
+              <thead>
+                <tr>
+                  <th>Bata</th><th>Talla</th>
+                  <th className="atr-num">Pedido</th><th className="atr-num">Entregado</th><th className="atr-num">Apartado</th>
+                  <th className="atr-num">Pendiente</th><th className="atr-num">Disponible</th>
                 </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colSpan={2}><strong>Total</strong></td>
-                <td className="atr-num"><strong>{n(oc.pedido)}</strong></td>
-                <td className="atr-num"><strong>{n(oc.entregado ?? oc.surtido)}</strong></td>
-                <td className="atr-num"><strong>{n(oc.apartado || 0)}</strong></td>
-                <td className="atr-num"><strong>{n(pend)}</strong></td>
-                <td />
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {lineas.map((l) => (
+                  <tr key={l.oc_linea_id} className={l.pendiente > 0 && (l.disponible ?? l.existencia) < l.pendiente && oc.estado !== 'cancelada' ? 'atr-oc-fila--falta' : ''}>
+                    <td><AtrBata producto={l.producto} color={l.color} conBolsa={l.con_bolsa} />{l.texto_pdf ? <div className="atr-muted atr-oc-pdf-txt">PDF: {l.texto_pdf}</div> : null}</td>
+                    <td>{l.talla}</td>
+                    <td className="atr-num">{n(l.pedido)}</td>
+                    <td className="atr-num">{n(l.entregado ?? l.surtido)}</td>
+                    <td className="atr-num">{l.apartado ? <span className="atr-apartado">{n(l.apartado)}</span> : '·'}</td>
+                    <td className="atr-num"><strong>{n(l.pendiente)}</strong></td>
+                    <td className={'atr-num' + ((l.disponible ?? l.existencia) < 0 ? ' atr-negativo' : '')}>
+                      {n(l.disponible ?? l.existencia)}
+                      {l.apartado > 0 && <div className="atr-muted atr-oc-pdf-txt">de {n(l.existencia)} en existencia</div>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={2}><strong>Total</strong></td>
+                  <td className="atr-num"><strong>{n(oc.pedido)}</strong></td>
+                  <td className="atr-num"><strong>{n(oc.entregado ?? oc.surtido)}</strong></td>
+                  <td className="atr-num"><strong>{n(oc.apartado || 0)}</strong></td>
+                  <td className="atr-num"><strong>{n(pend)}</strong></td>
+                  <td />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
         {verPdf && pdfUrl && (
           <div className="atr-oc-visor"><iframe title={`PDF OC ${oc.numero_oc}`} src={pdfUrl} /></div>
         )}
       </div>
 
+      {aviso && <p className="form-error">{aviso}</p>}
+      {okMsg && <p className="atr-ok">{okMsg}</p>}
       <section className="atr-surtidos">
         <h3 className="atr-surtidos__titulo">Surtidos de esta OC</h3>
         <p className="atr-muted atr-oc-meta">Al surtir, las batas quedan <strong>apartadas</strong>; se descuentan del inventario cuando contabilidad confirma la entrega con la factura.</p>
-        {aviso && <p className="form-error">{aviso}</p>}
-        {okMsg && <p className="atr-ok">{okMsg}</p>}
-        {surtidos.length === 0 ? (
+        {surtidos.filter((g) => !g.borrador).length === 0 ? (
           <p className="atr-muted">Todavía no se ha surtido nada.</p>
         ) : (
           <ul className="atr-surtidos__lista">
-            {surtidos.map((g) => (
+            {surtidos.filter((g) => !g.borrador).map((g) => (
               <li key={g.surtido_id} className={'atr-bloque atr-surtido atr-surtido--' + g.estado}>
                 <div className="atr-surtido__cab">
                   <span>
                     <EstadoSurtido g={g} />{' '}
                     <strong>{formatDateTime(g.fecha)}</strong> · {n(g.piezas)} batas · surtió {g.usuario || '—'}
+                    {g.registradoPor && g.registradoPor !== g.usuario ? <span className="atr-muted"> (lo registró {g.registradoPor})</span> : null}
                   </span>
                   <span className="atr-acciones">
                     <button type="button" className="btn btn--ghost btn--small" onClick={() => verHoja(oc, g)}>Hoja de surtido</button>
@@ -245,7 +264,6 @@ function AtrOcDetalle() {
         )}
       </section>
 
-      {surtir && <AtrSurtirModal oc={oc} lineas={lineas} onClose={() => setSurtir(false)} onListo={surtidoListo} />}
       {hoja && <PdfPreviewModal blob={hoja.blob} fileName={hoja.fileName} onClose={() => setHoja(null)} />}
       {deshacer && (
         <DeshacerSurtido oc={oc} surtido={deshacer} onClose={() => setDeshacer(null)} onListo={() => { setDeshacer(null); cargar() }} />

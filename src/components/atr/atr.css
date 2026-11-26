@@ -195,3 +195,26 @@
 .atr-dif--mas { color: var(--color-orange-strong); font-weight: 700; }
 .atr-dif--menos { color: var(--color-danger); font-weight: 700; }
 .atr-dif--ok { color: var(--color-good); }
+
+/* V222 — surtir como Frisa: apartar renglón por renglón */
+.atr-surtir-frisa { margin-top: 4px; }
+.atr-surtir-tabla td { vertical-align: top; }
+.atr-surtir__check { width: 32px; text-align: center; }
+.atr-surtir__check input { width: 20px; height: 20px; }
+.atr-surtir__apartar { min-width: 96px; }
+.atr-surtir__input { width: 80px; text-align: right; padding: 6px 8px; }
+.atr-ok-txt { color: var(--color-good); font-size: 12px; }
+.atr-surtir-tabla .atr-negativo { font-size: 12px; }
+.atr-surtir--completo td { background: color-mix(in srgb, var(--color-good) 10%, transparent); }
+.atr-surtir__cerrar { display: grid; gap: 10px; max-width: 420px; margin: 8px 0; }
+.atr-surtir__talla-cel { display: none; }
+@media (max-width: 600px) {
+  .atr-surtir__input { width: 60px; }
+  .atr-surtir-tabla th, .atr-surtir-tabla td { padding: 6px 4px; }
+  .atr-surtir-tabla .atr-surtir__talla { display: none; }
+  .atr-surtir__talla-cel { display: inline; }
+  .atr-surtir__check { width: 28px; }
+  .atr-surtir__apartar { min-width: 72px; }
+  .atr-surtir-tabla .atr-bata { white-space: normal; }
+}
+.atr-oc-detalle .atr-surtir-tabla td:first-child { min-width: 0; }
