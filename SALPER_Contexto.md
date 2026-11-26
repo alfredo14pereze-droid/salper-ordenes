@@ -8839,3 +8839,14 @@ desde "Nueva orden" que cuenten igual.
 - Probado en ejemplo local (PGlite con el SQL real): OT con 40 donde faltaban 3 + talla en 0 + bata vacía → se guarda;
   Nueva orden cliente ATR (admin_general) → rechaza bata a mano, acepta del catálogo sin precio, baja el faltante; Terminado
   con 8 de 5 → entra 8 una sola vez; otro cliente sigue pidiendo precio y no toca ATR. Datos de prueba solo en el navegador.
+
+### 2026-11-26 — Órdenes ATR del corte del 24/11/26 + menús de arriba deslizables en celular
+- **Órdenes creadas en producción** (pedido de Alfredo; `datos_2026-11-26_atr_ordenes_corte_24nov.sql`, con
+  `atr_crear_orden_taller` a nombre de Alfredo, creación 24-nov, entrega 4-dic, tela Tafetan, CH = S):
+  **IND-056** (papel verde, 51: sin bolsa Azul Cielo S20 M20 L5 2XL1 3XL2 + con bolsa Café 2XL3) e **IND-057**
+  (libreta − papel verde, 64: sin bolsa Azul Cielo S12 M24 2XL12 3XL7 + con bolsa Café 2XL9). Nacen con
+  corte/producción/terminado pendientes y cuentan en "En taller".
+- **Menús en celular (≤768 px):** la barra de estación (`EstacionNav` en `AppLayout.jsx`) va en su propio renglón y se
+  desliza de lado (sin barra visible, sombra en la orilla donde hay más, el botón activo se centra). Las pestañas de
+  Procesos, Producción, notas/Frisa/CRM, ATR y Pendientes tampoco se parten en renglones: se deslizan. En computadora no
+  cambia nada.

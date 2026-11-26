@@ -5939,3 +5939,96 @@ a.frisa-oc__num { color: inherit; text-decoration: underline; }
   body.imprime-proceso .proc-paso__num { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body.imprime-proceso .proc-hoja a { color: #000; text-decoration: none; }
 }
+
+/* 2026-11-26 — Menús de arriba en el celular: un solo renglón que se desliza
+   de lado (antes los botones se amontonaban). Va al final para ganarle a las
+   reglas de V169 (barra del chofer). */
+@media (max-width: 768px) {
+  .app-topbar--estacion {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 6px;
+    padding-bottom: 6px;
+  }
+  .app-topbar--estacion > .btn--small {
+    margin-left: auto;
+    max-width: none;
+    white-space: nowrap;
+    padding-inline: 10px;
+    font-size: 13px;
+  }
+  .app-topbar--estacion .estacion-nav {
+    order: 3;
+    flex: 1 0 100%;
+    min-width: 0;
+    gap: 4px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .estacion-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .app-topbar--estacion .estacion-nav__link {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 8px 12px;
+  }
+  .estacion-nav--mas-der {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  }
+  .estacion-nav--mas-izq {
+    -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent);
+  }
+  .estacion-nav--mas-izq.estacion-nav--mas-der {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+  }
+
+  /* Pestañas dentro de las páginas: tampoco se parten en varios renglones. */
+  .procesos-pestanas,
+  .produccion__tabs,
+  .notas-pestanas,
+  .atr-pestanas,
+  .pf-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .procesos-pestanas::-webkit-scrollbar,
+  .produccion__tabs::-webkit-scrollbar,
+  .notas-pestanas::-webkit-scrollbar,
+  .atr-pestanas::-webkit-scrollbar,
+  .pf-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .procesos-pestanas > *,
+  .produccion__tabs > *,
+  .notas-pestanas > *,
+  .atr-pestanas > *,
+  .pf-tabs > * {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  /* La línea de abajo de las pestañas como sombra, para que el desliz no la corte. */
+  .notas-pestanas {
+    border-bottom: 0;
+    box-shadow: inset 0 -2px 0 var(--color-border);
+  }
+  .notas-pestanas .notas-pestana {
+    margin-bottom: 0;
+  }
+  .atr-pestanas {
+    border-bottom: 0;
+    box-shadow: inset 0 -1px 0 var(--color-border);
+  }
+  .atr-pestanas .atr-pestana {
+    margin-bottom: 0;
+  }
+}

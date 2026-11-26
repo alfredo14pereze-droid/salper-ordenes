@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, NavLink, useLocation } from 'react-router-dom'
 import { cerrarSesion } from '../../lib/rutas'
 import ErrorBoundary from '../common/ErrorBoundary'
@@ -259,13 +259,13 @@ export default function AppLayout({ children }) {
       <div className={'app-shell app-shell--estacion' + (useRediseno ? ' design-root' : '')}>
         <div className="app-topbar app-topbar--estacion">
           <Logo />
-          <nav className="estacion-nav">
+          <EstacionNav pathname={location.pathname}>
             {links.map((l) => (
               <NavLink key={l.to} to={l.to} end={l.end} className={({ isActive }) => 'estacion-nav__link' + (isActive ? ' estacion-nav__link--active' : '')}>
                 {l.label}
               </NavLink>
             ))}
-          </nav>
+          </EstacionNav>
           {user && (
             <button type="button" className="btn btn--ghost btn--small" onClick={() => cerrarSesion(signOut)}>
               Cerrar sesión
@@ -433,5 +433,41 @@ export default function AppLayout({ children }) {
       )}
       {!soloCaptura && <ChatWidget />}
     </div>
+  )
+}
+
+// 2026-11-26 — En el celular los botones de la barra de estación se
+// amontonaban: ahora van en su propio renglón y se deslizan de lado. La
+// sombra de la orilla avisa que hay más; el botón activo se pone a la vista.
+function EstacionNav({ pathname, children }) {
+  const ref = useRef(null)
+  const [mas, setMas] = useState({ izq: false, der: false })
+  const medir = useCallback(() => {
+    const el = ref.current
+    if (!el) return
+    const izq = el.scrollLeft > 4
+    const der = el.scrollLeft + el.clientWidth < el.scrollWidth - 4
+    setMas((m) => (m.izq === izq && m.der === der ? m : { izq, der }))
+  }, [])
+  useEffect(() => {
+    const el = ref.current
+    const activo = el?.querySelector('.estacion-nav__link--active')
+    if (el && activo && el.scrollWidth > el.clientWidth) {
+      el.scrollLeft = Math.max(0, activo.offsetLeft - (el.clientWidth - activo.offsetWidth) / 2)
+    }
+    medir()
+  }, [pathname, medir])
+  useEffect(() => {
+    window.addEventListener('resize', medir)
+    return () => window.removeEventListener('resize', medir)
+  }, [medir])
+  return (
+    <nav
+      ref={ref}
+      onScroll={medir}
+      className={'estacion-nav' + (mas.izq ? ' estacion-nav--mas-izq' : '') + (mas.der ? ' estacion-nav--mas-der' : '')}
+    >
+      {children}
+    </nav>
   )
 }
