@@ -8850,3 +8850,19 @@ desde "Nueva orden" que cuenten igual.
   desliza de lado (sin barra visible, sombra en la orilla donde hay más, el botón activo se centra). Las pestañas de
   Procesos, Producción, notas/Frisa/CRM, ATR y Pendientes tampoco se parten en renglones: se deslizan. En computadora no
   cambia nada.
+
+### V224 — ATR: "Subir a bodega" como en Frisa (2026-11-26, rama `atr-cantidades-libres`) — **SQL SIN APLICAR**
+- **Decisión de Alfredo:** igual que Frisa. Al completar Terminado la orden de ATR queda **Por subir** y las batas entran al
+  inventario SOLO cuando alguien toca **Subir a bodega** (Terminado, Admin fábrica, Administración general: permiso
+  `atr.subir`). Reemplaza la regla de V211 ("entra sola al completar Terminado").
+- SQL `schema_v224_atr_subir_a_bodega.sql`: tablas `atr_subidas` / `atr_subida_lineas` (RLS sin políticas, solo por RPC);
+  lo que ya había entrado queda como subida "Automático" (nada se revierte; comprobación `se_revertirian` = 0);
+  `atr_lineas_orden` ahora sale de la subida; reabrir Terminado borra la subida (revierte y vuelve a Por subir);
+  RPC `atr_subir_orden`, `atr_por_subir`, `atr_subidas_recientes`, `atr_subida_orden`; `atr_faltantes` cuenta "En taller"
+  hasta que se sube (ya terminada, con lo surtido; `por_subir` en `en_taller_ordenes`). Manual:
+  `datos_2026-11-26_manual_atr_subir_bodega.sql`.
+- Front: pestaña **Por subir** en Surtido ATR (`AtrPorSubir`, tarjeta por orden + "Subidas en los últimos 15 días"),
+  `AtrSubirModal` (piezas = surtidas, se corrigen), etiqueta en la orden (`AtrEtiquetaOrden`): "Falta subir a bodega" +
+  botón, o "Subido a bodega ✓". El botón de Terminado sigue siendo "Confirmar y generar reporte".
+- Probado en ejemplo local (PGlite con el SQL real): datos previos se conservan, dos veces sin cambios, terminar no suma,
+  subir con merma (12→11) suma 17, sin permiso / línea ajena / doble subida rechazados, reabrir revierte y regresa.

@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import RequireRole from '../components/common/RequireRole'
 import { ErrorState, Loading } from '../components/common/States'
 import { useAuth } from '../contexts/AuthContext'
-import { canCargarAtr, canEntregarAtr, canFacturarAtr, canOcAtr, canTallerAtr, canVerAtr } from '../utils/permissions'
+import { canCargarAtr, canEntregarAtr, canFacturarAtr, canOcAtr, canSubirAtr, canTallerAtr, canVerAtr } from '../utils/permissions'
 import { fetchAtrApartadosBt, fetchAtrExistencias, fetchAtrProductos } from '../services/atrService'
 import { TALLAS_ATR, normalizar } from '../utils/atrCarga'
 import { coloresDe, matrizInventario } from '../utils/atrColores'
@@ -14,6 +14,7 @@ import AtrAjusteModal from '../components/atr/AtrAjusteModal'
 import AtrOcLista from '../components/atr/AtrOcLista'
 import AtrFaltantes from '../components/atr/AtrFaltantes'
 import AtrPorFacturar from '../components/atr/AtrPorFacturar'
+import AtrPorSubir from '../components/atr/AtrPorSubir'
 import AtrRevisionMicrosip from '../components/atr/AtrRevisionMicrosip'
 import { esRolDeEstacion } from '../config/vistasPorRol'
 import '../components/atr/atr.css'
@@ -33,6 +34,7 @@ export default function AtrPage() {
 const PESTANAS = [
   ['inventario', 'Inventario'],
   ['oc', 'Órdenes de compra'],
+  ['subir', 'Por subir'],
   ['faltan', 'Qué nos falta'],
   ['facturar', 'Por facturar'],
   ['microsip', 'Revisión Microsip'],
@@ -61,6 +63,13 @@ function AtrPestanas() {
             <h2 className="section-title">Órdenes de compra ATR <AyudaModulo id="atr" /></h2>
           </div>
           <AtrOcLista puedeSubir={canOcAtr(role)} />
+        </>
+      ) : tab === 'subir' ? (
+        <>
+          <div className="section-header">
+            <h2 className="section-title">Por subir a bodega <AyudaModulo id="atr" /></h2>
+          </div>
+          <AtrPorSubir puedeSubir={canSubirAtr(role)} />
         </>
       ) : tab === 'facturar' ? (
         <>

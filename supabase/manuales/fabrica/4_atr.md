@@ -4,14 +4,14 @@ titulo: Inventario ATR
 ---
 ## Resumen
 
-**Inventario ATR** lleva todo lo de ATR, cliente al que solo le hacemos batas: el **inventario** por bata y talla, las **órdenes de compra (OC)** que nos manda, el **surtido** de cada OC y **qué nos falta** producir. Lo que se surte se descuenta del inventario; lo que se produce en las órdenes de taller de ATR **entra solo** al completar Terminado.
+**Inventario ATR** lleva todo lo de ATR, cliente al que solo le hacemos batas: el **inventario** por bata y talla, las **órdenes de compra (OC)** que nos manda, el **surtido** de cada OC y **qué nos falta** producir. Lo que se surte se descuenta del inventario; lo que se produce en las órdenes de taller de ATR entra al inventario cuando Terminado la **sube a bodega** (pestaña **Por subir**).
 
-El flujo es: llega la OC → se sube → se revisa qué falta → **Terminado surte** lo que hay (las batas quedan **apartadas**) → **contabilidad confirma la entrega con la factura** (ahí se descuentan del inventario) → se hace la orden de taller por lo que falta → al terminarla entra al inventario → se surte el resto. Con **Revisión Microsip** se compara el inventario contra Microsip.
+El flujo es: llega la OC → se sube → se revisa qué falta → **Terminado surte** lo que hay (las batas quedan **apartadas**) → **contabilidad confirma la entrega con la factura** (ahí se descuentan del inventario) → se hace la orden de taller por lo que falta → al terminarla, Terminado la **sube a bodega** y entra al inventario → se surte el resto. Con **Revisión Microsip** se compara el inventario contra Microsip.
 
 ## ¿Quién lo usa?
 
 - **Admin fábrica** y **Administración general**: suben y cancelan OC, surten, hacen órdenes de taller, ajustes, carga inicial y deshacen surtidos.
-- **Terminado**: surte las OC (aparta las batas) y registra entregas.
+- **Terminado**: surte las OC (aparta las batas), registra entregas y **sube a bodega** las órdenes de ATR terminadas.
 - **Contabilidad**: confirma las entregas con la factura (pestaña **Por facturar**), consulta y hace órdenes de taller de ATR (solo de ATR).
 - **Admin tienda** y **Consulta fábrica**: solo consultan.
 
@@ -93,13 +93,20 @@ El flujo es: llega la OC → se sube → se revisa qué falta → **Terminado su
 
 > Va **sin precio**: es para inventario, lo que se cobra es la OC. No se liga a una OC; mientras no termine, cuenta en **En taller** para no pedir doble. Sigue las etapas normales.
 >
-> Una orden cuenta para ATR por su **cliente**, no por dónde se creó: una orden hecha desde **Nueva orden** con cliente **ATR** también cuenta en **En taller** y entra al inventario al terminar. Si en Terminado salió de más, entra todo lo surtido.
+> Una orden cuenta para ATR por su **cliente**, no por dónde se creó: una orden hecha desde **Nueva orden** con cliente **ATR** también cuenta en **En taller** y entra al inventario cuando se sube a bodega. Si en Terminado salió de más, se sube todo lo surtido.
 
 ### Cómo entra al inventario lo que se produce
 
-1. Terminado cierra la orden de ATR con sus cantidades reales.
-2. Al completar Terminado, lo surtido se suma solo. En la orden sale **Sumado al inventario ATR ✓**.
-3. Si se reabre Terminado o se elimina la orden, se resta solo (sale como **Reversa**).
+Igual que en Frisa: terminar la orden no basta, hay que **subirla a bodega**.
+
+1. Terminado cierra la orden de ATR con sus cantidades reales (**Confirmar y generar reporte**).
+2. La orden queda en **Inventario ATR → Por subir** y, en la orden, sale **Falta subir a bodega**.
+3. Cuando las batas ya están en bodega, toca **Subir a bodega** (en la pestaña **Por subir** o en la misma orden).
+4. Vienen las piezas surtidas; corrige si subieron menos y dale **Confirmar: subir N batas**.
+5. Ahí entran al inventario. En la orden sale **Subido a bodega ✓** y en **Por subir** queda en "Subidas en los últimos 15 días".
+
+> Mientras no se sube, la orden sigue contando en **En taller** de Qué nos falta (marcada "por subir"). Si se reabre Terminado o se elimina la orden, lo subido se resta solo (sale como **Reversa**) y la orden vuelve a **Por subir** al terminarse otra vez.
+> Pueden subir a bodega: **Terminado**, **Admin fábrica** y **Administración general**.
 
 ### Cómo deshacer un surtido (administradores)
 
@@ -153,7 +160,7 @@ El flujo es: llega la OC → se sube → se revisa qué falta → **Terminado su
 - **Renglón en rojo al subir la OC** → La descripción no ligó con el catálogo: asígnale la bata o dala de alta. La próxima vez se liga sola.
 - **"No se puede surtir más de lo pendiente"** → Baja la cantidad a lo que falta de esa línea.
 - **"Quedarían en negativo"** → Hay menos batas registradas de las que salen. Revisa; si de verdad salen, marca "Sí, sí salen".
-- **No se sumó lo de una orden** → Revisa que Terminado esté completado y que sus batas vengan del catálogo de ATR.
+- **No se sumó lo de una orden** → Revisa que Terminado esté completado, que ya se haya **subido a bodega** (pestaña Por subir) y que sus batas vengan del catálogo de ATR.
 
 ## Se conecta con
 

@@ -290,3 +290,32 @@ export async function fetchAtrSurtidoPersonas() {
   if (e) return { data: null, error: e }
   return supabase.rpc('atr_surtido_personas')
 }
+
+// V224 — "Subir a bodega" como en Frisa: la orden terminada queda por subir.
+export async function fetchAtrPorSubir() {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_por_subir')
+}
+
+export async function fetchAtrSubidasRecientes(dias = 15) {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_subidas_recientes', { p_dias: dias })
+}
+
+export async function fetchAtrSubidaOrden(orderId) {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  const { data, error } = await supabase.rpc('atr_subida_orden', { p_order_id: orderId })
+  if (error) return { data: null, error }
+  return { data: Array.isArray(data) ? data[0] || null : data, error: null }
+}
+
+// lineas: [{ item_index, size_index, cantidad }]
+export async function subirAtrOrden(orderId, lineas, notas) {
+  const e = sinCliente()
+  if (e) return { data: null, error: e }
+  return supabase.rpc('atr_subir_orden', { p_order_id: orderId, p_lineas: lineas, p_notas: notas || null })
+}
+

@@ -180,7 +180,7 @@ export default function AtrFaltantes({ puedeTaller = false }) {
                             {f.en_taller_ordenes.map((o, i) => (
                               <span key={o.order_id}>
                                 {i > 0 && ', '}
-                                <Link to={`/orden/${o.order_id}`}>{o.order_number || 'orden'}</Link> ({o.cantidad})
+                                <Link to={`/orden/${o.order_id}`}>{o.order_number || 'orden'}</Link> ({o.cantidad}{o.por_subir ? ', por subir' : ''})
                               </span>
                             ))}
                           </div>

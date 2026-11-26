@@ -959,6 +959,11 @@ export function canTallerAtr(role) {
   return tiene(role, 'atr.taller', () => ['admin_general', 'admin_fabrica', 'contabilidad'].includes(role))
 }
 
+// V224 — subir a bodega las órdenes de ATR terminadas (ahí entran al inventario).
+export function canSubirAtr(role) {
+  return tiene(role, 'atr.subir', () => ['admin_general', 'admin_fabrica', 'terminado'].includes(role))
+}
+
 // V213 — Cotizaciones web (formulario de salperdeportes.com). Solo
 // admin_general (el "super_admin" del pedido) y admin_tienda; fijo, sin
 // clave en rol_permisos (igual que la política RLS de cotizaciones_web).
