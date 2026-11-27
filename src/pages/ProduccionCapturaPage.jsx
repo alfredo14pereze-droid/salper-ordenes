@@ -500,6 +500,7 @@ function Captura() {
           {registros.length === 0 ? (
             <p className="template-hint">Nada capturado todavía.</p>
           ) : (
+            <div className="table-scroll">
             <table className="simple-table">
               <thead>
                 <tr>
@@ -556,6 +557,7 @@ function Captura() {
                 )}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}

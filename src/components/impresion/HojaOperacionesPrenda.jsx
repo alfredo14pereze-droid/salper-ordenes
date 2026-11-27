@@ -75,6 +75,7 @@ export default function HojaOperacionesPrenda({ prenda, volverA, operaciones = n
       {!ops && !error && <p className="template-hint">Cargando operaciones…</p>}
       {ops && ops.length === 0 && <p className="template-hint">Esta prenda no tiene operaciones activas.</p>}
       {ops && ops.length > 0 && (
+        <div className="table-scroll">
         <table className="hoja-impresion__tabla">
           <thead>
             <tr>
@@ -98,6 +99,7 @@ export default function HojaOperacionesPrenda({ prenda, volverA, operaciones = n
             </tbody>
           ))}
         </table>
+        </div>
       )}
     </div>
   )

@@ -6,6 +6,18 @@ import { esRutaSistema, esRutaLogin, rutaDesdeHashViejo } from './lib/rutas'
 const viejo = rutaDesdeHashViejo(window.location.hash)
 if (viejo) window.history.replaceState(null, '', viejo)
 
+// 2026-11-27 — Celular: respaldo contra el zoom con dos dedos (iOS ignora
+// user-scalable=no del viewport). Solo frena gestos de 2+ dedos: el scroll
+// normal y los menús deslizables (un dedo) siguen igual.
+document.addEventListener('gesturestart', (e) => e.preventDefault())
+document.addEventListener(
+  'touchmove',
+  (e) => {
+    if (e.touches.length > 1) e.preventDefault()
+  },
+  { passive: false }
+)
+
 const { pathname } = window.location
 const esSistema = esRutaSistema(pathname) || esRutaLogin(pathname)
 

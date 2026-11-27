@@ -44,6 +44,7 @@ function StatCard({ label, value, hint }) {
 
 function TablaResumen({ titulo, filas, nombre }) {
   return (
+    <div className="table-scroll">
     <table className="stats-table">
       <thead>
         <tr>
@@ -74,6 +75,7 @@ function TablaResumen({ titulo, filas, nombre }) {
         ))}
       </tbody>
     </table>
+    </div>
   )
 }
 

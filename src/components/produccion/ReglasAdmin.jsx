@@ -52,6 +52,7 @@ export default function ReglasAdmin() {
         <div key={t.key} className="card" style={{ marginBottom: 14 }}>
           <h3 style={{ marginTop: 0 }}>{t.titulo}</h3>
           <p className="template-hint">{t.nota}</p>
+          <div className="table-scroll">
           <table className="simple-table">
             <thead>
               <tr>
@@ -94,6 +95,7 @@ export default function ReglasAdmin() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       ))}
       <p className="template-hint">Los cambios aplican a las semanas que se calculen o aprueben de ahora en adelante; las ya aprobadas quedan congeladas.</p>

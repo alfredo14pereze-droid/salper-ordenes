@@ -82,6 +82,7 @@ function RosterEstacion({ item }) {
         {boton('nombres', 'Copiar nombres')}
         {boton('numeros', 'Copiar números')}
       </div>
+      <div className="table-scroll">
       <table className="estacion-roster__tabla">
         <thead>
           <tr>
@@ -102,6 +103,7 @@ function RosterEstacion({ item }) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }

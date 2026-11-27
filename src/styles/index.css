@@ -6032,3 +6032,172 @@ a.frisa-oc__num { color: inherit; text-decoration: underline; }
     margin-bottom: 0;
   }
 }
+
+/* =====================================================================
+   2026-11-27 — Reglas responsive globales (celular). Ver "Diseño responsive"
+   en SALPER_Contexto.md. Breakpoints: 768 (celular + tablet chica: campos a
+   16px, menús deslizables), 720 (shell de celular: barra de arriba, menú
+   lateral como panel, BottomNav), 600 (rejillas a una columna).
+   ===================================================================== */
+
+/* Red de seguridad: nada empuja la página de lado. NO es la solución: cada
+   elemento que se desborde se arregla en su propia regla. `clip` en body (y
+   no `hidden`) para no romper las barras con position: sticky. */
+html {
+  overflow-x: hidden;
+  touch-action: manipulation; /* sin zoom con doble toque */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  max-width: 100%;
+  overflow-x: clip;
+  touch-action: manipulation;
+}
+
+/* Tablas: siempre dentro de un contenedor que scrollee la tabla, no la página. */
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+@media print {
+  .table-scroll { overflow: visible; }
+}
+
+/* Vista previa de PDF (PdfPreviewModal). */
+.pdf-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(22, 19, 15, 0.6);
+}
+.pdf-preview__panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 760px;
+  height: 90vh;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 8px;
+}
+.pdf-preview__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border, #e5e1d8);
+}
+.pdf-preview__nombre {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pdf-preview__botones { display: flex; flex-shrink: 0; gap: 8px; }
+.pdf-preview__panel iframe { flex: 1; border: none; }
+
+@media (max-width: 768px) {
+  /* iOS hace zoom al enfocar cualquier campo con letra menor a 16px. */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+  select,
+  textarea,
+  .input,
+  .input--small,
+  .design-root .input,
+  .ds-field__input {
+    font-size: 16px !important;
+  }
+
+  /* Textos largos (nombres de cliente, notas) hacen wrap en vez de empujar. */
+  .app-main {
+    overflow-wrap: break-word;
+  }
+
+  .pdf-preview {
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  .pdf-preview__panel {
+    max-width: 100vw;
+    height: 100%;
+    border-radius: 0;
+  }
+}
+
+/* Notch / orillas del iPhone en horizontal (viewport-fit=cover). */
+@media (max-width: 720px) {
+  .app-topbar {
+    padding-top: calc(10px + env(safe-area-inset-top));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+  .app-main {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+}
+
+@media (max-width: 600px) {
+  /* Pedidos Colegio: 6 columnas fijas no caben. Artículo arriba (con quitar),
+     talla/cantidad/precio en el segundo renglón e importe en el tercero. */
+  .pedido-colegio-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) 28px;
+  }
+  .sizes-row-header.pedido-colegio-row { display: none; }
+  .sizes-row.pedido-colegio-row {
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .pedido-colegio-row > :nth-child(1) { grid-column: 1 / 4; grid-row: 1; }
+  .pedido-colegio-row > :nth-child(2) { grid-column: 1; grid-row: 2; }
+  .pedido-colegio-row > :nth-child(3) { grid-column: 2; grid-row: 2; }
+  .pedido-colegio-row > :nth-child(4) { grid-column: 3; grid-row: 2; }
+  .pedido-colegio-row > :nth-child(5) { grid-column: 1 / 4; grid-row: 3; text-align: right; }
+  .pedido-colegio-row > :nth-child(6) { grid-column: 4; grid-row: 1; }
+
+  /* Anchos mínimos fijos que no caben en 375px. */
+  .frisa-aviso__prod,
+  .frisa-mov__buscar,
+  .inv-toolbar .inv-buscador,
+  .app-main .atr-ligar select {
+    min-width: 0;
+    flex-basis: 100%;
+    max-width: 100%;
+  }
+
+  /* Rejillas de tarjetas con mínimo de 260–340px: una columna. */
+  .pstat-cols--2,
+  .tallero-grid,
+  .mt-catalogo__list,
+  .procesos-tarjetas,
+  .manuales-secciones,
+  .manuales-editor__datos,
+  .app-main .crm-sec__tarjetas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ds-phone-mock { max-width: 100%; }
+}
+
+/* Tablet (721–900px): el menú lateral ya ocupa 240px y las dos columnas del
+   detalle de orden no caben (la derecha se salía ~75px a 768px). */
+@media (max-width: 900px) {
+  .order-detail__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Sistema de diseño (/design, solo admin): las pestañas se deslizan. */
+.design-root .ds-tabs {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.design-root .ds-tab { flex: 0 0 auto; white-space: nowrap; }

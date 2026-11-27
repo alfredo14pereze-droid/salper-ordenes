@@ -229,6 +229,7 @@ function Revision() {
           {filasFiltradas.length === 0 ? (
             <p className="template-hint">Nadie coincide con "{filtroOperador}".</p>
           ) : (
+          <div className="table-scroll">
           <table className="simple-table revision__tabla">
             <thead>
               <tr>
@@ -273,6 +274,7 @@ function Revision() {
                         ) : registros.length === 0 ? (
                           <span className="template-hint">Sin registros esta semana.</span>
                         ) : (
+                          <div className="table-scroll">
                           <table className="simple-table">
                             <thead>
                               <tr>
@@ -297,6 +299,7 @@ function Revision() {
                               ))}
                             </tbody>
                           </table>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -305,6 +308,7 @@ function Revision() {
               ))}
             </tbody>
           </table>
+          </div>
           )}
         </div>
       )}

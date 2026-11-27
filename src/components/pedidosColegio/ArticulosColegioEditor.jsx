@@ -50,13 +50,15 @@ export default function ArticulosColegioEditor({ lineas, onChange }) {
               type="text"
               className="input"
               placeholder="Ej. Playera polo Avenue"
+              aria-label="Artículo"
               value={linea.articulo}
               onChange={(e) => updateLinea(index, { articulo: e.target.value })}
             />
             <input
               type="text"
               className="input"
-              placeholder="—"
+              placeholder="Talla"
+              aria-label="Talla"
               value={linea.talla}
               onChange={(e) => updateLinea(index, { talla: e.target.value })}
             />
@@ -65,7 +67,8 @@ export default function ArticulosColegioEditor({ lineas, onChange }) {
               min="1"
               step="1"
               className="input"
-              placeholder="0"
+              placeholder="Cant."
+              aria-label="Cantidad"
               value={linea.cantidad}
               onChange={(e) => updateLinea(index, { cantidad: e.target.value })}
             />
@@ -74,7 +77,8 @@ export default function ArticulosColegioEditor({ lineas, onChange }) {
               min="0"
               step="0.01"
               className="input"
-              placeholder="0.00"
+              placeholder="Precio"
+              aria-label="Precio"
               value={linea.precio}
               onChange={(e) => updateLinea(index, { precio: e.target.value })}
             />

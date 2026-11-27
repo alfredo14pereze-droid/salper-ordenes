@@ -293,6 +293,7 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
               <button type="button" className={'chip' + (entParcial ? ' chip--active' : '')} onClick={() => setEntParcial(true)}>Entrega parcial</button>
             </span>
             {entParcial && (
+              <div className="table-scroll">
               <table className="simple-table frisa-tabla">
                 <thead><tr><th>Producto</th><th className="num">Faltaba</th><th className="num">Se entregó</th></tr></thead>
                 <tbody>
@@ -312,6 +313,7 @@ export default function FrisaSurtidoDetalle({ surtido: s, lineas, inv, permisos,
                   })}
                 </tbody>
               </table>
+              </div>
             )}
             <label>
               <span className="field-label">Fecha de entrega</span>

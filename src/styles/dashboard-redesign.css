@@ -482,3 +482,16 @@
     display: none;
   }
 }
+
+/* 2026-11-27 — BottomNav y chat respetan la barra de inicio del iPhone. */
+@media (max-width: 720px) {
+  .design-root .app-main {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+  .design-root .chat-widget {
+    bottom: calc(86px + env(safe-area-inset-bottom));
+  }
+  .design-root .app-bottomnav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

@@ -187,6 +187,7 @@ export default function OperacionesAdmin({ consulta = false }) {
       )}
       {verCentenas && (
         <div className="card" style={{ marginBottom: 12 }}>
+          <div className="table-scroll">
           <table className="simple-table">
             <thead>
               <tr>
@@ -207,6 +208,7 @@ export default function OperacionesAdmin({ consulta = false }) {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
       <div className="revision__tabla-wrap">

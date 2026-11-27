@@ -86,6 +86,7 @@ export default function FrisaEntregasVarias({ ordenes, porSurtido, productos = [
                 </span>
               </div>
               {o === 'parcial' && (
+                <div className="table-scroll">
                 <table className="simple-table frisa-tabla">
                   <thead><tr><th>Producto</th><th className="num">Faltaba</th><th className="num">Se entregó</th></tr></thead>
                   <tbody>
@@ -107,6 +108,7 @@ export default function FrisaEntregasVarias({ ordenes, porSurtido, productos = [
                     })}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
           )

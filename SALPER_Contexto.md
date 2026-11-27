@@ -328,6 +328,49 @@ Tipografía: `'Barlow Semi Condensed'` para títulos/labels/badges. Logo real
 de SALPER (`src/assets/salper-logo.png`, negro sobre transparente) montado
 directo sobre el nav blanco — no hay insignia ni fondo detrás.
 
+## Diseño responsive (celular) — reglas para todo módulo nuevo
+
+Establecidas el 2026-11-27 (rama `movil-responsive`). Todo módulo nuevo debe cumplirlas desde el inicio.
+**Criterio de éxito:** en ninguna vista `document.documentElement.scrollWidth > window.innerWidth` en 375, 390,
+430 y 768 px (medido quitando la red de seguridad de abajo), y el escritorio queda igual.
+
+- **Breakpoints** (siempre `max-width`, celular primero en la revisión):
+  - `768px`: celular y tablet chica. Campos a 16 px y menús de arriba deslizables (`EstacionNav`, pestañas).
+  - `720px`: shell de celular. Barra de arriba (`.app-topbar`), menú lateral como panel, BottomNav y
+    `.app-main` con 16 px de padding.
+  - `600px`: rejillas de tarjetas a una columna y renglones de captura de varias columnas en 2–3 renglones.
+  - `900px`: tablet con el menú lateral visible (240 px). Las rejillas de dos columnas pasan a una
+    (ej. `.order-detail__grid`).
+- **Viewport** (`index.html`): `width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no,
+  viewport-fit=cover`. `main.jsx` además frena el pinch con 2 dedos (`gesturestart` / `touchmove` con 2+ toques),
+  porque iOS ignora `user-scalable=no`. Un dedo (scroll y menús deslizables) no se toca.
+- **Red de seguridad, NO solución:** `html { overflow-x: hidden; touch-action: manipulation }` y
+  `body { overflow-x: clip }`. En body va `clip` y no `hidden` para no romper las barras con `position: sticky`.
+  Si algo se sale, se arregla su propia regla.
+- **Campos a 16 px en celular:** iOS hace zoom al enfocar un campo de menos de 16 px. Una regla global
+  (≤768) pone `input`, `select`, `textarea`, `.input`, `.input--small` y `.ds-field__input` en 16 px con
+  `!important`. En escritorio siguen en 14 px. No pongas `font-size` en línea a un campo.
+- **Padding lateral:** 16 px en celular (`.app-main`), con `max(16px, env(safe-area-inset-left/right))`.
+  Tarjetas, banners y buscadores a `width: 100%` del contenedor, nunca con un ancho en px.
+- **Anchos fijos:** nada de `width`/`min-width` ≥ 240 px ni `minmax(≥260px, 1fr)` sin su regla ≤600 que lo
+  quite (`min-width: 0; flex-basis: 100%` o `grid-template-columns: minmax(0, 1fr)`). Las rejillas con `1fr`
+  que llevan botones o texto sin wrap usan `minmax(0, 1fr)` o pasan a una columna.
+- **Tablas:** toda `<table>` va dentro de `<div className="table-scroll">` (o de un `*-tabla-wrap` con
+  `overflow-x: auto`), para que scrollee la tabla y no la página. En impresión `.table-scroll` queda visible.
+  Una tabla larga de captura puede volverse tarjetas en celular, como `.precio-table` o Frisa.
+- **Sidebars y paneles:** el menú lateral en celular es un panel (`.app-sidebar--open`) y la ayuda es una hoja
+  desde abajo (`AyudaModulo`). Un panel lateral nuevo dentro de una página va abajo del contenido o como
+  drawer en ≤720, nunca ocupando ancho extra.
+- **Modales:** usar `components/talleros/Modal.jsx` (`.mt-modal`: ancho 100% hasta 560 px, overlay con scroll
+  propio). La vista previa de PDF (`.pdf-preview`) en celular ocupa toda la pantalla y respeta el safe area.
+- **Safe area (iPhone):** barra de arriba con `env(safe-area-inset-top)`; BottomNav, chat y barras fijas de
+  abajo con `env(safe-area-inset-bottom)`.
+- **Textos largos:** `.app-main` tiene `overflow-wrap: break-word` en celular. Los `white-space: nowrap` van
+  solo en números o etiquetas cortas.
+- **Cómo validar:** en el ejemplo local, recorrer cada ruta en 375/390/430/768 y en escritorio, con un script
+  temporal que pinte con outline rojo todo elemento cuyo `getBoundingClientRect()` salga del viewport (y que
+  no esté dentro de un contenedor con scroll). El script se inyecta desde el navegador; no se deja en el código.
+
 ## Estado actual (V1, producción, rama `main`)
 
 - CRUD de órdenes con folio automático por tipo (`SUB-001`, `ESC-001`...) vía
@@ -8871,3 +8914,30 @@ desde "Nueva orden" que cuenten igual.
   "Con bolsa / Sin bolsa" del `producto_nombre` y se muestra en el detalle, las estaciones, el surtido de Terminado
   (que ahora dice prenda · color · bolsa) y los PDF de orden y remisión. "Subir a bodega" (`propuestaSubida`): si
   Terminado no capturó lo surtido, vienen las piezas pedidas con aviso amarillo.
+
+### 2026-11-27 — Celular sin desbordes (rama `movil-responsive`, sin SQL)
+- **Lo de la captura del iPhone** (rol Terminado: "📖 Procesos" fuera de la pantalla, "Cerrar sesión" encima de los
+  tabs, banner y tarjetas cortados): era la barra de estación de ANTES del 26-nov (sin los menús deslizables).
+  Quitando ese arreglo se reproduce igual: página de 495 px en pantalla de 375. Con el código actual ya cabe. Si un
+  teléfono lo sigue viendo así, tiene la versión vieja: cerrar la app por completo y abrirla otra vez.
+- Global: viewport sin zoom, freno del pinch en `main.jsx`, red de seguridad `overflow-x`, campos a 16 px en
+  celular y safe area en la barra de arriba, `.app-main`, BottomNav y chat (ver "Diseño responsive" arriba).
+- 11 tablas sin scroll propio ahora van en `.table-scroll`:
+  - Frisa entregas y surtido parcial
+  - Captura, revisión, operaciones (centenas), reglas y tiempos de producción
+  - Lista de nombres y números en la estación
+  - Lote de impresión y hoja de operaciones
+- Pedidos Colegio, nuevo pedido: el renglón de 6 columnas fijas (~420 px) pasa en ≤600 a artículo / talla · cant.
+  · precio / importe (placeholders "Talla", "Cant.", "Precio").
+- Detalle de orden en tablet (721–900 px): la rejilla de dos columnas pasa a una (se salía ~75 px a 768).
+- Anchos mínimos de Frisa, inventario y ATR, y rejillas de 260–340 px (estadísticas de producción, talleros,
+  catálogo, procesos, manuales, CRM) a una columna en ≤600. Pestañas de /design deslizables.
+- `PdfPreviewModal`: estilos en línea a clases (`.pdf-preview`); en celular ocupa toda la pantalla.
+- Probado en el ejemplo local sin base (`.claude/harness-movil`, servidor `salper-movil-harness`, puerto 5211):
+  - 59 rutas como Administración general en 375/390/430/768 px: 0 elementos fuera de la pantalla.
+  - Terminado y chofer en 375 px: menú deslizable sigue funcionando; barra fija al hacer scroll; campos 16 px.
+  - Escritorio 1280: 26 rutas sin cambios (campos 14 px, detalle de orden en dos columnas).
+  - `vite build` y 244 pruebas `node --test` limpios.
+- **No probado:** en un iPhone real (el pinch y el safe area solo se ven ahí) y con datos reales de las tablas de
+  producción y Frisa (el ejemplo local no tiene esos datos).
+

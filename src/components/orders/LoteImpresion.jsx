@@ -142,6 +142,7 @@ export function LoteReporte({ lote, orders, puedeCorregir, onCorregido }) {
         {lote.creado_por_nombre ? `Imprimió ${lote.creado_por_nombre}` : 'Lote de impresión'} · {lista.length} {lista.length === 1 ? 'orden' : 'órdenes'}
         {lote.corregido_en ? ` · corregido ${formatDateTime(lote.corregido_en)}${lote.corregido_por_nombre ? ` por ${lote.corregido_por_nombre}` : ''}` : ''}
       </p>
+      <div className="table-scroll">
       <table className="lote-reporte__tabla">
         <thead>
           <tr>
@@ -160,6 +161,7 @@ export function LoteReporte({ lote, orders, puedeCorregir, onCorregido }) {
           ))}
         </tbody>
       </table>
+      </div>
 
       {editando ? (
         <div className="impresion-reporte">

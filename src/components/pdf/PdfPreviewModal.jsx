@@ -31,45 +31,15 @@ export default function PdfPreviewModal({ blob, fileName, onClose }) {
   }
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(22, 19, 15, 0.6)',
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          background: '#fff',
-          borderRadius: 8,
-          width: '100%',
-          maxWidth: 760,
-          height: '90vh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '10px 16px',
-            borderBottom: '1px solid var(--color-border, #e5e1d8)',
-          }}
-        >
-          <span className="section-title section-title--small" style={{ margin: 0 }}>
+    // 2026-11-27 — estilos a clases (.pdf-preview en index.css) para poder
+    // ajustarlo en el celular: sin margen, alto de lo visible y botones a la mano.
+    <div className="pdf-preview" onClick={onClose}>
+      <div className="pdf-preview__panel" onClick={(e) => e.stopPropagation()}>
+        <div className="pdf-preview__head">
+          <span className="section-title section-title--small pdf-preview__nombre">
             {fileName}
           </span>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="pdf-preview__botones">
             <button type="button" className="btn btn--primary btn--small" onClick={handleDownload}>
               Descargar
             </button>
