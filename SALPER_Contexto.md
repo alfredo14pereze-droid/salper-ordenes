@@ -8915,7 +8915,7 @@ desde "Nueva orden" que cuenten igual.
   (que ahora dice prenda · color · bolsa) y los PDF de orden y remisión. "Subir a bodega" (`propuestaSubida`): si
   Terminado no capturó lo surtido, vienen las piezas pedidas con aviso amarillo.
 
-### 2026-11-27 — Celular sin desbordes (rama `movil-responsive`, sin SQL)
+### 2026-11-27 — Celular sin desbordes (rama `movil-responsive`, sin SQL) — **EN main/producción (ccc2181, bundle App-CXxx0Jy4.css confirmado)**
 - **Lo de la captura del iPhone** (rol Terminado: "📖 Procesos" fuera de la pantalla, "Cerrar sesión" encima de los
   tabs, banner y tarjetas cortados): era la barra de estación de ANTES del 26-nov (sin los menús deslizables).
   Quitando ese arreglo se reproduce igual: página de 495 px en pantalla de 375. Con el código actual ya cabe. Si un
